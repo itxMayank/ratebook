@@ -18,6 +18,8 @@ const DEFAULT_PIN = '1234';
 const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
+const BILLS = 'Bills';
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy'];
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed …
@@ -32,6 +34,7 @@ function setup() {
   sheet_(ITEMS, COLS);
   sheet_(CONFIG, ['key', 'value']);
   sheet_(IMAGES, ['id', 'data']);
+  sheet_(BILLS, BILL_COLS);
   bump_();
   Logger.log('Rate Book is ready. Now deploy it as a web app.');
 }
@@ -137,6 +140,7 @@ function readConfig_() {
   if (n > 0) s.getRange(2, 1, n, 2).getValues().forEach(r => { if (r[0]) cfg[String(r[0])] = r[1]; });
   if (cfg.units) { try { cfg.units = JSON.parse(cfg.units); } catch (err) { delete cfg.units; } }
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
+  cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
   return cfg;
 }
 
@@ -146,6 +150,7 @@ function doPost(e) {
   let body;
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
+  if (body.action === 'takeBill') return out_(takeBill_(body));   // anyone making a bill can do this, no PIN
   const auth = checkPin_(body.pin);
   if (auth !== 'ok') return out_({ ok: false, error: auth });
   const lock = LockService.getScriptLock();
@@ -247,12 +252,13 @@ function setImage_(id, thumb, full, by) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
-    const val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
+    let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
+    if (k === 'nextBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     const i = keys.indexOf(k);
     if (i >= 0) s.getRange(i + 2, 2).setValue(val); else { s.appendRow([k, val]); keys.push(k); }
   });
@@ -263,4 +269,26 @@ function setPin_(p) {
   if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
   PropertiesService.getScriptProperties().setProperty('PIN', p);
   return {};
+}
+
+/** A bill was shared or marked done: record it and move the bill number on. */
+function takeBill_(body) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const used = Math.floor(num_(body.n));
+    const cur = readConfig_().nextBill;
+    const next = used >= cur ? used + 1 : cur;
+    if (next !== cur) setConfig_({ nextBill: next });
+    const b = body.bill || {};
+    if (used > 0) {
+      sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60)]);
+    }
+    bump_();
+    return { ok: true, rev: getRev_(), config: readConfig_() };
+  } catch (err) {
+    return { ok: false, error: String(err && err.message || err) };
+  } finally {
+    try { lock.releaseLock(); } catch (err) {}
+  }
 }

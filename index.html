@@ -267,6 +267,15 @@ body.typing{padding-bottom:0}
 .switch input:checked::after{left:21px}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
+/* bill header */
+.billhead{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-top:6px}
+.billno{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.billno span{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.billno b{font:700 26px/1 var(--f-display);color:var(--accent)}
+.billno small{color:var(--muted);font-size:13px}
+.lastbill{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted);padding:8px 2px 0}
+.lastbill a,.lastbill button{color:var(--accent);font-weight:600;background:none;border:0;padding:2px 4px;text-decoration:none}
+.field .err{font-size:13px}
 /* v3 standalone */
 .banner{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin:4px 0 10px}
 .banner img{width:44px;height:44px;border-radius:10px;flex:none}
@@ -330,13 +339,21 @@ body.typing{padding-bottom:0}
 
   <section id="view-bill" hidden>
     <div id="bill-search-results" class="mini-results"></div>
-    <div class="field" style="margin-top:6px"><label for="cust" data-t="customer">Customer name (optional)</label><input id="cust" autocomplete="off"></div>
+    <div class="billhead">
+      <div class="billno"><span data-t="billNoL">Bill No.</span><b class="num" id="bill-no">1</b></div>
+      <div class="two">
+        <div class="field"><label for="cust" data-t="custName">Customer name</label><input id="cust" autocomplete="off" enterkeyhint="next"></div>
+        <div class="field"><label for="cust-mob" data-t="custMob">Mobile no.</label><input id="cust-mob" type="tel" inputmode="tel" autocomplete="off" maxlength="16" placeholder="98765 43210"><span class="err" id="mob-err"></span></div>
+      </div>
+    </div>
+    <div class="lastbill" id="lastbill" hidden></div>
     <h2 class="section-title" data-t="billItems">Bill items</h2>
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="sum"><span data-t="total">Total</span><b class="num" id="bill-sum">₹0</b></div>
       <div class="acts">
         <a class="btn wa" id="bill-wa" target="_blank" rel="noopener" data-t="shareWa">Share on WhatsApp</a>
+        <button class="btn primary" id="bill-done" data-t="billDone">Done</button>
         <button class="btn ghost" id="bill-copy" data-t="copy">Copy</button>
         <button class="btn ghost" id="bill-clear" data-t="clear">Clear</button>
       </div>
@@ -450,22 +467,30 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   setupT:"Connect your Google Sheet",setupD:"Paste the web app link from Apps Script. Put the same link in index.html (API_URL) before sharing the app.",setupPh:"https://script.google.com/macros/s/…/exec",connect:"Connect",badUrl:"That link didn't answer like a Rate Book sheet. Check the link and that the web app access is set to Anyone.",
   installT:"Install Rate Book",installD:"Adds an icon to your home screen. Opens full screen and works offline.",install:"Install",later:"Later",
   iosT:"Add Rate Book to your Home Screen",iosD:"Tap the Share button, then “Add to Home Screen”.",iosD2:"Don't see it? Open this page in Safari first.",fileT:"This is a saved copy",fileD:"It can show and change prices, but can't be installed. Open the shop link to get the app icon.",
-  listening:"Listening… speak now",micNo:"Voice didn't start here. Tap the box and use the mic key on your keyboard.",speak:"Speak",micOk:"Got it",needYourName:"Enter your name so others know who changed a price."});
+  listening:"Listening… speak now",micNo:"Voice didn't start here. Tap the box and use the mic key on your keyboard.",speak:"Speak",stopListening:"Stop listening",listeningLong:"Listening. Speak, then tap Stop listening.",micStopped:"Stopped listening after a long pause.",micOk:"Got it",needYourName:"Enter your name so others know who changed a price.",
+  billNoL:"Bill No.",custName:"Customer name",custMob:"Mobile no.",billDone:"Done",mobBad:"Enter a 10-digit mobile number, or leave it empty.",
+  billNoT:"Bill number",nextBillL:"Next bill number",nextBillD:"Goes up by 1 each time a bill is shared on WhatsApp or marked Done.",billNoBad:"Enter a whole number, 1 or more.",
+  billSent:n=>`Bill ${n} saved. Next bill is ${n+1}.`,lastBill:n=>`Last bill: No. ${n}`,shareAgain:"Share again",billNoLine:n=>`Bill No: ${n}`,mobL:"Mobile",
+  billQueued:"Offline: bill number will be recorded when you're back online."});
 Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के लिए। रेट बदलने के लिए एडिटिंग खोलें।",unlockBtn:"खोलें",unlockT:"एडिटिंग खोलें",unlockD:"इस फ़ोन पर रेट जोड़ने या बदलने के लिए दुकान का PIN डालें।",lockT:"इस फ़ोन पर एडिटिंग बंद करें",lockD:n=>`${n} के नाम से एडिटिंग चालू है। बंद करने के लिए दबाएँ।`,yourName:"आपका नाम",pinL:"दुकान का PIN",wrongPin:"गलत PIN। फिर कोशिश करें।",lockedOut:"बहुत बार गलत PIN। 15 मिनट बाद कोशिश करें।",unlocked:"इस फ़ोन पर एडिटिंग खुल गई",lockedNow:"इस फ़ोन पर एडिटिंग बंद हो गई",
   changePin:"दुकान का PIN बदलें",newPin:"नया PIN (4 से 8 अंक)",newPin2:"नया PIN दोबारा",pinMismatch:"दोनों PIN एक जैसे नहीं हैं।",pinRule:"4 से 8 अंक डालें।",pinChanged:"PIN बदल गया। बाकी लोगों को एडिट के लिए नया PIN चाहिए।",
   online:t=>`रेट अपडेटेड · ${t}`,offline:t=>`ऑफ़लाइन · ${t} के सेव रेट दिख रहे हैं`,neverSynced:"अभी रेट लिस्ट तक नहीं पहुँच पाए।",refresh:"रीफ़्रेश",offlineWrite:"आप ऑफ़लाइन हैं। बदलाव सेव करने के लिए इंटरनेट चालू करें।",saving:"सेव हो रहा है…",
   setupT:"अपनी Google Sheet जोड़ें",setupD:"Apps Script का वेब ऐप लिंक पेस्ट करें। ऐप शेयर करने से पहले यही लिंक index.html (API_URL) में डालें।",setupPh:"https://script.google.com/macros/s/…/exec",connect:"जोड़ें",badUrl:"यह लिंक Rate Book शीट जैसा जवाब नहीं दे रहा। लिंक और वेब ऐप की एक्सेस (Anyone) जाँचें।",
   installT:"Rate Book इंस्टॉल करें",installD:"होम स्क्रीन पर आइकन जुड़ेगा। फ़ुल स्क्रीन खुलेगा और ऑफ़लाइन भी चलेगा।",install:"इंस्टॉल",later:"बाद में",
   iosT:"Rate Book को होम स्क्रीन पर जोड़ें",iosD:"Share बटन दबाएँ, फिर “Add to Home Screen” चुनें।",iosD2:"नहीं दिख रहा? पहले यह पेज Safari में खोलें।",fileT:"यह सेव की हुई कॉपी है",fileD:"इसमें रेट देख-बदल सकते हैं, पर इंस्टॉल नहीं होगा। आइकन के लिए दुकान का लिंक खोलें।",
-  listening:"सुन रहे हैं… बोलिए",micNo:"यहाँ माइक शुरू नहीं हुआ। बॉक्स दबाकर कीबोर्ड का माइक बटन इस्तेमाल करें।",speak:"बोलें",micOk:"ठीक है",needYourName:"अपना नाम लिखें ताकि सबको पता रहे किसने रेट बदला।"});
+  listening:"सुन रहे हैं… बोलिए",micNo:"यहाँ माइक शुरू नहीं हुआ। बॉक्स दबाकर कीबोर्ड का माइक बटन इस्तेमाल करें।",speak:"बोलें",stopListening:"सुनना बंद करें",listeningLong:"सुन रहे हैं। बोलिए, फिर ‘सुनना बंद करें’ दबाएँ।",micStopped:"काफ़ी देर चुप रहने पर सुनना बंद हुआ।",micOk:"ठीक है",needYourName:"अपना नाम लिखें ताकि सबको पता रहे किसने रेट बदला।",
+  billNoL:"बिल नं.",custName:"ग्राहक का नाम",custMob:"मोबाइल नं.",billDone:"पूरा हुआ",mobBad:"10 अंकों का मोबाइल नंबर डालें, या ख़ाली छोड़ दें।",
+  billNoT:"बिल नंबर",nextBillL:"अगला बिल नंबर",nextBillD:"हर बार बिल WhatsApp पर भेजने या ‘पूरा हुआ’ दबाने पर 1 बढ़ेगा।",billNoBad:"1 या उससे बड़ी पूरी संख्या डालें।",
+  billSent:n=>`बिल ${n} सेव हुआ। अगला बिल ${n+1} है।`,lastBill:n=>`पिछला बिल: नं. ${n}`,shareAgain:"फिर से भेजें",billNoLine:n=>`बिल नं: ${n}`,mobL:"मोबाइल",
+  billQueued:"ऑफ़लाइन: इंटरनेट आने पर बिल नंबर दर्ज हो जाएगा।"});
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""),
-  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"" } };
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1 } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
 const $ = s => document.querySelector(s);
@@ -608,7 +633,7 @@ function parseOne(src){
   const km=s.match(kw);
   let namePart = km ? s.slice(0,km.index) : s;
   let ratePart = km ? s.slice(km.index) : "";
-  if(!km){ const mTail=s.match(/((?:\s+\d+(?:\.\d+)?)+)\s*(?:rs|rupees?|रुपये|रुपए)?\s*$/i); if(mTail){ namePart=s.slice(0,mTail.index); ratePart=mTail[1]; } }
+  if(!km){ const mTail=s.match(/(\s+\d+(?:\.\d+)?(?:\s*(?:,|and|aur|और|&)?\s+\d+(?:\.\d+)?)*)\s*(?:rs|rupees?|रुपये|रुपए)?\s*$/i); if(mTail){ namePart=s.slice(0,mTail.index); ratePart=mTail[1]; } }
   namePart = namePart.replace(RE_VERBWORD," ").replace(new RegExp(RE_ADD.source,"gi")," ").replace(new RegExp(RE_UPD.source,"gi")," ").replace(new RegExp(RE_DEL.source,"gi")," ")
     .replace(/\b(the|item|product|of|please|ka|ki|ke|ko|ek|aur|and|price|rate|do|de|dena|by|increase|decrease|raise|reduce|kam|badha|ghata)\b|(?:^|\s)(?:का|की|के|को|एक|आइटम|सामान|दो|दें|देना|और|कम)(?=\s|$)/gi," ")
     .replace(new RegExp("(?:\\bper\\b|/|प्रति)\\s*[a-z\\u0900-\\u097F.]+","gi")," ").replace(/[,;:।]+/g," ").replace(/\s+/g," ").trim();
@@ -628,7 +653,42 @@ function parseOne(src){
 }
 function titleCase(s){ return s.replace(/(^|\s)([a-z])/g,(m,a,b)=>a+b.toUpperCase()); }
 function roundPrice(n){ const r=+S.cfg.roundTo; if(r===1) return Math.round(n); if(r===0.5) return Math.round(n*2)/2; return Math.round(n*100)/100; }
-function localParse(text){ return devDigits(text).split(/\n|;|\.\s|।/).map(x=>x.trim()).filter(Boolean).map(parseOne).filter(Boolean); }
+/* Spoken commands arrive as one long line. Split it where one complete change ends and the next begins,
+   e.g. "add 51 micron bag 1kg rates 110 and 120 चीनी 5% बढ़ा दो" → two changes. */
+const SPLIT_TAIL=/^\s*(?:(?:%|percent|pratishat|प्रतिशत|rs\.?|rupees?|रुपये|रुपए|रुपया|kam|badha|badhao|ghata|ghatao|kar|karo|do|de|dena|please|कम|बढ़ा|बढ़ा|बढा|घटा|कर|करो|करें|दो|दें|दीजिए)(?=\s|$)\s*)+/i;
+function completeAct(a){ return !!a && (a.op==="delete" || a.sell!=null || a.buy!=null); }
+function splitCommands(line){
+  const out=[]; let rest=line.trim(), guard=0;
+  const okRight=b=>completeAct(b) && !(b.op==="add" && !RE_ADD.test(b._src||""));
+  while(rest && guard++<25){
+    const cands=[];
+    // after a rate: "…120 | चीनी 5% बढ़ा दो"
+    const re=/\d+(?:\.\d+)?/g; let m;
+    while((m=re.exec(rest))){
+      let end=m.index+m[0].length;
+      if(/[a-zऀ-ॿ]/i.test(rest[end]||"")) continue;          // "1kg": part of a name
+      const tail=rest.slice(end).match(SPLIT_TAIL); if(tail) end+=tail[0].length;
+      const pu=rest.slice(end).match(/^\s*(?:per\s+|प्रति\s*|\/\s*)?([a-zऀ-ॿ.]+)/i); if(pu && unitFromWord(pu[1])) end+=pu[0].length;
+      cands.push(end);
+    }
+    // before an English verb that starts a new change: "delete maida | add besan …"
+    const rv=/\s(add|delete|remove|update|change|set|increase|decrease|reduce)\b/gi; let v;
+    while((v=rv.exec(rest))) cands.push(v.index+1);
+    cands.sort((a,b)=>a-b);
+    let cut=-1;
+    for(const end of cands){
+      const left=rest.slice(0,end).trim(), right=rest.slice(end).trim();
+      if(!left||!right) continue;
+      if(/^(?:,|and|aur|और|&|\+|\/|-|to|se|से)?\s*\d/i.test(right)) continue;   // "110 and 120"
+      const a=parseOne(left), b=parseOne(right); if(b) b._src=right;
+      if(completeAct(a) && okRight(b)){ cut=end; break; }
+    }
+    if(cut<0){ out.push(rest); break; }
+    out.push(rest.slice(0,cut).trim()); rest=rest.slice(cut).trim();
+  }
+  return out;
+}
+function localParse(text){ return devDigits(text).split(/\n|;|\.\s|।|\b(?:and then|phir|fir)\b|फिर/i).map(x=>x.trim()).filter(Boolean).flatMap(splitCommands).map(parseOne).filter(Boolean); }
 
 /* ---------------- Rendering ---------------- */
 function applyLang(){
@@ -692,10 +752,14 @@ function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidde
 function billText(){
   const d=new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
-  s+=`${t("billTitle")} · ${d}\n`; if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; s+="\n";
+  s+=`${t("billNoLine",curBillNo())} · ${d}\n`; if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
   S.bill.forEach((l,i)=>{ s+=`${i+1}. ${l.name} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
+function curBillNo(){ return Math.max(1, Math.floor(+S.cfg.nextBill)||1); }
+/** Indian mobile → "91XXXXXXXXXX" for WhatsApp, "" if empty, null if invalid. */
+function normMobile(v){ let d=devDigits(String(v||"")).replace(/\D/g,""); if(!d) return ""; if(d.length===11&&d[0]==="0") d=d.slice(1); if(d.length===12&&d.startsWith("91")) d=d.slice(2); if(d.length===10&&/^[6-9]/.test(d)) return "91"+d; return null; }
+function waLink(){ const m=normMobile(S.mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(billText()); }
 function billSum(){ return Math.round(S.bill.reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0)*100)/100; }
 function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
 function renderBill(){
@@ -720,7 +784,46 @@ function renderBill(){
 function updateBillTotals(){
   $("#bill-sum").textContent=rs(billSum());
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
-  $("#bill-wa").href="https://wa.me/?text="+encodeURIComponent(billText());
+  $("#bill-wa").href=waLink();
+  $("#bill-no").textContent=curBillNo();
+  const bad=normMobile(S.mob)===null; $("#mob-err").textContent=bad?t("mobBad"):"";
+  renderLastBill();
+}
+function renderLastBill(){
+  const el=$("#lastbill"), lb=S.lastBill;
+  if(!lb){ el.hidden=true; return; }
+  el.hidden=false;
+  el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a>`;
+}
+/** Bill shared or marked done: remember it, move the number on (shared with every phone), start a fresh bill. */
+function finishBill(){
+  if(!S.bill.length) return;
+  const n=curBillNo();
+  const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billSum(), link:waLink(),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`).join("; ") };
+  S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
+  S.cfg.nextBill=n+1; saveCache();
+  S.bill=[]; S.cust=""; S.mob=""; ls.set("rb_cust",""); ls.set("rb_mob",""); $("#cust").value=""; $("#cust-mob").value="";
+  saveBill(); renderBill(); renderList();
+  toast(t("billSent",n));
+  S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
+}
+let flushing=false;
+async function flushBills(){
+  if(flushing || !S.billQ.length || !apiUrl()) return;
+  if(navigator.onLine===false){ toast(t("billQueued")); return; }
+  flushing=true;
+  try{
+    while(S.billQ.length){
+      const rec=S.billQ[0];
+      const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),bill:rec})});
+      const j=await r.json(); if(!j.ok) throw 0;
+      S.billQ.shift(); ls.set("rb_billq",S.billQ);
+      if(j.config){ const nb=+j.config.nextBill||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; }
+    }
+    saveCache(); updateBillTotals();
+  }catch{ /* try again on next sync */ }
+  finally{ flushing=false; }
 }
 function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
@@ -765,9 +868,45 @@ $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(S.canWrite && lo
 $("#q-clear").onclick=()=>{ $("#q").value=""; onQuery(""); $("#q").focus(); };
 $("#lang-en").onclick=()=>{ S.lang="en"; ls.set("rb_lang","en"); applyLang(); };
 $("#lang-hi").onclick=()=>{ S.lang="hi"; ls.set("rb_lang","hi"); applyLang(); };
-$("#tab-items").onclick=()=>setTab("items"); $("#tab-bill").onclick=()=>setTab("bill"); $("#tab-tools").onclick=()=>setTab("tools");
+$("#tab-items").onclick=()=>setTab("items"); $("#tab-bill").onclick=()=>{ setTab("bill"); checkRev(); }; $("#tab-tools").onclick=()=>setTab("tools");
 
 /* Mic: real speech recognition where the browser has it (Chrome on Android, Safari on iPhone); keyboard mic otherwise. */
+/* Long dictation for the wand. Phone browsers end a listening session after a short pause,
+   so we quietly start a new one and keep everything already said, until the person taps Stop
+   (or stays silent for 15 seconds). */
+const isAndroid=/android/i.test(navigator.userAgent);
+const dict={on:false,rec:null,base:"",said:"",btn:null,onText:null,onFail:null,idle:null,starts:0};
+function dictShow(extra){ const body=(dict.said+(extra||"")).replace(/\s+/g," ").trim(); dict.onText&&dict.onText((dict.base?dict.base+"\n":"")+body); }
+function dictIdle(){ clearTimeout(dict.idle); dict.idle=setTimeout(()=>{ if(dict.on){ dictStop(); toast(t("micStopped")); } },15000); }
+function dictStart(btn,base,onText,onFail){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR||ls.get("rb_sr_bad",false)){ onFail(); return; }
+  if(rec){ try{ rec.abort(); }catch{} rec=null; }
+  Object.assign(dict,{on:true,base,said:"",btn,onText,onFail,starts:0});
+  btn.classList.add("listening"); const l=btn.querySelector("span"); if(l) l.textContent=t("stopListening");
+  toast(t("listeningLong")); dictIdle(); dictSession(SR);
+}
+function dictSession(SR){
+  if(!dict.on) return;
+  if(++dict.starts>80){ dictStop(); return; }
+  let r; try{ r=new SR(); }catch{ dictStop(); dict.onFail&&dict.onFail(); return; }
+  dict.rec=r; r.lang=S.lang==="hi"?"hi-IN":"en-IN"; r.interimResults=true; r.maxAlternatives=1;
+  r.continuous=!isAndroid;   // Android repeats words in continuous mode; short sessions + restart are cleaner there
+  let fin="", mid="", fatal=false;
+  r.onresult=e=>{ fin=""; mid=""; for(let i=0;i<e.results.length;i++){ const x=e.results[i]; if(x.isFinal) fin+=x[0].transcript+" "; else mid+=x[0].transcript+" "; } dictShow(fin+mid); dictIdle(); };
+  r.onerror=e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed"){ ls.set("rb_sr_bad",true); fatal=true; } else if(e.error==="audio-capture"||e.error==="network"||e.error==="language-not-supported"){ fatal=true; } };
+  r.onend=()=>{ const got=(fin||mid).trim(); if(got) dict.said+=got+" "; dictShow(""); if(dict.rec===r) dict.rec=null;
+    if(fatal){ const f=dict.onFail; dictStop(); f&&f(); return; }
+    if(dict.on) setTimeout(()=>dictSession(SR), isAndroid?80:150); };
+  try{ r.start(); }catch{ setTimeout(()=>dictSession(SR),300); }
+}
+function dictStop(){
+  if(!dict.on && !dict.rec) return;
+  dict.on=false; clearTimeout(dict.idle);
+  const r=dict.rec; if(r){ try{ r.stop(); }catch{} }
+  const b=dict.btn; if(b){ b.classList.remove("listening"); const l=b.querySelector("span"); if(l) l.textContent=t("speak"); }
+}
+
 let rec=null;
 function listen(btn,onText,onFail){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -783,7 +922,7 @@ function listen(btn,onText,onFail){
     rec.start();
   }catch{ btn.classList.remove("listening"); rec=null; onFail(); }
 }
-$("#mic").onclick=e=>listen(e.currentTarget, s=>{ $("#q").value=s; onQuery(s); $("#mictip").hidden=true; }, ()=>{ $("#mictip").hidden=false; $("#q").focus(); });
+$("#mic").onclick=e=>{ if(dict.on) dictStop(); listen(e.currentTarget, s=>{ $("#q").value=s; onQuery(s); $("#mictip").hidden=true; }, ()=>{ $("#mictip").hidden=false; $("#q").focus(); }); };
 $("#mictip-x").onclick=()=>{ $("#mictip").hidden=true; };
 
 /* ---------------- Bill actions ---------------- */
@@ -811,10 +950,14 @@ document.addEventListener("input",e=>{
   if(r!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
 });
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
+$("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#cust-mob").focus(); } });
+$("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); });
+$("#bill-wa").addEventListener("click",e=>{ if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
+$("#bill-done").onclick=()=>{ if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
-$("#bill-clear-yes").onclick=()=>{ S.bill=[]; S.cust=""; $("#cust").value=""; ls.set("rb_cust",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
+$("#bill-clear-yes").onclick=()=>{ S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
 
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;
@@ -1081,7 +1224,7 @@ function openBulkEdit(){
 
 /* ---------------- Settings ---------------- */
 function openSettings(){
-  const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter };
+  const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:curBillNo() };
   const w=S.canWrite;
   const body=`
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
@@ -1090,6 +1233,7 @@ function openSettings(){
       ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
     <div class="cfg-sec"><div class="field"><label>${esc(t("defUnit"))}</label>${unitBtnHTML("cf-def",c.defaultUnit,w?"":"disabled")}</div></div>
     <div class="cfg-sec"><h3>${esc(t("rounding"))}</h3><div class="seg" id="cf-round">${[[1,"r1"],[0.5,"r05"],[0,"r0"]].map(([v,k])=>`<button type="button" data-r="${v}" aria-pressed="${+c.roundTo===v}" ${w?"":"disabled"}>${esc(t(k))}</button>`).join("")}</div></div>
+    <div class="cfg-sec"><h3>${esc(t("billNoT"))}</h3><div class="field"><label for="cf-bill">${esc(t("nextBillL"))}</label><input id="cf-bill" class="num" inputmode="numeric" value="${c.nextBill}" ${w?"":"disabled"} style="max-width:160px"></div><p class="note" style="margin:0">${esc(t("nextBillD"))}</p></div>
     <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>
     ${w?`<div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`:""}
     <div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
@@ -1109,7 +1253,8 @@ function openSettings(){
     if(!/^\d{4,8}$/.test(p1)){ er.textContent=t("pinRule"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   $("#cf-save").onclick=async()=>{ const btn=$("#cf-save"); btn.disabled=true;
-    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim() };
+    const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-bill").focus(); return; }
+    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), nextBill:nb };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
 }
 
@@ -1121,19 +1266,20 @@ function openCmd(prefill="",auto=false){
     : ["add 51 micron bag 1kg with rates 110 and 120","change toor dal sell rate to 145","increase sugar by 5%"];
   const body=`<p class="note" style="margin:0 0 10px">${esc(t("cmdHelp"))}</p>
     <textarea id="cmd-text" style="min-height:96px" placeholder="${esc(t("cmdPh"))}">${esc(prefill)}</textarea>
-    <div class="cmd-mic"><button class="btn ghost" id="cmd-mic" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> ${esc(t("speak"))}</button></div>
+    <div class="cmd-mic"><button class="btn ghost" id="cmd-mic" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> <span>${esc(t("speak"))}</span></button></div>
     <div class="mictip" id="cmd-tip" style="margin-top:8px" hidden><div class="kb" aria-hidden="true"><i></i><i></i><i></i><i class="m"></i><i></i><i></i><i></i><i></i></div><p>${esc(t("micTip"))}</p></div>
     <div id="cmd-out" style="margin-top:12px;display:grid;gap:10px"></div>
     <div id="cmd-ex" style="margin-top:12px"><p class="note" style="margin:0 0 6px">${esc(t("examples"))}</p><div class="examples">${ex.map(x=>`<button type="button" data-ex="${esc(x)}">${esc(x)}</button>`).join("")}</div></div>`;
-  openSheet(t("cmdTitle"), body, `<button class="btn ghost" id="cmd-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cmd-go">${esc(t("preview"))}</button>`, {full:true, onClose:()=>{ cmdCtl?.abort(); cmdCtl=null; }});
+  openSheet(t("cmdTitle"), body, `<button class="btn ghost" id="cmd-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cmd-go">${esc(t("preview"))}</button>`, {full:true, onClose:()=>{ cmdCtl?.abort(); cmdCtl=null; dictStop(); }});
   const ta=$("#cmd-text");
   $("#cmd-ex").addEventListener("click",e=>{ const b=e.target.closest("[data-ex]"); if(b){ ta.value=b.dataset.ex; ta.focus(); } });
   $("#cmd-cancel").onclick=closeSheet;
-  $("#cmd-mic").onclick=e=>{ const base=ta.value.trim(); listen(e.currentTarget, s=>{ ta.value=(base?base+"\n":"")+s; }, ()=>{ $("#cmd-tip").hidden=false; ta.focus(); }); };
+  $("#cmd-mic").onclick=e=>{ if(dict.on){ dictStop(); return; } dictStart(e.currentTarget, ta.value.trim(), txt=>{ ta.value=txt; ta.scrollTop=ta.scrollHeight; }, ()=>{ $("#cmd-tip").hidden=false; ta.focus(); }); };
   $("#cmd-go").onclick=()=>runCmd();
   if(auto && prefill) runCmd(); else setTimeout(()=>ta.focus(),260);
 }
 function runCmd(){
+  dictStop();
   const text=$("#cmd-text").value.trim(); if(!text) return;
   $("#cmd-ex").hidden=true; $("#cmd-text").blur(); const tip=$("#cmd-tip"); if(tip) tip.hidden=true;
   renderPreview(localParse(text).map(a=>({...a,on:true})),"",false);
@@ -1224,7 +1370,9 @@ document.addEventListener("click",async e=>{ if(!e.target.closest("#setup-go")) 
 function applyConfig(x){
   x=x||{};
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
-  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||"") };
+  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1) };
+  // bills taken on this phone but not yet recorded keep the number moving forward
+  for(const q of S.billQ||[]) if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1;
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"" }); }
@@ -1237,7 +1385,7 @@ function sync(){
   if(!apiUrl()) return Promise.resolve();
   if(syncing) return syncing;
   syncing=(async()=>{
-    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; applyConfig(j.config); applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); }
+    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; applyConfig(j.config); applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); }
     catch{ S.online=false; renderNet(); }
     finally{ syncing=null; }
   })();

@@ -562,7 +562,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   iosT:"Add Rate Book to your Home Screen",iosD:"Tap the Share button, then “Add to Home Screen”.",iosD2:"Don't see it? Open this page in Safari first.",fileT:"This is a saved copy",fileD:"It can show and change prices, but can't be installed. Open the shop link to get the app icon.",
   listening:"Listening… speak now",micNo:"Voice didn't start here. Tap the box and use the mic key on your keyboard.",speak:"Speak",stopListening:"Stop listening",listeningLong:"Listening. Speak, then tap Stop listening.",micStopped:"Stopped listening after a long pause.",micOk:"Got it",needYourName:"Enter your name so others know who changed a price.",
   billNoL:"Bill No.",custName:"Customer name",custMob:"Mobile no.",billDone:"Done",mobBad:"Enter a 10-digit mobile number, or leave it empty.",
-  billNoT:"Bill number",nextBillL:"Next bill number",nextBillD:"Goes up by 1 each time a bill is shared on WhatsApp or marked Done.",billNoBad:"Enter a whole number, 1 or more.",
+  billNoT:"Bill number",nextBillL:"Next normal bill no.",nextGstBillL:"Next GST bill no.",nextBillD:"GST and normal bills are numbered separately. Each goes up by 1 when a bill of that kind is shared on WhatsApp or marked Done.",billNoBad:"Enter a whole number, 1 or more.",
   billSent:(n,m)=>`Bill ${n} saved. Next bill is ${m}.`,lastBill:n=>`Last bill: No. ${n}`,shareAgain:"Share again",billNoLine:n=>`Bill No: ${n}`,mobL:"Mobile",
   billQueued:"Offline: bill number will be recorded when you're back online.",
   hsnL:"HSN code",gstPctL:"GST %",gstBill:"GST bill",outState:"Out of state (IGST)",custGstin:"Customer GSTIN (optional)",
@@ -588,7 +588,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   iosT:"Rate Book को होम स्क्रीन पर जोड़ें",iosD:"Share बटन दबाएँ, फिर “Add to Home Screen” चुनें।",iosD2:"नहीं दिख रहा? पहले यह पेज Safari में खोलें।",fileT:"यह सेव की हुई कॉपी है",fileD:"इसमें रेट देख-बदल सकते हैं, पर इंस्टॉल नहीं होगा। आइकन के लिए दुकान का लिंक खोलें।",
   listening:"सुन रहे हैं… बोलिए",micNo:"यहाँ माइक शुरू नहीं हुआ। बॉक्स दबाकर कीबोर्ड का माइक बटन इस्तेमाल करें।",speak:"बोलें",stopListening:"सुनना बंद करें",listeningLong:"सुन रहे हैं। बोलिए, फिर ‘सुनना बंद करें’ दबाएँ।",micStopped:"काफ़ी देर चुप रहने पर सुनना बंद हुआ।",micOk:"ठीक है",needYourName:"अपना नाम लिखें ताकि सबको पता रहे किसने रेट बदला।",
   billNoL:"बिल नं.",custName:"ग्राहक का नाम",custMob:"मोबाइल नं.",billDone:"पूरा हुआ",mobBad:"10 अंकों का मोबाइल नंबर डालें, या ख़ाली छोड़ दें।",
-  billNoT:"बिल नंबर",nextBillL:"अगला बिल नंबर",nextBillD:"हर बार बिल WhatsApp पर भेजने या ‘पूरा हुआ’ दबाने पर 1 बढ़ेगा।",billNoBad:"1 या उससे बड़ी पूरी संख्या डालें।",
+  billNoT:"बिल नंबर",nextBillL:"अगला सामान्य बिल नं.",nextGstBillL:"अगला GST बिल नं.",nextBillD:"GST और सामान्य बिलों के नंबर अलग चलते हैं। उस तरह का बिल WhatsApp पर भेजने या ‘पूरा हुआ’ दबाने पर नंबर 1 बढ़ता है।",billNoBad:"1 या उससे बड़ी पूरी संख्या डालें।",
   billSent:(n,m)=>`बिल ${n} सेव हुआ। अगला बिल ${m} है।`,lastBill:n=>`पिछला बिल: नं. ${n}`,shareAgain:"फिर से भेजें",billNoLine:n=>`बिल नं: ${n}`,mobL:"मोबाइल",
   billQueued:"ऑफ़लाइन: इंटरनेट आने पर बिल नंबर दर्ज हो जाएगा।",
   hsnL:"HSN कोड",gstPctL:"GST %",gstBill:"GST बिल",outState:"दूसरे राज्य का (IGST)",custGstin:"ग्राहक का GSTIN (वैकल्पिक)",
@@ -613,7 +613,7 @@ const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
   auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
-  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
+  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
 const $ = s => document.querySelector(s);
@@ -1006,7 +1006,8 @@ function billText(){
   S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineLabel(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
-function autoBillNo(){ return Math.max(1, Math.floor(+S.cfg.nextBill)||1); }
+function seriesNext(gst){ return Math.max(1, Math.floor(+(gst?S.cfg.nextGstBill:S.cfg.nextBill))||1); }
+function autoBillNo(){ return seriesNext(S.gst); }
 function gstBillText(){
   const d=billDateStr();
   const g=gstCalc(); let s="";
@@ -1147,10 +1148,10 @@ function finishBill(){
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8) };
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
-  S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
+  const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
-  toast(t("billSent",n,autoBillNo()));
+  toast(t("billSent",n,seriesNext(wasGst)));
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
 }
 let flushing=false;
@@ -1164,7 +1165,7 @@ async function flushBills(){
       const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),bill:rec})});
       const j=await r.json(); if(!j.ok) throw 0;
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
-      if(j.config){ const nb=+j.config.nextBill||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; }
+      if(j.config){ const nb=+j.config.nextBill||1, ng=+j.config.nextGstBill||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; }
     }
     saveCache(); updateBillTotals();
   }catch{ /* try again on next sync */ }
@@ -1314,7 +1315,7 @@ $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.val
 $("#bill-no").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#bill-useauto")){ S.billNoOvr=null; ls.set("rb_billno",null); updateBillTotals(); } });
 $("#edit-cancel").onclick=()=>{ endEdit(); toast(t("editCancelled")); };
-$("#gst-chip").onclick=()=>{ S.gst=!S.gst; ls.set("rb_gst",S.gst); renderBill(); };
+$("#gst-chip").onclick=()=>{ S.gst=!S.gst; ls.set("rb_gst",S.gst); if(!S.editing){ S.billNoOvr=null; ls.set("rb_billno",null); } renderBill(); };
 $("#igst-chip").onclick=()=>{ S.igst=!S.igst; ls.set("rb_igst",S.igst); updateBillTotals(); };
 $("#igst-on").onchange=e=>{ S.igst=e.target.checked; ls.set("rb_igst",S.igst); updateBillTotals(); };
 function setOpen(btnSel,panelSel,key,open){ $(panelSel).hidden=!open; $(btnSel).setAttribute("aria-expanded",open); ls.set(key,open); }
@@ -1650,7 +1651,7 @@ function openBulkEdit(){
 
 /* ---------------- Settings ---------------- */
 function openSettings(){
-  const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:autoBillNo(), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
+  const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:seriesNext(false), nextGstBill:seriesNext(true), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
   const w=S.canWrite;
   const body=`
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
@@ -1659,7 +1660,8 @@ function openSettings(){
       ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
     <div class="cfg-sec"><div class="field"><label>${esc(t("defUnit"))}</label>${unitBtnHTML("cf-def",c.defaultUnit,w?"":"disabled")}</div></div>
     <div class="cfg-sec"><h3>${esc(t("rounding"))}</h3><div class="seg" id="cf-round">${[[1,"r1"],[0.5,"r05"],[0,"r0"]].map(([v,k])=>`<button type="button" data-r="${v}" aria-pressed="${+c.roundTo===v}" ${w?"":"disabled"}>${esc(t(k))}</button>`).join("")}</div></div>
-    <div class="cfg-sec"><h3>${esc(t("billNoT"))}</h3><div class="field"><label for="cf-bill">${esc(t("nextBillL"))}</label><input id="cf-bill" class="num" inputmode="numeric" value="${c.nextBill}" ${w?"":"disabled"} style="max-width:160px"></div><p class="note" style="margin:0">${esc(t("nextBillD"))}</p></div>
+    <div class="cfg-sec"><h3>${esc(t("billNoT"))}</h3><div class="two"><div class="field"><label for="cf-bill">${esc(t("nextBillL"))}</label><input id="cf-bill" class="num" inputmode="numeric" value="${c.nextBill}" ${w?"":"disabled"}></div>
+      <div class="field"><label for="cf-gbill">${esc(t("nextGstBillL"))}</label><input id="cf-gbill" class="num" inputmode="numeric" value="${c.nextGstBill}" ${w?"":"disabled"}></div></div><p class="note" style="margin:0">${esc(t("nextBillD"))}</p></div>
     <div class="cfg-sec"><h3>${esc(t("gstSet"))}</h3>
       <div class="field"><label for="cf-gstin">${esc(t("shopGstin"))}</label><input id="cf-gstin" value="${esc(c.shopGstin)}" maxlength="15" style="text-transform:uppercase" autocomplete="off" ${w?"":"disabled"}></div>
       <div class="field"><label for="cf-addr">${esc(t("shopAddress"))}</label><input id="cf-addr" value="${esc(c.shopAddress)}" maxlength="200" ${w?"":"disabled"}></div>
@@ -1686,10 +1688,11 @@ function openSettings(){
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   $("#cf-save").onclick=async()=>{ const btn=$("#cf-save"); btn.disabled=true;
     const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-bill").focus(); return; }
+    const ngb=Math.floor(toNum($("#cf-gbill").value)); if(!(ngb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-gbill").focus(); return; }
     const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); $("#cf-gstin").focus(); return; }
     const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; $("#cf-dgst").focus(); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
-    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), nextBill:nb, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), defaultGst:dg, defaultHsn:dh };
+    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), nextBill:nb, nextGstBill:ngb, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), defaultGst:dg, defaultHsn:dh };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
 }
 
@@ -1908,10 +1911,10 @@ document.addEventListener("click",async e=>{ if(!e.target.closest("#setup-go")) 
 function applyConfig(x){
   x=x||{};
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
-  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1),
+  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1),
     shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923") };
   // bills taken on this phone but not yet recorded keep the number moving forward
-  for(const q of S.billQ||[]) if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1;
+  for(const q of S.billQ||[]){ if(q.gst){ if(q.n>=S.cfg.nextGstBill) S.cfg.nextGstBill=q.n+1; } else if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1; }
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,

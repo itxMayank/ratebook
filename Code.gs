@@ -19,7 +19,9 @@ const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
 const BILLS = 'Bills';
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits'];
+const HISTORY = 'BillHistory';
+const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell'];
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed …
@@ -152,6 +154,7 @@ function readConfig_() {
   if (cfg.units) { try { cfg.units = JSON.parse(cfg.units); } catch (err) { delete cfg.units; } }
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
   cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
+  cfg.nextGstBill = Math.max(1, Math.floor(num_(cfg.nextGstBill)) || 1);
   cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
   cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
   return cfg;
@@ -179,6 +182,7 @@ function doPost(e) {
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50); break;
+      case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
     if (body.action !== 'verify' && body.action !== 'listBills') bump_();
@@ -277,13 +281,13 @@ function setImage_(id, thumb, full, by) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
-    if (k === 'nextBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
+    if (k === 'nextBill' || k === 'nextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
     if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
     const i = keys.indexOf(k);
@@ -304,14 +308,16 @@ function takeBill_(body) {
   try {
     lock.waitLock(20000);
     const used = Math.floor(num_(body.n));
-    const cur = readConfig_().nextBill;
+    const key = (body.bill && body.bill.gst) ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
+    const cur = readConfig_()[key];
     const next = used >= cur ? used + 1 : cur;
-    if (next !== cur) setConfig_({ nextBill: next });
+    if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
       sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
-        (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000)]);
+        (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
+        str_(b.id, 40), '', '', 0]);
     }
     bump_();
     return { ok: true, rev: getRev_(), config: readConfig_() };
@@ -335,7 +341,9 @@ function listBills_(q, limit) {
   for (let i = vals.length - 1; i >= 0 && out.length < Math.min(limit, 200); i--) {
     const r = vals[i];
     if (needle) {
-      const hay = [r[B.billNo], r[B.customer], r[B.mobile], r[B.customerGstin]].join(' ').toLowerCase();
+      const dd = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
+      const ds = isNaN(dd) ? '' : [pad2_(dd.getDate()) + '/' + pad2_(dd.getMonth() + 1) + '/' + dd.getFullYear(), pad2_(dd.getDate()) + '-' + pad2_(dd.getMonth() + 1) + '-' + dd.getFullYear()].join(' ');
+      const hay = [r[B.billNo], r[B.customer], r[B.mobile], r[B.customerGstin], r[B.items], ds].join(' ').toLowerCase();
       const mob = String(r[B.mobile]).replace(/\D/g, '');
       const hit = hay.indexOf(needle) >= 0 || String(r[B.billNo]) === needle || (digits.length >= 4 && mob.indexOf(digits) >= 0);
       if (!hit) continue;
@@ -346,7 +354,37 @@ function listBills_(q, limit) {
     out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
       total: num_(r[B.total]), items: String(r[B.items] || ''), by: String(r[B.by] || ''), gst: r[B.gstBill] === 'Yes',
       taxable: r[B.taxable] === '' ? null : num_(r[B.taxable]), tax: r[B.tax] === '' ? null : num_(r[B.tax]), custGstin: String(r[B.customerGstin] || ''),
-      igst: r[B.igst] === 'IGST', text: String(r[B.text] || ''), lines: lines });
+      igst: r[B.igst] === 'IGST', text: String(r[B.text] || ''), lines: lines,
+      id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
+      editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]) });
   }
   return { bills: out };
+}
+
+function pad2_(n) { return (n < 10 ? '0' : '') + n; }
+
+/** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
+function updateBill_(b, by) {
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) throw new Error('bill_not_found');
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  let i = -1;
+  if (b.id) i = vals.findIndex(r => String(r[B.billId]) === String(b.id));
+  if (i < 0 && b.row) { const k = Number(b.row) - 2; if (k >= 0 && k < vals.length && num_(vals[k][B.billNo]) === num_(b.n)) i = k; }
+  if (i < 0) throw new Error('bill_not_found');
+  const r = vals[i];
+  sheet_(HISTORY, HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
+  const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
+  r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
+  r[B.items] = str_(b.items, 3000); r[B.gstBill] = b.gst ? 'Yes' : 'No';
+  r[B.taxable] = b.gst ? num_(b.taxable) : ''; r[B.tax] = b.gst ? num_(b.tax) : '';
+  r[B.customerGstin] = str_(b.custGstin, 20); r[B.igst] = b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '';
+  r[B.text] = safe(String(b.text || '').slice(0, 45000));
+  r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
+  if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
+  r[B.editedAt] = new Date(); r[B.editedBy] = by; r[B.edits] = num_(r[B.edits]) + 1;
+  s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
+  return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt].toISOString(), edits: r[B.edits] } };
 }

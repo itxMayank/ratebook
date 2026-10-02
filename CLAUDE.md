@@ -59,6 +59,11 @@ Files in this repository should match the latest copies sent in the Claude conve
 - Display: the English name is the main name everywhere (cards, item detail, bill lines), with the Hindi name in small text underneath. The WhatsApp bill uses the English name only. Search works in English or Hindi.
 - To fix a word that always comes out wrong, add it to `HI_WORDS` (lowercase English → Hindi).
 
+## Separate GST and normal bill numbers (added 2 Oct 2026)
+
+- `Config` holds two counters: `nextBill` (normal bills) and `nextGstBill` (GST bills). Settings shows both. The bill page shows the next number of whichever kind is selected; switching the GST chip switches the number and clears a hand-typed one.
+- `takeBill` advances the counter that matches `bill.gst`. The `Bills` tab's `gstBill` column tells the two series apart, so the same number can appear once in each.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

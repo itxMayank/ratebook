@@ -267,6 +267,46 @@ body.typing{padding-bottom:0}
 .switch input:checked::after{left:21px}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
+/* compact bill header + total */
+#mob-err:empty,#gstin-err:empty{display:none}
+.billhead{gap:8px;padding:10px 12px}
+.bh-row{display:flex;align-items:center;gap:8px;min-width:0}
+.bh-no{border:0;background:none;padding:2px 0;display:flex;align-items:baseline;gap:6px;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.05em;min-width:0}
+.bh-no b{font:700 22px/1 var(--f-display);color:var(--accent);letter-spacing:0;text-transform:none}
+.bh-no i{font-style:normal;font-size:12px;color:var(--gold);text-transform:none;letter-spacing:0}
+.bh-chips{display:flex;gap:6px;margin-left:auto;align-items:center}
+.chip-t{border:1.5px solid var(--line);background:var(--bg);color:var(--muted);border-radius:999px;padding:4px 10px;font-weight:700;font-size:13px;white-space:nowrap}
+.chip-t[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
+.chip-t.soft[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.iconbtn.sm{width:34px;height:34px;border-radius:10px}
+.iconbtn.sm svg{width:20px;height:20px;transition:transform .15s}
+[aria-expanded="true"] > svg{transform:rotate(180deg)}
+.bh-cust{display:grid;grid-template-columns:1.2fr 1fr;gap:8px}
+.bh-cust input{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px;font-size:16px;width:100%;min-width:0}
+.bh-cust input:focus{border-color:var(--accent);outline:none}
+#bh-extra{display:grid;gap:10px;padding-top:4px;border-top:1px dashed var(--line)}
+.bh-field{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bh-field label{font-size:14px;color:var(--muted);font-weight:600}
+.total{padding:10px 12px;gap:8px}
+.tot-row{display:flex;align-items:center;gap:8px}
+.tot-sum{flex:1;min-width:0;display:grid;line-height:1.1}
+.tot-sum span{font-size:12px;color:var(--muted)}
+.tot-sum b{font:700 24px/1.1 var(--f-display);color:var(--accent)}
+.btn.sm{padding:9px 12px;font-size:15px;border-radius:10px;white-space:nowrap}
+#tot-extra{display:grid;gap:10px}
+#tot-extra .acts{display:flex;gap:8px}
+#tot-extra .acts>*{flex:1}
+.ro.lockline{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px}
+.ro.lockline span{flex:1;min-width:0}
+.ro.lockline .btn{padding:6px 12px;font-size:14px}
+.ro.lockline .x{margin:0;padding:4px}
+/* photo picker: real inputs behind labels, so a tap opens the camera or gallery on Android and iPhone */
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;opacity:0}
+label.thumb{cursor:pointer}
+.img-pick{position:relative;flex-wrap:wrap}
+.img-pick .row-btns label.btn{cursor:pointer}
+.img-pick .row-btns svg{width:18px;height:18px}
+.img-busy{font-size:13px;color:var(--muted)}
 /* bill editing */
 .editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:1.5px solid var(--gold);border-radius:var(--r);padding:10px 12px;margin-top:6px}
 .editbar span{flex:1;min-width:0;font-weight:600}
@@ -357,7 +397,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   <div class="netbar" id="netbar" hidden><span class="dot"></span><span id="net-txt"></span><button id="net-refresh" data-t="refresh">Refresh</button></div>
   <div id="install-wrap"></div>
   <section id="view-items">
-    <div class="ro lockline" id="ro-note" hidden><span data-t="readOnly2">View only. Unlock editing to change prices.</span><button class="btn ghost" data-act="unlock" data-t="unlockBtn">Unlock</button></div>
+    <div class="ro lockline" id="ro-note" hidden><span data-t="readOnly2">View only. Unlock editing to change prices.</span><button class="btn ghost" data-act="unlock" data-t="unlockBtn">Unlock</button><button type="button" class="x" id="ro-x" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div id="setup-wrap"></div>
     <div id="cmdhint-wrap"></div>
     <div class="meta"><span id="meta-l"></span><span id="meta-r"></span></div>
@@ -371,33 +411,46 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   <section id="view-bill" hidden>
     <div class="editbar" id="editbar" hidden><span id="editbar-t"></span><button type="button" class="btn ghost" id="edit-cancel" data-t="cancelEdit">Cancel editing</button></div>
     <div id="bill-search-results" class="mini-results"></div>
-    <div class="billhead">
-      <div class="billno"><span><span data-t="billNoL">Bill No.</span><br><span class="auto" id="bill-auto" hidden></span></span><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No."></div>
-      <div class="gstrow">
-        <label class="switch"><b data-t="gstBill">GST bill</b><input type="checkbox" id="gst-on"></label>
-        <label class="switch" id="igst-wrap" hidden><span data-t="outState">Out of state (IGST)</span><input type="checkbox" id="igst-on"></label>
+    <div class="billhead" id="billhead">
+      <div class="bh-row">
+        <button type="button" class="bh-no" id="bh-no-btn"><span data-t="billNoL">Bill No.</span><b class="num" id="bh-no">1</b><i id="bh-manual" hidden></i></button>
+        <div class="bh-chips">
+          <button type="button" class="chip-t" id="gst-chip" aria-pressed="false">GST</button>
+          <button type="button" class="chip-t soft" id="igst-chip" aria-pressed="false" hidden>CGST+SGST</button>
+          <button type="button" class="iconbtn sm" id="bh-more" aria-expanded="false" aria-label="More bill details"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        </div>
       </div>
-      <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" autocomplete="off" maxlength="15" style="text-transform:uppercase"><span class="err" id="gstin-err"></span></div>
-      <div class="two">
-        <div class="field"><label for="cust" data-t="custName">Customer name</label><input id="cust" autocomplete="off" enterkeyhint="next"></div>
-        <div class="field"><label for="cust-mob" data-t="custMob">Mobile no.</label><input id="cust-mob" type="tel" inputmode="tel" autocomplete="off" maxlength="16" placeholder="98765 43210"><span class="err" id="mob-err"></span></div>
+      <div class="bh-cust">
+        <input id="cust" autocomplete="off" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
+        <input id="cust-mob" type="tel" inputmode="tel" autocomplete="off" maxlength="16" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
+      </div>
+      <span class="err" id="mob-err"></span>
+      <div id="bh-extra" hidden>
+        <div class="bh-field"><label for="bill-no"><span data-t="billNoL">Bill No.</span> <span class="auto" id="bill-auto" hidden></span></label><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No." style="width:110px;text-align:right;font:700 22px/1 var(--f-display);color:var(--accent);border:1.5px dashed var(--line);background:none;border-radius:10px;padding:4px 8px"></div>
+        <div class="bh-field" id="igst-row" hidden><label for="igst-on" data-t="outState">Out of state (IGST)</label><label class="switch" style="flex:none"><input type="checkbox" id="igst-on"></label></div>
+        <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" autocomplete="off" maxlength="15" style="text-transform:uppercase"><span class="err" id="gstin-err"></span></div>
       </div>
     </div>
     <div class="lastbill" id="lastbill" hidden></div>
     <h2 class="section-title" data-t="billItems">Bill items</h2>
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
-      <div class="gstsum num" id="gst-sum" hidden></div>
-      <div class="sum"><span id="sum-label" data-t="total">Total</span><b class="num" id="bill-sum">₹0</b></div>
-      <div class="acts">
-        <a class="btn wa" id="bill-wa" target="_blank" rel="noopener" data-t="shareWa">Share on WhatsApp</a>
-        <button class="btn primary" id="bill-done" data-t="billDone">Done</button>
-        <button class="btn ghost" id="bill-copy" data-t="copy">Copy</button>
-        <button class="btn ghost" id="bill-clear" data-t="clear">Clear</button>
+      <div class="tot-row">
+        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b></div>
+        <a class="btn wa sm" id="bill-wa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg><span id="wa-label">Share</span></a>
+        <button class="btn primary sm" id="bill-done">Done</button>
+        <button type="button" class="iconbtn sm" id="tot-more" aria-expanded="false" aria-label="More options"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
       </div>
+      <div id="tot-extra" hidden>
+        <div class="gstsum num" id="gst-sum" hidden></div>
+        <div class="acts">
+          <button class="btn ghost" id="bill-copy" data-t="copy">Copy</button>
+          <button class="btn ghost" id="bill-clear" data-t="clear">Clear</button>
+        </div>
       <div class="confirm" id="bill-clear-confirm" hidden>
         <span data-t="clearQ">Remove all items from this bill?</span>
         <div class="acts"><button class="btn danger" id="bill-clear-yes" data-t="yesClear">Yes, clear</button><button class="btn ghost" id="bill-clear-no" data-t="cancel">Cancel</button></div>
+      </div>
       </div>
     </div>
   </section>
@@ -520,7 +573,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
@@ -546,7 +599,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
@@ -903,17 +956,20 @@ function updateBillTotals(){
   if(S.gst && S.bill.length){ const g=gstCalc();
     gs.hidden=false;
     gs.innerHTML=`<div><span>${esc(t("taxable"))}</span><b>${rs2(g.taxable)}</b></div>`+g.rows.map(r=>`<div><span>${esc(r.label)}</span><b>${rs2(r.v)}</b></div>`).join("")+(g.roundOff?`<div><span>${esc(t("roundOff"))}</span><b>${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}</b></div>`:"");
-    $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("grandTotal");
+    $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   $("#bill-wa").href=waLink();
   const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
   const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing) $("#editbar-t").textContent=t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):"");
-  $("#bill-done").textContent = S.editing ? t("saveChanges") : t("billDone");
-  $("#bill-wa").textContent = S.editing ? t("saveShare") : t("shareWa");
+  $("#bill-done").textContent = S.editing ? t("saveShort") : t("billDone");
+  $("#wa-label").textContent = S.editing ? t("saveShareShort") : t("shareShort");
+  $("#bh-no").textContent = curBillNo();
+  const man=!S.editing && Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo(); $("#bh-manual").hidden=!man; if(man) $("#bh-manual").textContent=t("manualNo");
   const au=$("#bill-auto"); const ovr=!S.editing && Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo();
   au.hidden=!ovr; if(ovr) au.innerHTML=`${esc(t("autoNo",autoBillNo()))} <button type="button" id="bill-useauto">${esc(t("useAuto"))}</button>`;
-  $("#gst-on").checked=S.gst; $("#igst-wrap").hidden=!S.gst; $("#igst-on").checked=S.igst; $("#cgstin-wrap").hidden=!S.gst;
+  $("#gst-chip").setAttribute("aria-pressed",S.gst); const ic=$("#igst-chip"); ic.hidden=!S.gst; ic.setAttribute("aria-pressed",S.igst); ic.textContent=S.igst?t("igstShort"):t("local");
+  $("#igst-row").hidden=!S.gst; $("#igst-on").checked=S.igst; $("#cgstin-wrap").hidden=!S.gst;
   $("#gstin-err").textContent = gstinOk(S.custGstin)?"":t("gstinBad");
   const bad=normMobile(S.mob)===null; $("#mob-err").textContent=bad?t("mobBad"):"";
   renderLastBill();
@@ -998,7 +1054,7 @@ function renderBillSearch(){
 function renderAll(){
   renderList(); renderBill(); renderBadge();
   $("#fab").hidden = !(S.canWrite && S.tab==="items" && S.loaded);
-  $("#ro-note").hidden = S.canWrite;
+  $("#ro-note").hidden = S.canWrite || ls.get("rb_ro_x",false);
   document.querySelectorAll("#view-tools [data-w]").forEach(b=>b.disabled=!S.canWrite);
   $("#t-unlock-t").textContent = S.canWrite ? t("lockT") : t("unlockT");
   $("#t-unlock-d").textContent = S.canWrite ? t("lockD", S.auth.by||"—") : t("unlockD");
@@ -1127,16 +1183,24 @@ document.addEventListener("input",e=>{
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
 $("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#cust-mob").focus(); } });
 $("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); });
-$("#bill-wa").addEventListener("click",e=>{ if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
+$("#bill-wa").addEventListener("click",e=>{ if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
 $("#bill-no").addEventListener("input",e=>{ const v=Math.floor(toNum(e.target.value)); if(v>=1){ S.billNoOvr = v===autoBillNo()?null:v; ls.set("rb_billno",S.billNoOvr); const keep=document.activeElement; updateBillTotals(); } });
 $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.value)); if(!(v>=1)){ toast(t("billNoManualBad")); } e.target.value=curBillNo(); updateBillTotals(); });
 $("#bill-no").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#bill-useauto")){ S.billNoOvr=null; ls.set("rb_billno",null); updateBillTotals(); } });
 $("#edit-cancel").onclick=()=>{ endEdit(); toast(t("editCancelled")); };
-$("#gst-on").onchange=e=>{ S.gst=e.target.checked; ls.set("rb_gst",S.gst); renderBill(); };
+$("#gst-chip").onclick=()=>{ S.gst=!S.gst; ls.set("rb_gst",S.gst); renderBill(); };
+$("#igst-chip").onclick=()=>{ S.igst=!S.igst; ls.set("rb_igst",S.igst); updateBillTotals(); };
 $("#igst-on").onchange=e=>{ S.igst=e.target.checked; ls.set("rb_igst",S.igst); updateBillTotals(); };
+function setOpen(btnSel,panelSel,key,open){ $(panelSel).hidden=!open; $(btnSel).setAttribute("aria-expanded",open); ls.set(key,open); }
+setOpen("#bh-more","#bh-extra","rb_bh_open",ls.get("rb_bh_open",false));
+setOpen("#tot-more","#tot-extra","rb_tot_open",ls.get("rb_tot_open",false));
+$("#bh-more").onclick=()=>setOpen("#bh-more","#bh-extra","rb_bh_open",$("#bh-extra").hidden);
+$("#tot-more").onclick=()=>setOpen("#tot-more","#tot-extra","rb_tot_open",$("#tot-extra").hidden);
+$("#bh-no-btn").onclick=()=>{ setOpen("#bh-more","#bh-extra","rb_bh_open",true); if(!S.editing){ const i=$("#bill-no"); i.focus(); i.select(); } };
+$("#ro-x").onclick=()=>{ ls.set("rb_ro_x",true); $("#ro-note").hidden=true; };
 $("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=>{ S.custGstin=e.target.value.toUpperCase(); ls.set("rb_cgstin",S.custGstin); updateBillTotals(); });
-$("#bill-done").onclick=()=>{ if(S.gst && !gstinOk(S.custGstin)){ $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
+$("#bill-done").onclick=()=>{ if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
@@ -1206,12 +1270,18 @@ async function openDetail(id){
 }
 
 /* ---------------- Image processing ---------------- */
-function loadImg(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=()=>{ URL.revokeObjectURL(url); rej(); }; im.src=url; }); }
+function loadImg(file){
+  const viaImg=()=>new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>{ res(im); setTimeout(()=>URL.revokeObjectURL(url),1000); }; im.onerror=()=>{ URL.revokeObjectURL(url); rej(); }; im.src=url; });
+  if(window.createImageBitmap){
+    return createImageBitmap(file,{imageOrientation:"from-image"}).then(bm=>({naturalWidth:bm.width,naturalHeight:bm.height,_src:bm})).catch(viaImg);
+  }
+  return viaImg();
+}
 function drawImg(im,max,square){
   const c=document.createElement("canvas"); let w=im.naturalWidth, h=im.naturalHeight, sx=0, sy=0, sw=w, sh=h;
   if(square){ const m=Math.min(w,h); sx=(w-m)/2; sy=(h-m)/2; sw=sh=m; w=h=Math.min(max,m); }
   else { const r=Math.min(1,max/Math.max(w,h)); w=Math.round(w*r); h=Math.round(h*r); }
-  c.width=w; c.height=h; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,w,h); x.drawImage(im,sx,sy,sw,sh,0,0,w,h); return c;
+  c.width=w; c.height=h; const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,w,h); x.drawImage(im._src||im,sx,sy,sw,sh,0,0,w,h); return c;
 }
 function toJpeg(c,maxBytes){ let q=0.8, d=c.toDataURL("image/jpeg",q); while(d.length>maxBytes && q>0.35){ q-=0.1; d=c.toDataURL("image/jpeg",q); } return d; }
 async function processImage(file){ const im=await loadImg(file); return { thumb: toJpeg(drawImg(im,112,true),9000), full: toJpeg(drawImg(im,640,false),45000) }; }
@@ -1290,21 +1360,34 @@ function openEdit(id,prefill=""){
       </div>
     </details>
     <div class="field"><label for="ef-hi">${esc(t("hiName"))}</label><input id="ef-hi" value="${esc(it?.nameHi||"")}" autocomplete="off" lang="hi"></div>
-    <div class="img-pick"><div class="thumb" id="ef-th">${img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon}</div>
-      <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="ef-pick">${esc(img.thumb?t("changePhoto"):t("addPhoto"))}</button><button type="button" class="btn ghost" id="ef-rmimg" ${img.thumb?"":"hidden"}>${esc(t("removePhoto"))}</button></div></div>
+    <div class="img-pick"><label class="thumb" id="ef-th" for="ef-cam" aria-label="${esc(t("takePhoto"))}">${img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon}</label>
+      <div class="row-btns" style="justify-content:flex-start">
+        <label class="btn ghost" for="ef-cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>${esc(t("takePhoto"))}</span></label>
+        <label class="btn ghost" for="ef-gal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></svg><span>${esc(t("fromGallery"))}</span></label>
+        <button type="button" class="btn ghost" id="ef-rmimg" ${img.thumb?"":"hidden"}>${esc(t("removePhoto"))}</button>
+      </div>
+      <span class="img-busy" id="ef-busy" hidden></span>
+      <input type="file" id="ef-cam" class="vh" accept="image/*" capture="environment" tabindex="-1">
+      <input type="file" id="ef-gal" class="vh" accept="image/*" tabindex="-1">
+    </div>
     <div class="err" id="ef-err" role="alert"></div>
     ${it?`<div><button type="button" class="btn danger" id="ef-del">${esc(t("del"))}</button></div><div class="confirm" id="ef-delc" hidden><span>${esc(t("delQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn danger" id="ef-dely">${esc(t("yesDel"))}</button><button type="button" class="btn ghost" id="ef-deln">${esc(t("cancel"))}</button></div></div>`:""}
   </form>`;
   openSheet(it?t("editItem"):t("newItem"), body, `<button class="btn ghost" id="ef-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ef-save">${esc(t("save"))}</button>`, {full:true});
   if(!it) setTimeout(()=>$("#ef-name")?.focus(),260);
-  const setThumb=()=>{ $("#ef-th").innerHTML = img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon; $("#ef-rmimg").hidden=!img.thumb; $("#ef-pick").textContent=img.thumb?t("changePhoto"):t("addPhoto"); };
+  const setThumb=()=>{ $("#ef-th").innerHTML = img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon; $("#ef-rmimg").hidden=!img.thumb; };
   const altHint=()=>{ const u=$("#ef-unit").dataset.unit, a=$("#ef-aunit").dataset.unit, n=toNum($("#ef-aqty").value), sell=toNum($("#ef-sell").value), ap=toNum($("#ef-asell").value);
     $("#ef-aqty-l").textContent=t("perMain",unitL(u));
     $("#ef-ahint").textContent = n>0 ? t("packHint",unitL(u),fmtN(n),unitL(a),rs(!isNaN(ap)?ap:(isNaN(sell)?0:r2(sell/n)))) : ""; };
   $("#ef-unit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   $("#ef-aunit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   ["ef-aqty","ef-asell","ef-sell"].forEach(k=>$("#"+k).addEventListener("input",altHint)); altHint();
-  $("#ef-pick").onclick=async()=>{ const f=await pickImage(); if(!f) return; try{ const r=await processImage(f); img={thumb:r.thumb,full:r.full,changed:true,removed:false}; setThumb(); }catch{ toast(t("imgFail")); } };
+  const onPhoto=async e=>{ const inp=e.target, f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+    const busy=$("#ef-busy"); busy.hidden=false; busy.textContent=t("photoWorking");
+    try{ const r=await processImage(f); img={thumb:r.thumb,full:r.full,changed:true,removed:false}; setThumb(); }
+    catch{ toast(t("imgFail")); }
+    finally{ busy.hidden=true; } };
+  $("#ef-cam").addEventListener("change",onPhoto); $("#ef-gal").addEventListener("change",onPhoto);
   $("#ef-rmimg").onclick=()=>{ img={thumb:null,full:null,changed:true,removed:true}; setThumb(); };
   $("#ef-cancel").onclick=closeSheet;
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };

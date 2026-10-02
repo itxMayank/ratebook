@@ -43,6 +43,14 @@ Files in this repository should match the latest copies sent in the Claude conve
 - **Tools → Past bills** (needs the shop PIN, because bills hold customer names and numbers) lists the newest 60 bills. You can search by bill number, customer name, GSTIN or mobile. Opening a bill shows its text, a WhatsApp button (to the saved mobile, or any number typed in), Copy, and **Repeat as new bill**, which loads the lines, customer and GST settings into a fresh bill with the next number. Backend action: `listBills` (POST with PIN, read-only, doesn't bump `rev`).
 - **Pack sizes:** an item can also be sold in a smaller pack, e.g. Max: 1 kg = 5 packets of 200 g. The fields are `altUnit` (e.g. packet), `altQty` (packs in 1 main unit) and `altSell` (price per pack; blank means sell ÷ altQty). Cards show the pack price. On the bill page, the unit chip (e.g. "kg ⇄") switches a line between the main unit and the pack, and switches the rate with it. Bulk add/edit don't cover pack fields yet; set them in the item's edit screen.
 
+## Editing saved bills (added 2 Oct 2026)
+
+- Past bills → open a bill → **Edit bill** loads it onto the bill page in edit mode. A yellow bar reads "Editing Bill No. X", the bill number is locked, and the buttons become **Save changes** and **Save & share on WhatsApp**. **Cancel editing** changes nothing.
+- An unfinished bill that was open is set aside and comes back once editing is saved or cancelled (`rb_stash`, `rb_editing` in browser storage).
+- Saving calls `updateBill` (POST, needs the PIN). It keeps the original date and number, and sets `editedAt`, `editedBy` and `edits` (a count). The previous text is copied to the **BillHistory** tab (`billId | billNo | changedAt | by | oldText`). Edited bills show an **Edited** tag in the list and an "Edited: date, time" line in the WhatsApp text.
+- Bills get a `billId` when saved. Bills from before IDs existed are matched by row number plus bill number. Bills from before line details were kept are rebuilt from their item summary so they can still be edited.
+- Past-bills search covers customer name, mobile (any 4+ digits), GSTIN, bill number, item names and date (dd/mm/yyyy or dd-mm-yyyy). Searching shows the count and total of matching bills.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).
@@ -64,7 +72,8 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 - `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
-- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines`
+- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits`
+- `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
 - `Images`: `id | data` (base64 JPEG)
 
 ## Features

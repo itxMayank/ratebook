@@ -267,6 +267,12 @@ body.typing{padding-bottom:0}
 .switch input:checked::after{left:21px}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
+/* bill editing */
+.editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:1.5px solid var(--gold);border-radius:var(--r);padding:10px 12px;margin-top:6px}
+.editbar span{flex:1;min-width:0;font-weight:600}
+.pill.edited{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
+.editnote{font-size:13px;color:var(--gold);font-weight:600}
+.bl-sum{font-size:14px;color:var(--muted);margin-top:8px}
 /* past bills + pack units */
 .unitchip{border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px}
 .bills-list{display:grid;gap:8px;margin-top:10px}
@@ -363,6 +369,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   </section>
 
   <section id="view-bill" hidden>
+    <div class="editbar" id="editbar" hidden><span id="editbar-t"></span><button type="button" class="btn ghost" id="edit-cancel" data-t="cancelEdit">Cancel editing</button></div>
     <div id="bill-search-results" class="mini-results"></div>
     <div class="billhead">
       <div class="billno"><span><span data-t="billNoL">Bill No.</span><br><span class="auto" id="bill-auto" hidden></span></span><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No."></div>
@@ -509,11 +516,16 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   taxInvoice:"TAX INVOICE",gstinL:"GSTIN",autoNo:n=>`Next auto number: ${n}`,useAuto:"Use",billNoManualBad:"Bill number must be 1 or more.",
   gstSet:"GST bills",shopGstin:"Shop GSTIN",shopAddress:"Shop address (shown on GST bills)",defGst:"Default GST %",defHsn:"Default HSN code",
   gstinBad:"GSTIN should be 15 characters, e.g. 09ABCDE1234F1Z5.",billSearchPh:"Search item to add to bill…",dec:"Reduce",hsnShort:"HSN",
-  pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Bill no., customer or mobile…",billsNone:"No bills found.",billsLoading:"Loading bills…",
+  pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Customer, mobile, GSTIN, bill no., item or date (dd/mm/yyyy)",billsNone:"No bills found.",billsLoading:"Loading bills…",
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit"});
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",
+  editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
+  editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
+  editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
+  editStarted:n=>`Editing bill ${n}. Your unfinished bill is kept aside.`,editStartedPlain:n=>`Editing bill ${n}.`,editCancelled:"Editing cancelled. Nothing was changed.",
+  blSummary:(n,tot)=>`${n} bill${n===1?"":"s"} · ${tot}`});
 Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के लिए। रेट बदलने के लिए एडिटिंग खोलें।",unlockBtn:"खोलें",unlockT:"एडिटिंग खोलें",unlockD:"इस फ़ोन पर रेट जोड़ने या बदलने के लिए दुकान का PIN डालें।",lockT:"इस फ़ोन पर एडिटिंग बंद करें",lockD:n=>`${n} के नाम से एडिटिंग चालू है। बंद करने के लिए दबाएँ।`,yourName:"आपका नाम",pinL:"दुकान का PIN",wrongPin:"गलत PIN। फिर कोशिश करें।",lockedOut:"बहुत बार गलत PIN। 15 मिनट बाद कोशिश करें।",unlocked:"इस फ़ोन पर एडिटिंग खुल गई",lockedNow:"इस फ़ोन पर एडिटिंग बंद हो गई",
   changePin:"दुकान का PIN बदलें",newPin:"नया PIN (4 से 8 अंक)",newPin2:"नया PIN दोबारा",pinMismatch:"दोनों PIN एक जैसे नहीं हैं।",pinRule:"4 से 8 अंक डालें।",pinChanged:"PIN बदल गया। बाकी लोगों को एडिट के लिए नया PIN चाहिए।",
   online:t=>`रेट अपडेटेड · ${t}`,offline:t=>`ऑफ़लाइन · ${t} के सेव रेट दिख रहे हैं`,neverSynced:"अभी रेट लिस्ट तक नहीं पहुँच पाए।",refresh:"रीफ़्रेश",offlineWrite:"आप ऑफ़लाइन हैं। बदलाव सेव करने के लिए इंटरनेट चालू करें।",saving:"सेव हो रहा है…",
@@ -530,18 +542,23 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   taxInvoice:"टैक्स इनवॉइस",gstinL:"GSTIN",autoNo:n=>`अगला अपने-आप नंबर: ${n}`,useAuto:"लगाएँ",billNoManualBad:"बिल नंबर 1 या ज़्यादा होना चाहिए।",
   gstSet:"GST बिल",shopGstin:"दुकान का GSTIN",shopAddress:"दुकान का पता (GST बिल पर)",defGst:"डिफ़ॉल्ट GST %",defHsn:"डिफ़ॉल्ट HSN कोड",
   gstinBad:"GSTIN 15 अक्षरों का होता है, जैसे 09ABCDE1234F1Z5।",billSearchPh:"बिल में जोड़ने के लिए सामान खोजें…",dec:"कम करें",hsnShort:"HSN",
-  pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"बिल नं., ग्राहक या मोबाइल…",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",
+  pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"ग्राहक, मोबाइल, GSTIN, बिल नं., सामान या तारीख़ (dd/mm/yyyy)",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें"});
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",
+  editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
+  editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
+  editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
+  editStarted:n=>`बिल ${n} बदल रहे हैं। आपका अधूरा बिल अलग रख दिया है।`,editStartedPlain:n=>`बिल ${n} बदल रहे हैं।`,editCancelled:"बदलना रद्द हुआ। कुछ नहीं बदला।",
+  blSummary:(n,tot)=>`${n} बिल · ${tot}`});
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
@@ -805,20 +822,20 @@ function renderList(){
 function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidden=!n; b.textContent=n; }
 function billText(){
   if(S.gst) return gstBillText();
-  const d=new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  const d=billDateStr();
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
-  s+=`${t("billNoLine",curBillNo())} · ${d}\n`; if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
+  s+=`${t("billNoLine",curBillNo())} · ${d}\n`+editedLine(); if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
   S.bill.forEach((l,i)=>{ s+=`${i+1}. ${l.name} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
 function autoBillNo(){ return Math.max(1, Math.floor(+S.cfg.nextBill)||1); }
 function gstBillText(){
-  const d=new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+  const d=billDateStr();
   const g=gstCalc(); let s="";
   if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   if(S.cfg.shopAddress) s+=`${S.cfg.shopAddress}\n`;
   if(S.cfg.shopGstin) s+=`${t("gstinL")}: ${S.cfg.shopGstin}\n`;
-  s+=`\n*${t("taxInvoice")}*\n${t("billNoLine",curBillNo())} · ${d}\n`;
+  s+=`\n*${t("taxInvoice")}*\n${t("billNoLine",curBillNo())} · ${d}\n`+editedLine();
   if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`;
   if(S.custGstin.trim()) s+=`${t("gstinL")}: ${S.custGstin.trim().toUpperCase()}\n`;
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
@@ -831,7 +848,11 @@ function gstBillText(){
   if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`;
   return s;
 }
-function curBillNo(){ const o=Math.floor(+S.billNoOvr); return o>=1 ? o : autoBillNo(); }
+function curBillNo(){ if(S.editing) return S.editing.n; const o=Math.floor(+S.billNoOvr); return o>=1 ? o : autoBillNo(); }
+const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+const fmtDT=d=>{ const x=new Date(d); return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+", "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
+function billDateStr(){ return S.editing && S.editing.date ? fmtDate(S.editing.date) : fmtDate(Date.now()); }
+function editedLine(){ return S.editing ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
@@ -886,8 +907,11 @@ function updateBillTotals(){
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   $("#bill-wa").href=waLink();
-  const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo();
-  const au=$("#bill-auto"); const ovr=Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo();
+  const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
+  const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing) $("#editbar-t").textContent=t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):"");
+  $("#bill-done").textContent = S.editing ? t("saveChanges") : t("billDone");
+  $("#bill-wa").textContent = S.editing ? t("saveShare") : t("shareWa");
+  const au=$("#bill-auto"); const ovr=!S.editing && Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo();
   au.hidden=!ovr; if(ovr) au.innerHTML=`${esc(t("autoNo",autoBillNo()))} <button type="button" id="bill-useauto">${esc(t("useAuto"))}</button>`;
   $("#gst-on").checked=S.gst; $("#igst-wrap").hidden=!S.gst; $("#igst-on").checked=S.igst; $("#cgstin-wrap").hidden=!S.gst;
   $("#gstin-err").textContent = gstinOk(S.custGstin)?"":t("gstinBad");
@@ -901,14 +925,46 @@ function renderLastBill(){
   el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a><button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
 }
 /** Bill shared or marked done: remember it, move the number on (shared with every phone), start a fresh bill. */
+function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, billNoOvr:S.billNoOvr }; }
+function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.billNoOvr=d.billNoOvr||null;
+  ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",S.billNoOvr);
+  $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin; saveBill(); }
+function startEdit(b){
+  if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
+  const kept=!S.editing && S.bill.length;
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"" }; ls.set("rb_editing",S.editing);
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
+  closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
+}
+function endEdit(){
+  S.editing=null; ls.set("rb_editing",null);
+  const st=ls.get("rb_stash",null); ls.set("rb_stash",null);
+  applyDraft(st||{}); renderBill(); renderList();
+}
+async function saveEdit(){
+  if(navigator.onLine===false){ toast(t("editOffline")); return; }
+  const g=S.gst?gstCalc():null, ed=S.editing;
+  const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
+  const btn=$("#bill-done"); btn.disabled=true;
+  try{ await apiPost({action:"updateBill",bill:rec});
+    S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
+    toast(t("billUpdated",ed.n)); endEdit(); }
+  catch(e){ toast(e&&e.code==="bad_pin"?t("wrongPin"):e&&e.code==="offline"?t("editOffline"):t("editFail")); }
+  finally{ btn.disabled=false; }
+}
 function finishBill(){
   if(!S.bill.length) return;
+  if(S.editing){ saveEdit(); return; }
   const n=curBillNo(), auto=autoBillNo();
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})),
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,8) };
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
@@ -1076,6 +1132,7 @@ $("#bill-no").addEventListener("input",e=>{ const v=Math.floor(toNum(e.target.va
 $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.value)); if(!(v>=1)){ toast(t("billNoManualBad")); } e.target.value=curBillNo(); updateBillTotals(); });
 $("#bill-no").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#bill-useauto")){ S.billNoOvr=null; ls.set("rb_billno",null); updateBillTotals(); } });
+$("#edit-cancel").onclick=()=>{ endEdit(); toast(t("editCancelled")); };
 $("#gst-on").onchange=e=>{ S.gst=e.target.checked; ls.set("rb_gst",S.gst); renderBill(); };
 $("#igst-on").onchange=e=>{ S.igst=e.target.checked; ls.set("rb_igst",S.igst); updateBillTotals(); };
 $("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=>{ S.custGstin=e.target.value.toUpperCase(); ls.set("rb_cgstin",S.custGstin); updateBillTotals(); });
@@ -1518,22 +1575,32 @@ async function loadBills(q){
   try{
     const j=await apiPost({action:"listBills",q,limit:60}); if(my!==billsReq || !$("#bl-list")) return;
     billsCache=j.bills||[];
-    $("#bl-list").innerHTML = billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
+    const sum=billsCache.reduce((a,b)=>a+(+b.total||0),0);
+    $("#bl-list").innerHTML = (billsCache.length&&q.trim()?`<div class="bl-sum">${esc(t("blSummary",billsCache.length,rs(sum)))}</div>`:"") + (billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
       return `<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}</span></button>`; }).join("")
-      : `<p class="note">${esc(t("billsNone"))}</p>`;
+        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}</span></button>`; }).join("")
+      : `<p class="note">${esc(t("billsNone"))}</p>`);
   }catch(e){ if(my===billsReq && $("#bl-list")) $("#bl-list").innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; }
+}
+/** Bills saved before line details were kept: rebuild lines from the "Name 2 kg x 46" summary when possible. */
+function linesFromItems(b){
+  const out=[]; for(const part of String(b.items||"").split("; ")){ const m=part.match(/^(.*) ([\d.]+) (\S+) x ([\d.]+)/); if(!m) return [];
+    const it=findDup(m[1].trim()); out.push({id:it?it.id:"", name:m[1].trim(), unit:m[3], rate:+m[4], qty:+m[2], hsn:it?itemHsn(it):undefined, gst:it?itemGst(it):undefined}); }
+  return out;
 }
 function showBill(b){
   if(!b) return;
+  if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
   const text=b.text||oldBillText(b);
   const body=`<div style="display:grid;gap:12px">
     <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
+    ${b.editedAt?`<div class="editnote">${esc(t("editedInfo",fmtDT(b.editedAt),b.editedBy,b.edits))}</div>`:""}
     <pre class="billtext" id="bd-text">${esc(text)}</pre>
     <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
-    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
+    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
+    ${(b.lines&&b.lines.length)?"":`<p class="note" style="margin:0">${esc(t("oldNoEdit"))}</p>`}
     <div class="confirm" id="bd-rq" hidden><span>${esc(t("repeatQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="bd-ry">${esc(t("repeatBill"))}</button><button type="button" class="btn ghost" id="bd-rn">${esc(t("cancel"))}</button></div></div>
   </div>`;
   openSheet(`${t("billNoL")} ${b.n}`, body, "", {full:true});
@@ -1542,11 +1609,12 @@ function showBill(b){
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
   $("#bd-back").onclick=()=>{ openBills(); };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
-  const doRepeat=()=>{ S.bill=b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
+  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
     S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
     ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
     saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };
+  if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(b);
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
 }
 $("#t-bills").onclick=()=>openBills();

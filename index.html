@@ -932,8 +932,10 @@ function hiToken(tok,orig,toks,ti){
 }
 
 /** The name shown everywhere: Hindi letters when available, else the English name. */
-function itemTitle(it){ return (it && it.nameHi) || (it && it.name) || ""; }
-function lineName(l){ const it=S.byId.get(l.id); return l.nameHi || (it && it.nameHi) || l.name || toHindi(l.name); }
+function itemTitle(it){ return (it && it.name) || (it && it.nameHi) || ""; }
+function lineHi(l){ const it=S.byId.get(l.id); return l.nameHi || (it && it.nameHi) || toHindi(l.name); }
+function lineName(l){ return l.name || lineHi(l); }
+function lineLabel(l){ return l.name || lineHi(l); }   // WhatsApp text: English name only
 
 /* ---------------- Rendering ---------------- */
 function applyLang(){
@@ -957,8 +959,8 @@ function cardHTML(it,q){
   const rates = S.hideBuy ? "" : `<div class="rates num"><span>${t("buy")} <b>${rs(it.buy)}</b></span>${marginPct(it)?`<span>${t("margin")} <b>${marginPct(it)}</b></span>`:""}</div>`;
   return `<div class="card${it.pending?" pending":""}" data-id="${esc(it.id)}">
     ${thumbHTML(it)}
-    <div class="info"><div class="name" lang="hi">${highlight(itemTitle(it),q)}</div>
-      ${it.nameHi?`<div class="sub">${highlight(it.name,q)}</div>`:""}${rates}
+    <div class="info"><div class="name">${highlight(it.name,q)}</div>
+      ${it.nameHi?`<div class="sub" lang="hi">${highlight(it.nameHi,q)}</div>`:""}${rates}
     </div>
     <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>${hasAlt(it)?`<div class="per num">${rs(altPrice(it))} / ${esc(unitL(it.altUnit))}</div>`:""}
       ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${fmtN(inB)}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
@@ -1001,7 +1003,7 @@ function billText(){
   const d=billDateStr();
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   s+=`${t("billNoLine",curBillNo())} · ${d}\n`+editedLine(); if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
-  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineName(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineLabel(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
 function autoBillNo(){ return Math.max(1, Math.floor(+S.cfg.nextBill)||1); }
@@ -1016,7 +1018,7 @@ function gstBillText(){
   if(S.custGstin.trim()) s+=`${t("gstinL")}: ${S.custGstin.trim().toUpperCase()}\n`;
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
   s+="\n";
-  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineName(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineLabel(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
@@ -1062,7 +1064,7 @@ function renderBill(){
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
-      <div class="name" lang="hi">${esc(lineName(l))}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
+      <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
         ${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
@@ -1172,7 +1174,7 @@ function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
   if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
   const {res}=runSearch(q);
-  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(itemTitle(it),q)}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
+  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="per" lang="hi"> · ${esc(it.nameHi)}</span>`:""}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
 function renderAll(){
   renderList(); renderBill(); renderBadge();
@@ -1371,7 +1373,7 @@ async function openDetail(id){
   const inB=billQty(id);
   const body=`
     ${it.imgV?`<img class="hero" id="d-img" src="${esc(thumbOf(it)||"")}" alt="">`:""}
-    ${it.nameHi?`<div class="sub" style="margin-top:10px;font-size:17px">${esc(it.name)}</div>`:""}
+    ${it.nameHi?`<div class="sub" lang="hi" style="margin-top:10px;font-size:17px">${esc(it.nameHi)}</div>`:""}
     <div class="kv num">
       <div class="s"><span>${esc(t("sell"))}</span><b>${rs(it.sell)}</b></div>
       ${S.hideBuy?"":`<div><span>${esc(t("buy"))}</span><b>${rs(it.buy)}</b></div>`}

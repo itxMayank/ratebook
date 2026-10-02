@@ -56,7 +56,7 @@ Files in this repository should match the latest copies sent in the Claude conve
 - Item names are written in Hindi letters (transliteration, not translation: Sugar → शुगर, PP Bag → पीपी बैग) by `toHindi()` in `index.html`. It uses a word list for common shop and packaging words (`HI_WORDS`), letter-by-letter spelling for short acronyms (PP, HDPE, LD), and sound rules for everything else. Numbers, sizes like 12x18, and "27 x 30" stay as they are. Units become किलो/ग्राम/एमएल and similar.
 - The Hindi name (`nameHi`) fills itself while you type the English name in the add/edit screen, unless you type your own. On save, an empty Hindi name is filled automatically. Bulk add and plain-language "add" do the same.
 - **Tools → Convert names to Hindi** shows a reviewable, editable list for every item, with the current Hindi name next to each, and saves them in batches.
-- Display: cards, bill lines, the item detail title and WhatsApp bill text use the Hindi name whatever the app language; cards show the English name underneath. Search still works in English or Hindi. The English `name` is kept in the sheet.
+- Display: the English name is the main name everywhere (cards, item detail, bill lines), with the Hindi name in small text underneath. The WhatsApp bill uses the English name only. Search works in English or Hindi.
 - To fix a word that always comes out wrong, add it to `HI_WORDS` (lowercase English → Hindi).
 
 ## How to update

@@ -464,6 +464,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
       <button id="t-bulkedit" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13 7 4 4"/></svg><div><b data-t="bulkEdit">Bulk edit prices</b><span data-t="bulkEditD">Change many rates at once, or raise by %</span></div></button>
       <button id="t-unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b id="t-unlock-t"></b><span id="t-unlock-d"></span></div></button>
       <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
+      <button id="t-hindi" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3.5 7.5-7 10"/><path d="m13 21 4-9 4 9M14.5 18h5"/></svg><div><b data-t="toHindiT">Convert names to Hindi</b><span data-t="toHindiD">Write every item name in Hindi letters</span></div></button>
       <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
       <button id="t-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><b data-t="settings">Settings</b><span data-t="settingsD">Shop name, units, rounding, bill footer</span></div></button>
     </div>
@@ -512,7 +513,7 @@ const STR = {
     items:n=>n===1?"1 item":`${n} items`,results:n=>n===1?"1 match":`${n} matches`,showMore:n=>`Show ${n} more`,
     loading:"Loading prices…",emptyT:"No items yet",emptyD:"Add your items with unit, buy rate and sell rate. Everyone you share this with sees the same prices.",
     noMatch:q=>`Nothing matches “${q}”.`,didYouMean:"Did you mean:",addAsNew:q=>`Add “${q}” as new item`,
-    buy:"Buy",sell:"Sell",unit:"Unit",margin:"Margin",item:"Item",itemName:"Item name",hiName:"Hindi name (optional)",buyRate:"Buy rate (₹)",sellRate:"Sell rate (₹)",photo:"Photo",addPhoto:"Add photo",changePhoto:"Change photo",removePhoto:"Remove",
+    buy:"Buy",sell:"Sell",unit:"Unit",margin:"Margin",item:"Item",itemName:"Item name",hiName:"Hindi name (fills itself)",buyRate:"Buy rate (₹)",sellRate:"Sell rate (₹)",photo:"Photo",addPhoto:"Add photo",changePhoto:"Change photo",removePhoto:"Remove",
     save:"Save",edit:"Edit",del:"Delete",delQ:"Delete this item for everyone?",yesDel:"Yes, delete",addToBill:"Add to bill",inBill:"In bill",qty:"Qty",
     newItem:"New item",editItem:"Edit item",needName:"Enter the item name.",needRate:"Enter a valid sell rate.",dup:"An item with this name already exists.",
     saved:"Saved",deleted:"Deleted",added:"added to bill",updatedAgo:(a,b)=>`Updated ${a}${b?` by ${b}`:""}`,
@@ -535,7 +536,7 @@ const STR = {
     items:n=>`${n} सामान`,results:n=>`${n} मिले`,showMore:n=>`${n} और दिखाएँ`,
     loading:"रेट लोड हो रहे हैं…",emptyT:"अभी कोई सामान नहीं",emptyD:"सामान, इकाई, ख़रीद रेट और बिक्री रेट जोड़ें। जिनसे आप शेयर करेंगे, सबको यही रेट दिखेंगे।",
     noMatch:q=>`“${q}” से कुछ नहीं मिला।`,didYouMean:"क्या आपका मतलब:",addAsNew:q=>`“${q}” नया सामान जोड़ें`,
-    buy:"ख़रीद",sell:"बिक्री",unit:"इकाई",margin:"मुनाफ़ा",item:"सामान",itemName:"सामान का नाम",hiName:"हिंदी नाम (वैकल्पिक)",buyRate:"ख़रीद रेट (₹)",sellRate:"बिक्री रेट (₹)",photo:"फ़ोटो",addPhoto:"फ़ोटो जोड़ें",changePhoto:"फ़ोटो बदलें",removePhoto:"हटाएँ",
+    buy:"ख़रीद",sell:"बिक्री",unit:"इकाई",margin:"मुनाफ़ा",item:"सामान",itemName:"सामान का नाम",hiName:"हिंदी नाम (अपने-आप भरेगा)",buyRate:"ख़रीद रेट (₹)",sellRate:"बिक्री रेट (₹)",photo:"फ़ोटो",addPhoto:"फ़ोटो जोड़ें",changePhoto:"फ़ोटो बदलें",removePhoto:"हटाएँ",
     save:"सेव करें",edit:"बदलें",del:"हटाएँ",delQ:"यह सामान सबके लिए हटाएँ?",yesDel:"हाँ, हटाएँ",addToBill:"बिल में जोड़ें",inBill:"बिल में है",qty:"मात्रा",
     newItem:"नया सामान",editItem:"सामान बदलें",needName:"सामान का नाम लिखें।",needRate:"सही बिक्री रेट लिखें।",dup:"इस नाम का सामान पहले से है।",
     saved:"सेव हो गया",deleted:"हटा दिया",added:"बिल में जोड़ा",updatedAgo:(a,b)=>`${a} बदला${b?` · ${b}`:""}`,
@@ -573,7 +574,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
@@ -599,7 +600,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
@@ -812,6 +813,128 @@ function splitCommands(line){
 }
 function localParse(text){ return devDigits(text).split(/\n|;|\.\s|।|\b(?:and then|phir|fir)\b|फिर/i).map(x=>x.trim()).filter(Boolean).flatMap(splitCommands).map(parseOne).filter(Boolean); }
 
+/* ---------------- English → Hindi letters (transliteration, not translation) ---------------- */
+const HI_WORDS={
+  bag:"बैग",bags:"बैग्स",gauge:"गेज",micron:"माइक्रोन",microns:"माइक्रोन",drone:"ड्रोन",jumbo:"जंबो",film:"फ़िल्म",stretch:"स्ट्रेच",sugar:"शुगर",paper:"पेपर",cup:"कप",cups:"कप्स",
+  plate:"प्लेट",plates:"प्लेट्स",glass:"ग्लास",box:"बॉक्स",boxes:"बॉक्सेस",roll:"रोल",rolls:"रोल्स",tape:"टेप",pouch:"पाउच",zip:"ज़िप",lock:"लॉक",ziplock:"ज़िपलॉक",carry:"कैरी",
+  garbage:"गार्बेज",black:"ब्लैक",white:"व्हाइट",blue:"ब्लू",green:"ग्रीन",red:"रेड",yellow:"येलो",silver:"सिल्वर",gold:"गोल्ड",golden:"गोल्डन",foil:"फॉयल",rubber:"रबर",band:"बैंड",
+  plastic:"प्लास्टिक",poly:"पॉली",polythene:"पॉलीथीन",large:"लार्ज",medium:"मीडियम",small:"स्मॉल",big:"बिग",extra:"एक्स्ट्रा",heavy:"हैवी",super:"सुपर",premium:"प्रीमियम",
+  transparent:"ट्रांसपेरेंट",printed:"प्रिंटेड",print:"प्रिंट",plain:"प्लेन",milk:"मिल्क",powder:"पाउडर",oil:"ऑयल",mustard:"मस्टर्ड",rice:"राइस",tea:"टी",coffee:"कॉफ़ी",salt:"सॉल्ट",
+  soap:"सोप",packet:"पैकेट",packets:"पैकेट्स",pack:"पैक",piece:"पीस",pieces:"पीस",size:"साइज़",inch:"इंच",inches:"इंच",thread:"थ्रेड",rope:"रोप",container:"कंटेनर",containers:"कंटेनर",
+  bottle:"बॉटल",bottles:"बॉटल्स",spoon:"स्पून",straw:"स्ट्रॉ",straws:"स्ट्रॉ",bowl:"बाउल",tray:"ट्रे",lid:"लिड",tissue:"टिशू",napkin:"नैपकिन",napkins:"नैपकिन",wrap:"रैप",cling:"क्लिंग",
+  aluminium:"एल्युमिनियम",aluminum:"एल्युमिनियम",sheet:"शीट",sheets:"शीट्स",max:"मैक्स",mini:"मिनी",brown:"ब्राउन",pink:"पिंक",orange:"ऑरेंज",color:"कलर",colour:"कलर",clear:"क्लियर",
+  thick:"थिक",thin:"थिन",light:"लाइट",sack:"सैक",jute:"जूट",nylon:"नायलॉन",cotton:"कॉटन",wire:"वायर",pipe:"पाइप",brush:"ब्रश",bucket:"बकेट",mug:"मग",tub:"टब",
+  basmati:"बासमती",chawal:"चावल",dal:"दाल",daal:"दाल",atta:"आटा",aata:"आटा",besan:"बेसन",maida:"मैदा",sooji:"सूजी",suji:"सूजी",poha:"पोहा",toor:"तूर",tur:"तूर",chana:"चना",
+  masala:"मसाला",haldi:"हल्दी",mirch:"मिर्च",dona:"दोना",pattal:"पत्तल",thali:"थाली",katori:"कटोरी",sutli:"सुतली",gilas:"गिलास",chini:"चीनी",namak:"नमक",
+  food:"फ़ूड",grade:"ग्रेड",quality:"क्वालिटी",double:"डबल",single:"सिंगल",layer:"लेयर",party:"पार्टी",shopping:"शॉपिंग",shopper:"शॉपर",handle:"हैंडल",loop:"लूप",cut:"कट",
+  d:"डी",u:"यू",w:"डब्ल्यू",flat:"फ़्लैट",round:"राउंड",square:"स्क्वायर",star:"स्टार",card:"कार्ड",cards:"कार्ड्स",jar:"जार",can:"कैन",tin:"टिन",sticker:"स्टिकर",label:"लेबल",
+  wrapper:"रैपर",packing:"पैकिंग",packaging:"पैकेजिंग",courier:"कूरियर",envelope:"एनवेलप",cover:"कवर",covers:"कवर",net:"नेट",mesh:"मेश",bubble:"बबल",cello:"सेलो",cellotape:"सेलोटेप",
+  masking:"मास्किंग",kraft:"क्राफ़्ट",corrugated:"कोरुगेटेड",carton:"कार्टन",cartons:"कार्टन",thermocol:"थर्मोकोल",silicone:"सिलिकॉन",gloves:"ग्लव्स",glove:"ग्लव",
+  cap:"कैप",caps:"कैप्स",mask:"मास्क",masks:"मास्क",apron:"एप्रन",cutter:"कटर",scissor:"सीज़र",scissors:"सीज़र",stapler:"स्टेपलर",pin:"पिन",pins:"पिन्स",clip:"क्लिप",clips:"क्लिप्स",
+  kg:"किलो",kgs:"किलो",kilo:"किलो",g:"ग्राम",gm:"ग्राम",gms:"ग्राम",gram:"ग्राम",grams:"ग्राम",ml:"एमएल",l:"लीटर",ltr:"लीटर",litre:"लीटर",liter:"लीटर",pc:"पीस",pcs:"पीस",
+  mm:"एमएम",cm:"सेमी",mtr:"मीटर",meter:"मीटर",metre:"मीटर",ft:"फ़ुट",feet:"फ़ीट",dozen:"दर्जन",no:"नंबर",number:"नंबर",and:"एंड",with:"विद",of:"ऑफ़",for:"फ़ॉर",the:"द",
+  new:"न्यू",old:"ओल्ड",special:"स्पेशल",deluxe:"डीलक्स",regular:"रेगुलर",standard:"स्टैंडर्ड",economy:"इकोनॉमी",eco:"इको",natural:"नैचुरल",fresh:"फ़्रेश",pure:"प्योर",
+  water:"वॉटर",juice:"जूस",sweet:"स्वीट",sweets:"स्वीट्स",cake:"केक",biscuit:"बिस्किट",bread:"ब्रेड",egg:"एग",ice:"आइस",cream:"क्रीम",chocolate:"चॉकलेट",pizza:"पिज़्ज़ा",burger:"बर्गर",
+  sandwich:"सैंडविच",meal:"मील",tiffin:"टिफ़िन",lunch:"लंच",kitchen:"किचन",disposable:"डिस्पोज़ेबल",wooden:"वुडन",butter:"बटर",kurkure:"कुरकुरे",laddu:"लड्डू",ladoo:"लड्डू",kaju:"काजू",katli:"कतली",biryani:"बिरयानी",patanjali:"पतंजलि",rasgulla:"रसगुल्ला",gulab:"गुलाब",jamun:"जामुन",barfi:"बर्फ़ी",namkeen:"नमकीन",peda:"पेड़ा",laminated:"लैमिनेटेड",non:"नॉन",woven:"वोवन",zipper:"ज़िपर",degree:"डिग्री",steel:"स्टील",dish:"डिश",dishes:"डिशेज़",bundle:"बंडल",kit:"किट",set:"सेट",pair:"पेयर",home:"होम",hotel:"होटल",shop:"शॉप",store:"स्टोर",hand:"हैंड",towel:"टॉवल"
+};
+const HI_LETTERS={a:"ए",b:"बी",c:"सी",d:"डी",e:"ई",f:"एफ़",g:"जी",h:"एच",i:"आई",j:"जे",k:"के",l:"एल",m:"एम",n:"एन",o:"ओ",p:"पी",q:"क्यू",r:"आर",s:"एस",t:"टी",u:"यू",v:"वी",w:"डब्ल्यू",x:"एक्स",y:"वाई",z:"ज़ेड"};
+const HI_ACRONYMS=new Set(["pp","hd","ld","hdpe","ldpe","lldpe","bopp","pvc","pet","gsm","led","cfl","abs","eps","ms","ss","gi"]);
+// consonant patterns, longest first
+const HI_CONS=[["ksh","क्ष"],["chh","छ"],["sch","स्क"],["tch","च"],["sh","श"],["ch","च"],["th","थ"],["dh","ध"],["ph","फ़"],["bh","भ"],["gh","घ"],["kh","ख"],["jh","झ"],["ck","क"],["qu","क्व"],["wh","व"],["gn","न"],
+  ["b","ब"],["c","क"],["d","ड"],["f","फ़"],["g","ग"],["h","ह"],["j","ज"],["k","क"],["l","ल"],["m","म"],["n","न"],["p","प"],["q","क"],["r","र"],["s","स"],["t","ट"],["v","व"],["w","व"],["x","क्स"],["y","य"],["z","ज़"]];
+const HI_VOW_IND={"a":"अ","aa":"आ","e":"ए","ee":"ई","ea":"ई","i":"इ","ie":"आई","o":"ओ","oo":"ऊ","ou":"आउ","ow":"ओ","u":"अ","ai":"ए","ay":"ए","au":"ऑ","oa":"ओ","oi":"ऑय","oy":"ऑय"};
+const HI_VOW_MAT={"a":"","aa":"ा","e":"े","ee":"ी","ea":"ी","i":"ि","ie":"ाइ","o":"ो","oo":"ू","ou":"ाउ","ow":"ो","u":"","ai":"े","ay":"े","au":"ॉ","oa":"ो","oi":"ॉय","oy":"ॉय","ar":"ा"};
+const isV=ch=>"aeiou".includes(ch);
+function hiWordRules(w){
+  // w: lowercase letters only
+  let out="", i=0, prevCons=false;
+  const n=w.length;
+  const vowelCount=(w.match(/[aeiouy]+/g)||[]).length;
+  while(i<n){
+    const rest=w.slice(i);
+    // vowels
+    if(isV(w[i]) || (w[i]==="y" && i>0 && !isV(w[i-1]) && (i===n-1 || !isV(w[i+1])))){
+      let v;
+      if(w[i]==="y"){ v = i===n-1 ? "ee" : "i"; i++; }
+      else {
+        const two=rest.slice(0,2);
+        if(["aa","ee","ea","oo","ou","ow","ai","ay","au","oa","oi","oy","ie"].includes(two) && !(two==="ie" && i+2<n)){ v=two; i+=2; }
+        else { v=w[i]; i++;
+          // silent final e after a consonant (magic e): lengthen previous vowel handled below
+          if(v==="e" && i===n && prevCons && vowelCount>1){ break; }
+          const nextC=w.slice(i).match(/^[^aeiouy]+/); const after=nextC? w.slice(i+nextC[0].length):"";
+          if(v==="u" && i===n){ v="oo"; }
+          else if(v==="i" && i===n){ v="ee"; }
+          else if(v==="a"){
+            if(i===n) v="aa";                                   // final a
+            else if(nextC && nextC[0][0]==="r" && (nextC[0].length>1 || !after)) v="ar";   // car, card, star
+            else if(nextC && nextC[0].length===1 && after==="e") v="e";   // tape, cake, plate
+            else if(vowelCount===1) v="ae";                     // bag, max, pack
+          } else if(v==="i"){
+            if(nextC && nextC[0].length===1 && after==="e") v="ie";   // wire, pipe, size
+          } else if(v==="o"){
+            if(nextC && nextC[0].length===1 && after==="e") v="o";    // drone, rope
+            else if(vowelCount===1 && nextC) v="au";            // box, lock, pot
+          } else if(v==="u"){
+            if(nextC && nextC[0].length===1 && after==="e") v="oo";   // tube, jute
+          }
+        }
+      }
+      const ind = v==="ae" ? "ऐ" : (HI_VOW_IND[v]||"अ");
+      const mat = v==="ae" ? "ै" : (HI_VOW_MAT[v]??"");
+      if(prevCons){ if(out.endsWith("्")) out=out.slice(0,-1); out+=mat; } else out+=ind;
+      prevCons=false; continue;
+    }
+    // consonants
+    let hit=null;
+    for(const [k,val] of HI_CONS){ if(rest.startsWith(k)){ hit=[k,val]; break; } }
+    if(!hit){ i++; continue; }
+    let [k,val]=hit;
+    // soft c / g before e,i,y
+    if(k==="c" && /^[eiy]/.test(w.slice(i+1))) val="स";
+    if(k==="g" && /^[eiy]/.test(w.slice(i+1)) && i>0) val="ज";
+    // doubled consonant → one sound
+    if(k.length===1 && w[i+1]===k){ if(/[aiuo]$/.test(w)) { out+=val+"्"; } i++; }
+    if(prevCons) out+="";                         // previous already has virama
+    out+=val+"्"; prevCons=true; i+=k.length;
+  }
+  if(out.endsWith("्")) out=out.slice(0,-1);    // final consonant keeps no virama (schwa dropped when read)
+  return out;
+}
+function toHindi(name){
+  const src=String(name||"").trim(); if(!src) return "";
+  if(/[ऀ-ॿ]/.test(src) && !/[A-Za-z]/.test(src)) return src;      // already Hindi
+  const toks=src.split(/(\s+|[,/()+&-])/);
+  const words=toks.filter(x=>x && !/^\s+$/.test(x));
+  return toks.map((tok,ti)=>{
+    if(!tok || /^\s+$/.test(tok) || /^[,/()+&-]$/.test(tok)) return tok;
+    // split leading/trailing digits from letters: "1kg" → "1" "kg", "200gsm"
+    const m=tok.match(/^(\d+(?:\.\d+)?)([A-Za-z]+)\.?$/);
+    if(m) return m[1]+" "+hiToken(m[2],tok);
+    return hiToken(tok,tok,toks,ti);
+  }).join("").replace(/\s+/g," ").trim();
+}
+function hiToken(tok,orig,toks,ti){
+  if(/^[\d.]+$/.test(tok)) return tok;                                   // numbers stay
+  if(/^\d+(\.\d+)?[x*]\d+(\.\d+)?$/i.test(tok)) return tok.replace(/\*/,"x");   // 12x18
+  if(/[ऀ-ॿ]/.test(tok)) return tok;
+  if(tok==="x"||tok==="X"||tok==="*") return "x";                        // 27 x 30
+  const clean=tok.replace(/[^A-Za-z]/g,""); if(!clean) return tok;
+  const low=clean.toLowerCase();
+  if(low==="no" && /\.$/.test(tok)) return "नंबर";
+  if(HI_WORDS[low]) return HI_WORDS[low];
+  const isCaps = clean===clean.toUpperCase() && clean.length>1;
+  if(HI_ACRONYMS.has(low) || (isCaps && clean.length<=4 && !/[aeiou]/i.test(clean.slice(1))) || !/[aeiouy]/.test(low))
+    return [...low].map(c=>HI_LETTERS[c]||"").join("");
+  // plural s on a known word: "drones" → ड्रोन्स
+  if(low.endsWith("s") && HI_WORDS[low.slice(0,-1)]) return HI_WORDS[low.slice(0,-1)]+"्स";
+  return hiWordRules(low);
+}
+
+/** The name shown everywhere: Hindi letters when available, else the English name. */
+function itemTitle(it){ return (it && it.nameHi) || (it && it.name) || ""; }
+function lineName(l){ const it=S.byId.get(l.id); return l.nameHi || (it && it.nameHi) || l.name || toHindi(l.name); }
+
 /* ---------------- Rendering ---------------- */
 function applyLang(){
   document.documentElement.lang = S.lang==="hi"?"hi":"en";
@@ -834,8 +957,8 @@ function cardHTML(it,q){
   const rates = S.hideBuy ? "" : `<div class="rates num"><span>${t("buy")} <b>${rs(it.buy)}</b></span>${marginPct(it)?`<span>${t("margin")} <b>${marginPct(it)}</b></span>`:""}</div>`;
   return `<div class="card${it.pending?" pending":""}" data-id="${esc(it.id)}">
     ${thumbHTML(it)}
-    <div class="info"><div class="name">${highlight(it.name,q)}</div>
-      ${it.nameHi?`<div class="sub">${esc(it.nameHi)}</div>`:""}${rates}
+    <div class="info"><div class="name" lang="hi">${highlight(itemTitle(it),q)}</div>
+      ${it.nameHi?`<div class="sub">${highlight(it.name,q)}</div>`:""}${rates}
     </div>
     <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>${hasAlt(it)?`<div class="per num">${rs(altPrice(it))} / ${esc(unitL(it.altUnit))}</div>`:""}
       ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${fmtN(inB)}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
@@ -865,7 +988,7 @@ function renderList(){
   $("#meta-r").textContent = "";
   if(q && !exact && !hint.innerHTML){
     sug.innerHTML=`<div class="suggest"><p>${esc(t("noMatch",q))} ${suggest.length?esc(t("didYouMean")):""}</p>
-      ${suggest.length?`<div class="chips">${suggest.map(it=>`<button class="chip" data-pick="${esc(it.name)}">${esc(it.name)}</button>`).join("")}</div>`:""}
+      ${suggest.length?`<div class="chips">${suggest.map(it=>`<button class="chip" data-pick="${esc(it.name)}">${esc(itemTitle(it))}</button>`).join("")}</div>`:""}
       ${S.canWrite?`<div><button class="btn ghost" data-act="addq">${esc(t("addAsNew",q))}</button></div>`:""}</div>`;
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
@@ -878,7 +1001,7 @@ function billText(){
   const d=billDateStr();
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   s+=`${t("billNoLine",curBillNo())} · ${d}\n`+editedLine(); if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
-  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${l.name} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineName(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
 function autoBillNo(){ return Math.max(1, Math.floor(+S.cfg.nextBill)||1); }
@@ -893,7 +1016,7 @@ function gstBillText(){
   if(S.custGstin.trim()) s+=`${t("gstinL")}: ${S.custGstin.trim().toUpperCase()}\n`;
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
   s+="\n";
-  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${l.name} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineName(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
@@ -939,7 +1062,7 @@ function renderBill(){
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
-      <div class="name">${esc(l.name)}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
+      <div class="name" lang="hi">${esc(lineName(l))}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
         ${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
@@ -989,7 +1112,7 @@ function startEdit(b){
   if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
   const kept=!S.editing && S.bill.length;
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"" }; ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
   closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 function endEdit(){
@@ -1003,7 +1126,7 @@ async function saveEdit(){
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
   const btn=$("#bill-done"); btn.disabled=true;
   try{ await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
@@ -1019,7 +1142,7 @@ function finishBill(){
   const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8) };
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
@@ -1049,7 +1172,7 @@ function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
   if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
   const {res}=runSearch(q);
-  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
+  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(itemTitle(it),q)}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
 function renderAll(){
   renderList(); renderBill(); renderBadge();
@@ -1155,7 +1278,7 @@ function decFromBill(id){
 function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
-  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it)});
+  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it)});
   saveBill(); if(!l) toast(`${it.name} ${t("added")}`);
   if(S.tab==="bill") renderBill(); else renderList();
 }
@@ -1248,7 +1371,7 @@ async function openDetail(id){
   const inB=billQty(id);
   const body=`
     ${it.imgV?`<img class="hero" id="d-img" src="${esc(thumbOf(it)||"")}" alt="">`:""}
-    ${it.nameHi?`<div class="sub" style="margin-top:10px;font-size:17px">${esc(it.nameHi)}</div>`:""}
+    ${it.nameHi?`<div class="sub" style="margin-top:10px;font-size:17px">${esc(it.name)}</div>`:""}
     <div class="kv num">
       <div class="s"><span>${esc(t("sell"))}</span><b>${rs(it.sell)}</b></div>
       ${S.hideBuy?"":`<div><span>${esc(t("buy"))}</span><b>${rs(it.buy)}</b></div>`}
@@ -1261,12 +1384,12 @@ async function openDetail(id){
     <p class="note" id="d-upd">${esc(t("updatedAgo",ago(it.updatedAt),it.updatedBy||""))}</p>
     <div class="qtyrow"><div class="step"><button id="dq-dec">−</button><input id="dq" class="num" inputmode="decimal" value="1"><button id="dq-inc">+</button></div><span class="note">${esc(unitL(it.unit))}</span>${inB?`<span class="note">· ${esc(t("inBill"))}: ${fmtN(inB)}</span>`:""}</div>`;
   const foot=`${S.canWrite?`<button class="btn ghost" id="d-edit">${esc(t("edit"))}</button>`:""}<button class="btn primary" id="d-add">${esc(t("addToBill"))}</button>`;
-  openSheet(it.name, body, foot);
+  openSheet(itemTitle(it), body, foot);
   $("#dq-dec").onclick=()=>{ const v=Math.max(0.25,(toNum($("#dq").value)||1)-1); $("#dq").value=v; };
   $("#dq-inc").onclick=()=>{ $("#dq").value=(toNum($("#dq").value)||0)+1; };
   $("#d-add").onclick=()=>{ const v=toNum($("#dq").value); addToBill(id, v>0?v:1); closeSheet(); };
   if(S.canWrite) $("#d-edit").onclick=()=>openEdit(id);
-  if(it.imgV){ const full=await loadFull(it); const img=$("#d-img"); if(full && img && $("#sheet-title").textContent===it.name) img.src=full; }
+  if(it.imgV){ const full=await loadFull(it); const img=$("#d-img"); if(full && img && $("#sheet-title").textContent===itemTitle(it)) img.src=full; }
 }
 
 /* ---------------- Image processing ---------------- */
@@ -1379,6 +1502,10 @@ function openEdit(id,prefill=""){
   const altHint=()=>{ const u=$("#ef-unit").dataset.unit, a=$("#ef-aunit").dataset.unit, n=toNum($("#ef-aqty").value), sell=toNum($("#ef-sell").value), ap=toNum($("#ef-asell").value);
     $("#ef-aqty-l").textContent=t("perMain",unitL(u));
     $("#ef-ahint").textContent = n>0 ? t("packHint",unitL(u),fmtN(n),unitL(a),rs(!isNaN(ap)?ap:(isNaN(sell)?0:r2(sell/n)))) : ""; };
+  let hiAuto = !it || !it.nameHi || it.nameHi===toHindi(it.name);
+  if(!it && prefill && !$("#ef-hi").value) $("#ef-hi").value=toHindi(prefill);
+  $("#ef-name").addEventListener("input",e=>{ if(hiAuto) $("#ef-hi").value=toHindi(e.target.value); });
+  $("#ef-hi").addEventListener("input",e=>{ hiAuto = !e.target.value.trim(); });
   $("#ef-unit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   $("#ef-aunit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   ["ef-aqty","ef-asell","ef-sell"].forEach(k=>$("#"+k).addEventListener("input",altHint)); altHint();
@@ -1412,13 +1539,14 @@ function openEdit(id,prefill=""){
     if(aqS!=="" && !(aq>0)){ err.textContent=t("packBad"); $("#ef-alt").open=true; return; }
     if(asS!=="" && (isNaN(aSell)||aSell<0)){ err.textContent=t("needRate"); $("#ef-alt").open=true; return; }
     const altUnit = aq>0 ? $("#ef-aunit").dataset.unit : "", altQty = aq>0 ? aq : 0, altSell = (aq>0 && asS!=="") ? aSell : null;
-    const rec={ id: id||undefined, tmp: id?undefined:key, name, nameHi, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell };
+    const hiFinal = nameHi || toHindi(name);
+    const rec={ id: id||undefined, tmp: id?undefined:key, name, nameHi:hiFinal, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell };
     const imgChange=img.changed ? {...img} : null;
     closeSheet(); toast(t("saving"));
     write({action:"upsert",items:[rec]},()=>{
-      upsertLocal({ id:key, name, nameHi, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.thumb?Date.now():0) : (it?it.imgV:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
+      upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.thumb?Date.now():0) : (it?it.imgV:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
       if(imgChange && imgChange.thumb) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange.thumb};
-      const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.unit=unit; saveBill(); }
+      const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.nameHi=hiFinal; bl.unit=unit; saveBill(); }
     }).then(async j=>{
       mergeSaved(j.items);
       const realId=(j.items&&j.items[0]&&j.items[0].id)||key;
@@ -1471,8 +1599,8 @@ function openBulkAdd(){
     const recs=v.filter(r=>{ const k=phonTokens(r.name).join(" "); if(seen.has(k)) return false; seen.add(k); return true; }).map(r=>{
       const dup=findDup(r.name); const buy=r.buy===""?(dup?+dup.buy:0):toNum(r.buy);
       const hsn=String(r.hsn||"").replace(/\s/g,"");
-      if(dup) return { id:dup.id, buy, sell:toNum(r.sell), unit:r.unit||dup.unit, ...(r.hi.trim()?{nameHi:r.hi.trim()}:{}), ...(hsn?{hsn}:{}) };
-      return { tmp:tmpId(), name:r.name.trim(), nameHi:r.hi.trim(), unit:r.unit||S.cfg.defaultUnit, buy, sell:toNum(r.sell), hsn:hsn||S.cfg.defaultHsn||"3923", gst:+S.cfg.defaultGst };
+      if(dup) return { id:dup.id, buy, sell:toNum(r.sell), unit:r.unit||dup.unit, ...(r.hi.trim()?{nameHi:r.hi.trim()}:(dup.nameHi?{}:{nameHi:toHindi(dup.name)})), ...(hsn?{hsn}:{}) };
+      return { tmp:tmpId(), name:r.name.trim(), nameHi:r.hi.trim()||toHindi(r.name.trim()), unit:r.unit||S.cfg.defaultUnit, buy, sell:toNum(r.sell), hsn:hsn||S.cfg.defaultHsn||"3923", gst:+S.cfg.defaultGst };
     });
     try{
       for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#ba-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
@@ -1623,7 +1751,7 @@ async function applyActions(actions){
   for(const a of todo){
     if(a.op==="delete"){ dels.push(a.id); continue; }
     if(a.op==="update"){ const it=S.byId.get(a.id); const ch={id:a.id}; if(a.buy!=null&&a.buy!==it.buy) ch.buy=a.buy; if(a.sell!=null&&a.sell!==it.sell) ch.sell=a.sell; if(a.unit&&a.unit!==it.unit) ch.unit=a.unit; if(Object.keys(ch).length>1) ups.push(ch); continue; }
-    ups.push({ tmp:tmpId(), name:a.name.trim(), nameHi:a.nameHi||"", unit:a.unit||S.cfg.defaultUnit, buy:a.buy==null?0:a.buy, sell:a.sell });
+    ups.push({ tmp:tmpId(), name:a.name.trim(), nameHi:a.nameHi||toHindi(a.name.trim()), unit:a.unit||S.cfg.defaultUnit, buy:a.buy==null?0:a.buy, sell:a.sell });
   }
   try{
     if(ups.length){ const j=await write({action:"upsert",items:ups}); mergeSaved(j.items); }
@@ -1698,7 +1826,7 @@ function showBill(b){
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
   $("#bd-back").onclick=()=>{ openBills(); };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
-  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
+  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
     S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
     ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
@@ -1707,6 +1835,35 @@ function showBill(b){
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
 }
 $("#t-bills").onclick=()=>openBills();
+$("#t-hindi").onclick=()=>openToHindi();
+function openToHindi(){
+  let onlyMissing=false;
+  const rows=()=>S.items.filter(it=>!onlyMissing || !it.nameHi).map(it=>({it, hi:toHindi(it.name)}));
+  let data=rows(); const sel=new Set(data.map(r=>r.it.id)); const edits={};
+  const body=`<p class="note" style="margin:0 0 8px">${esc(t("toHindiHelp"))}</p>
+    <label class="note" style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" id="th-only"> ${esc(t("onlyMissing"))}</label>
+    <div class="gridwrap"><table class="g"><thead><tr><th style="width:36px"><input type="checkbox" id="th-all" checked aria-label="All"></th><th>${esc(t("item"))}</th><th>${esc(t("hiName"))}</th></tr></thead><tbody id="th-body"></tbody></table></div>
+    <p class="note" id="th-prog"></p>`;
+  openSheet(t("toHindiT"), body, `<button class="btn ghost" id="th-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="th-save"></button>`, {full:true});
+  const tb=$("#th-body");
+  const count=()=>[...sel].filter(id=>{ const it=S.byId.get(id); const v=(edits[id]??toHindi(it.name)).trim(); return v && v!==it.nameHi; }).length;
+  const upd=()=>{ const n=count(); const b=$("#th-save"); b.textContent=n?t("convertN",n):t("hiNone"); b.disabled=!n; };
+  const draw=()=>{ tb.innerHTML=data.map(r=>`<tr><td><input type="checkbox" data-sel="${esc(r.it.id)}" ${sel.has(r.it.id)?"checked":""} aria-label="Select"></td>
+      <td class="c-name">${esc(r.it.name)}${r.it.nameHi?`<span class="tag" style="color:var(--muted)">${esc(t("current"))}: ${esc(r.it.nameHi)}</span>`:""}</td>
+      <td class="c-name"><input id="th-${esc(r.it.id)}" data-hid="${esc(r.it.id)}" lang="hi" value="${esc(edits[r.it.id]??r.hi)}"></td></tr>`).join(""); upd(); };
+  tb.addEventListener("input",e=>{ const id=e.target.dataset.hid; if(id){ edits[id]=e.target.value; upd(); } });
+  tb.addEventListener("change",e=>{ const id=e.target.dataset.sel; if(id){ e.target.checked?sel.add(id):sel.delete(id); upd(); } });
+  $("#th-all").onchange=e=>{ data.forEach(r=>e.target.checked?sel.add(r.it.id):sel.delete(r.it.id)); draw(); };
+  $("#th-only").onchange=e=>{ onlyMissing=e.target.checked; data=rows(); sel.clear(); data.forEach(r=>sel.add(r.it.id)); draw(); };
+  $("#th-cancel").onclick=closeSheet;
+  $("#th-save").onclick=async()=>{ if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
+    const recs=[...sel].map(id=>{ const it=S.byId.get(id); const v=(edits[id]??toHindi(it.name)).trim(); return v && v!==it.nameHi ? {id, nameHi:v} : null; }).filter(Boolean);
+    if(!recs.length) return; $("#th-save").disabled=true;
+    try{ for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#th-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
+      closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
+    catch{ const b=$("#th-save"); if(b) b.disabled=false; } };
+  draw();
+}
 $("#fab").onclick=()=>openEdit(null);
 $("#cmd-open").onclick=()=>openCmd("");
 $("#t-cmd").onclick=()=>openCmd("");

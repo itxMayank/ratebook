@@ -1555,8 +1555,14 @@ function oldBillText(b){
   const d=b.date?new Date(b.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"";
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   s+=`${t("billNoLine",b.n)}${d?` · ${d}`:""}\n`; if(b.customer) s+=`${t("custL")}: ${b.customer}\n`; if(b.mobile) s+=`${t("mobL")}: ${b.mobile}\n`;
-  s+="\n"+String(b.items||"").split("; ").map((x,i)=>`${i+1}. ${x}`).join("\n");
-  s+=`\n\n*${t("total")}: ${rs(b.total)}*`; return s;
+  const parts=String(b.items||"").split("; ").filter(Boolean);
+  s+="\n"+parts.map((x,i)=>{ const m=x.match(/^(.*) ([\d.]+) (\S+) x ([\d.]+)(?: \[(.*)\])?$/);
+    if(!m) return `${i+1}. ${x}`;
+    const qty=+m[2], rate=+m[4];
+    return `${i+1}. ${m[1].trim()}${m[5]?` (${m[5]})`:""} — ${fmtN(qty)} ${unitL(m[3])} × ${rs(rate)} = ${rs(r2(qty*rate))}`; }).join("\n");
+  if(b.gst && b.taxable!=null){ s+=`\n\n${t("taxable")}: ${rs2(b.taxable)}`; if(b.tax!=null) s+=`\nGST${b.igst?" (IGST)":" (CGST+SGST)"}: ${rs2(b.tax)}`; s+=`\n*${t("grandTotal")}: ${rs(b.total)}*`; }
+  else s+=`\n\n*${t("total")}: ${rs(b.total)}*`;
+  return s;
 }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
 let billsCache=[], billsReq=0;

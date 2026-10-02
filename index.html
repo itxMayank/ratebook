@@ -267,6 +267,16 @@ body.typing{padding-bottom:0}
 .switch input:checked::after{left:21px}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
+/* past bills + pack units */
+.unitchip{border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px}
+.bills-list{display:grid;gap:8px;margin-top:10px}
+.billcard{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:var(--r);padding:10px 12px;width:100%}
+.billcard b{font-size:16px}
+.billcard .amt{font:700 18px var(--f-display);color:var(--accent);text-align:right}
+.billcard .meta2{grid-column:1/-1;color:var(--muted);font-size:13px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+pre.billtext{white-space:pre-wrap;word-break:break-word;font:14px/1.45 var(--f-body);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:0;max-height:46vh;overflow:auto}
+.sendrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4px 0}
 /* GST + compact stepper */
 .mstep{display:inline-flex;align-items:center;background:var(--accent);color:var(--accent-fg);border-radius:10px;overflow:hidden;height:30px}
 .mstep button{border:0;background:none;color:inherit;width:30px;height:30px;font-size:18px;font-weight:700;line-height:1;padding:0}
@@ -394,6 +404,7 @@ body.typing{padding-bottom:0}
       <button id="t-bulkedit" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13 7 4 4"/></svg><div><b data-t="bulkEdit">Bulk edit prices</b><span data-t="bulkEditD">Change many rates at once, or raise by %</span></div></button>
       <button id="t-unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b id="t-unlock-t"></b><span id="t-unlock-d"></span></div></button>
       <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
+      <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
       <button id="t-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><b data-t="settings">Settings</b><span data-t="settingsD">Shop name, units, rounding, bill footer</span></div></button>
     </div>
   </section>
@@ -497,7 +508,12 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   taxable:"Taxable value",cgst:r=>`CGST ${r}%`,sgst:r=>`SGST ${r}%`,igst:r=>`IGST ${r}%`,roundOff:"Round off",grandTotal:"Total (incl. GST)",
   taxInvoice:"TAX INVOICE",gstinL:"GSTIN",autoNo:n=>`Next auto number: ${n}`,useAuto:"Use",billNoManualBad:"Bill number must be 1 or more.",
   gstSet:"GST bills",shopGstin:"Shop GSTIN",shopAddress:"Shop address (shown on GST bills)",defGst:"Default GST %",defHsn:"Default HSN code",
-  gstinBad:"GSTIN should be 15 characters, e.g. 09ABCDE1234F1Z5.",billSearchPh:"Search item to add to bill…",dec:"Reduce",hsnShort:"HSN"});
+  gstinBad:"GSTIN should be 15 characters, e.g. 09ABCDE1234F1Z5.",billSearchPh:"Search item to add to bill…",dec:"Reduce",hsnShort:"HSN",
+  pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Bill no., customer or mobile…",billsNone:"No bills found.",billsLoading:"Loading bills…",
+  billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
+  back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
+  altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit"});
 Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के लिए। रेट बदलने के लिए एडिटिंग खोलें।",unlockBtn:"खोलें",unlockT:"एडिटिंग खोलें",unlockD:"इस फ़ोन पर रेट जोड़ने या बदलने के लिए दुकान का PIN डालें।",lockT:"इस फ़ोन पर एडिटिंग बंद करें",lockD:n=>`${n} के नाम से एडिटिंग चालू है। बंद करने के लिए दबाएँ।`,yourName:"आपका नाम",pinL:"दुकान का PIN",wrongPin:"गलत PIN। फिर कोशिश करें।",lockedOut:"बहुत बार गलत PIN। 15 मिनट बाद कोशिश करें।",unlocked:"इस फ़ोन पर एडिटिंग खुल गई",lockedNow:"इस फ़ोन पर एडिटिंग बंद हो गई",
   changePin:"दुकान का PIN बदलें",newPin:"नया PIN (4 से 8 अंक)",newPin2:"नया PIN दोबारा",pinMismatch:"दोनों PIN एक जैसे नहीं हैं।",pinRule:"4 से 8 अंक डालें।",pinChanged:"PIN बदल गया। बाकी लोगों को एडिट के लिए नया PIN चाहिए।",
   online:t=>`रेट अपडेटेड · ${t}`,offline:t=>`ऑफ़लाइन · ${t} के सेव रेट दिख रहे हैं`,neverSynced:"अभी रेट लिस्ट तक नहीं पहुँच पाए।",refresh:"रीफ़्रेश",offlineWrite:"आप ऑफ़लाइन हैं। बदलाव सेव करने के लिए इंटरनेट चालू करें।",saving:"सेव हो रहा है…",
@@ -513,7 +529,12 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   taxable:"कर योग्य राशि",cgst:r=>`CGST ${r}%`,sgst:r=>`SGST ${r}%`,igst:r=>`IGST ${r}%`,roundOff:"राउंड ऑफ़",grandTotal:"कुल (GST सहित)",
   taxInvoice:"टैक्स इनवॉइस",gstinL:"GSTIN",autoNo:n=>`अगला अपने-आप नंबर: ${n}`,useAuto:"लगाएँ",billNoManualBad:"बिल नंबर 1 या ज़्यादा होना चाहिए।",
   gstSet:"GST बिल",shopGstin:"दुकान का GSTIN",shopAddress:"दुकान का पता (GST बिल पर)",defGst:"डिफ़ॉल्ट GST %",defHsn:"डिफ़ॉल्ट HSN कोड",
-  gstinBad:"GSTIN 15 अक्षरों का होता है, जैसे 09ABCDE1234F1Z5।",billSearchPh:"बिल में जोड़ने के लिए सामान खोजें…",dec:"कम करें",hsnShort:"HSN"});
+  gstinBad:"GSTIN 15 अक्षरों का होता है, जैसे 09ABCDE1234F1Z5।",billSearchPh:"बिल में जोड़ने के लिए सामान खोजें…",dec:"कम करें",hsnShort:"HSN",
+  pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"बिल नं., ग्राहक या मोबाइल…",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",
+  billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
+  back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
+  altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें"});
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
 
@@ -746,7 +767,7 @@ function cardHTML(it,q){
     <div class="info"><div class="name">${highlight(it.name,q)}</div>
       ${it.nameHi?`<div class="sub">${esc(it.nameHi)}</div>`:""}${rates}
     </div>
-    <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>
+    <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>${hasAlt(it)?`<div class="per num">${rs(altPrice(it))} / ${esc(unitL(it.altUnit))}</div>`:""}
       ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${fmtN(inB)}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
         :`<button class="addbtn" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+ ${esc(t("tabBill"))}</button>`}</div>
   </div>`;
@@ -811,6 +832,8 @@ function gstBillText(){
   return s;
 }
 function curBillNo(){ const o=Math.floor(+S.billNoOvr); return o>=1 ? o : autoBillNo(); }
+function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
+function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
 function itemGst(x){ return (x && x.gst!=null && x.gst!=="" && !isNaN(+x.gst)) ? +x.gst : (+S.cfg.defaultGst||0); }
 function lineInfo(l){ const it=S.byId.get(l.id); return { hsn: l.hsn || itemHsn(it), gst: (l.gst!=null? +l.gst : itemGst(it)) }; }
@@ -845,7 +868,7 @@ function renderBill(){
       <div class="name">${esc(l.name)}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
-        <span class="note">${esc(unitL(l.unit))}</span>
+        ${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
         <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}"></label>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
@@ -875,7 +898,7 @@ function renderLastBill(){
   const el=$("#lastbill"), lb=S.lastBill;
   if(!lb){ el.hidden=true; return; }
   el.hidden=false;
-  el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a>`;
+  el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a><button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
 }
 /** Bill shared or marked done: remember it, move the number on (shared with every phone), start a fresh bill. */
 function finishBill(){
@@ -884,7 +907,8 @@ function finishBill(){
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst) };
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
@@ -1031,10 +1055,13 @@ document.addEventListener("click",e=>{
   const pick=e.target.closest("[data-pick]"); if(pick){ $("#q").value=pick.dataset.pick; onQuery(pick.dataset.pick); return; }
   const act=e.target.closest("[data-act]"); if(act){ const k=act.dataset.act;
     if(k==="more"){ S.limit+=40; renderList(); } else if(k==="add") openEdit(null); else if(k==="addq") openEdit(null,S.q.trim());
-    else if(k==="bulkadd") openBulkAdd(); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
+    else if(k==="bulkadd") openBulkAdd(); else if(k==="bills") openBills(); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
   const inc=e.target.closest("[data-inc]"), dec=e.target.closest("[data-dec]"), rm=e.target.closest("[data-rm]");
   if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=Math.max(0,Math.round((+l.qty+(inc?1:-1))*1000)/1000); if(l.qty===0) S.bill.splice(i,1); saveBill(); renderBill(); return; }
-  if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); }
+  if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); return; }
+  const sw=e.target.closest("[data-unitsw]"); if(sw){ const l=S.bill[+sw.dataset.unitsw]; const it=S.byId.get(l.id); if(!it||!hasAlt(it)) return;
+    if(l.alt){ l.alt=false; l.unit=it.unit; l.rate=+it.sell||0; } else { l.alt=true; l.unit=it.altUnit; l.rate=altPrice(it); }
+    saveBill(); renderBill(); }
 });
 document.addEventListener("input",e=>{
   const q=e.target.dataset?.qty, r=e.target.dataset?.rate;
@@ -1107,6 +1134,7 @@ async function openDetail(id){
       <div><span>${esc(t("unit"))}</span><b>${esc(unitL(it.unit))}</b></div>
       <div><span>${esc(t("hsnShort"))}</span><b>${esc(itemHsn(it))}</b></div>
       <div><span>GST</span><b>${fmtN(itemGst(it))}%</b></div>
+      ${hasAlt(it)?`<div class="s"><span>${esc(unitL(it.altUnit))}</span><b>${rs(altPrice(it))}</b></div>`:""}
     </div>
     ${!S.hideBuy&&marginPct(it)?`<p class="note">${esc(t("margin"))}: ${rs((+it.sell)-(+it.buy))} / ${esc(unitL(it.unit))} (${marginPct(it)})</p>`:""}
     <p class="note" id="d-upd">${esc(t("updatedAgo",ago(it.updatedAt),it.updatedBy||""))}</p>
@@ -1194,6 +1222,16 @@ function openEdit(id,prefill=""){
       <div class="field"><label for="ef-hsn">${esc(t("hsnL"))}</label><input id="ef-hsn" class="num" inputmode="numeric" maxlength="10" value="${esc(it?itemHsn(it):(S.cfg.defaultHsn||"3923"))}"></div>
       <div class="field"><label for="ef-gst">${esc(t("gstPctL"))}</label><input id="ef-gst" class="num" inputmode="decimal" value="${esc(it?itemGst(it):S.cfg.defaultGst)}"></div>
     </div>
+    <details class="alt" id="ef-alt" ${hasAlt(it)?"open":""}><summary>${esc(t("altSec"))}</summary>
+      <div class="form" style="margin-top:8px">
+        <div class="field"><label>${esc(t("packUnit"))}</label>${unitBtnHTML("ef-aunit",(it&&it.altUnit)||"packet")}</div>
+        <div class="two">
+          <div class="field"><label for="ef-aqty" id="ef-aqty-l">${esc(t("perMain",unitL(it?.unit||S.cfg.defaultUnit)))}</label><input id="ef-aqty" class="num" inputmode="decimal" value="${hasAlt(it)?esc(it.altQty):""}" placeholder="5"></div>
+          <div class="field"><label for="ef-asell">${esc(t("packPrice"))}</label><input id="ef-asell" class="num" inputmode="decimal" value="${it&&it.altSell!=null&&hasAlt(it)?esc(it.altSell):""}" placeholder="${esc(t("packAuto"))}"></div>
+        </div>
+        <p class="note" id="ef-ahint" style="margin:0"></p>
+      </div>
+    </details>
     <div class="field"><label for="ef-hi">${esc(t("hiName"))}</label><input id="ef-hi" value="${esc(it?.nameHi||"")}" autocomplete="off" lang="hi"></div>
     <div class="img-pick"><div class="thumb" id="ef-th">${img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon}</div>
       <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="ef-pick">${esc(img.thumb?t("changePhoto"):t("addPhoto"))}</button><button type="button" class="btn ghost" id="ef-rmimg" ${img.thumb?"":"hidden"}>${esc(t("removePhoto"))}</button></div></div>
@@ -1203,7 +1241,12 @@ function openEdit(id,prefill=""){
   openSheet(it?t("editItem"):t("newItem"), body, `<button class="btn ghost" id="ef-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ef-save">${esc(t("save"))}</button>`, {full:true});
   if(!it) setTimeout(()=>$("#ef-name")?.focus(),260);
   const setThumb=()=>{ $("#ef-th").innerHTML = img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon; $("#ef-rmimg").hidden=!img.thumb; $("#ef-pick").textContent=img.thumb?t("changePhoto"):t("addPhoto"); };
-  $("#ef-unit").onclick=e=>onUnitBtn(e.currentTarget);
+  const altHint=()=>{ const u=$("#ef-unit").dataset.unit, a=$("#ef-aunit").dataset.unit, n=toNum($("#ef-aqty").value), sell=toNum($("#ef-sell").value), ap=toNum($("#ef-asell").value);
+    $("#ef-aqty-l").textContent=t("perMain",unitL(u));
+    $("#ef-ahint").textContent = n>0 ? t("packHint",unitL(u),fmtN(n),unitL(a),rs(!isNaN(ap)?ap:(isNaN(sell)?0:r2(sell/n)))) : ""; };
+  $("#ef-unit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
+  $("#ef-aunit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
+  ["ef-aqty","ef-asell","ef-sell"].forEach(k=>$("#"+k).addEventListener("input",altHint)); altHint();
   $("#ef-pick").onclick=async()=>{ const f=await pickImage(); if(!f) return; try{ const r=await processImage(f); img={thumb:r.thumb,full:r.full,changed:true,removed:false}; setThumb(); }catch{ toast(t("imgFail")); } };
   $("#ef-rmimg").onclick=()=>{ img={thumb:null,full:null,changed:true,removed:true}; setThumb(); };
   $("#ef-cancel").onclick=closeSheet;
@@ -1225,11 +1268,15 @@ function openEdit(id,prefill=""){
     const key=id||tmpId();
     const hsn=$("#ef-hsn").value.replace(/\s/g,""), gstV=toNum($("#ef-gst").value);
     if(isNaN(gstV)||gstV<0||gstV>100){ err.textContent=t("gstPctL")+": 0–100"; return; }
-    const rec={ id: id||undefined, tmp: id?undefined:key, name, nameHi, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV };
+    const aqS=$("#ef-aqty").value.trim(), aq=toNum(aqS), asS=$("#ef-asell").value.trim(), aSell=toNum(asS);
+    if(aqS!=="" && !(aq>0)){ err.textContent=t("packBad"); $("#ef-alt").open=true; return; }
+    if(asS!=="" && (isNaN(aSell)||aSell<0)){ err.textContent=t("needRate"); $("#ef-alt").open=true; return; }
+    const altUnit = aq>0 ? $("#ef-aunit").dataset.unit : "", altQty = aq>0 ? aq : 0, altSell = (aq>0 && asS!=="") ? aSell : null;
+    const rec={ id: id||undefined, tmp: id?undefined:key, name, nameHi, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell };
     const imgChange=img.changed ? {...img} : null;
     closeSheet(); toast(t("saving"));
     write({action:"upsert",items:[rec]},()=>{
-      upsertLocal({ id:key, name, nameHi, unit, buy:rec.buy, sell, hsn, gst:gstV, imgV: imgChange ? (imgChange.thumb?Date.now():0) : (it?it.imgV:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
+      upsertLocal({ id:key, name, nameHi, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.thumb?Date.now():0) : (it?it.imgV:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
       if(imgChange && imgChange.thumb) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange.thumb};
       const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.unit=unit; saveBill(); }
     }).then(async j=>{
@@ -1446,6 +1493,63 @@ async function applyActions(actions){
   }catch{ const b=$("#cmd-go"); if(b) b.disabled=false; }
 }
 
+/* ---------------- Past bills ---------------- */
+function oldBillText(b){
+  const d=b.date?new Date(b.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"";
+  let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
+  s+=`${t("billNoLine",b.n)}${d?` · ${d}`:""}\n`; if(b.customer) s+=`${t("custL")}: ${b.customer}\n`; if(b.mobile) s+=`${t("mobL")}: ${b.mobile}\n`;
+  s+="\n"+String(b.items||"").split("; ").map((x,i)=>`${i+1}. ${x}`).join("\n");
+  s+=`\n\n*${t("total")}: ${rs(b.total)}*`; return s;
+}
+function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
+let billsCache=[], billsReq=0;
+function openBills(){
+  if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
+  const body=`<input id="bl-q" type="search" placeholder="${esc(t("billsSearchPh"))}" autocomplete="off" style="width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px">
+    <div class="bills-list" id="bl-list"><p class="note">${esc(t("billsLoading"))}</p></div>`;
+  openSheet(t("pastBills"), body, "", {full:true});
+  let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>loadBills(e.target.value),400); });
+  $("#bl-list").addEventListener("click",e=>{ const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
+  loadBills("");
+}
+async function loadBills(q){
+  const my=++billsReq, list=$("#bl-list"); if(!list) return;
+  list.innerHTML=`<p class="note">${esc(t("billsLoading"))}</p>`;
+  try{
+    const j=await apiPost({action:"listBills",q,limit:60}); if(my!==billsReq || !$("#bl-list")) return;
+    billsCache=j.bills||[];
+    $("#bl-list").innerHTML = billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
+      return `<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
+        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}</span></button>`; }).join("")
+      : `<p class="note">${esc(t("billsNone"))}</p>`;
+  }catch(e){ if(my===billsReq && $("#bl-list")) $("#bl-list").innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; }
+}
+function showBill(b){
+  if(!b) return;
+  const text=b.text||oldBillText(b);
+  const body=`<div style="display:grid;gap:12px">
+    <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
+    <pre class="billtext" id="bd-text">${esc(text)}</pre>
+    <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
+      <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
+    <span class="err" id="bd-err"></span>
+    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
+    <div class="confirm" id="bd-rq" hidden><span>${esc(t("repeatQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="bd-ry">${esc(t("repeatBill"))}</button><button type="button" class="btn ghost" id="bd-rn">${esc(t("cancel"))}</button></div></div>
+  </div>`;
+  openSheet(`${t("billNoL")} ${b.n}`, body, "", {full:true});
+  const upd=()=>{ const m=$("#bd-mob").value; const bad=normMobile(m)===null; $("#bd-err").textContent=bad?t("mobBad"):""; $("#bd-wa").href=billWa(text,bad?"":m); };
+  $("#bd-mob").addEventListener("input",upd); upd();
+  $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
+  $("#bd-back").onclick=()=>{ openBills(); };
+  $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
+  const doRepeat=()=>{ S.bill=b.lines.map(l=>({id:l.id,name:l.name,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
+    S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
+    ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
+    $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
+    saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };
+  if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
+}
+$("#t-bills").onclick=()=>openBills();
 $("#fab").onclick=()=>openEdit(null);
 $("#cmd-open").onclick=()=>openCmd("");
 $("#t-cmd").onclick=()=>openCmd("");
@@ -1494,7 +1598,8 @@ function applyConfig(x){
   for(const q of S.billQ||[]) if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1;
 }
 function applyItems(list){
-  const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst }); }
+  const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
+    altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell }); }
   arr.sort((a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"}));
   S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true;
 }

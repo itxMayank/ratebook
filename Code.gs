@@ -19,8 +19,8 @@ const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
 const BILLS = 'Bills';
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by'];
-const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines'];
+const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell'];
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed …
 const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
@@ -50,6 +50,7 @@ function ss_() {
   return ss;
 }
 
+const HEADERS_OK_ = {};
 function sheet_(name, headers) {
   const ss = ss_();
   let s = ss.getSheetByName(name);
@@ -57,6 +58,12 @@ function sheet_(name, headers) {
     s = ss.insertSheet(name);
     s.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
     s.setFrozenRows(1);
+  } else if (!HEADERS_OK_[name]) {
+    HEADERS_OK_[name] = true;
+    const have = s.getRange(1, 1, 1, headers.length).getValues()[0];
+    if (String(have[headers.length - 1]) !== headers[headers.length - 1]) {
+      s.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');   // columns added in an update
+    }
   }
   return s;
 }
@@ -71,6 +78,8 @@ function bump_() { PropertiesService.getScriptProperties().setProperty('rev', St
 /** Someone edited the sheet by hand: tell the apps to refresh. */
 function onEdit(e) { try { bump_(); } catch (err) {} }
 
+function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
+function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
 function num_(v) { const n = Number(String(v).replace(/[₹,\s]/g, '')); return isFinite(n) ? n : 0; }
 function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@]/.test(s)) s = "'" + s; return s; }
 
@@ -109,7 +118,9 @@ function list_() {
       id: String(r[C.id]), name: str_(r[C.name]), nameHi: str_(r[C.nameHi]), unit: str_(r[C.unit], 30),
       buy: num_(r[C.buy]), sell: num_(r[C.sell]),
       imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0,
-      updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60)
+      updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
+      hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
+      altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell])
     });
   });
   if (fixed) bump_();
@@ -141,6 +152,8 @@ function readConfig_() {
   if (cfg.units) { try { cfg.units = JSON.parse(cfg.units); } catch (err) { delete cfg.units; } }
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
   cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
+  cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
+  cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
   return cfg;
 }
 
@@ -165,9 +178,10 @@ function doPost(e) {
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
+      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (body.action !== 'verify') bump_();
+    if (body.action !== 'verify' && body.action !== 'listBills') bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -200,6 +214,11 @@ function upsert_(items, by) {
       const r = values[rowOf[id]];
       ['name', 'nameHi', 'unit'].forEach(k => { if (it[k] !== undefined) r[C[k]] = str_(it[k], k === 'unit' ? 30 : 200); });
       ['buy', 'sell'].forEach(k => { if (it[k] !== undefined && it[k] !== null) r[C[k]] = num_(it[k]); });
+      if (it.hsn !== undefined) { const h = hsn_(it.hsn); r[C.hsn] = h ? "'" + h : ''; }
+      if (it.gst !== undefined && it.gst !== null && it.gst !== '') r[C.gst] = num_(it.gst);
+      if (it.altUnit !== undefined) r[C.altUnit] = str_(it.altUnit, 30);
+      if (it.altQty !== undefined) r[C.altQty] = num_(it.altQty) || '';
+      if (it.altSell !== undefined) r[C.altSell] = (it.altSell === null || it.altSell === '') ? '' : num_(it.altSell);
       r[C.updatedAt] = now; r[C.updatedBy] = by;
       s.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([r]);
       saved.push(pub_(r, it.tmp));
@@ -209,6 +228,10 @@ function upsert_(items, by) {
       r[C.id] = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
       r[C.name] = str_(it.name).trim(); r[C.nameHi] = str_(it.nameHi); r[C.unit] = str_(it.unit, 30);
       r[C.buy] = num_(it.buy); r[C.sell] = num_(it.sell); r[C.imgV] = 0;
+      const h = hsn_(it.hsn); r[C.hsn] = h ? "'" + h : '';
+      r[C.gst] = (it.gst === undefined || it.gst === null || it.gst === '') ? '' : num_(it.gst);
+      r[C.altUnit] = str_(it.altUnit || '', 30); r[C.altQty] = num_(it.altQty) || '';
+      r[C.altSell] = (it.altSell === undefined || it.altSell === null || it.altSell === '') ? '' : num_(it.altSell);
       r[C.updatedAt] = now; r[C.updatedBy] = by;
       appended.push(r); saved.push(pub_(r, it.tmp));
     }
@@ -219,7 +242,9 @@ function upsert_(items, by) {
 
 function pub_(r, tmp) {
   return { id: String(r[C.id]), tmp: tmp || null, name: str_(r[C.name]), nameHi: str_(r[C.nameHi]), unit: str_(r[C.unit], 30),
-    buy: num_(r[C.buy]), sell: num_(r[C.sell]), imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0, updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60) };
+    buy: num_(r[C.buy]), sell: num_(r[C.sell]), imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0, updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
+    hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
+    altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]) };
 }
 
 function delete_(ids) {
@@ -252,13 +277,15 @@ function setImage_(id, thumb, full, by) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
     if (k === 'nextBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
+    if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
+    if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
     const i = keys.indexOf(k);
     if (i >= 0) s.getRange(i + 2, 2).setValue(val); else { s.appendRow([k, val]); keys.push(k); }
   });
@@ -282,7 +309,9 @@ function takeBill_(body) {
     if (next !== cur) setConfig_({ nextBill: next });
     const b = body.bill || {};
     if (used > 0) {
-      sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60)]);
+      sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
+        b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
+        (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000)]);
     }
     bump_();
     return { ok: true, rev: getRev_(), config: readConfig_() };
@@ -291,4 +320,33 @@ function takeBill_(body) {
   } finally {
     try { lock.releaseLock(); } catch (err) {}
   }
+}
+
+/** Past bills, newest first. Needs the PIN because it holds customer names and numbers. */
+function listBills_(q, limit) {
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) return { bills: [] };
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const needle = q.trim().toLowerCase();
+  const digits = needle.replace(/\D/g, '');
+  const out = [];
+  for (let i = vals.length - 1; i >= 0 && out.length < Math.min(limit, 200); i--) {
+    const r = vals[i];
+    if (needle) {
+      const hay = [r[B.billNo], r[B.customer], r[B.mobile], r[B.customerGstin]].join(' ').toLowerCase();
+      const mob = String(r[B.mobile]).replace(/\D/g, '');
+      const hit = hay.indexOf(needle) >= 0 || String(r[B.billNo]) === needle || (digits.length >= 4 && mob.indexOf(digits) >= 0);
+      if (!hit) continue;
+    }
+    let lines = [];
+    try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
+    out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
+      total: num_(r[B.total]), items: String(r[B.items] || ''), by: String(r[B.by] || ''), gst: r[B.gstBill] === 'Yes',
+      taxable: r[B.taxable] === '' ? null : num_(r[B.taxable]), tax: r[B.tax] === '' ? null : num_(r[B.tax]), custGstin: String(r[B.customerGstin] || ''),
+      igst: r[B.igst] === 'IGST', text: String(r[B.text] || ''), lines: lines });
+  }
+  return { bills: out };
 }

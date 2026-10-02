@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 2 October 2026.
+Last updated: 2 October 2026 (GST billing added).
 
 ## Where everything lives
 
@@ -26,6 +26,23 @@ Files in this repository should match the latest copies sent in the Claude conve
   2. `index.html`: includes the bill number, customer mobile, Done button, WhatsApp to the number, plus the earlier wand-mic fix. Needs uploading to GitHub.
 - If only `index.html` is updated, the app still works, but bill numbers won't be shared across phones and the "Next bill number" setting won't save.
 
+## GST billing (added 2 Oct 2026)
+
+- Each item has an **HSN code** (default from Settings, `3923`) and a **GST %** (default from Settings, 18). Blank values in the sheet fall back to these defaults.
+- Bill page: a **GST bill** switch. GST is **added on top** of the rates. Tax is grouped by rate and split CGST + SGST (half each), or IGST when **Out of state** is on. The total is rounded to the nearest rupee, with a round-off line. An optional customer GSTIN is checked for the 15-character format.
+- The GST switch turns itself off after each bill is shared or marked Done.
+- The WhatsApp text becomes a TAX INVOICE showing shop name, address and GSTIN (from Settings), customer GSTIN, the HSN and GST % for each line, taxable value, tax lines, round-off and grand total.
+- Bill number can be typed over on the bill page for one bill. Afterwards the automatic number continues from whichever is higher, so typing an older number never moves it backwards.
+- The bill-page search is separate from the prices-page search.
+- The price-list cards show a compact − qty + control once an item is in the bill.
+- Sheet changes: `Items` gains `hsn` and `gst` columns. `Bills` gains `gstBill`, `taxable`, `tax`, `customerGstin` and `igst`. `Config` gains `shopGstin`, `shopAddress`, `defaultGst` and `defaultHsn`. Header rows update themselves on the first request after the script is redeployed.
+
+## Past bills and pack sizes (added 2 Oct 2026)
+
+- Each bill shared or marked Done is saved in the `Bills` tab, including the exact message text (`text`) and the bill lines as JSON (`lines`). Bills made before this update only have the summary `items` column; the app rebuilds a simple text for those.
+- **Tools → Past bills** (needs the shop PIN, because bills hold customer names and numbers) lists the newest 60 bills. You can search by bill number, customer name, GSTIN or mobile. Opening a bill shows its text, a WhatsApp button (to the saved mobile, or any number typed in), Copy, and **Repeat as new bill**, which loads the lines, customer and GST settings into a fresh bill with the next number. Backend action: `listBills` (POST with PIN, read-only, doesn't bump `rev`).
+- **Pack sizes:** an item can also be sold in a smaller pack, e.g. Max: 1 kg = 5 packets of 200 g. The fields are `altUnit` (e.g. packet), `altQty` (packs in 1 main unit) and `altSell` (price per pack; blank means sell ÷ altQty). Cards show the pack price. On the bill page, the unit chip (e.g. "kg ⇄") switches a line between the main unit and the pack, and switches the rate with it. Bulk add/edit don't cover pack fields yet; set them in the item's edit screen.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).
@@ -45,9 +62,9 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 ## Data model
 
-- `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy`
+- `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
-- `Bills`: `billNo | date | customer | mobile | total | items | by`
+- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines`
 - `Images`: `id | data` (base64 JPEG)
 
 ## Features

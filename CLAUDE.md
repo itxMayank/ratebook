@@ -111,6 +111,24 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **HSN on the bill:** on a GST bill each line's HSN is a small editable box. The change applies to that bill only (`line.hsn`), never the item. Clearing it falls back to the item's HSN.
 - **Amount in words:** `inWords()` uses Indian numbering (Lakh/Crore, paise). It's added under the total in the GST WhatsApp text ("Amount in words: Rupees … Only"), in rebuilt old GST bills, and in the on-screen GST breakdown.
 
+## Credit / udhaar bills (added 3 Oct 2026)
+
+- **Bill screen:** a three-way switch under the customer fields: **Paid** (default), **Credit**, **Part paid**. Part paid shows "Received ₹" and works out the amount due.
+  - Credit and part-paid bills need a name and a 10-digit mobile (`payCheck()`): the fields get a red outline, plus a message.
+  - The total bar shows a "Due ₹X" chip.
+  - The WhatsApp text adds "Payment: Credit (to be paid later)" or "Paid: ₹X", then "Balance due: ₹Y".
+  - State: `S.pay` and `S.recv` (`rb_pay`, `rb_recv`). Both reset to Paid after each bill. They're also part of drafts, so editing a saved bill restores them via `billPayMode()`.
+- **Credit (Udhaar) screen** (Tools → Credit, needs the PIN), `listDues`:
+  - Total pending and one card per customer (grouped by mobile): amount due, number of bills, and the age of the oldest bill (red after 30 days). Searchable.
+  - A customer's view has **Record payment**, **Remind** (a WhatsApp message listing each open bill) and **Call**, plus their open bills.
+- **Recording money** (`recordPayment`, PIN):
+  - From a customer, the amount is applied to the oldest bills first, with a preview ("clear Bill 1, leave ₹48 due on Bill 2"). From a bill's screen, it goes to that bill only.
+  - Optional note chips: Cash, UPI, Bank, Cheque. Paying more than is owed records only what was due.
+  - A bill whose balance reaches 0 becomes **Cleared**, with `clearedAt`. **Undo last payment** (`undoPayment`) removes the latest payment made after billing.
+- **Past bills:** a red "Due ₹X" pill, or a green "Paid later" pill. A bill's screen shows a payment box (total, paid, due, payment history) at the top. Resending it adds a "Payment update" line, or "Fully paid on …".
+- **Customer lookup** on the bill screen also shows "₹X pending" for customers with dues (the `due` column in the Customers tab, kept current by `refreshDue_`).
+- **Sheet columns** added to `Bills`: `payment` ('Paid' | 'Credit' | 'Part paid' | 'Cleared'; blank = Paid on old bills), `paid`, `due`, `payments` (JSON `[{d, a, by, at?, note?}]`, where `at:1` means received at billing), `clearedAt`. Paid bills leave `paid`/`due`/`payments` empty. Editing a bill keeps payments recorded later and recomputes the due amount from the new total.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).
@@ -132,8 +150,8 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
 - `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell | imgs`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
-- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit`
-- `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo` (lookup index, rebuilt from `Bills` if deleted)
+- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit | payment | paid | due | payments | clearedAt`
+- `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo | due` (lookup index, rebuilt from `Bills` if deleted)
 - `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
 - `Images`: `id | data` (base64 JPEG; one row per photo, keyed `itemId`, `itemId#2` … `itemId#5`)
 

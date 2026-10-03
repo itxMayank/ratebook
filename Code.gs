@@ -19,10 +19,10 @@ const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
 const BILLS = 'Bills';
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt'];
 const HISTORY = 'BillHistory';
 const CUSTOMERS = 'Customers';
-const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo'];
+const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs'];
 const MAX_PHOTOS = 5;   // photos per item; each is its own cell in the Images tab (under 48,000 characters, below Google's 50,000 per cell)
@@ -217,9 +217,12 @@ function doPost(e) {
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
+      case 'listDues': res = listDues_(); break;
+      case 'recordPayment': res = recordPayment_(body, str_(body.by, 60)); break;
+      case 'undoPayment': res = undoPayment_(body); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer' && body.action !== 'getBill') bump_();
+    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer' && body.action !== 'getBill' && body.action !== 'listDues') bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -387,8 +390,9 @@ function takeBill_(body) {
       sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
-        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)]);
+        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60)))));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
+      try { refreshDue_(b.mobile); } catch (err) {}
     }
     bump_();
     return { ok: true, rev: getRev_(), config: readConfig_() };
@@ -452,7 +456,7 @@ function listBills_(q, limit, opt) {
       igst: r[B.igst] === 'IGST',
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
-      cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]) });
+      cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B) });
   }
   const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day]; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)]; });
   return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more };
@@ -496,9 +500,152 @@ function updateBill_(b, by) {
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
   r[B.cost] = costOut_(b.cost); r[B.profit] = costOut_(b.profit);
   r[B.editedAt] = new Date(); r[B.editedBy] = by; r[B.edits] = num_(r[B.edits]) + 1;
+  const oldMob = vals[i][B.mobile];
+  { const pays = payList_(r[B.payments]), later = pays.filter(p => !p.at), atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
+    const mode = b.pay ? b.pay : modeOf_(r[B.payment], pays);
+    const pc = payCalc_(r[B.total], mode, b.pay ? b.received : atBill, later, by);
+    if (pc.status !== 'Paid' && !mob10_(r[B.mobile])) throw new Error('credit_needs_mobile');
+    const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
+    if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
   try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) {}
+  try { refreshDue_(b.mobile); if (mob10_(oldMob) !== mob10_(b.mobile)) refreshDue_(oldMob); } catch (err) {}
   return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt].toISOString(), edits: r[B.edits] } };
+}
+
+/* ---------- credit (udhaar) ----------
+ * Each bill has: payment ('Paid' | 'Credit' | 'Part paid' | 'Cleared'; blank on old bills = Paid), paid, due,
+ * payments (JSON [{d: ISO date, a: amount, by, at: 1 if received at billing, note}]) and clearedAt (when the last of it was paid).
+ */
+function r2_(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+function payList_(v) { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
+function modeOf_(status, pays) {
+  const atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
+  if (!status || status === 'Paid') return 'paid';
+  return atBill > 0 ? 'part' : 'credit';
+}
+/** mode: paid | credit | part. received: amount taken at billing (part). later: payments recorded after the bill. */
+function payCalc_(total, mode, received, later, by) {
+  total = r2_(num_(total)); later = later || [];
+  mode = mode === 'credit' || mode === 'part' ? mode : 'paid';
+  const laterSum = r2_(later.reduce((x, p) => x + num_(p.a), 0));
+  let atBill = mode === 'paid' ? Math.max(0, total - laterSum) : mode === 'credit' ? 0 : Math.max(0, Math.min(r2_(num_(received)), total));
+  atBill = r2_(atBill);
+  const paid = r2_(atBill + laterSum), due = r2_(Math.max(0, total - paid));
+  const status = due > 0 ? (paid > 0 ? 'Part paid' : 'Credit') : (mode === 'paid' && !later.length ? 'Paid' : 'Cleared');
+  const pays = (atBill > 0 && (mode !== 'paid' || later.length) ? [{ d: new Date().toISOString(), a: atBill, by: by || '', at: 1 }] : []).concat(later);
+  return { status: status, paid: paid, due: due, pays: pays, clearedAt: status === 'Cleared' ? new Date() : '' };
+}
+function payRow_(pc) { return [pc.status, pc.status === 'Paid' ? '' : pc.paid, pc.status === 'Paid' ? '' : pc.due, pc.pays.length ? JSON.stringify(pc.pays).slice(0, 20000) : '', pc.clearedAt]; }
+function payOut_(r, B) {
+  const st = String(r[B.payment] || '') || 'Paid', total = num_(r[B.total]);
+  return { pay: st, paid: st === 'Paid' ? total : num_(r[B.paid]), due: st === 'Paid' ? 0 : num_(r[B.due]), payments: payList_(r[B.payments]),
+    clearedAt: r[B.clearedAt] instanceof Date ? r[B.clearedAt].toISOString() : (r[B.clearedAt] ? String(r[B.clearedAt]) : '') };
+}
+
+/** Everyone who owes money, biggest first, with their open bills (oldest first). Needs the PIN. */
+function listDues_() {
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) return { customers: [], total: 0, bills: 0 };
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const a = s.getRange(2, 1, n, B.total + 1).getValues();                                        // billNo … total
+  const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();             // billId … clearedAt
+  const map = {}, list = [];
+  let total = 0, count = 0;
+  for (let i = 0; i < n; i++) {
+    const r = a[i].concat(new Array(B.billId - B.total - 1).fill(''), b[i]);
+    const st = String(r[B.payment] || '');
+    if (st !== 'Credit' && st !== 'Part paid') continue;
+    const due = num_(r[B.due]); if (!(due > 0)) continue;
+    const k = mob10_(r[B.mobile]) || ('name:' + String(r[B.customer]).trim().toLowerCase());
+    if (!map[k]) { map[k] = { mobile: mob10_(r[B.mobile]), name: '', due: 0, bills: [] }; list.push(map[k]); }
+    const c = map[k];
+    if (String(r[B.customer]).trim()) c.name = String(r[B.customer]).trim();
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
+    c.due = r2_(c.due + due); total = r2_(total + due); count++;
+    c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]) });
+  }
+  list.forEach(c => { c.oldest = c.bills.length ? c.bills[0].date : ''; });
+  list.sort((x, y) => y.due - x.due);
+  return { customers: list, total: total, bills: count };
+}
+
+/**
+ * Record money received. With billId (or row + n): only that bill. Otherwise across the customer's open bills, oldest first.
+ * Returns how much was used, anything left over (more than was owed), and how many bills were cleared.
+ */
+function recordPayment_(body, by) {
+  const amount = r2_(num_(body.amount));
+  if (!(amount > 0)) throw new Error('bad_amount');
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) throw new Error('bill_not_found');
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  let targets = [];
+  if (body.billId || body.row) {
+    let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
+    if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
+    if (i < 0) throw new Error('bill_not_found');
+    targets = [i];
+  } else {
+    const want = mob10_(body.mobile); if (!want) throw new Error('bad_mobile');
+    for (let i = 0; i < n; i++) if (mob10_(vals[i][B.mobile]) === want && num_(vals[i][B.due]) > 0 && (vals[i][B.payment] === 'Credit' || vals[i][B.payment] === 'Part paid')) targets.push(i);
+  }
+  let left = amount, cleared = 0, mob = '';
+  const note = str_(body.note || '', 120);
+  targets.forEach(i => {
+    if (!(left > 0)) return;
+    const r = vals[i], due = num_(r[B.due]);
+    if (!(due > 0)) return;
+    const take = r2_(Math.min(due, left)); left = r2_(left - take);
+    const pays = payList_(r[B.payments]); pays.push(note ? { d: new Date().toISOString(), a: take, by: by, note: note } : { d: new Date().toISOString(), a: take, by: by });
+    const paid = r2_(num_(r[B.paid]) + take), nd = r2_(Math.max(0, num_(r[B.total]) - paid));
+    const st = nd > 0 ? 'Part paid' : 'Cleared'; if (st === 'Cleared') cleared++;
+    s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, nd, JSON.stringify(pays).slice(0, 20000), st === 'Cleared' ? new Date() : '']]);
+    mob = r[B.mobile];
+  });
+  if (left === amount) throw new Error('nothing_due');
+  try { refreshDue_(mob); } catch (err) {}
+  return { used: r2_(amount - left), left: left, cleared: cleared };
+}
+
+/** Take back the last payment recorded after billing (for a mistake). */
+function undoPayment_(body) {
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) throw new Error('bill_not_found');
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
+  if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
+  if (i < 0) throw new Error('bill_not_found');
+  const r = vals[i], pays = payList_(r[B.payments]);
+  let j = -1; for (let x = pays.length - 1; x >= 0; x--) if (!pays[x].at) { j = x; break; }
+  if (j < 0) throw new Error('nothing_to_undo');
+  const gone = pays.splice(j, 1)[0];
+  const paid = r2_(pays.reduce((x, p) => x + num_(p.a), 0)), due = r2_(Math.max(0, num_(r[B.total]) - paid));
+  const st = due > 0 ? (paid > 0 ? 'Part paid' : 'Credit') : 'Cleared';
+  s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, due, pays.length ? JSON.stringify(pays) : '', st === 'Cleared' ? r[B.clearedAt] : '']]);
+  try { refreshDue_(r[B.mobile]); } catch (err) {}
+  return { removed: num_(gone.a), pay: st, paid: paid, due: due };
+}
+
+/** Recount what one customer owes and store it in the Customers tab. */
+function refreshDue_(mobile) {
+  const k = mob10_(mobile); if (!k) return;
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  const B = BILL_COLS.reduce((m, x, i) => (m[x] = i, m), {});
+  let due = 0;
+  if (n > 0) {
+    const mobs = s.getRange(2, B.mobile + 1, n, 1).getValues();
+    const pd = s.getRange(2, B.payment + 1, n, 3).getValues();                 // payment, paid, due
+    for (let i = 0; i < n; i++) if (mob10_(mobs[i][0]) === k && (pd[i][0] === 'Credit' || pd[i][0] === 'Part paid')) due += num_(pd[i][2]);
+  }
+  const cs = customersSheet_(), row = custRow_(cs, k);
+  if (row > 0) cs.getRange(row, CUST_COLS.indexOf('due') + 1).setValue(r2_(due));
 }
 
 function costOut_(v) { return v === undefined || v === null || v === '' || !isFinite(Number(v)) ? '' : Math.round(Number(v) * 100) / 100; }
@@ -513,7 +660,7 @@ function findCustomer_(mobile) {
   if (i < 0) return { customer: null };
   const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
   const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
-  return { customer: { name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]) } };
+  return { customer: { name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]), due: num_(r[7]) } };
 }
 
 function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? d : ''; }
@@ -529,14 +676,16 @@ function customersSheet_() {
   if (n < 1) return s;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const v = bs.getRange(2, 1, n, B.igst + 1).getValues();
+  let dueV = null; try { dueV = bs.getRange(2, B.payment + 1, n, 3).getValues(); } catch (err) {}
   const map = {}, order = [];
-  v.forEach(r => {
+  v.forEach((r, ix) => {
     const k = mob10_(r[B.mobile]); if (!k) return;
-    if (!map[k]) { map[k] = ["'" + k, '', '', 0, 0, '', '']; order.push(k); }
+    if (!map[k]) { map[k] = ["'" + k, '', '', 0, 0, '', '', 0]; order.push(k); }
     const c = map[k];
     if (String(r[B.customer]).trim()) c[1] = String(r[B.customer]).trim();
     if (String(r[B.customerGstin]).trim()) c[2] = String(r[B.customerGstin]).trim();
     c[3] += 1; c[4] = Math.round((c[4] + num_(r[B.total])) * 100) / 100; c[5] = r[B.date]; c[6] = r[B.billNo];
+    if (dueV && (dueV[ix][0] === 'Credit' || dueV[ix][0] === 'Part paid')) c[7] = r2_(c[7] + num_(dueV[ix][2]));
   });
   const rows = order.map(k => map[k]);
   if (rows.length) s.getRange(2, 1, rows.length, CUST_COLS.length).setValues(rows);
@@ -555,7 +704,7 @@ function touchCustomer_(mobile, name, gstin, total, billNo, newBill) {
   const s = customersSheet_();
   const i = custRow_(s, k);
   name = String(name || '').trim(); gstin = String(gstin || '').trim();
-  if (i < 0) { s.appendRow(["'" + k, str_(name, 80), str_(gstin, 20), 1, num_(total), new Date(), billNo]); return; }
+  if (i < 0) { s.appendRow(["'" + k, str_(name, 80), str_(gstin, 20), 1, num_(total), new Date(), billNo, 0]); return; }
   const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
   if (name) r[1] = str_(name, 80);
   if (gstin) r[2] = str_(gstin, 20);

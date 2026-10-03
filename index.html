@@ -368,6 +368,41 @@ label.thumb{cursor:pointer}
 .mob-wrap{position:relative}
 .mob-wrap .ld{position:absolute;right:12px;top:50%;margin-top:-8px}
 .cust-hint.looking{color:var(--muted)}
+.paybar{display:grid;gap:8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:3px;background:var(--surface-2);border-radius:12px}
+.seg button{border:0;background:transparent;color:var(--muted);font:600 14px var(--f-body);padding:7px 4px;border-radius:9px;transition:background .15s,color .15s}
+.seg button[aria-checked="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button[data-pay="credit"][aria-checked="true"],.seg button[data-pay="part"][aria-checked="true"]{color:var(--danger)}
+.pay-part{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.pay-part input{width:110px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font:600 16px var(--f-body);color:var(--fg)}
+.pay-due{margin-left:auto;font-weight:700;color:var(--danger)}
+.need{border-color:var(--danger)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 18%,transparent)}
+.duechip{display:inline-block;width:max-content;justify-self:start;align-self:flex-start;margin-left:0;font-size:12px;font-weight:700;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);border-radius:999px;padding:1px 8px;vertical-align:middle}
+.custhint .due{color:var(--danger)}
+.pill.due{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.pill.cleared{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.dues-sum{display:grid;gap:2px;padding:14px 16px;border-radius:var(--r);background:var(--accent-soft)}
+.dues-sum b{font:700 30px/1.1 var(--f-display);color:var(--danger)}
+.dues-sum span{font-size:14px;color:var(--muted)}
+.duecard{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;text-align:left;width:100%;border:1px solid var(--line);background:var(--bg);border-radius:var(--r);padding:10px 12px;color:var(--fg)}
+.duecard .av{grid-row:span 2;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font:700 17px var(--f-display);color:var(--accent)}
+.duecard b{font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duecard .amt{font:700 18px var(--f-display);color:var(--danger);text-align:right}
+.duecard .m{font-size:13px;color:var(--muted)}
+.duecard .age{font-size:12px;color:var(--muted);text-align:right}
+.duecard .age.old{color:var(--danger);font-weight:700}
+.payhist{display:grid;gap:6px;font-size:14px}
+.payhist div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.payhist span{color:var(--muted)}
+.paybox{display:grid;gap:10px;border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--bg)}
+.paybox .kv3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.paybox .kv3 span{display:block;font-size:12px;color:var(--muted)}
+.paybox .kv3 b{font:700 17px var(--f-display)}
+.paybox .kv3 .d{color:var(--danger)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:6px 12px;font:600 14px var(--f-body)}
+.chips button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.preview{font-size:14px;color:var(--muted);display:grid;gap:2px}
 /* bill editing */
 .editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:1.5px solid var(--gold);border-radius:var(--r);padding:10px 12px;margin-top:6px}
 .editbar span{flex:1;min-width:0;font-weight:600}
@@ -512,6 +547,14 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
       </div>
       <span class="err" id="mob-err"></span>
       <div class="custhint" id="cust-hint" hidden></div>
+      <div class="paybar" id="paybar">
+        <div class="seg" id="pay-seg" role="radiogroup" aria-label="Payment">
+          <button type="button" role="radio" data-pay="paid" data-t="payPaid">Paid</button>
+          <button type="button" role="radio" data-pay="credit" data-t="payCredit">Credit</button>
+          <button type="button" role="radio" data-pay="part" data-t="payPart">Part paid</button>
+        </div>
+        <div class="pay-part" id="pay-part" hidden><label for="pay-recv" data-t="recvL">Received ₹</label><input id="pay-recv" class="num" inputmode="decimal" autocomplete="off"><span class="pay-due num" id="pay-due"></span></div>
+      </div>
       <div id="bh-extra" hidden>
         <div class="bh-field"><label for="bill-no"><span data-t="billNoL">Bill No.</span> <span class="auto" id="bill-auto" hidden></span></label><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No." style="width:110px;text-align:right;font:700 22px/1 var(--f-display);color:var(--accent);border:1.5px dashed var(--line);background:none;border-radius:10px;padding:4px 8px"></div>
         <div class="bh-field" id="igst-row" hidden><label for="igst-on" data-t="outState">Out of state (IGST)</label><label class="switch" style="flex:none"><input type="checkbox" id="igst-on"></label></div>
@@ -523,7 +566,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
-        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b><button type="button" class="profit num" id="bill-profit" hidden></button></div>
+        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b><span class="duechip num" id="bill-duechip" hidden></span><button type="button" class="profit num" id="bill-profit" hidden></button></div>
         <a class="btn wa sm" id="bill-wa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg><span id="wa-label">Share</span></a>
         <button class="btn primary sm" id="bill-done">Done</button>
         <button type="button" class="iconbtn sm" id="tot-more" aria-expanded="false" aria-label="More options"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
@@ -554,6 +597,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
       <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
       <button id="t-hindi" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3.5 7.5-7 10"/><path d="m13 21 4-9 4 9M14.5 18h5"/></svg><div><b data-t="toHindiT">Convert names to Hindi</b><span data-t="toHindiD">Write every item name in Hindi letters</span></div></button>
       <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
+      <button id="t-dues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2-2-1.3V4z"/><path d="M8 9h6M8 13h4"/><circle cx="18" cy="7" r="4" fill="var(--surface)"/><path d="M18 5.2v3.6M16.6 6h2.3a.7.7 0 0 1 0 1.4h-1.8a.7.7 0 0 0 0 1.4h2.3"/></svg><div><b data-t="duesT">Credit (Udhaar)</b><span id="t-dues-sub" data-t="duesD">Who owes money, and record payments</span></div></button>
       <button id="t-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><b data-t="settings">Settings</b><span data-t="settingsD">Shop name, units, rounding, bill footer</span></div></button>
     </div>
   </section>
@@ -700,8 +744,31 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Credit (udhaar) strings */
+Object.assign(STR.en,{payL:"Payment",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
+  creditNeeds:"Name and mobile are needed for a credit bill.",recvBad:"Enter the amount received now (less than the total).",recvAll:"That's the full amount. Choose Paid instead.",
+  waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
+  duesT:"Credit (Udhaar)",duesD:"Who owes money, and record payments",duesSum:(a,n)=>`${a} pending · ${n} customer${n===1?"":"s"}`,duesNone:"Nobody owes anything right now.",duesFrom:(n,b)=>`from ${n} customer${n===1?"":"s"} · ${b} bill${b===1?"":"s"}`,
+  duesSearch:"Search name or mobile",billsN:n=>`${n} bill${n===1?"":"s"}`,since:(d,days)=>`since ${d} · ${days} day${days===1?"":"s"}`,ofTotal:(p,t)=>`paid ${p} of ${t}`,
+  recordPay:"Record payment",remind:"Remind",call:"Call",payAmt:"Amount received (₹)",fullAmt:a=>`Full ${a}`,payNote:"Note (optional)",payNotePh:"Cash, UPI…",
+  payPreview:"This will:",clearsBill:n=>`clear Bill ${n}`,leavesBill:(n,a)=>`leave ${a} due on Bill ${n}`,payMore:a=>`${a} more than is owed. Only the due amount will be recorded.`,
+  paySave:a=>`Save ${a} received`,payDone:(a,c)=>`${a} received.${c?` ${c} bill${c===1?"":"s"} cleared.`:""}`,payFail:"Couldn't save the payment. Check the internet and try again.",
+  payHist:"Payments",atBilling:"at billing",undoPay:"Undo last payment",undoDone:a=>`Removed ${a} payment.`,clearedOn:d=>`Fully paid on ${d}`,
+  remindMsg:(name,shop,amt,lines)=>`Namaste${name?" "+name:""},\nThis is a reminder from ${shop||"us"}. ${amt} is pending:\n${lines}\n\n*Total due: ${amt}*\nThank you.`,
+  payUpdate:(d,p,b)=>`_Payment update (${d}): paid ${p}, balance due ${b}_`,payUpdateDone:d=>`_Fully paid on ${d}. Thank you._`,
+  pillDue:a=>`Due ${a}`,pillCleared:"Paid later",pendingHint:a=>`${a} pending`,duesTabHint:"Bills on credit or part paid show up here. Mark a bill as Credit or Part paid on the bill screen."});
+Object.assign(STR.hi,{payL:"भुगतान",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
+  creditNeeds:"उधार बिल के लिए नाम और मोबाइल ज़रूरी है।",recvBad:"अभी मिली राशि डालें (कुल से कम)।",recvAll:"यह पूरी राशि है। “पूरा मिला” चुनें।",
+  waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
+  duesT:"उधार खाता",duesD:"किसका कितना बाकी है, और भुगतान दर्ज करें",duesSum:(a,n)=>`${a} बाकी · ${n} ग्राहक`,duesNone:"अभी किसी का कुछ बाकी नहीं है।",duesFrom:(n,b)=>`${n} ग्राहक · ${b} बिल`,
+  duesSearch:"नाम या मोबाइल खोजें",billsN:n=>`${n} बिल`,since:(d,days)=>`${d} से · ${days} दिन`,ofTotal:(p,t)=>`${t} में से ${p} मिले`,
+  recordPay:"भुगतान दर्ज करें",remind:"याद दिलाएँ",call:"कॉल",payAmt:"मिली राशि (₹)",fullAmt:a=>`पूरा ${a}`,payNote:"नोट (वैकल्पिक)",payNotePh:"नकद, UPI…",
+  payPreview:"इससे:",clearsBill:n=>`बिल ${n} पूरा होगा`,leavesBill:(n,a)=>`बिल ${n} पर ${a} बाकी रहेगा`,payMore:a=>`${a} बाकी से ज़्यादा है। सिर्फ़ बाकी राशि दर्ज होगी।`,
+  paySave:a=>`${a} दर्ज करें`,payDone:(a,c)=>`${a} मिले।${c?` ${c} बिल पूरे हुए।`:""}`,payFail:"भुगतान सेव नहीं हुआ। इंटरनेट देखकर फिर कोशिश करें।",
+  payHist:"भुगतान",atBilling:"बिल के समय",undoPay:"आख़िरी भुगतान हटाएँ",undoDone:a=>`${a} का भुगतान हटाया।`,clearedOn:d=>`${d} को पूरा भुगतान`,
+  pillDue:a=>`बाकी ${a}`,pillCleared:"बाद में मिला",pendingHint:a=>`${a} बाकी`,duesTabHint:"उधार या कुछ मिले वाले बिल यहाँ दिखेंगे। बिल स्क्रीन पर “उधार” या “कुछ मिला” चुनें।"});
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
@@ -1033,6 +1100,7 @@ function applyLang(){
   document.querySelectorAll("[data-tp]").forEach(el=>{ el.placeholder=t(el.dataset.tp); });
   if(S.tab==="bill") $("#q").placeholder=t("billSearchPh");
   $("#lang-en").setAttribute("aria-pressed",S.lang==="en"); $("#lang-hi").setAttribute("aria-pressed",S.lang==="hi");
+  if($("#pay-seg")) renderPay(); duesSub();
   renderAll();
 }
 function thumbHTML(it,size){
@@ -1093,7 +1161,33 @@ function billText(){
   let s=""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   s+=`${t("billNoLine",curBillNo())} · ${d}\n`+editedLine(); if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
   S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineLabel(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
-  s+=`\n*${t("total")}: ${rs(billSum())}*`; if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
+  s+=`\n*${t("total")}: ${rs(billSum())}*`+payText(billSum()); if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
+}
+/* ---------------- Credit (udhaar) on the bill ---------------- */
+function payInfo(total){ total=+total||0;
+  if(S.pay==="credit") return {mode:"credit",recv:0,due:total};
+  if(S.pay==="part"){ const r=toNum(S.recv); const v=isNaN(r)?0:Math.max(0,r); return {mode:"part",recv:v,due:r2(Math.max(0,total-v))}; }
+  return {mode:"paid",recv:total,due:0}; }
+function payText(total){ const p=payInfo(total); if(p.mode==="paid") return "";
+  return p.mode==="credit" ? `\n${t("waPayCredit")}\n*${t("waBal")}: ${rs(p.due)}*` : `\n${t("waPaid")}: ${rs(p.recv)}\n*${t("waBal")}: ${rs(p.due)}*`; }
+function setPay(m){ S.pay=m; ls.set("rb_pay",m); renderPay(); updateBillTotals(); }
+function renderPay(){
+  document.querySelectorAll("#pay-seg [data-pay]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.pay===S.pay)));
+  $("#pay-part").hidden = S.pay!=="part";
+  const cr=S.pay!=="paid";
+  $("#cust").placeholder = t("custName")+(cr?" *":""); $("#cust-mob").placeholder = t("custMob")+(cr?" *":"");
+  if(!cr) ["#cust","#cust-mob","#pay-recv"].forEach(k=>$(k).classList.remove("need"));
+}
+/** Credit and part-paid bills need a name and a mobile, and part paid needs a sensible amount. */
+function payCheck(){
+  if(S.pay==="paid") return true;
+  const nameOk=!!S.cust.trim(), mob=normMobile(S.mob), mobOk=!!mob;
+  $("#cust").classList.toggle("need",!nameOk); $("#cust-mob").classList.toggle("need",!mobOk);
+  if(!nameOk||!mobOk){ (nameOk?$("#cust-mob"):$("#cust")).focus(); toast(t("creditNeeds")); return false; }
+  if(S.pay==="part"){ const tot=billTotal(), r=toNum(S.recv);
+    if(isNaN(r)||r<=0||r>tot){ $("#pay-recv").classList.add("need"); $("#pay-recv").focus(); toast(t("recvBad")); return false; }
+    if(r===tot){ $("#pay-recv").classList.add("need"); toast(t("recvAll")); return false; } }
+  return true;
 }
 function seriesNext(gst){ return Math.max(1, Math.floor(+(gst?S.cfg.nextGstBill:S.cfg.nextBill))||1); }
 function autoBillNo(){ return seriesNext(S.gst); }
@@ -1112,7 +1206,7 @@ function gstBillText(){
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
-  s+=`*${t("grandTotal")}: ${rs(g.total)}*\n_${t("inWordsL")}: ${inWords(g.total)}_`;
+  s+=`*${t("grandTotal")}: ${rs(g.total)}*\n_${t("inWordsL")}: ${inWords(g.total)}_`+payText(g.total);
   if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`;
   return s;
 }
@@ -1201,6 +1295,8 @@ function updateBillTotals(){
     $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
+  { const p=payInfo(billTotal()), dc=$("#bill-duechip"); dc.hidden = p.mode==="paid" || !S.bill.length; dc.textContent=t("dueAmt",rs(p.due));
+    $("#pay-due").textContent = S.pay==="part" ? t("dueAmt",rs(p.due)) : ""; }
   $("#bill-wa").href=waLink();
   const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
   const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing) $("#editbar-t").textContent=t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):"");
@@ -1223,15 +1319,16 @@ function renderLastBill(){
   el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a><button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
 }
 /** Bill shared or marked done: remember it, move the number on (shared with every phone), start a fresh bill. */
-function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, billNoOvr:S.billNoOvr }; }
-function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.billNoOvr=d.billNoOvr||null;
+function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, billNoOvr:S.billNoOvr, pay:S.pay, recv:S.recv }; }
+function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.billNoOvr=d.billNoOvr||null; S.pay=d.pay||"paid"; S.recv=d.recv||"";
+  ls.set("rb_pay",S.pay); ls.set("rb_recv",S.recv); $("#pay-recv").value=S.recv; renderPay();
   ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",S.billNoOvr);
   $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin; saveBill(); }
 function startEdit(b){
   if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
   const kept=!S.editing && S.bill.length;
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"" }; ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
   closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 function endEdit(){
@@ -1247,6 +1344,7 @@ async function saveEdit(){
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; }
   const btn=$("#bill-done"); btn.disabled=true;
   try{ await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
@@ -1265,12 +1363,15 @@ function finishBill(){
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));
-  rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total);
+  rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
+  if(rec.due>0){ const ds=ls.get("rb_dues_sum",{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set("rb_dues_sum",ds); duesSub(); }
+  S.pay="paid"; S.recv=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); $("#pay-recv").value=""; renderPay();
   S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
 }
@@ -1441,6 +1542,10 @@ document.addEventListener("focusout",e=>{ if(e.target.dataset?.hsn!=null && !e.t
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
 $("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#cust-mob").focus(); } });
 $("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); custLookup(); });
+$("#pay-seg").addEventListener("click",e=>{ const b=e.target.closest("[data-pay]"); if(b) setPay(b.dataset.pay); });
+$("#pay-recv").value=S.recv; $("#pay-recv").addEventListener("input",e=>{ S.recv=e.target.value; ls.set("rb_recv",S.recv); e.target.classList.remove("need"); updateBillTotals(); });
+["#cust","#cust-mob"].forEach(k=>$(k).addEventListener("input",e=>e.target.classList.remove("need")));
+renderPay();
 $("#bill-profit").onclick=()=>{ S.profitShown=!S.profitShown; updateBillTotals(); };
 document.addEventListener("visibilitychange",()=>{ if(document.hidden && S.profitShown){ S.profitShown=false; updateBillTotals(); } });
 
@@ -1448,13 +1553,13 @@ document.addEventListener("visibilitychange",()=>{ if(document.hidden && S.profi
 // Remembered on this phone from bills made here; unlocked phones also ask the sheet (all phones' bills).
 function custKey(m){ const n=normMobile(m); return n ? n.slice(-10) : ""; }
 function custCache(){ return ls.get("rb_customers",{}); }
-function rememberCustomer(mob,name,gstin,total){ const k=custKey(mob); if(!k) return; const c=custCache(); const o=c[k]||{count:0,total:0};
-  c[k]={ name:name||o.name||"", gstin:gstin||o.gstin||"", count:(o.count||0)+1, total:r2((o.total||0)+(+total||0)), last:new Date().toISOString() };
+function rememberCustomer(mob,name,gstin,total,due){ const k=custKey(mob); if(!k) return; const c=custCache(); const o=c[k]||{count:0,total:0};
+  c[k]={ name:name||o.name||"", gstin:gstin||o.gstin||"", count:(o.count||0)+1, total:r2((o.total||0)+(+total||0)), last:new Date().toISOString(), due:r2((+o.due||0)+(+due||0)) };
   const keys=Object.keys(c); if(keys.length>2000){ keys.sort((a,b)=>String(c[a].last).localeCompare(String(c[b].last))).slice(0,keys.length-2000).forEach(x=>delete c[x]); }
   ls.set("rb_customers",c); }
 function showCustHint(info){ const h=$("#cust-hint"); h.classList.remove("looking"); if(!info||!info.count){ h.hidden=true; h.innerHTML=""; return; }
   const d=info.last?new Date(info.last).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
-  h.hidden=false; h.innerHTML=`<span><b>${esc(info.name||"")}</b>${info.name?" · ":""}${esc(t("custBack","",info.count,d))}${info.total?` · ${esc(t("custTotal",rs(info.total)))}`:""}</span>`; }
+  h.hidden=false; h.innerHTML=`<span><b>${esc(info.name||"")}</b>${info.name?" · ":""}${esc(t("custBack","",info.count,d))}${info.total?` · ${esc(t("custTotal",rs(info.total)))}`:""}${info.due>0?` · <b class="due">${esc(t("pendingHint",rs(info.due)))}</b>`:""}</span>`; }
 function applyCustomer(info){
   if(!info) return;
   const nameEl=$("#cust"), gEl=$("#cust-gstin");
@@ -1474,12 +1579,12 @@ function custLookup(){
   if(!local){ h.hidden=false; h.classList.add("looking"); h.innerHTML=`${LD("sm")}<span>${esc(t("custLooking"))}</span>`; }
   custT=setTimeout(async()=>{ try{ const j=await apiPost({action:"findCustomer",mobile:k}); if(S.custQ!==k) return;
       h.classList.remove("looking");
-      if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",count:j.customer.count,total:j.customer.total,last:j.customer.last}; ls.set("rb_customers",c); applyCustomer(c[k]); }
+      if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",count:j.customer.count,total:j.customer.total,last:j.customer.last,due:+j.customer.due||0}; ls.set("rb_customers",c); applyCustomer(c[k]); }
       else if(!local){ h.hidden=false; h.innerHTML=`<span>${esc(t("custNew"))}</span>`; }
     }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
 $("#cust").addEventListener("input",()=>{ S.custAuto=""; });
-$("#bill-wa").addEventListener("click",e=>{ if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
+$("#bill-wa").addEventListener("click",e=>{ if(!payCheck()){ e.preventDefault(); return; } if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
 $("#bill-no").addEventListener("input",e=>{ const v=Math.floor(toNum(e.target.value)); if(v>=1){ S.billNoOvr = v===autoBillNo()?null:v; ls.set("rb_billno",S.billNoOvr); const keep=document.activeElement; updateBillTotals(); } });
 $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.value)); if(!(v>=1)){ toast(t("billNoManualBad")); } e.target.value=curBillNo(); updateBillTotals(); });
 $("#bill-no").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
@@ -1496,7 +1601,7 @@ $("#tot-more").onclick=()=>setOpen("#tot-more","#tot-extra","rb_tot_open",$("#to
 $("#bh-no-btn").onclick=()=>{ setOpen("#bh-more","#bh-extra","rb_bh_open",true); if(!S.editing){ const i=$("#bill-no"); i.focus(); i.select(); } };
 $("#ro-x").onclick=()=>{ ls.set("rb_ro_x",true); $("#ro-note").hidden=true; };
 $("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=>{ S.custGstin=e.target.value.toUpperCase(); ls.set("rb_cgstin",S.custGstin); updateBillTotals(); });
-$("#bill-done").onclick=()=>{ if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
+$("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
@@ -2033,6 +2138,7 @@ function monthLabel(k){
 }
 function openBills(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
+  billBackFn=openBills;
   const body=`<div class="bl-bar" id="bl-bar">
       <input id="bl-q" type="search" placeholder="${esc(t("billsSearchPh"))}" autocomplete="off" value="${esc(BL.q)}">
       <div class="bl-chips">
@@ -2103,7 +2209,7 @@ function renderBills(){
       html+=`<div class="bl-grp bl-dgrp${dShut?" shut":""}"><button type="button" class="bl-day" data-tg="${esc(k)}" aria-expanded="${!dShut}">${chev}<span class="bl-ml">${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></button><div class="bl-gb">`;
       byM[m].byD[k].forEach(i=>{ const b=billsCache[i], d=b.date?new Date(b.date):null;
         html+=`<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
+        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${payPill(b)}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
       html+=`</div></div>`;
     });
     html+=`</div></section>`;
@@ -2123,13 +2229,14 @@ async function showBill(b){
   if(b.text===undefined && b.row){
     openSheet(`${t("billNoL")} ${b.n}`, ldBlock(t("billOpening")), "", {full:true});
     try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); b.text=j.bill.text||""; b.lines=j.bill.lines||[]; }
-    catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>openBills(); return; }
+    catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
-  const text=b.text||oldBillText(b);
+  const text=(b.text||oldBillText(b))+payUpdateText(b);
   const body=`<div style="display:grid;gap:12px">
     <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
     ${b.editedAt?`<div class="editnote">${esc(t("editedInfo",fmtDT(b.editedAt),b.editedBy,b.edits))}</div>`:""}
+    ${payBoxHTML(b)}
     <pre class="billtext" id="bd-text">${esc(text)}</pre>
     ${S.cfg.showProfit?profitBox(billProfit(b)):""}
     <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
@@ -2143,7 +2250,11 @@ async function showBill(b){
   const upd=()=>{ const m=$("#bd-mob").value; const bad=normMobile(m)===null; $("#bd-err").textContent=bad?t("mobBad"):""; $("#bd-wa").href=billWa(text,bad?"":m); };
   $("#bd-mob").addEventListener("input",upd); upd();
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
-  $("#bd-back").onclick=()=>{ openBills(); };
+  $("#bd-back").onclick=()=>billBack();
+  if($("#pb-rec")) $("#pb-rec").onclick=()=>openRecordPay({ name:b.customer, mobile:b.mobile, bill:b, due:+b.due||0, bills:[b] });
+  if($("#pb-undo")) $("#pb-undo").onclick=async()=>{ const btn=$("#pb-undo"); btnBusy(btn,true);
+    try{ const r=await apiPost({action:"undoPayment",billId:b.id,row:b.row,n:b.n}); toast(t("undoDone",rs(r.removed))); Object.assign(b,{pay:r.pay,paid:r.paid,due:r.due}); b.payments=(b.payments||[]).slice(); for(let x=b.payments.length-1;x>=0;x--) if(!b.payments[x].at){ b.payments.splice(x,1); break; } duesDirty=true; showBill(b); }
+    catch(e){ btnBusy(btn,false); toast(errMsg(e)); } };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
   const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy}));
     S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
@@ -2153,7 +2264,117 @@ async function showBill(b){
   if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(b);
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
 }
-$("#t-bills").onclick=()=>openBills();
+$("#t-bills").onclick=()=>{ billBackFn=openBills; openBills(); };
+$("#t-dues").onclick=()=>openDues();
+
+/* ---------------- Credit (udhaar) ---------------- */
+let billBackFn=null, duesCache=null, duesDirty=false, duesQ="";
+function billBack(){ (billBackFn||openBills)(); }
+function billPayMode(b){ const pays=b.payments||[], atBill=pays.filter(p=>p.at).reduce((x,p)=>x+(+p.a||0),0);
+  if(!b.pay || b.pay==="Paid") return {pay:"paid",recv:""};
+  return atBill>0 ? {pay:"part",recv:String(atBill)} : {pay:"credit",recv:""}; }
+function payPill(b){ if(b.pay==="Credit"||b.pay==="Part paid") return ` <span class="pill due">${esc(t("pillDue",rs(b.due)))}</span>`; if(b.pay==="Cleared") return ` <span class="pill cleared">${esc(t("pillCleared"))}</span>`; return ""; }
+function payUpdateText(b){ const later=(b.payments||[]).filter(p=>!p.at); if(!later.length) return "";
+  const last=later[later.length-1]; const d=fmtDate(last.d);
+  return "\n\n"+(b.pay==="Cleared" ? t("payUpdateDone",d) : t("payUpdate",d,rs(b.paid),rs(b.due))); }
+function payBoxHTML(b){
+  if(!b.pay || b.pay==="Paid") return "";
+  const hist=(b.payments||[]).map(p=>`<div><span>${esc(fmtDate(p.d))}${p.at?` · ${esc(t("atBilling"))}`:""}${p.by?` · ${esc(p.by)}`:""}${p.note?` · ${esc(p.note)}`:""}</span><b class="num">${rs(p.a)}</b></div>`).join("");
+  const canUndo=(b.payments||[]).some(p=>!p.at);
+  return `<div class="paybox"><div style="display:flex;align-items:center;gap:8px"><b>${esc(t("payL"))}</b>${payPill(b)}${b.pay==="Cleared"&&b.clearedAt?`<span class="note" style="margin:0">${esc(t("clearedOn",fmtDate(b.clearedAt)))}</span>`:""}</div>
+    <div class="kv3"><div><span>${esc(t("total"))}</span><b class="num">${rs(b.total)}</b></div><div><span>${esc(t("waPaid"))}</span><b class="num">${rs(b.paid)}</b></div><div><span>${esc(t("dueL"))}</span><b class="num d">${rs(b.due)}</b></div></div>
+    ${hist?`<div class="payhist"><b style="font-size:13px;color:var(--muted)">${esc(t("payHist"))}</b>${hist}</div>`:""}
+    <div class="row-btns" style="justify-content:flex-start">${b.due>0?`<button type="button" class="btn primary" id="pb-rec">${esc(t("recordPay"))}</button>`:""}${canUndo?`<button type="button" class="btn ghost" id="pb-undo">${esc(t("undoPay"))}</button>`:""}</div></div>`;
+}
+function duesSub(){ const el=$("#t-dues-sub"); if(!el) return; const c=ls.get("rb_dues_sum",null); el.textContent = c&&c.total>0 ? (c.n>0?t("duesSum",rs(c.total),c.n):t("pendingHint",rs(c.total))) : t("duesD"); }
+const daysSince=d=>d?Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/864e5)):0;
+async function loadDues(){
+  const j=await apiPost({action:"listDues"}); duesCache=j; duesDirty=false;
+  ls.set("rb_dues_sum",{total:j.total||0,n:(j.customers||[]).length}); duesSub(); return j;
+}
+async function openDues(){
+  if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
+  openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
+  try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
+  renderDues();
+}
+function renderDues(){
+  const box=$("#du-body"); if(!box||!duesCache) return;
+  const j=duesCache, list=j.customers||[];
+  if(!list.length){ box.innerHTML=`<div class="empty"><h2>${esc(t("duesNone"))}</h2><p>${esc(t("duesTabHint"))}</p></div>`; return; }
+  box.innerHTML=`<div style="display:grid;gap:10px">
+    <div class="dues-sum"><b class="num">${rs(j.total)}</b><span>${esc(t("duesFrom",list.length,j.bills))}</span></div>
+    <input id="du-q" type="search" placeholder="${esc(t("duesSearch"))}" autocomplete="off" value="${esc(duesQ)}" style="width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;color:var(--fg)">
+    <div class="bills-list" id="du-list" style="margin-top:0"></div></div>`;
+  const draw=()=>{ const q=duesQ.trim().toLowerCase(), dq=q.replace(/\D/g,"");
+    const rows=list.map((c,i)=>({c,i})).filter(({c})=>!q || (c.name||"").toLowerCase().includes(q) || (dq.length>=3 && (c.mobile||"").includes(dq)));
+    $("#du-list").innerHTML = rows.map(({c,i})=>{ const days=daysSince(c.oldest);
+      return `<button type="button" class="duecard" data-dc="${i}"><span class="av">${esc((c.name||"?").trim().charAt(0).toUpperCase())}</span><b>${esc(c.name||c.mobile||"?")}</b><span class="amt num">${rs(c.due)}</span>
+        <span class="m">${esc(c.mobile||"")}${c.mobile?" · ":""}${esc(t("billsN",c.bills.length))}</span><span class="age${days>30?" old":""}">${esc(t("since",fmtShort(c.oldest),days))}</span></button>`; }).join("") || `<p class="note">${esc(t("billsNone"))}</p>`; };
+  draw();
+  $("#du-q").addEventListener("input",e=>{ duesQ=e.target.value; draw(); });
+  $("#du-list").addEventListener("click",e=>{ const c=e.target.closest("[data-dc]"); if(c) openDueCustomer(list[+c.dataset.dc]); });
+}
+const fmtShort=d=>d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
+function remindText(c){
+  const lines=c.bills.map(b=>`• Bill ${b.n} (${fmtDate(b.date)}): ${rs(b.due)}${b.paid>0?` (of ${rs(b.total)})`:""}`).join("\n");
+  return STR.en.remindMsg(c.name||"",S.cfg.shopName,rs(c.due),lines);
+}
+function openDueCustomer(c){
+  const m=normMobile(c.mobile||"");
+  const body=`<div style="display:grid;gap:12px">
+    <div><button type="button" class="btn ghost" id="dc-back">← ${esc(t("back"))}</button></div>
+    <div class="dues-sum"><b class="num">${rs(c.due)}</b><span>${esc(c.mobile||"")}${c.mobile?" · ":""}${esc(t("billsN",c.bills.length))} · ${esc(t("since",fmtShort(c.oldest),daysSince(c.oldest)))}</span></div>
+    <div class="row-btns" style="justify-content:flex-start">
+      <button type="button" class="btn primary" id="dc-pay">${esc(t("recordPay"))}</button>
+      ${m?`<a class="btn wa" id="dc-wa" target="_blank" rel="noopener" href="${esc(`https://wa.me/${m}?text=${encodeURIComponent(remindText(c))}`)}">${esc(t("remind"))}</a><a class="btn ghost" href="tel:${esc(c.mobile)}">${esc(t("call"))}</a>`:""}
+    </div>
+    <div class="bills-list" style="margin-top:0">${c.bills.map((b,i)=>`<button type="button" class="billcard" data-db="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)} · ${esc(fmtShort(b.date))}</b><span class="amt num" style="color:var(--danger)">${rs(b.due)}</span>
+      <span class="meta2">${esc(t("ofTotal",rs(b.paid),rs(b.total)))}${payPill(b)}</span></button>`).join("")}</div></div>`;
+  openSheet(c.name||c.mobile||t("duesT"), body, "", {full:true});
+  $("#dc-back").onclick=()=>{ if(duesDirty) openDues(); else { openSheet(t("duesT"), `<div id="du-body"></div>`, "", {full:true}); renderDues(); } };
+  $("#dc-pay").onclick=()=>openRecordPay(c);
+  $("#sheet-body").querySelectorAll("[data-db]").forEach(el=>el.onclick=()=>{ const b=c.bills[+el.dataset.db]; billBackFn=()=>backToCustomer(c); showBill({...b, customer:c.name, mobile:c.mobile}); });
+}
+/** Record money received: for one bill (c.bill) or across the customer's open bills, oldest first. */
+async function backToCustomer(c){
+  if(!duesDirty){ openDueCustomer(c); return; }
+  openSheet(c.name||t("duesT"), ldBlock(), "", {full:true});
+  try{ await loadDues(); }catch{}
+  const again=(duesCache&&duesCache.customers||[]).find(x=>x.mobile===c.mobile && (x.mobile || x.name===c.name)); if(again) openDueCustomer(again); else openDues();
+}
+function openRecordPay(c){
+  const due=r2(c.bill?(+c.bill.due||0):c.due), bills=c.bill?[c.bill]:c.bills;
+  let note="";
+  const body=`<div class="form">
+    <div class="dues-sum"><b class="num">${rs(due)}</b><span>${esc(c.name||"")}${c.mobile?` · ${esc(c.mobile)}`:""}${c.bill?` · ${esc(t("billNoL"))} ${esc(c.bill.n)}`:""}</span></div>
+    <div class="field"><label for="rp-amt">${esc(t("payAmt"))}</label><input id="rp-amt" class="num" inputmode="decimal" value="${esc(String(due))}" style="font-size:22px;font-weight:700"></div>
+    <div class="chips" id="rp-quick"><button type="button" data-q="${due}">${esc(t("fullAmt",rs(due)))}</button>${due>=2?`<button type="button" data-q="${r2(due/2)}">½ · ${rs(r2(due/2))}</button>`:""}</div>
+    <div class="field"><label>${esc(t("payNote"))}</label><div class="chips" id="rp-note"><button type="button" data-n="Cash">Cash</button><button type="button" data-n="UPI">UPI</button><button type="button" data-n="Bank">Bank</button><button type="button" data-n="Cheque">Cheque</button></div></div>
+    <div class="preview" id="rp-prev"></div>
+    <div class="err" id="rp-err"></div></div>`;
+  openSheet(t("recordPay"), body, `<button class="btn ghost" id="rp-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="rp-save"></button>`);
+  const prev=()=>{ const a=toNum($("#rp-amt").value); const ok=!isNaN(a)&&a>0;
+    $("#rp-save").textContent=t("paySave",rs(ok?Math.min(a,due):0)); $("#rp-save").disabled=!ok;
+    if(!ok){ $("#rp-prev").innerHTML=""; return; }
+    let left=a; const out=[];
+    for(const b of bills){ if(left<=0) break; const take=Math.min(+b.due||0,left); left=r2(left-take); const rest=r2((+b.due||0)-take); out.push(rest>0?t("leavesBill",b.n,rs(rest)):t("clearsBill",b.n)); }
+    $("#rp-prev").innerHTML=`<span>${esc(t("payPreview"))}</span>`+out.map(x=>`<span>• ${esc(x)}</span>`).join("")+(left>0?`<span style="color:var(--gold)">${esc(t("payMore",rs(left)))}</span>`:""); };
+  $("#rp-amt").addEventListener("input",prev); prev();
+  $("#rp-quick").onclick=e=>{ const b=e.target.closest("[data-q]"); if(b){ $("#rp-amt").value=b.dataset.q; prev(); } };
+  $("#rp-note").onclick=e=>{ const b=e.target.closest("[data-n]"); if(!b) return; note = note===b.dataset.n ? "" : b.dataset.n; $("#rp-note").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.n===note)); };
+  $("#rp-cancel").onclick=()=>{ if(c.bill) showBill(c.bill); else backToCustomer(c); };
+  $("#rp-save").onclick=async()=>{ const a=toNum($("#rp-amt").value); if(isNaN(a)||a<=0) return;
+    const btn=$("#rp-save"); btnBusy(btn,true);
+    try{ const req={action:"recordPayment",amount:Math.min(a,due),note};
+      if(c.bill){ req.billId=c.bill.id; req.row=c.bill.row; req.n=c.bill.n; } else req.mobile=c.mobile;
+      const r=await apiPost(req); toast(t("payDone",rs(r.used),r.cleared)); duesDirty=true;
+      const ck=custKey(c.mobile); if(ck){ const cc=custCache(); if(cc[ck]){ cc[ck].due=r2(Math.max(0,(+cc[ck].due||0)-r.used)); ls.set("rb_customers",cc); } }
+      if(c.bill){ const b=c.bill; const pays=(b.payments||[]).concat([{d:new Date().toISOString(),a:r.used,by:byName(),note}]); const paid=r2((+b.paid||0)+r.used), dd=r2(Math.max(0,(+b.total||0)-paid));
+        Object.assign(b,{payments:pays,paid,due:dd,pay:dd>0?"Part paid":"Cleared",clearedAt:dd>0?"":new Date().toISOString()}); showBill(b); loadDues().catch(()=>{}); }
+      else { await loadDues().catch(()=>{}); const again=(duesCache&&duesCache.customers||[]).find(x=>x.mobile===c.mobile); if(again) openDueCustomer(again); else openDues(); }
+    }catch(e){ btnBusy(btn,false); $("#rp-err").textContent=e&&e.code==="bad_pin"?t("wrongPin"):t("payFail"); } };
+}
 $("#t-hindi").onclick=()=>openToHindi();
 function openToHindi(){
   let onlyMissing=false;

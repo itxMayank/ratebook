@@ -114,7 +114,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'rev': return out_({ ok: true, rev: getRev_() });
-      case 'list': ensureEnv_(); return out_(list_());
+      case 'list': ensureEnv_(); dedupeOnce_(); return out_(list_());
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
       case 'images': return out_(images_(String(p.id || '')));
@@ -220,6 +220,65 @@ function ensureEnv_() {
   } finally { lock.releaseLock(); }
 }
 
+/**
+ * One time: remove bills saved twice (same billId — the phone re-sent a bill whose reply got lost), in both modes,
+ * keeping the first copy. Only exact repeats are removed; two different bills that share a number are left alone.
+ * Afterwards the customer counts, totals and dues are recounted from the remaining bills (names and GSTINs are kept).
+ */
+function dedupeOnce_() {
+  const cache = CacheService.getScriptCache();
+  if (cache.get('DEDUP_OK') === '1') return;
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('DEDUP_OK') === '1') { cache.put('DEDUP_OK', '1', 21600); return; }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  const keep = ENV_;
+  try {
+    if (props.getProperty('DEDUP_OK') === '1') return;
+    const report = {};
+    ['test', 'live'].forEach(env => {
+      ENV_ = env;
+      const s = ss_().getSheetByName(tab_('Bills'));
+      if (!s) return;
+      const n = s.getLastRow() - 1;
+      if (n < 1) return;
+      const ids = s.getRange(2, BILL_COLS.indexOf('billId') + 1, n, 1).getValues();
+      const seen = {}, gone = [];
+      ids.forEach((r, i) => { const k = String(r[0] || ''); if (!k) return; if (seen[k]) gone.push(i + 2); else seen[k] = 1; });
+      for (let j = gone.length - 1; j >= 0; j--) s.deleteRow(gone[j]);
+      report[env] = gone.length;
+      if (gone.length) recountCustomers_();
+    });
+    props.setProperty('DEDUP_OK', '1');
+    props.setProperty('DEDUP_RESULT', JSON.stringify(report));
+    cache.put('DEDUP_OK', '1', 21600);
+    if (report.test || report.live) bump_();
+  } finally { ENV_ = keep; lock.releaseLock(); }
+}
+
+/** Recount every customer's bills, total, last bill and dues from this mode's Bills tab. Names and GSTINs stay as they are. */
+function recountCustomers_() {
+  const cs = ss_().getSheetByName(tab_('Customers'));
+  if (!cs) return;   // built fresh from the bills the next time it's needed
+  const bs = sheet_(tab_('Bills'), BILL_COLS);
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const n = bs.getLastRow() - 1;
+  const stat = {};
+  if (n > 0) bs.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
+    const k = mob10_(r[B.mobile]); if (!k) return;
+    const x = stat[k] || (stat[k] = { bills: 0, total: 0, last: '', lastNo: '', due: 0 });
+    x.bills++; x.total = r2_(x.total + num_(r[B.total])); x.last = r[B.date]; x.lastNo = r[B.billNo];
+    if (r[B.payment] === 'Credit' || r[B.payment] === 'Part paid') x.due = r2_(x.due + num_(r[B.due]));
+  });
+  const m = cs.getLastRow() - 1;
+  if (m < 1) return;
+  const rows = cs.getRange(2, 1, m, CUST_COLS.length).getValues().map(r => {
+    const x = stat[mob10_(r[0])] || { bills: 0, total: 0, last: '', lastNo: '', due: 0 };
+    return [mob10_(r[0]) ? "'" + mob10_(r[0]) : r[0], r[1], r[2], x.bills, x.total, x.last, x.lastNo, x.due];
+  });
+  cs.getRange(2, 1, m, CUST_COLS.length).setValues(rows);
+}
+
 function readConfig_() {
   const s = sheet_(CONFIG, ['key', 'value']);
   const n = s.getLastRow() - 1;
@@ -244,7 +303,7 @@ function doPost(e) {
   let body;
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
-  try { ensureEnv_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
+  try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') return out_(takeBill_(body));   // anyone making a bill can do this, no PIN
   const auth = checkPin_(body.pin);
   if (auth !== 'ok') return out_({ ok: false, error: auth });

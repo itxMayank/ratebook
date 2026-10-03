@@ -147,6 +147,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 ## Reminder details, duplicate guard (added 3 Oct 2026)
 
 - **No duplicate bills:** `takeBill` skips a bill whose `billId` is already among the last 500 rows of that mode's Bills tab, and replies `dup: true`. Before this, a phone that lost the server's reply re-sent the bill from its queue and it was saved twice.
+- **One-time cleanup** (`dedupeOnce_`, flagged `DEDUP_OK`; counts in script property `DEDUP_RESULT`): deletes later rows that repeat an earlier `billId` in both `Bills` and `Test Bills`. Two different bills sharing a number are kept. Afterwards it recounts that mode's Customers stats with `recountCustomers_()` (names and GSTINs kept). Likely cause of the old duplicates: Share opens WhatsApp at once, Android pauses the app before the save reply arrives, and the queue re-sends the bill.
 - **Reminder:** the WhatsApp text now lists each open bill with "GST" in front of GST bills, the date, every item line with its amount, then total, paid and due, and finally the total due. `listDues` returns `items` and `gst` for each bill; `itemLinesText()` turns the items summary into readable lines.
 
 ## How to update

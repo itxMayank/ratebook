@@ -150,6 +150,21 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **One-time cleanup** (`dedupeOnce_`, flagged `DEDUP_OK`; counts in script property `DEDUP_RESULT`): deletes later rows that repeat an earlier `billId` in both `Bills` and `Test Bills`. Two different bills sharing a number are kept. Afterwards it recounts that mode's Customers stats with `recountCustomers_()` (names and GSTINs kept). Likely cause of the old duplicates: Share opens WhatsApp at once, Android pauses the app before the save reply arrives, and the queue re-sends the bill.
 - **Reminder:** the WhatsApp text now lists each open bill with "GST" in front of GST bills, the date, every item line with its amount, then total, paid and due, and finally the total due. `listDues` returns `items` and `gst` for each bill; `itemLinesText()` turns the items summary into readable lines.
 
+## Laptop / desktop layout (added 3 Oct 2026)
+
+- **Phones are not affected:** every desktop rule sits inside `@media (min-width:1024px)` (plus 1280 and 1600 steps). The desktop JavaScript is gated on `DESK()` (`matchMedia("(min-width:1024px)")`). Screenshots at 390px wide were checked pixel by pixel against the previous version.
+- **Layout (POS style):**
+  - Left side menu instead of the bottom tabs: an icon rail at 1024–1279px, a full menu with labels and keyboard hints from 1280px. The Bill tab is hidden.
+  - The price list is a card grid.
+  - The **bill is always open in a fixed right panel**, with the total bar pinned to the panel's bottom.
+  - Sheets become centred windows.
+  - Tools is a two-column grid.
+  - Hover states, focus rings, slim scrollbars.
+  - In the code: `applyDesk()` (run from `renderAll`) un-hides `#view-bill`. `setTab("bill")` maps to Prices on desktop.
+- **Keyboard:** `/` or Ctrl/⌘+K focuses search. Enter in search adds the top result to the bill and clears the box (unless the text looks like a plain-language command, which still opens the wand). Esc clears search or closes a window.
+- Adding an item on desktop highlights the new line in the bill panel instead of showing a toast. The phone's "typing" keyboard helpers (`focusin` scroll and padding) are skipped on desktop.
+- Resizing the window across 1024px switches layouts live.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

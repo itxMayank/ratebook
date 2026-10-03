@@ -492,6 +492,82 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .cmd-mic{display:flex;gap:8px;margin-top:8px}
 .cmd-mic .btn{flex:1}
 .btn.listening{background:var(--accent);color:var(--accent-fg);animation:pulse 1.2s infinite}
+
+/* ===================== Laptop / desktop (phones are not affected: everything below is inside min-width queries) ===================== */
+.side-head,.side-foot{display:none}
+@media (min-width:1024px){
+  :root{--railw:88px;--billw:384px;--gut:28px}
+  body,body.typing{padding:0 var(--billw) 0 var(--railw)}
+  .top{padding:18px var(--gut) 12px;gap:12px}
+  .top .bar{min-height:44px}
+  main,body.typing main{padding:4px var(--gut) 40px}
+  /* side rail instead of the bottom tab bar */
+  .tabs,body.typing .tabs{display:flex;flex-direction:column;align-items:stretch;gap:4px;top:0;bottom:0;right:auto;width:var(--railw);padding:18px 10px;border-top:0;border-right:1px solid var(--line)}
+  .tabs button{padding:10px 4px;border-radius:12px;font-size:12px;transition:background .15s,color .15s}
+  .tabs button:hover{background:var(--surface-2);color:var(--fg)}
+  .tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+  #tab-bill{display:none}
+  .side-head{display:grid;justify-items:center;gap:6px;margin-bottom:14px}
+  .side-head b{display:none}
+  .side-logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent);color:var(--accent-fg);font:800 20px var(--f-display)}
+  /* price list as a grid */
+  #list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  #list>.empty,#list>.skel,#list>.list,#list>p{grid-column:1/-1}
+  .card{transition:border-color .15s,box-shadow .15s,transform .15s}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:var(--shadow)}
+  .menu-list{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .menu-list button{transition:border-color .15s,box-shadow .15s}
+  .menu-list button:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:var(--shadow)}
+  /* the bill is always open on the right */
+  #view-bill{position:fixed;top:0;right:0;bottom:0;width:var(--billw);z-index:15;overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border-left:1px solid var(--line);padding:18px 18px 0;display:flex;flex-direction:column;gap:10px}
+  #view-bill .section-title{margin:6px 0 0}
+  #view-bill #bill-search-results:empty{display:none}
+  #view-bill .billhead{margin-top:0}
+  main,body.typing main{padding-bottom:112px}
+  .brand{font-size:21px;line-height:1.15}
+  #view-bill .billhead{background:var(--bg)}
+  #view-bill .empty{padding:28px 12px}
+  #view-bill .total{position:sticky;bottom:0;margin:auto -18px 0;border-radius:0;border-width:1px 0 0;box-shadow:0 -8px 24px rgba(30,20,20,.06);padding:14px 18px 16px;z-index:2}
+  .bill-line.flash{animation:flash 1.1s ease-out}
+  @keyframes flash{0%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent);background:var(--accent-soft)}100%{box-shadow:0 0 0 0 transparent}}
+  .fab,body.typing .fab{right:calc(var(--billw) + var(--gut));bottom:28px}
+  .toast{left:var(--railw);right:var(--billw);bottom:104px;margin:0 auto;max-width:480px}
+  .brand #count{display:none}
+  /* pop-up sheets become centred windows */
+  .scrim{backdrop-filter:blur(2px)}
+  .sheet{left:50%;right:auto;top:50%;bottom:auto;width:min(640px,calc(100vw - 64px));max-width:none;margin:0;border-radius:20px;max-height:86vh;transform:translate(-50%,-47%) scale(.98);opacity:0;transition:transform .18s cubic-bezier(.2,.8,.2,1),opacity .18s;box-shadow:0 24px 64px rgba(0,0,0,.25);padding-bottom:0}
+  .sheet.on{transform:translate(-50%,-50%);opacity:1}
+  .sheet.full{height:auto;min-height:min(72vh,680px);max-height:88vh}
+  .sheet .grab{display:none}
+  .sheet-h{padding:18px 22px 10px}
+  .sheet-b{padding:4px 22px 22px}
+  .sheet-f{padding:12px 22px 16px}
+  body.typing .sheet-b{padding-bottom:22px}
+  .picker{place-items:center;padding:0}
+  .picker-card{border-radius:20px;max-width:460px;padding:18px}
+  /* pointer niceties */
+  button,a,label[for],.billcard,.duecard,.card{cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .billcard:hover,.duecard:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 35%,transparent);border-radius:10px;border:2px solid transparent;background-clip:content-box}
+}
+@media (min-width:1280px){
+  :root{--railw:232px;--billw:420px;--gut:32px}
+  .brand{font-size:24px}
+  .tabs,body.typing .tabs{padding:20px 14px}
+  .tabs button{display:flex;align-items:center;gap:12px;padding:11px 14px;font-size:15px;text-align:left}
+  .tabs button svg{width:22px;height:22px;flex:none}
+  .side-head{display:flex;align-items:center;gap:10px;justify-items:start;padding:0 6px 18px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+  .side-head b{display:block;font:700 18px var(--f-display)}
+  .side-foot{display:grid;gap:6px;margin-top:auto;padding:14px 8px 4px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .side-foot div{display:flex;align-items:center;gap:8px}
+  .side-foot kbd{min-width:22px;text-align:center;font:600 11px var(--f-body);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:2px 6px;background:var(--bg);color:var(--fg)}
+}
+@media (min-width:1600px){
+  :root{--billw:460px}
+  #list{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+}
 </style>
 </head>
 <body>
@@ -610,9 +686,11 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 <button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-t="add">Add</span></button>
 
 <nav class="tabs" role="tablist">
+  <div class="side-head" aria-hidden="true"><span class="side-logo">₹</span><b>Rate Book</b></div>
   <button role="tab" id="tab-items" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span data-t="tabPrices">Prices</span></button>
   <button role="tab" id="tab-bill" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg><span data-t="tabBill">Bill</span><span class="badge num" id="bill-badge" hidden>0</span></button>
   <button role="tab" id="tab-tools" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span data-t="tabTools">Tools</span></button>
+  <div class="side-foot" id="side-foot"></div>
 </nav>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -748,6 +826,9 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Desktop strings */
+Object.assign(STR.en,{kSearch:"Search",kAdd:"Add top result to bill",kClose:"Close / clear",billEmptyDesk:"Click + Bill on any item, or search and press Enter to add the top result."});
+Object.assign(STR.hi,{kSearch:"खोजें",kAdd:"पहला नतीजा बिल में जोड़ें",kClose:"बंद करें / साफ़ करें",billEmptyDesk:"किसी भी सामान पर + बिल दबाएँ, या खोजकर Enter दबाएँ।"});
 /* Test / real mode strings */
 Object.assign(STR.en,{testBadge:"TEST",envT:"Test mode",envD:"Bills made now are practice bills. They, their credit and their bill numbers are kept separate. Turn this off when you start billing real customers: real bills start fresh at No. 1. Items, photos and customer names stay the same in both.",
   envOffQ:"Start real billing? From now on, bills on every phone are real. Test bills are kept separately and won't show.",envOnQ:"Switch back to test mode? New bills on every phone will be practice bills until you turn it off again.",
@@ -1278,7 +1359,7 @@ function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
 function renderBill(){
   const wrap=$("#bill-lines");
   if(!S.bill.length){
-    wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t("billEmptyD"))}</p></div>`;
+    wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t(DESK()?"billEmptyDesk":"billEmptyD"))}</p></div>`;
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
@@ -1432,7 +1513,7 @@ function renderBillSearch(){
   box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="per" lang="hi"> · ${esc(it.nameHi)}</span>`:""}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
 function renderAll(){
-  renderEnv();
+  renderEnv(); applyDesk();
   renderList(); renderBill(); renderBadge();
   $("#fab").hidden = !(S.canWrite && S.tab==="items" && S.loaded);
   $("#ro-note").hidden = S.canWrite || ls.get("rb_ro_x",false);
@@ -1446,8 +1527,25 @@ function renderAll(){
 const vv=window.visualViewport, root=document.documentElement;
 function vvSet(){ if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); }
 if(vv){ vv.addEventListener("resize",vvSet); vv.addEventListener("scroll",vvSet); vvSet(); }
+/* Laptop / desktop: the bill stays open on the right, so there is no separate Bill tab. */
+const deskMQ=window.matchMedia("(min-width:1024px)");
+const DESK=()=>deskMQ.matches;
+function applyDesk(){
+  const d=DESK(); document.documentElement.classList.toggle("desk",d);
+  const vb=$("#view-bill"); if(vb) vb.hidden = !(d || S.tab==="bill");
+  const f=$("#side-foot"); if(f) f.innerHTML = `<div><kbd>/</kbd><span>${esc(t("kSearch"))}</span></div><div><kbd>Enter</kbd><span>${esc(t("kAdd"))}</span></div><div><kbd>Esc</kbd><span>${esc(t("kClose"))}</span></div>`;
+}
+deskMQ.addEventListener ? deskMQ.addEventListener("change",()=>{ applyDesk(); setTab(S.tab==="bill"&&DESK()?"items":S.tab); }) : deskMQ.addListener(()=>{ applyDesk(); setTab(S.tab); });
+document.addEventListener("keydown",e=>{
+  if(!DESK()) return;
+  const a=document.activeElement, typing=a && a.matches && a.matches("input,textarea,select,[contenteditable=true]");
+  const sheetOpen=!$("#sheet").hidden || !$("#picker").hidden;
+  if(!sheetOpen && ((e.key==="/" && !typing) || ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"))){ e.preventDefault(); if(S.tab!=="items") setTab("items"); const q=$("#q"); q.focus(); q.select(); return; }
+  if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
+});
 let blurT;
 document.addEventListener("focusin",e=>{
+  if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop
   const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]),textarea")) return;
   clearTimeout(blurT); document.body.classList.add("typing");
   if(el.closest(".top")) return;
@@ -1459,7 +1557,8 @@ document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=docume
 function setTab(tab){
   S.tab=tab;
   if(tab!=="tools"){ S.q=S.qTabs[tab]||""; const qi=$("#q"); qi.value=S.q; qi.placeholder=t(tab==="bill"?"billSearchPh":"searchPh"); $("#q-clear").hidden=!S.q; }
-  ["items","bill","tools"].forEach(k=>{ $("#view-"+k).hidden = k!==tab; $("#tab-"+k).setAttribute("aria-selected",k===tab); });
+  if(DESK() && tab==="bill"){ tab="items"; S.tab="items"; }
+  ["items","bill","tools"].forEach(k=>{ $("#view-"+k).hidden = k==="bill" ? !(k===tab || DESK()) : k!==tab; $("#tab-"+k).setAttribute("aria-selected",k===tab); });
   $("#searchbox").hidden = tab==="tools"; if(tab==="tools") $("#mictip").hidden=true;
   renderAll(); window.scrollTo(0,0);
 }
@@ -1473,7 +1572,9 @@ const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
 let toastT; function toast(msg){ const el=$("#toast"); const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); if(e.target.value) $("#mictip").hidden=true; });
-$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(S.canWrite && looksLikeCommand(S.q)) openCmd(S.q,true); else e.target.blur(); } });
+$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(S.canWrite && looksLikeCommand(S.q)) openCmd(S.q,true);
+  else if(DESK() && S.q.trim()){ const top=runSearch(S.q.trim()).res[0]; if(top){ addToBill(top.e.it.id); e.target.value=""; onQuery(""); } }
+  else e.target.blur(); } });
 $("#q-clear").onclick=()=>{ $("#q").value=""; onQuery(""); $("#q").focus(); };
 $("#lang-en").onclick=()=>{ S.lang="en"; ls.set("rb_lang","en"); applyLang(); };
 $("#lang-hi").onclick=()=>{ S.lang="hi"; ls.set("rb_lang","hi"); applyLang(); };
@@ -1544,7 +1645,9 @@ function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
   if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false)});
-  saveBill(); if(!l) toast(`${it.name} ${t("added")}`);
+  saveBill();
+  if(DESK()){ renderBill(); renderList(); const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
+  if(!l) toast(`${it.name} ${t("added")}`);
   if(S.tab==="bill") renderBill(); else renderList();
 }
 document.addEventListener("click",e=>{

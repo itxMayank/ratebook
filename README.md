@@ -40,6 +40,10 @@ Anyone with the app can view prices and make bills. To add or change prices, a p
 
 Upload the new `index.html` to the same GitHub repository. Phones pick up the new version the next time the app is opened online. Prices aren't affected.
 
+## Turn on automatic backups (once)
+
+In the Apps Script editor, pick **setupBackups** in the function list at the top and press **Run**. Allow the permissions it asks for. From then on a full copy of the sheet is saved every 4 hours in the Drive folder "Rate Book backups". You can see and restore copies in the app under **Tools → Settings → Backups**.
+
 ## Good to know
 
 - You can also edit prices directly in the Google Sheet's **Items** tab. Phones pick up the change within about 30 seconds.

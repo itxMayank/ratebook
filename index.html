@@ -369,6 +369,16 @@ label.thumb{cursor:pointer}
 .mob-wrap .ld{position:absolute;right:12px;top:50%;margin-top:-8px}
 .cust-hint.looking{color:var(--muted)}
 .paybar{display:grid;gap:8px}
+.bk-sec{display:grid;gap:10px}
+.bk-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bk-status{display:flex;align-items:flex-start;gap:8px;font-size:14px}
+.bk-status .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--good)}
+.bk-status.off .dot{background:var(--gold)}
+.bk-warn{margin:0;color:var(--gold);font-weight:600}
+.bk-mailrow{display:flex;gap:8px}
+.bk-mailrow input{flex:1;min-width:0}
+.bk-item{display:grid;gap:8px;border:1px solid var(--line);background:var(--bg);border-radius:var(--r);padding:10px 12px}
+.bk-acts{display:flex;gap:8px}
 .envbadge{display:inline-block;margin-left:8px;vertical-align:middle;font:800 11px/1 var(--f-body);letter-spacing:.08em;color:#fff;background:var(--gold);border-radius:6px;padding:4px 6px}
 .envnote{font-size:13px;font-weight:600;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:10px;padding:7px 12px;margin-bottom:10px}
 .env-sec.test{border:1.5px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:var(--r);padding:12px}
@@ -826,6 +836,21 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Backup strings */
+Object.assign(STR.en,{bkT:"Backups",bkNow:"Back up now",bkAutoOn:"Automatic every 4 hours",bkLast:d=>`last ${d}`,bkCopies:n=>`${n} cop${n===1?"y":"ies"} kept`,bkNone:"No backups yet.",
+  bkOff:"Automatic backups are off. One-time step: open the script in Apps Script, choose setupBackups at the top, press Run and allow.",bkPerm:"Backups need a one-time permission. Open the script in Apps Script, choose setupBackups at the top, press Run and allow.",
+  bkSee:"See backups & restore",bkDone:"Backup saved.",bkFail:"Couldn't make a backup. Check the internet and try again.",
+  bkMailL:"Weekly Excel copy by email (optional)",bkMailPh:"someone@gmail.com",bkMailD:"Best sent to a different person's email, so a copy exists even if this Google account has a problem.",bkMailSave:"Save email",bkMailSaved:"Weekly email saved.",bkMailLast:d=>`Last sent ${d}`,bkMailErr:"Last weekly email failed:",bkBadEmail:"Enter a valid email address.",
+  bkListT:"Backups",bkListD:"Full copies of the sheet: items, photos, bills, credit and settings. Kept: every copy from the last 2 days, one per day for a month, one per month for a year.",
+  bkManual:"manual",bkBefore:"before restore",bkOpen:"Open",bkRestore:"Restore",bkRestoreQ:d=>`Restore the data as it was on ${d}? Every phone will switch to it. Your current data is saved as a backup first, so this can be undone.`,
+  bkRestoreYes:"Yes, restore",bkRestored:"Restored. Every phone will load this data.",bkRestoredNote:(d,f)=>`Restored on ${d} from ${f}`,bkCurrent:"Open the current sheet"});
+Object.assign(STR.hi,{bkT:"बैकअप",bkNow:"अभी बैकअप लें",bkAutoOn:"हर 4 घंटे में अपने-आप",bkLast:d=>`पिछला ${d}`,bkCopies:n=>`${n} कॉपी रखी हैं`,bkNone:"अभी कोई बैकअप नहीं।",
+  bkOff:"अपने-आप बैकअप बंद है। एक बार करना है: Apps Script में स्क्रिप्ट खोलें, ऊपर setupBackups चुनें, Run दबाएँ और अनुमति दें।",bkPerm:"बैकअप के लिए एक बार अनुमति चाहिए। Apps Script में स्क्रिप्ट खोलें, ऊपर setupBackups चुनें, Run दबाएँ और अनुमति दें।",
+  bkSee:"बैकअप देखें और वापस लाएँ",bkDone:"बैकअप सेव हो गया।",bkFail:"बैकअप नहीं बना। इंटरनेट देखकर फिर कोशिश करें।",
+  bkMailL:"हर हफ़्ते Excel कॉपी ईमेल पर (वैकल्पिक)",bkMailPh:"someone@gmail.com",bkMailD:"किसी दूसरे व्यक्ति के ईमेल पर भेजना सबसे अच्छा है, ताकि इस Google खाते में दिक्कत होने पर भी कॉपी रहे।",bkMailSave:"ईमेल सेव करें",bkMailSaved:"हफ़्ते का ईमेल सेव हो गया।",bkMailLast:d=>`पिछला भेजा ${d}`,bkMailErr:"पिछला ईमेल नहीं गया:",bkBadEmail:"सही ईमेल पता डालें।",
+  bkListT:"बैकअप",bkListD:"शीट की पूरी कॉपी: सामान, फ़ोटो, बिल, उधार और सेटिंग। रखी जाती हैं: पिछले 2 दिन की सब, एक महीने तक रोज़ की एक, एक साल तक हर महीने की एक।",
+  bkManual:"हाथ से",bkBefore:"वापस लाने से पहले",bkOpen:"खोलें",bkRestore:"वापस लाएँ",bkRestoreQ:d=>`${d} वाला डेटा वापस लाएँ? हर फ़ोन उसी पर चला जाएगा। अभी का डेटा पहले बैकअप में सेव होगा, इसलिए इसे वापस बदला जा सकता है।`,
+  bkRestoreYes:"हाँ, वापस लाएँ",bkRestored:"वापस आ गया। हर फ़ोन यही डेटा लोड करेगा।",bkRestoredNote:(d,f)=>`${d} को ${f} से वापस लाया गया`,bkCurrent:"अभी की शीट खोलें"});
 /* Desktop strings */
 Object.assign(STR.en,{kSearch:"Search",kAdd:"Add top result to bill",kClose:"Close / clear",billEmptyDesk:"Click + Bill on any item, or search and press Enter to add the top result."});
 Object.assign(STR.hi,{kSearch:"खोजें",kAdd:"पहला नतीजा बिल में जोड़ें",kClose:"बंद करें / साफ़ करें",billEmptyDesk:"किसी भी सामान पर + बिल दबाएँ, या खोजकर Enter दबाएँ।"});
@@ -1847,7 +1872,7 @@ async function apiPost0(body){
   if(!r.ok) throw {code:"http"};
   const j=await r.json(); if(!j.ok) throw {code:j.error||"server"}; return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); return t("writeFail"); }
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
 let chain=Promise.resolve();
 function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
 let resyncT; function resyncSoon(){ clearTimeout(resyncT); resyncT=setTimeout(sync,1500); }
@@ -2129,6 +2154,7 @@ function openSettings(){
       <div class="two"><div class="field"><label for="cf-dgst">${esc(t("defGst"))}</label><input id="cf-dgst" class="num" inputmode="decimal" value="${esc(c.defaultGst)}" ${w?"":"disabled"}></div>
         <div class="field"><label for="cf-dhsn">${esc(t("defHsn"))}</label><input id="cf-dhsn" class="num" inputmode="numeric" maxlength="10" value="${esc(c.defaultHsn)}" ${w?"":"disabled"}></div></div>
     </div>
+    ${w?`<div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`:""}
     <div class="cfg-sec"><label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-profit" ${S.cfg.showProfit?"checked":""} ${w?"":"disabled"}></label></div>
     <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>
     ${w?`<div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`:""}
@@ -2148,6 +2174,7 @@ function openSettings(){
   $("#cf-pin").onclick=async()=>{ const p1=$("#cf-p1").value.trim(), p2=$("#cf-p2").value.trim(), er=$("#cf-perr");
     if(!/^\d{4,8}$/.test(p1)){ er.textContent=t("pinRule"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
+  if($("#cf-bk")) loadBackupCard();
   if($("#cf-env")){
     const env=$("#cf-env"), box=$("#cf-envc");
     env.onchange=()=>{ const toLive=!env.checked; env.checked=toLive;   /* stays as it was until confirmed */ box.hidden=false; $("#cf-envq").textContent=t(toLive?"envOffQ":"envOnQ"); $("#cf-envy").textContent=t(toLive?"envYesLive":"envYesTest"); $("#cf-envy").dataset.to=toLive?"live":"test"; box.scrollIntoView({block:"center",behavior:"smooth"}); };
@@ -2164,6 +2191,55 @@ function openSettings(){
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
     const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), showProfit:$("#cf-profit").checked, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), defaultGst:dg, defaultHsn:dh };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
+}
+
+/* ---------------- Backups ---------------- */
+let bkInfo=null;
+const fmtDTs=d=>d?fmtDT(d):"";
+async function loadBackupCard(){
+  const box=$("#bk-body"); if(!box) return;
+  $("#bk-now").onclick=async()=>{ const b=$("#bk-now"); btnBusy(b,true);
+    try{ const j=await apiPost({action:"backupNow"}); bkInfo=j.info.backups; toast(t("bkDone")); renderBackupCard(); }
+    catch(e){ toast(e&&/permission|authoriz|DriveApp|ScriptApp/i.test(e.code||"")?t("bkPerm"):t("bkFail")); }
+    finally{ btnBusy($("#bk-now"),false); } };
+  try{ const j=await apiPost({action:"backupInfo"}); bkInfo=j.backups; renderBackupCard(); }
+  catch(e){ if($("#bk-body")) $("#bk-body").innerHTML=`<p class="note" style="margin:0">${esc(/permission|authoriz|DriveApp|ScriptApp/i.test(e&&e.code||"")?t("bkPerm"):t("bkFail"))}</p>`; }
+}
+function renderBackupCard(){
+  const box=$("#bk-body"), b=bkInfo; if(!box||!b) return;
+  box.innerHTML=`<div class="bk-status ${b.auto?"ok":"off"}"><span class="dot"></span><span>${b.auto?esc(t("bkAutoOn")):""}${b.auto&&b.last?" · ":""}${b.last?esc(t("bkLast",fmtDTs(b.last))):""}${b.count?` · ${esc(t("bkCopies",b.count))}`:""}${!b.last?esc((b.auto?" · ":"")+t("bkNone")):""}</span></div>
+    ${b.auto?"":`<p class="note bk-warn">${esc(t("bkOff"))}</p>`}
+    ${b.restoredAt?`<p class="note" style="margin:0">${esc(t("bkRestoredNote",fmtDTs(b.restoredAt),b.restoredFrom))}</p>`:""}
+    ${b.count?`<button type="button" class="btn ghost" id="bk-see">${esc(t("bkSee"))} →</button>`:""}
+    <div class="field"><label for="bk-mail">${esc(t("bkMailL"))}</label><div class="bk-mailrow"><input id="bk-mail" type="email" inputmode="email" autocomplete="email" placeholder="${esc(t("bkMailPh"))}" value="${esc(b.email)}"><button type="button" class="btn ghost" id="bk-mail-save">${esc(t("bkMailSave"))}</button></div>
+      <p class="note" style="margin:0">${esc(t("bkMailD"))}${b.lastMail?` ${esc(t("bkMailLast",fmtDTs(b.lastMail)))}.`:""}</p>${b.mailError?`<p class="err" style="margin:0">${esc(t("bkMailErr"))} ${esc(b.mailError)}</p>`:""}</div>`;
+  if($("#bk-see")) $("#bk-see").onclick=()=>openBackups();
+  $("#bk-mail-save").onclick=async()=>{ const v=$("#bk-mail").value.trim(), btn=$("#bk-mail-save");
+    if(v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ toast(t("bkBadEmail")); $("#bk-mail").focus(); return; }
+    btnBusy(btn,true); try{ const j=await apiPost({action:"setBackupEmail",email:v}); bkInfo=j.backups; toast(t("bkMailSaved")); renderBackupCard(); }catch(e){ btnBusy(btn,false); toast(errMsg(e)); } };
+}
+function openBackups(){
+  const b=bkInfo||{list:[]};
+  const tag=n=>/before restore/.test(n)?`<span class="pill edited">${esc(t("bkBefore"))}</span>`:/\(manual\)/.test(n)?`<span class="pill gst">${esc(t("bkManual"))}</span>`:"";
+  const body=`<div style="display:grid;gap:12px">
+    <div><button type="button" class="btn ghost" id="bkl-back">← ${esc(t("back"))}</button></div>
+    <p class="note" style="margin:0">${esc(t("bkListD"))}</p>
+    <a class="btn ghost" href="${esc(b.current||"#")}" target="_blank" rel="noopener">${esc(t("bkCurrent"))} ↗</a>
+    <div class="bills-list" style="margin-top:0">${b.list.map((x,i)=>`<div class="bk-item" data-bk="${i}">
+      <div><b>${esc(fmtDT(x.date))}</b> ${tag(x.name)}</div>
+      <div class="bk-acts"><a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(t("bkOpen"))} ↗</a><button type="button" class="btn ghost sm" data-bkr="${i}">${esc(t("bkRestore"))}</button></div>
+      <div class="confirm" id="bkc-${i}" hidden><span>${esc(t("bkRestoreQ",fmtDT(x.date)))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" data-bky="${i}">${esc(t("bkRestoreYes"))}</button><button type="button" class="btn ghost" data-bkn="${i}">${esc(t("cancel"))}</button></div></div>
+    </div>`).join("")||`<p class="note">${esc(t("bkNone"))}</p>`}</div></div>`;
+  openSheet(t("bkListT"), body, "", {full:true});
+  $("#bkl-back").onclick=()=>openSettings();
+  $("#sheet-body").addEventListener("click",async e=>{
+    const r=e.target.closest("[data-bkr]"), n=e.target.closest("[data-bkn]"), y=e.target.closest("[data-bky]");
+    if(r){ document.querySelectorAll('[id^="bkc-"]').forEach(c=>c.hidden=true); const c=$("#bkc-"+r.dataset.bkr); c.hidden=false; c.scrollIntoView({block:"center",behavior:"smooth"}); }
+    if(n) $("#bkc-"+n.dataset.bkn).hidden=true;
+    if(y){ const x=b.list[+y.dataset.bky]; btnBusy(y,true);
+      try{ await apiPost({action:"restoreBackup",id:x.id}); toast(t("bkRestored")); closeSheet(); S.rev=null; duesCache=null; sync(); }
+      catch(er){ btnBusy(y,false); toast(errMsg(er)); } }
+  });
 }
 
 /* ---------------- Change by typing / speaking ---------------- */

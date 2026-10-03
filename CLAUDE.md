@@ -165,6 +165,20 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - Adding an item on desktop highlights the new line in the bill panel instead of showing a toast. The phone's "typing" keyboard helpers (`focusin` scroll and padding) are skipped on desktop.
 - Resizing the window across 1024px switches layouts live.
 
+## Backups (added 3 Oct 2026)
+
+- **One-time setup:** in the Apps Script editor run `setupBackups` (choose it in the toolbar → Run → allow). This needs new permissions: Drive, triggers, external request, send mail. It creates a time trigger for `autoBackup` every 4 hours and makes the first copy.
+- **`autoBackup`:** if the spreadsheet's Drive "last updated" time is newer than the last backup, it copies the whole spreadsheet to the Drive folder "Rate Book backups" as "Rate Book backup yyyy-MM-dd HH:mm" (Asia/Kolkata). Then `pruneBackups_()` keeps every copy from the last 2 days, the newest per day up to 30 days, and the newest per month up to 12 months. The rest go to the Drive Trash.
+- **Weekly Excel email:** `weeklyMail_()` emails an .xlsx export once a week to `BK_EMAIL`, if one is set.
+- **App** (Settings → Backups, PIN), using actions `backupInfo`, `backupNow`, `setBackupEmail` and `restoreBackup`:
+  - Status line, **Back up now**, the list of backups (Open in Sheets / Restore), and the weekly email address. The address is kept in script properties, not Config, so it isn't public.
+- **Restore** never deletes anything:
+  - It takes a "(before restore)" backup of the current sheet, makes a fresh copy of the chosen backup, and points `SHEET_ID` (property and cache) at it, then bumps rev so every phone reloads.
+  - Undo = restore the "(before restore)" copy.
+  - The old main sheet stays in Drive.
+- **Script properties used:** `BK_FOLDER`, `BK_LAST`, `BK_SRC_TIME`, `BK_EMAIL`, `BK_MAIL_LAST`, `BK_MAIL_ERR`, `BK_RESTORED_AT`, `BK_RESTORED_FROM`.
+- **Google Sheets' own File → Version history** is still there for fine-grained rollback inside one file.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

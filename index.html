@@ -732,6 +732,34 @@ html.fz-big .bill-line .step input{width:40px}
 .appear button{border:0;background:transparent;border-radius:999px;padding:8px 0;font:600 14px var(--f-body);color:var(--muted)}
 .appear button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 
+/* ---- tiles inside pop-up sheets: outlined so they don't melt into the white sheet ---- */
+.sheet .billcard,.sheet .duecard,.sheet .bk-item,.sheet .paybox,.sheet .skel-card,.sheet .card,.sheet .mini,.sheet .menu-list button{background:var(--surface);border:1.5px solid var(--line)!important;box-shadow:none!important}
+.sheet .billcard:active,.sheet .duecard:active{background:var(--surface-2)}
+.sheet .bl-day{background:var(--surface-2)}
+.sheet .bl-bar input[type=search],.sheet #du-q{background:var(--surface-2)!important;border:0!important;box-shadow:none!important}
+.sheet .bl-chip{background:var(--surface-2);box-shadow:none}
+.sheet .bl-chip.on{background:var(--ink);color:var(--ink-fg)}
+.sheet .kv>div{background:var(--surface-2)}
+.sheet pre.billtext{background:var(--surface-2);border:0}
+.sheet .preview{background:var(--surface-2);border-radius:14px;padding:10px 12px}
+.sheet .preview:empty{display:none}
+.mini{border:1.5px solid var(--line);box-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sheet{background:#141518}}
+:root[data-theme="dark"] .sheet{background:#141518}
+/* ---- add-to-bill: a dot flies to the Bill tab, the badge pops ---- */
+.flydot{position:fixed;z-index:70;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--inbg);box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none}
+@keyframes badgepop{0%{transform:scale(1)}35%{transform:scale(1.6)}70%{transform:scale(.9)}100%{transform:scale(1)}}
+.badge.pop{animation:badgepop .45s ease-out}
+@keyframes tabnudge{0%,100%{transform:translateY(0)}40%{transform:translateY(-3px)}}
+.tabs button.nudge svg{animation:tabnudge .45s ease-out}
+/* ---- messages: small pill just above the tab bar ---- */
+.toast{font-size:14px;padding:10px 16px;max-width:min(360px,calc(100vw - 48px));width:max-content;left:0;right:0;margin:0 auto}
+@media (max-width:1023px){
+  .toast{bottom:calc(84px * var(--fz2,1) + env(safe-area-inset-bottom,0px))}
+  body[data-tab="items"] .toast{bottom:calc(136px * var(--fz2,1) + env(safe-area-inset-bottom,0px))}
+  body[data-tab="bill"] .toast{bottom:calc(84px * var(--fz2,1) + 84px * var(--fz,1) + env(safe-area-inset-bottom,0px))}
+}
+
 /* ===================== Laptop / desktop (phones are not affected: everything below is inside min-width queries) ===================== */
 .side-head,.side-foot{display:none}
 @media (min-width:1024px){
@@ -1072,6 +1100,9 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Back-button strings */
+Object.assign(STR.en,{backExit:"Press back again to exit"});
+Object.assign(STR.hi,{backExit:"बाहर जाने के लिए फिर से Back दबाएँ"});
 /* Theme strings */
 Object.assign(STR.en,{themeT:"Theme (this phone)",thInk:"Ink",thMaroon:"Maroon",thForest:"Forest",thIndigo:"Indigo",thSaffron:"Saffron",appearT:"Appearance",apAuto:"Auto",apLight:"Light",apDark:"Dark",appearD:"Auto follows the phone's light or dark setting."});
 Object.assign(STR.hi,{themeT:"थीम (इस फ़ोन पर)",thInk:"काला",thMaroon:"मैरून",thForest:"हरा",thIndigo:"नीला",thSaffron:"केसरिया",appearT:"रूप",apAuto:"अपने-आप",apLight:"हल्का",apDark:"गहरा",appearD:"“अपने-आप” फ़ोन की लाइट/डार्क सेटिंग के हिसाब से चलेगा।"});
@@ -1142,6 +1173,8 @@ const TSIZES=[1,1.12,1.25,1.38];
 function fzNow(){ const v=+ls.get("rb_fz",1); return TSIZES.includes(v)?v:1; }
 function setFz(v){ if(!TSIZES.includes(v)) v=1; ls.set("rb_fz",v); const r=document.documentElement.style; r.setProperty("--fz",v); r.setProperty("--fz2",1+(v-1)/2); document.documentElement.classList.toggle("fz-big",v>=1.2); }
 setFz(fzNow());
+document.addEventListener("DOMContentLoaded",()=>{ if(!document.body.dataset.tab) document.body.dataset.tab="items"; });
+if(document.body) document.body.dataset.tab="items";
 /* Theme and appearance, chosen per phone. [key, light primary, light second, dark primary, status-bar colour] */
 const PALETTES=[["ink","#16171A","#9B2335","#F3F4F6","#F1F2F4"],["maroon","#8C2331","#F6E6E8","#EC8E99","#8C2331"],["forest","#1F6B4A","#E3F1EA","#5CC594","#1F6B4A"],["indigo","#3443A8","#E7EAF9","#9AABFF","#3443A8"],["saffron","#A14B07","#FBEEDC","#F5A524","#A14B07"]];
 function palNow(){ const v=ls.get("rb_palette","ink"); return PALETTES.some(p=>p[0]===v)?v:"ink"; }
@@ -1828,6 +1861,24 @@ function renderAll(){
 const vv=window.visualViewport, root=document.documentElement;
 function vvSet(){ if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); }
 if(vv){ vv.addEventListener("resize",vvSet); vv.addEventListener("scroll",vvSet); vvSet(); }
+/* ---------------- Back button (installed app / Android) ----------------
+ * One extra history entry acts as a guard. Each Back press: close what's open, else step back inside a sheet,
+ * else go to Prices, else ask "Press back again to exit" and let a second press within 2 s leave the app.
+ */
+let backAt=0;
+function pushGuard(){ try{ history.pushState({rb:1},""); }catch{} }
+try{ if(!history.state || !history.state.rb){ history.replaceState({rb:0},""); pushGuard(); } }catch{}
+window.addEventListener("popstate",()=>{
+  if(!$("#picker").hidden){ closePicker(null); pushGuard(); return; }
+  if(!$("#sheet").hidden){
+    const back=[...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null);
+    if(back) back.click(); else closeSheet();
+    pushGuard(); return;
+  }
+  if(S.tab!=="items" && !(DESK() && S.tab==="bill")){ setTab("items"); pushGuard(); return; }
+  if(Date.now()-backAt<2000){ history.back(); return; }   // second press: leave
+  backAt=Date.now(); toast(t("backExit")); pushGuard();
+});
 /* Laptop / desktop: the bill stays open on the right, so there is no separate Bill tab. */
 const deskMQ=window.matchMedia("(min-width:1024px)");
 const DESK=()=>deskMQ.matches;
@@ -1856,7 +1907,7 @@ document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=docume
 
 /* ---------------- Tabs, search, toast ---------------- */
 function setTab(tab){
-  S.tab=tab;
+  S.tab=tab; document.body.dataset.tab=tab;
   if(tab!=="tools"){ S.q=S.qTabs[tab]||""; const qi=$("#q"); qi.value=S.q; qi.placeholder=t(tab==="bill"?"billSearchPh":"searchPh"); $("#q-clear").hidden=!S.q; }
   if(DESK() && tab==="bill"){ tab="items"; S.tab="items"; }
   ["items","bill","tools"].forEach(k=>{ $("#view-"+k).hidden = k==="bill" ? !(k===tab || DESK()) : k!==tab; $("#tab-"+k).setAttribute("aria-selected",k===tab); });
@@ -1870,7 +1921,7 @@ function btnBusy(b,on){ if(!b) return; if(on){ if(!b.dataset.label) b.dataset.la
 /* Thin bar at the top of the screen while the app talks to the sheet (not for the quiet 25-second checks). */
 let netBusy=0; function netTrack(p){ netBusy++; $("#topbar").classList.add("on"); const done=()=>{ netBusy=Math.max(0,netBusy-1); if(!netBusy) $("#topbar").classList.remove("on"); }; p.then(done,done); return p; }
 const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
-let toastT; function toast(msg){ const el=$("#toast"); const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
+let toastT; function toast(msg){ const el=$("#toast"); { const tb=$("#bill-total"); el.style.bottom = (!DESK() && S.tab==="bill" && tb && !tb.hidden) ? Math.round(innerHeight - tb.getBoundingClientRect().top + 10)+"px" : ""; } const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); if(e.target.value) $("#mictip").hidden=true; });
 $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(S.canWrite && looksLikeCommand(S.q)) openCmd(S.q,true);
@@ -1948,9 +1999,23 @@ function addToBill(id,qty=1){
   if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false)});
   saveBill();
   if(DESK()){ renderBill(); renderList(); const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
-  if(!l) toast(`${it.name} ${t("added")}`);
-  if(S.tab==="bill") renderBill(); else renderList();
+  if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); renderBill(); }
+  else { const src=window.__addSrc; window.__addSrc=null; renderList(); flyToBill(src); }
 }
+/* Phones: show "added" by flying a dot into the Bill tab (no message in the middle of the screen). */
+function flyToBill(src){
+  const tab=$("#tab-bill"), badge=$("#bill-badge"); if(!tab) return;
+  try{ navigator.vibrate && navigator.vibrate(12); }catch{}
+  const pop=()=>{ badge.classList.remove("pop"); tab.classList.remove("nudge"); void badge.offsetWidth; badge.classList.add("pop"); tab.classList.add("nudge"); };
+  const reduce=window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(!src || reduce || !document.body.animate){ pop(); return; }
+  const a=src.getBoundingClientRect(), b=tab.querySelector("svg").getBoundingClientRect();
+  const x0=a.left+a.width/2, y0=a.top+a.height/2, x1=b.left+b.width/2, y1=b.top+b.height/2;
+  const d=document.createElement("div"); d.className="flydot"; d.style.left=x0+"px"; d.style.top=y0+"px"; document.body.appendChild(d);
+  const dx=x1-x0, dy=y1-y0;
+  d.animate([{transform:"translate(0,0) scale(1)",opacity:1},{transform:`translate(${dx*.45}px,${dy*.45-70}px) scale(1.1)`,opacity:1,offset:.45},{transform:`translate(${dx}px,${dy}px) scale(.5)`,opacity:.6}],{duration:520,easing:"cubic-bezier(.3,.7,.4,1)"}).onfinish=()=>{ d.remove(); pop(); };
+}
+document.addEventListener("pointerdown",e=>{ const a=e.target.closest&&e.target.closest("[data-add]"); if(a) window.__addSrc=a; },true);
 document.addEventListener("click",e=>{
   const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }

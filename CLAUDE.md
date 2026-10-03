@@ -216,6 +216,17 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Contrast checked (WCAG):** buttons ≥ 5:1 and soft buttons ≥ 5.2:1 in every theme and mode. Saffron uses #A14B07 in light mode for this reason.
 - **Adding a theme:** add an entry to `PALETTES` in JS, a `:root[data-palette=…]` block plus its two dark blocks in CSS, and a `th…` string.
 
+## Tile contrast, add feedback, Back button (added 3 Oct 2026)
+
+- **Tiles inside sheets** (bill cards, customer cards, backup items, payment box, skeletons) get a 1.5px `--line` outline and no shadow, so they don't blend into the white sheet. In-sheet search boxes and chips use `--surface-2`. Dark-mode sheets use #141518.
+- **Add to bill on phones** (Prices tab): no toast. `flyToBill()` animates a dot from the tapped button to the Bill tab, then pops the badge and nudges the icon, with a 12 ms vibration. It respects reduced motion. The source button is captured on `pointerdown` (`window.__addSrc`). The Bill tab and desktop keep their own feedback.
+- **Messages** are a small centred pill: just above the Add button on Prices, just above the total bar on Bill (worked out from its position in `toast()`), and just above the tab bar elsewhere (`body[data-tab]`).
+- **Back button:** one guard entry in history (`pushGuard`). On `popstate`:
+  1. close the unit picker;
+  2. else in a sheet, click its visible `*-back` button (bill → list, customer → Credit list, backups → Settings), otherwise close the sheet;
+  3. else switch to Prices;
+  4. else show "Press back again to exit", and a second press within 2 s leaves the app.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

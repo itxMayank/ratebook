@@ -179,6 +179,18 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Script properties used:** `BK_FOLDER`, `BK_LAST`, `BK_SRC_TIME`, `BK_EMAIL`, `BK_MAIL_LAST`, `BK_MAIL_ERR`, `BK_RESTORED_AT`, `BK_RESTORED_FROM`.
 - **Google Sheets' own File → Version history** is still there for fine-grained rollback inside one file.
 
+## Design refresh (added 3 Oct 2026)
+
+- **Visual layer only.** No IDs, functions or behaviour changed. The "Design refresh" CSS block sits before the desktop block.
+  - Font: Plus Jakarta Sans, with Mukta for Hindi.
+  - Tokens: `--ink`/`--ink-fg` (near-black in light mode, near-white in dark) for main buttons, selected chips and segments, and the tab bar. `--accent` (maroon) kept for highlights, the in-bill state and badges.
+  - Shapes: soft off-white background, borderless white cards with large radii and soft shadows, pill buttons and inputs.
+- **Phones:** a floating ink pill tab bar (inside `@media (max-width:1023px)`, so the desktop sidebar is unaffected) with a light capsule on the active tab. Body, FAB, total bar and toast offsets were moved up to clear it.
+- **Header:** greeting "Namaste, {name}" (`#hello`, from the unlocked name) above the shop name, which is cut off with … if too long.
+- **Filter chips** under the search (`#fchips`, `S.filter`): All / In bill / Changed this week / With photo, with counts. A chip only shows when it has items.
+- **Item screen with a photo:** `.hero-mode` on `#sheet` (set in `openDetail`, cleared in `openSheet`). The photo goes full-bleed with a round close button over it, and a `.d-card` with the name overlaps the photo.
+- **Desktop:** active sidebar item in ink, bill panel on `--bg` with white cards.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

@@ -16,7 +16,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Mukta:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: one-column counter app — sticky header + search, scrolling item list, fixed bottom tabs, bottom sheets for detail/edit. */
 :root{
@@ -503,6 +503,137 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .cmd-mic .btn{flex:1}
 .btn.listening{background:var(--accent);color:var(--accent-fg);animation:pulse 1.2s infinite}
 
+/* ===================== Design refresh: soft cards, ink pills, floating tab bar ===================== */
+:root{
+  --bg:#F1F2F4; --surface:#FFFFFF; --surface-2:#EEF0F3; --fg:#16171A; --muted:#6E727A; --line:#E3E5E9;
+  --ink:#16171A; --ink-fg:#FFFFFF; --ink-2:#2A2C31;
+  --accent:#9B2335; --accent-fg:#FFFFFF; --accent-soft:#F7E8EA;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.07);
+  --shadow-lg:0 12px 40px rgba(16,24,40,.14);
+  --f-display:"Plus Jakarta Sans","Mukta",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Mukta","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:20px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
+  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0; --accent:#F08A97; --accent-fg:#2A0A10; --accent-soft:#3A1E24;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{
+  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
+  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0; --accent:#F08A97; --accent-fg:#2A0A10; --accent-soft:#3A1E24;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6)}
+body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
+/* header: greeting + shop name */
+.brand{font:800 21px/1.2 var(--f-display);letter-spacing:-.02em}
+.brand #shopname{display:inline-block;max-width:calc(100% - 64px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.brand #count{display:none}
+.brand .hello{display:block;font:500 13px/1.3 var(--f-body);color:var(--muted);letter-spacing:0;margin-bottom:2px}
+.iconbtn{background:var(--surface);border-radius:999px;box-shadow:var(--shadow);width:42px;height:42px}
+.lang{background:var(--surface);box-shadow:var(--shadow)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);box-shadow:none}
+/* search: white pill, dark round mic */
+.search{border:0;border-radius:999px;padding:5px 5px 5px 16px;box-shadow:var(--shadow)}
+.search:focus-within{box-shadow:0 0 0 2px var(--ink),var(--shadow)}
+.search input{font-size:17px}
+.search .iconbtn{background:var(--ink);color:var(--ink-fg);box-shadow:none;width:44px;height:44px}
+.search .iconbtn.listening{background:var(--accent);color:var(--accent-fg)}
+.search .clear{box-shadow:none;background:none}
+/* filter chips */
+.fchips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;margin:0 -2px}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{flex:none;border:0;background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 16px;font:600 14px var(--f-body);box-shadow:var(--shadow);transition:background .15s,color .15s}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
+.fchip .n{margin-left:6px;opacity:.6;font-weight:700}
+.meta{padding:10px 4px 6px;font-size:13px}
+/* cards */
+.list{gap:10px}
+.card{border:0;border-radius:var(--r);padding:10px 12px 10px 10px;box-shadow:var(--shadow);grid-template-columns:60px 1fr auto;transition:transform .12s ease}
+.card:active{transform:scale(.985);background:var(--surface)}
+.thumb{width:60px;height:60px;border-radius:16px;font:800 22px var(--f-display);background:var(--surface-2)}
+.name{font-weight:700;font-size:16px;letter-spacing:-.01em}
+.rates{font-size:13px}
+.sell{font:800 21px/1 var(--f-display);color:var(--fg);letter-spacing:-.02em}
+.addbtn{background:var(--ink);color:var(--ink-fg);border-radius:999px;padding:6px 12px;font-size:13px}
+.addbtn.in{background:var(--accent);color:var(--accent-fg)}
+.mini,.card .mstep{border-radius:999px}
+/* buttons */
+.btn{border-radius:999px;padding:12px 20px}
+.btn.primary{background:var(--ink);color:var(--ink-fg)}
+.btn.ghost{border:0;background:var(--surface-2)}
+.btn.danger{border:1.5px solid currentColor;background:none}
+.btn.wa{background:#1DAA61}
+.btn.sm{border-radius:999px}
+.fab{border-radius:999px;background:var(--ink);color:var(--ink-fg);box-shadow:var(--shadow-lg)}
+/* inputs */
+input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{border-radius:14px}
+.field input,.field textarea,.form input,.form textarea,.bh-cust input,.pay-part input{border:0!important;background:var(--surface-2)!important;border-radius:14px}
+.field input:focus,.field textarea:focus,.form input:focus,.bh-cust input:focus,.pay-part input:focus{outline:0;box-shadow:0 0 0 2px var(--ink)}
+.need{box-shadow:0 0 0 2px var(--danger)!important}
+/* sheets */
+.scrim{background:rgba(10,12,16,.5)}
+.sheet{border-radius:28px 28px 0 0}
+.sheet-h h2{font:800 20px var(--f-display);letter-spacing:-.02em}
+.sheet-h .iconbtn,#sheet-close{background:var(--surface-2);box-shadow:none}
+.grab{background:var(--line)}
+/* item screen with a photo: full-bleed picture, round buttons over it */
+.sheet.hero-mode .sheet-h{position:absolute;top:0;left:0;right:0;z-index:3;padding:14px 16px;background:linear-gradient(rgba(0,0,0,.35),transparent)}
+.sheet.hero-mode .sheet-h h2{visibility:hidden}
+.sheet.hero-mode .sheet-h .iconbtn,.sheet.hero-mode #sheet-close{background:rgba(255,255,255,.92);color:#111;box-shadow:var(--shadow)}
+.sheet.hero-mode .grab{position:absolute;z-index:4;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.7)}
+.sheet.hero-mode .sheet-b{padding-top:0}
+.sheet.hero-mode .gal-wrap{margin:0 -16px;border-radius:28px 28px 0 0;overflow:hidden}
+.sheet.hero-mode .gal,.sheet.hero-mode .hero{border-radius:0}
+.sheet.hero-mode .hero{aspect-ratio:5/4}
+.d-card{position:relative;margin:-26px -16px 0;background:var(--surface);border-radius:26px 26px 0 0;padding:18px 16px 0;display:grid;gap:4px}
+.d-title{font:800 24px/1.15 var(--f-display);letter-spacing:-.02em;margin:0}
+.kv>div{border-radius:16px;background:var(--surface-2)}
+/* segmented controls: ink pill */
+.seg{background:var(--surface-2);border-radius:999px;padding:4px}
+.seg button{border-radius:999px}
+.seg button[aria-checked="true"]{background:var(--ink);color:var(--ink-fg);box-shadow:none}
+.seg button[data-pay="credit"][aria-checked="true"],.seg button[data-pay="part"][aria-checked="true"]{background:var(--danger);color:#fff}
+/* bill */
+.billhead{border:0;border-radius:var(--r);box-shadow:var(--shadow)}
+.bh-no b{font-family:var(--f-display);font-weight:800}
+.chip-t{border-radius:999px}
+.chip-t[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+.bill-line{border:0;border-radius:var(--r);box-shadow:var(--shadow)}
+.total{border:0;border-radius:24px;box-shadow:var(--shadow-lg)}
+.total #bill-sum{font-family:var(--f-display);font-weight:800;letter-spacing:-.02em}
+.step{border-radius:999px;overflow:hidden}
+.custhint{border-radius:14px}
+/* tools & lists */
+.menu-list button{border:0;border-radius:var(--r);box-shadow:var(--shadow);background:var(--surface)}
+.menu-list button svg{background:var(--surface-2);border-radius:12px;padding:8px;width:40px;height:40px;flex:none;box-sizing:border-box}
+.billcard,.duecard,.bk-item{border:0;border-radius:var(--r);box-shadow:var(--shadow);background:var(--surface)}
+.bl-mh{border-radius:999px;background:var(--ink);color:var(--ink-fg)}
+.bl-mh .num{color:var(--ink-fg);opacity:.8}
+.bl-day{border-radius:999px}
+.bl-chip{border:0;box-shadow:var(--shadow);background:var(--surface)}
+.bl-chip.on{background:var(--ink);color:var(--ink-fg)}
+.bl-bar input[type=search]{border:0;border-radius:999px;box-shadow:var(--shadow);background:var(--surface)}
+.dues-sum{border-radius:24px;background:var(--ink);color:var(--ink-fg)}
+.dues-sum span{color:var(--ink-fg);opacity:.75}
+.dues-sum b{color:var(--ink-fg)}
+.chips button.on{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+.paybox,.cfg-sec.env-sec.test{border-radius:var(--r)}
+.toast{border-radius:999px;padding:12px 18px;text-align:center;background:var(--ink);color:var(--ink-fg);box-shadow:var(--shadow-lg)}
+.envbadge{border-radius:999px;padding:4px 8px}
+.netbar .dot{box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 18%,transparent)}
+/* floating tab bar (phones only) */
+@media (max-width:1023px){
+  body{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+  .tabs{left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom,0px));border:0;border-radius:999px;background:var(--ink);padding:6px;gap:4px;box-shadow:var(--shadow-lg)}
+  .tabs button{color:color-mix(in srgb,var(--ink-fg) 62%,transparent);border-radius:999px;padding:8px 0 7px;font-size:12px;transition:background .18s,color .18s}
+  .tabs button[aria-selected="true"]{background:var(--ink-fg);color:var(--ink)}
+  .tabs .badge{background:var(--accent);color:var(--accent-fg);box-shadow:0 0 0 2px var(--ink)}
+  .tabs button[aria-selected="true"] .badge{box-shadow:0 0 0 2px var(--ink-fg)}
+  .fab{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+  .total{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+  body.typing .tabs{display:none}
+}
+
 /* ===================== Laptop / desktop (phones are not affected: everything below is inside min-width queries) ===================== */
 .side-head,.side-foot{display:none}
 @media (min-width:1024px){
@@ -515,7 +646,11 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   .tabs,body.typing .tabs{display:flex;flex-direction:column;align-items:stretch;gap:4px;top:0;bottom:0;right:auto;width:var(--railw);padding:18px 10px;border-top:0;border-right:1px solid var(--line)}
   .tabs button{padding:10px 4px;border-radius:12px;font-size:12px;transition:background .15s,color .15s}
   .tabs button:hover{background:var(--surface-2);color:var(--fg)}
-  .tabs button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:var(--ink-fg)}
+  .tabs .badge{display:none}
+  .side-logo{background:var(--ink)!important;color:var(--ink-fg)!important;border-radius:14px!important}
+  #view-bill .total{border-radius:0;box-shadow:0 -8px 24px rgba(16,24,40,.06)}
+  .sheet{border-radius:28px}
   #tab-bill{display:none}
   .side-head{display:grid;justify-items:center;gap:6px;margin-bottom:14px}
   .side-head b{display:none}
@@ -535,7 +670,9 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   #view-bill .billhead{margin-top:0}
   main,body.typing main{padding-bottom:112px}
   .brand{font-size:21px;line-height:1.15}
-  #view-bill .billhead{background:var(--bg)}
+  #view-bill{background:var(--bg)!important}
+  #view-bill .billhead{background:var(--surface)}
+  #view-bill .total{background:var(--surface)}
   #view-bill .empty{padding:28px 12px}
   #view-bill .total{position:sticky;bottom:0;margin:auto -18px 0;border-radius:0;border-width:1px 0 0;box-shadow:0 -8px 24px rgba(30,20,20,.06);padding:14px 18px 16px;z-index:2}
   .bill-line.flash{animation:flash 1.1s ease-out}
@@ -583,7 +720,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 <body>
 <header class="top">
   <div class="bar">
-    <h1 class="brand"><span id="shopname">Rate Book</span><span class="envbadge" id="envbadge" hidden>TEST</span><small id="count" class="num"></small></h1>
+    <h1 class="brand"><span class="hello" id="hello"></span><span id="shopname">Rate Book</span><span class="envbadge" id="envbadge" hidden>TEST</span><small id="count" class="num"></small></h1>
     <button class="iconbtn" id="cmd-open" aria-label="Change by typing or speaking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg></button>
     <div class="lang" role="group" aria-label="Language">
       <button id="lang-en" aria-pressed="true">EN</button>
@@ -610,6 +747,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
     <div class="ro lockline" id="ro-note" hidden><span data-t="readOnly2">View only. Unlock editing to change prices.</span><button class="btn ghost" data-act="unlock" data-t="unlockBtn">Unlock</button><button type="button" class="x" id="ro-x" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div id="setup-wrap"></div>
     <div id="cmdhint-wrap"></div>
+    <div class="fchips" id="fchips" role="group" aria-label="Filter"></div>
     <div class="meta"><span id="meta-l"></span><span id="meta-r"></span></div>
     <div id="suggest"></div>
     <div class="list" id="list">
@@ -836,6 +974,9 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Refresh strings */
+Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
+Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
 /* Backup strings */
 Object.assign(STR.en,{bkT:"Backups",bkNow:"Back up now",bkAutoOn:"Automatic every 4 hours",bkLast:d=>`last ${d}`,bkCopies:n=>`${n} cop${n===1?"y":"ies"} kept`,bkNone:"No backups yet.",
   bkOff:"Automatic backups are off. One-time step: open the script in Apps Script, choose setupBackups at the top, press Run and allow.",bkPerm:"Backups need a one-time permission. Open the script in Apps Script, choose setupBackups at the top, press Run and allow.",
@@ -887,7 +1028,7 @@ Object.assign(STR.hi,{payL:"भुगतान",payPaid:"पूरा मिल�
   payHist:"भुगतान",atBilling:"बिल के समय",undoPay:"आख़िरी भुगतान हटाएँ",undoDone:a=>`${a} का भुगतान हटाया।`,clearedOn:d=>`${d} को पूरा भुगतान`,
   pillDue:a=>`बाकी ${a}`,pillCleared:"बाद में मिला",pendingHint:a=>`${a} बाकी`,duesTabHint:"उधार या कुछ मिले वाले बिल यहाँ दिखेंगे। बिल स्क्रीन पर “उधार” या “कुछ मिला” चुनें।"});
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923", mode:"test" } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
@@ -1247,6 +1388,7 @@ function renderHeader(){
   $("#shopname").textContent = S.cfg.shopName || (S.lang==="hi"?"रेट बुक":"Rate Book");
   $("#count").textContent = S.loaded && S.items.length ? " · "+t("items",S.items.length) : "";
   $("#cmd-open").hidden = !S.canWrite;
+  const nm=byName(); $("#hello").textContent = nm ? t("helloName",nm) : t("hello");
 }
 function renderList(){
   renderHeader();
@@ -1261,7 +1403,11 @@ function renderList(){
     list.innerHTML=`<div class="empty"><h2>${esc(t("emptyT"))}</h2><p>${esc(t("emptyD"))}</p>${S.canWrite?`<div class="row-btns"><button class="btn primary" data-act="add">${esc(t("addItem"))}</button><button class="btn ghost" data-act="bulkadd">${esc(t("bulkAdd"))}</button><button class="btn ghost" data-act="cmd">${esc(t("cmdTitle"))}</button></div>`:`<div class="row-btns"><button class="btn primary" data-act="unlock">${esc(t("unlockT"))}</button></div>`}</div>`;
     return;
   }
-  const {res,suggest,exact}=runSearch(q);
+  let {res,suggest,exact}=runSearch(q);
+  renderFilters();
+  if(S.filter==="bill") res=res.filter(r=>billQty(r.e.it.id)>0);
+  else if(S.filter==="recent") res=res.filter(r=>Date.now()-(+r.e.it.updatedAt||0)<7*864e5);
+  else if(S.filter==="photo") res=res.filter(r=>r.e.it.imgV);
   $("#meta-l").textContent = q ? t("results", exact?res.length:0) : t("items",res.length);
   $("#meta-r").textContent = "";
   if(q && !exact && !hint.innerHTML){
@@ -1272,6 +1418,13 @@ function renderList(){
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
   more.innerHTML = shown.length && res.length>S.limit ? `<button class="more" data-act="more">${esc(t("showMore",Math.min(40,res.length-S.limit)))}</button>` : "";
+}
+function renderFilters(){
+  const box=$("#fchips"); if(!box) return;
+  const inBill=S.bill.length, recent=S.items.filter(it=>Date.now()-(+it.updatedAt||0)<7*864e5).length, photo=S.items.filter(it=>it.imgV).length;
+  const opts=[["all",t("fAll"),0],["bill",t("fInBill"),inBill],["recent",t("fRecent"),recent],["photo",t("fPhoto"),photo]].filter(o=>o[0]==="all"||o[2]>0||S.filter===o[0]);
+  box.hidden = opts.length<2;
+  box.innerHTML=opts.map(([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`).join("");
 }
 function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidden=!n; b.textContent=n; }
 function billText(){
@@ -1676,6 +1829,7 @@ function addToBill(id,qty=1){
   if(S.tab==="bill") renderBill(); else renderList();
 }
 document.addEventListener("click",e=>{
+  const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }
   const a=e.target.closest("[data-add]"); if(a){ e.stopPropagation(); addToBill(a.dataset.add); return; }
   if(e.target.closest(".mstep")) return;
@@ -1772,6 +1926,7 @@ $("#bill-clear-yes").onclick=()=>{ S.custAuto=""; S.custQ=""; showCustHint(null)
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;
 function openSheet(title,body,foot,{full=false,onClose=null}={}){
+  $("#sheet").classList.remove("hero-mode");
   $("#sheet-title").textContent=title; $("#sheet-body").innerHTML=body;
   const f=$("#sheet-foot"); f.innerHTML=foot||""; f.hidden=!foot;
   const sh=$("#sheet"), sc=$("#scrim"); sh.classList.toggle("full",full); sh.hidden=false; sc.hidden=false;
@@ -1811,7 +1966,7 @@ async function openDetail(id){
   const inB=billQty(id);
   const body=`
     ${it.imgV?`<div class="gal-wrap"><div class="gal" id="d-gal"><img class="hero" id="d-img" src="${esc(thumbOf(it)||"")}" alt="">${Array.from({length:(it.imgs||1)-1},(_,j)=>`<img class="hero" data-gi="${j+1}" alt="">`).join("")}</div>${(it.imgs||1)>1?`<span class="gal-n" id="d-gn">1/${it.imgs}</span>`:""}</div>`:""}
-    ${it.nameHi?`<div class="sub" lang="hi" style="margin-top:10px;font-size:17px">${esc(it.nameHi)}</div>`:""}
+    ${it.imgV?`<div class="d-card"><h2 class="d-title">${esc(itemTitle(it))}</h2>${it.nameHi?`<div class="sub" lang="hi" style="font-size:16px">${esc(it.nameHi)}</div>`:""}</div>`:(it.nameHi?`<div class="sub" lang="hi" style="margin-top:10px;font-size:17px">${esc(it.nameHi)}</div>`:"")}
     <div class="kv num">
       <div class="s"><span>${esc(t("sell"))}</span><b>${rs(it.sell)}</b></div>
       ${S.hideBuy?"":`<div><span>${esc(t("buy"))}</span><b>${rs(it.buy)}</b></div>`}
@@ -1825,6 +1980,7 @@ async function openDetail(id){
     <div class="qtyrow"><div class="step"><button id="dq-dec">−</button><input id="dq" class="num" inputmode="decimal" value="1"><button id="dq-inc">+</button></div><span class="note">${esc(unitL(it.unit))}</span>${inB?`<span class="note">· ${esc(t("inBill"))}: ${fmtN(inB)}</span>`:""}</div>`;
   const foot=`${S.canWrite?`<button class="btn ghost" id="d-edit">${esc(t("edit"))}</button>`:""}<button class="btn primary" id="d-add">${esc(t("addToBill"))}</button>`;
   openSheet(itemTitle(it), body, foot);
+  $("#sheet").classList.toggle("hero-mode", !!it.imgV);
   $("#dq-dec").onclick=()=>{ const v=Math.max(0.25,(toNum($("#dq").value)||1)-1); $("#dq").value=v; };
   $("#dq-inc").onclick=()=>{ $("#dq").value=(toNum($("#dq").value)||0)+1; };
   $("#d-add").onclick=()=>{ const v=toNum($("#dq").value); addToBill(id, v>0?v:1); closeSheet(); };

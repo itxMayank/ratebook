@@ -74,7 +74,16 @@ Files in this repository should match the latest copies sent in the Claude conve
 ## Returning customers (added 3 Oct 2026)
 
 - Typing a 10-digit mobile on the bill page looks up past bills for that number. It fills the customer name (if the name field is empty or was filled automatically) and the GSTIN (if empty), and shows a line such as "Sunil Traders · 4 bills before · last 02 Oct · total ₹3,250". A name you've typed yourself is never overwritten.
-- Sources: a per-phone cache of customers from bills made on that phone (`rb_customers` in browser storage, up to 2,000), and for unlocked phones the `findCustomer` backend action (POST with PIN, read-only), which searches the whole `Bills` tab by the last 10 digits of the mobile. Locked phones use only their own cache, so customer details aren't readable without the PIN.
+- Sources: a per-phone cache of customers from bills made on that phone (`rb_customers` in browser storage, up to 2,000), and for unlocked phones the `findCustomer` backend action (POST with PIN, read-only), which looks the number up in the `Customers` tab (see Performance below). Locked phones use only their own cache, so customer details aren't readable without the PIN.
+
+## Performance (added 3 Oct 2026)
+
+Made so the app stays fast as the sheet grows (thousands of bills and items). Nothing changes on screen.
+- **Past bills list** (`listBills`) skips the large `text` and `lines` columns and returns each bill's sheet `row`. Opening a bill calls `getBill` (POST, PIN, `{row, id, n}`), which reads that one row and checks the bill id (or the number, for old bills) so a moved row isn't misread. `showBill()` in `index.html` fetches it when `b.text` is undefined.
+- **Customers tab** (`mobile | name | gstin | bills | total | lastDate | lastBillNo`): one row per mobile (last 10 digits). `findCustomer` reads only this tab. `takeBill` adds or updates the row; `updateBill` refreshes the name and GSTIN. If the tab is missing, `customersSheet_()` builds it once from the existing `Bills` rows. `takeBill` builds it before appending the new bill, so that bill isn't counted twice. Safe to delete the tab: it rebuilds itself.
+- **Price list** (`list`) no longer reads the `thumb` column (photos come through `thumbs`, only for changed ones). `thumbs` reads just the id column plus the thumb and imgV columns.
+- **Change counter** (`rev`) and the sheet id are kept in Apps Script's CacheService (6 hours), so the 25-second checks from every phone don't use up the daily Properties quota. `bump_()` writes both the property and the cache.
+- Still to do (when needed): yearly archive of `Bills` into a separate tab or file, possibly with the GST bill series restarting each financial year (April 1).
 
 ## How to update
 
@@ -98,6 +107,7 @@ Files in this repository should match the latest copies sent in the Claude conve
 - `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
 - `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit`
+- `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo` (lookup index, rebuilt from `Bills` if deleted)
 - `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
 - `Images`: `id | data` (base64 JPEG)
 

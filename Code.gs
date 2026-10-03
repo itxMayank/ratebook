@@ -21,6 +21,8 @@ const IMAGES = 'Images';
 const BILLS = 'Bills';
 const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit'];
 const HISTORY = 'BillHistory';
+const CUSTOMERS = 'Customers';
+const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell'];
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -42,14 +44,21 @@ function setup() {
 }
 
 function ss_() {
-  const props = PropertiesService.getScriptProperties();
-  const id = props.getProperty('SHEET_ID');
-  if (id) return SpreadsheetApp.openById(id);
-  let ss = null;
-  try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
-  if (!ss) ss = SpreadsheetApp.create('Rate Book prices');   // script made at script.google.com: make its own sheet
-  props.setProperty('SHEET_ID', ss.getId());
-  return ss;
+  const cache = CacheService.getScriptCache();
+  let id = cache.get('SHEET_ID');
+  if (!id) {
+    const props = PropertiesService.getScriptProperties();
+    id = props.getProperty('SHEET_ID');
+    if (!id) {
+      let ss = null;
+      try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
+      if (!ss) ss = SpreadsheetApp.create('Rate Book prices');   // script made at script.google.com: make its own sheet
+      id = ss.getId();
+      props.setProperty('SHEET_ID', id);
+    }
+    cache.put('SHEET_ID', id, 21600);
+  }
+  return SpreadsheetApp.openById(id);
 }
 
 const HEADERS_OK_ = {};
@@ -74,8 +83,14 @@ function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function getRev_() { return PropertiesService.getScriptProperties().getProperty('rev') || '0'; }
-function bump_() { PropertiesService.getScriptProperties().setProperty('rev', String(Date.now())); }
+/* The change counter is read on every phone's 25-second check, so keep it in the short-term cache (saves daily quota). */
+function getRev_() {
+  const cache = CacheService.getScriptCache();
+  let v = cache.get('rev');
+  if (!v) { v = PropertiesService.getScriptProperties().getProperty('rev') || '0'; cache.put('rev', v, 21600); }
+  return v;
+}
+function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
 function onEdit(e) { try { bump_(); } catch (err) {} }
@@ -109,8 +124,16 @@ function rows_() {
   return { s, values: s.getRange(2, 1, n, COLS.length).getValues() };
 }
 
+/** Items without the thumbnail column (photos are fetched separately, only when they changed). */
 function list_() {
-  const { s, values } = rows_();
+  const s = sheet_(ITEMS, COLS);
+  const n = s.getLastRow() - 1;
+  const values = [];
+  if (n > 0) {
+    const a = s.getRange(2, 1, n, C.thumb).getValues();                                   // id … sell
+    const b = s.getRange(2, C.imgV + 1, n, COLS.length - C.imgV).getValues();              // imgV … end
+    for (let i = 0; i < n; i++) values.push(a[i].concat([''], b[i]));
+  }
   const items = [];
   let fixed = false;
   values.forEach((r, i) => {
@@ -119,7 +142,7 @@ function list_() {
     items.push({
       id: String(r[C.id]), name: str_(r[C.name]), nameHi: str_(r[C.nameHi]), unit: str_(r[C.unit], 30),
       buy: num_(r[C.buy]), sell: num_(r[C.sell]),
-      imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0,
+      imgV: num_(r[C.imgV]),
       updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
       hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
       altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell])
@@ -131,9 +154,13 @@ function list_() {
 
 function thumbs_(ids) {
   const want = {}; ids.slice(0, 60).forEach(id => want[id] = 1);
-  const { values } = rows_();
+  const s = sheet_(ITEMS, COLS);
+  const n = s.getLastRow() - 1;
   const res = [];
-  values.forEach(r => { if (want[r[C.id]]) res.push({ id: String(r[C.id]), thumb: String(r[C.thumb] || ''), imgV: num_(r[C.imgV]) || 1 }); });
+  if (n < 1) return { ok: true, thumbs: res };
+  const idc = s.getRange(2, C.id + 1, n, 1).getValues();
+  const tv = s.getRange(2, C.thumb + 1, n, 2).getValues();                                  // thumb, imgV
+  for (let i = 0; i < n; i++) if (want[idc[i][0]]) res.push({ id: String(idc[i][0]), thumb: String(tv[i][0] || ''), imgV: num_(tv[i][1]) || 1 });
   return { ok: true, thumbs: res };
 }
 
@@ -184,10 +211,11 @@ function doPost(e) {
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
+      case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer') bump_();
+    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer' && body.action !== 'getBill') bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -317,10 +345,12 @@ function takeBill_(body) {
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
+      try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
       sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)]);
+      try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
     }
     bump_();
     return { ok: true, rev: getRev_(), config: readConfig_() };
@@ -332,17 +362,19 @@ function takeBill_(body) {
 }
 
 /** Past bills, newest first. Needs the PIN because it holds customer names and numbers. */
+/** Past bills, newest first, without the big text/lines columns (those come from getBill when a bill is opened). Needs the PIN. */
 function listBills_(q, limit) {
   const s = sheet_(BILLS, BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) return { bills: [] };
-  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const a = s.getRange(2, 1, n, B.text).getValues();                                      // billNo … igst
+  const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();       // billId … profit
   const needle = q.trim().toLowerCase();
   const digits = needle.replace(/\D/g, '');
   const out = [];
-  for (let i = vals.length - 1; i >= 0 && out.length < Math.min(limit, 200); i--) {
-    const r = vals[i];
+  for (let i = n - 1; i >= 0 && out.length < Math.min(limit, 200); i--) {
+    const r = a[i].concat(['', ''], b[i]);
     if (needle) {
       const dd = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
       const ds = isNaN(dd) ? '' : [pad2_(dd.getDate()) + '/' + pad2_(dd.getMonth() + 1) + '/' + dd.getFullYear(), pad2_(dd.getDate()) + '-' + pad2_(dd.getMonth() + 1) + '-' + dd.getFullYear()].join(' ');
@@ -351,18 +383,29 @@ function listBills_(q, limit) {
       const hit = hay.indexOf(needle) >= 0 || String(r[B.billNo]) === needle || (digits.length >= 4 && mob.indexOf(digits) >= 0);
       if (!hit) continue;
     }
-    let lines = [];
-    try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
       total: num_(r[B.total]), items: String(r[B.items] || ''), by: String(r[B.by] || ''), gst: r[B.gstBill] === 'Yes',
       taxable: r[B.taxable] === '' ? null : num_(r[B.taxable]), tax: r[B.tax] === '' ? null : num_(r[B.tax]), custGstin: String(r[B.customerGstin] || ''),
-      igst: r[B.igst] === 'IGST', text: String(r[B.text] || ''), lines: lines,
+      igst: r[B.igst] === 'IGST',
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]) });
   }
   return { bills: out };
+}
+
+/** The full text and lines of one bill, read only when it's opened. */
+function getBill_(row, id, billNo) {
+  const s = sheet_(BILLS, BILL_COLS);
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  row = Math.floor(Number(row));
+  if (!(row >= 2) || row > s.getLastRow()) throw new Error('bill_not_found');
+  const r = s.getRange(row, 1, 1, BILL_COLS.length).getValues()[0];
+  if ((id && String(r[B.billId]) !== String(id)) || (!id && num_(r[B.billNo]) !== num_(billNo))) throw new Error('bill_moved');
+  let lines = [];
+  try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+  return { bill: { text: String(r[B.text] || ''), lines: lines } };
 }
 
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }
@@ -391,29 +434,69 @@ function updateBill_(b, by) {
   r[B.cost] = costOut_(b.cost); r[B.profit] = costOut_(b.profit);
   r[B.editedAt] = new Date(); r[B.editedBy] = by; r[B.edits] = num_(r[B.edits]) + 1;
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
+  try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) {}
   return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt].toISOString(), edits: r[B.edits] } };
 }
 
 function costOut_(v) { return v === undefined || v === null || v === '' || !isFinite(Number(v)) ? '' : Math.round(Number(v) * 100) / 100; }
 
 /** Look up a returning customer by mobile (last 10 digits) from past bills. Needs the PIN. */
+/** Look up a returning customer by mobile (last 10 digits) in the Customers tab. Needs the PIN. */
 function findCustomer_(mobile) {
-  const want = String(mobile).replace(/\D/g, '').slice(-10);
-  if (want.length !== 10) return { customer: null };
-  const s = sheet_(BILLS, BILL_COLS);
-  const n = s.getLastRow() - 1;
-  if (n < 1) return { customer: null };
+  const want = mob10_(mobile);
+  if (!want) return { customer: null };
+  const s = customersSheet_();
+  const i = custRow_(s, want);
+  if (i < 0) return { customer: null };
+  const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
+  const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
+  return { customer: { name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]) } };
+}
+
+function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? d : ''; }
+
+/** The Customers tab: one row per mobile. Built once from existing bills the first time it's needed. */
+function customersSheet_() {
+  const ss = ss_();
+  let s = ss.getSheetByName(CUSTOMERS);
+  if (s) return s;
+  s = sheet_(CUSTOMERS, CUST_COLS);
+  const bs = sheet_(BILLS, BILL_COLS);
+  const n = bs.getLastRow() - 1;
+  if (n < 1) return s;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
-  let name = '', gstin = '', count = 0, total = 0, last = null, lastTotal = 0;
-  for (let i = vals.length - 1; i >= 0; i--) {
-    const r = vals[i];
-    if (String(r[B.mobile]).replace(/\D/g, '').slice(-10) !== want) continue;
-    count++; total += num_(r[B.total]);
-    if (!last) { const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]); last = isNaN(d) ? null : d; lastTotal = num_(r[B.total]); }
-    if (!name && String(r[B.customer]).trim()) name = String(r[B.customer]).trim();
-    if (!gstin && String(r[B.customerGstin]).trim()) gstin = String(r[B.customerGstin]).trim();
-  }
-  if (!count) return { customer: null };
-  return { customer: { name: name, gstin: gstin, count: count, total: Math.round(total * 100) / 100, last: last ? last.toISOString() : '', lastTotal: lastTotal } };
+  const v = bs.getRange(2, 1, n, B.igst + 1).getValues();
+  const map = {}, order = [];
+  v.forEach(r => {
+    const k = mob10_(r[B.mobile]); if (!k) return;
+    if (!map[k]) { map[k] = ["'" + k, '', '', 0, 0, '', '']; order.push(k); }
+    const c = map[k];
+    if (String(r[B.customer]).trim()) c[1] = String(r[B.customer]).trim();
+    if (String(r[B.customerGstin]).trim()) c[2] = String(r[B.customerGstin]).trim();
+    c[3] += 1; c[4] = Math.round((c[4] + num_(r[B.total])) * 100) / 100; c[5] = r[B.date]; c[6] = r[B.billNo];
+  });
+  const rows = order.map(k => map[k]);
+  if (rows.length) s.getRange(2, 1, rows.length, CUST_COLS.length).setValues(rows);
+  return s;
+}
+function custRow_(s, k) {
+  const n = s.getLastRow() - 1;
+  if (n < 1) return -1;
+  const col = s.getRange(2, 1, n, 1).getValues();
+  for (let i = 0; i < n; i++) if (String(col[i][0]).replace(/\D/g, '').slice(-10) === k) return i + 2;
+  return -1;
+}
+/** Keep the Customers tab current. newBill: count it; otherwise just refresh name/GSTIN (an edited bill). */
+function touchCustomer_(mobile, name, gstin, total, billNo, newBill) {
+  const k = mob10_(mobile); if (!k) return;
+  const s = customersSheet_();
+  const i = custRow_(s, k);
+  name = String(name || '').trim(); gstin = String(gstin || '').trim();
+  if (i < 0) { s.appendRow(["'" + k, str_(name, 80), str_(gstin, 20), 1, num_(total), new Date(), billNo]); return; }
+  const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
+  if (name) r[1] = str_(name, 80);
+  if (gstin) r[2] = str_(gstin, 20);
+  if (newBill) { r[3] = num_(r[3]) + 1; r[4] = Math.round((num_(r[4]) + num_(total)) * 100) / 100; r[5] = new Date(); r[6] = billNo; }
+  r[0] = "'" + k;
+  s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]);
 }

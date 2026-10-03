@@ -1905,8 +1905,13 @@ function linesFromItems(b){
     const it=findDup(m[1].trim()); out.push({id:it?it.id:"", name:m[1].trim(), unit:m[3], rate:+m[4], qty:+m[2], hsn:it?itemHsn(it):undefined, gst:it?itemGst(it):undefined}); }
   return out;
 }
-function showBill(b){
+async function showBill(b){
   if(!b) return;
+  if(b.text===undefined && b.row){
+    openSheet(`${t("billNoL")} ${b.n}`, `<p class="note">${esc(t("billsLoading"))}</p>`, "", {full:true});
+    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); b.text=j.bill.text||""; b.lines=j.bill.lines||[]; }
+    catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>openBills(); return; }
+  }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
   const text=b.text||oldBillText(b);
   const body=`<div style="display:grid;gap:12px">

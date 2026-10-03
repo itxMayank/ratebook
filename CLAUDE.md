@@ -129,6 +129,21 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Customer lookup** on the bill screen also shows "₹X pending" for customers with dues (the `due` column in the Customers tab, kept current by `refreshDue_`).
 - **Sheet columns** added to `Bills`: `payment` ('Paid' | 'Credit' | 'Part paid' | 'Cleared'; blank = Paid on old bills), `paid`, `due`, `payments` (JSON `[{d, a, by, at?, note?}]`, where `at:1` means received at billing), `clearedAt`. Paid bills leave `paid`/`due`/`payments` empty. Editing a bill keeps payments recorded later and recomputes the due amount from the new total.
 
+## Test mode and real mode (added 3 Oct 2026)
+
+- **Shared setting** `mode` in Config: `test` (the default) or `live`. It's the first card in Settings, a switch with a confirm step. It changes every phone (they pick it up on the next sync, and `switchEnv()` starts a clean bill).
+- **Separate data per mode:**
+  - Real: `Bills`, `BillHistory`, `Customers`. Test: `Test Bills`, `Test BillHistory`, `Test Customers`.
+  - Bill numbers: real uses `nextBill`/`nextGstBill`, test uses `testNextBill`/`testNextGstBill`.
+  - Shared by both: items, photos and other settings.
+  - In the code: `tab_()` and `ENV_` in Code.gs; `S.cfg.mode`, `S.cfg.raw` (both sets of numbers, so the phone's saved copy stays right), `envKey()` for this phone's customer and dues caches.
+- **Every POST carries `env`.** Queued bills carry their own `env`, so a test bill sent late still lands in the test tabs. Requests without `env` (an older app copy) use the Config mode.
+- **One-time move** (`ensureEnv_`, runs on the first request after this update, flagged with `ENV_OK` in script properties):
+  - Existing `Bills`, `BillHistory` and `Customers` tabs are renamed to the Test tabs. The test bill numbers carry on from where they were.
+  - Real mode starts at No. 1, with an empty `Bills` tab.
+  - The real `Customers` tab gets each customer's mobile, name and GSTIN, with counts set to 0.
+- **While in test mode:** a gold TEST badge next to the shop name, a note on the bill screen, and the first line of WhatsApp bills reads "TEST BILL (practice, not a real invoice)".
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).
@@ -150,7 +165,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
 - `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell | imgs`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
-- `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit | payment | paid | due | payments | clearedAt`
+- Bills tabs (`Bills` for real, `Test Bills` for test; same for `BillHistory` and `Customers`): `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit | payment | paid | due | payments | clearedAt`
 - `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo | due` (lookup index, rebuilt from `Bills` if deleted)
 - `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
 - `Images`: `id | data` (base64 JPEG; one row per photo, keyed `itemId`, `itemId#2` … `itemId#5`)

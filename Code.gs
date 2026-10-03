@@ -18,10 +18,16 @@ const DEFAULT_PIN = '1234';
 const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
-const BILLS = 'Bills';
+/*
+ * Test and real data: bills, edit history and customer stats live in separate tabs per mode.
+ * Real: Bills, BillHistory, Customers. Test: Test Bills, Test BillHistory, Test Customers. Items, photos and settings are shared.
+ * The mode comes with each request (env: 'test' | 'live'), so a bill made in test mode always lands in the test tabs.
+ */
+let ENV_ = 'live';
+function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
+function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
 const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt'];
-const HISTORY = 'BillHistory';
-const CUSTOMERS = 'Customers';
+
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs'];
@@ -39,7 +45,7 @@ function setup() {
   sheet_(ITEMS, COLS);
   sheet_(CONFIG, ['key', 'value']);
   sheet_(IMAGES, ['id', 'data']);
-  sheet_(BILLS, BILL_COLS);
+  sheet_(tab_('Bills'), BILL_COLS);
   bump_();
   Logger.log('Rate Book is ready. Now deploy it as a web app.');
 }
@@ -108,7 +114,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'rev': return out_({ ok: true, rev: getRev_() });
-      case 'list': return out_(list_());
+      case 'list': ensureEnv_(); return out_(list_());
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
       case 'images': return out_(images_(String(p.id || '')));
@@ -176,6 +182,44 @@ function image_(id) {
   return { ok: true, data: '' };
 }
 
+/**
+ * One time, when this version first runs: every bill made so far was practice, so its tabs become the test tabs
+ * (Bills → Test Bills, BillHistory → Test BillHistory, Customers → Test Customers) and the test bill numbers carry on from where they were.
+ * Real mode starts empty at bill No. 1. Customer names, mobiles and GSTINs are copied into the real Customers tab (without the counts).
+ */
+function ensureEnv_() {
+  const cache = CacheService.getScriptCache();
+  if (cache.get('ENV_OK') === '1') return;
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('ENV_OK') === '1') { cache.put('ENV_OK', '1', 21600); return; }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (props.getProperty('ENV_OK') === '1') return;
+    const ss = ss_();
+    const ren = (from, to) => { const x = ss.getSheetByName(from); if (x && !ss.getSheetByName(to)) x.setName(to); return x; };
+    ren('Bills', 'Test Bills');
+    ren('BillHistory', 'Test BillHistory');
+    const oldCust = ren('Customers', 'Test Customers');
+    if (oldCust && !ss.getSheetByName('Customers')) {
+      const live = ss.insertSheet('Customers');
+      live.getRange(1, 1, 1, CUST_COLS.length).setValues([CUST_COLS]).setFontWeight('bold'); live.setFrozenRows(1);
+      const n = oldCust.getLastRow() - 1;
+      if (n > 0) {
+        const rows = oldCust.getRange(2, 1, n, 3).getValues().filter(r => String(r[0]).replace(/\D/g, '')).map(r => ["'" + String(r[0]).replace(/\D/g, '').slice(-10), r[1], r[2], 0, 0, '', '', 0]);
+        if (rows.length) live.getRange(2, 1, rows.length, CUST_COLS.length).setValues(rows);
+      }
+    }
+    const cfg = readConfig_();
+    const raw = sheet_(CONFIG, ['key', 'value']);
+    const keys = raw.getLastRow() > 1 ? raw.getRange(2, 1, raw.getLastRow() - 1, 1).getValues().map(r => String(r[0])) : [];
+    if (keys.indexOf('mode') < 0) setConfig_({ mode: 'test', testNextBill: cfg.nextBill, testNextGstBill: cfg.nextGstBill, nextBill: 1, nextGstBill: 1 });
+    props.setProperty('ENV_OK', '1');
+    cache.put('ENV_OK', '1', 21600);
+    bump_();
+  } finally { lock.releaseLock(); }
+}
+
 function readConfig_() {
   const s = sheet_(CONFIG, ['key', 'value']);
   const n = s.getLastRow() - 1;
@@ -185,6 +229,9 @@ function readConfig_() {
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
   cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
   cfg.nextGstBill = Math.max(1, Math.floor(num_(cfg.nextGstBill)) || 1);
+  cfg.testNextBill = Math.max(1, Math.floor(num_(cfg.testNextBill)) || 1);
+  cfg.testNextGstBill = Math.max(1, Math.floor(num_(cfg.testNextGstBill)) || 1);
+  cfg.mode = cfg.mode === 'live' ? 'live' : 'test';
   cfg.showProfit = cfg.showProfit === true || String(cfg.showProfit).toLowerCase() === 'true';
   cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
   cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
@@ -197,6 +244,7 @@ function doPost(e) {
   let body;
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
+  try { ensureEnv_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') return out_(takeBill_(body));   // anyone making a bill can do this, no PIN
   const auth = checkPin_(body.pin);
   if (auth !== 'ok') return out_({ ok: false, error: auth });
@@ -352,14 +400,15 @@ function images_(id) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, showProfit: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
     if (k === 'showProfit') val = cfg[k] === true || cfg[k] === 'true' ? 'true' : 'false';
-    if (k === 'nextBill' || k === 'nextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
+    if (k === 'mode') val = cfg[k] === 'live' ? 'live' : 'test';
+    if (k === 'nextBill' || k === 'nextGstBill' || k === 'testNextBill' || k === 'testNextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
     if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
     const i = keys.indexOf(k);
@@ -380,14 +429,15 @@ function takeBill_(body) {
   try {
     lock.waitLock(20000);
     const used = Math.floor(num_(body.n));
-    const key = (body.bill && body.bill.gst) ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
+    let key = (body.bill && body.bill.gst) ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
+    if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
     const cur = readConfig_()[key];
     const next = used >= cur ? used + 1 : cur;
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
       try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
-      sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
+      sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60)))));
@@ -411,7 +461,7 @@ function takeBill_(body) {
  */
 function listBills_(q, limit, opt) {
   opt = opt || {};
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) return { bills: [], days: {}, months: {}, all: { count: 0, total: 0 }, years: [], more: false };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -464,7 +514,7 @@ function listBills_(q, limit, opt) {
 
 /** The full text and lines of one bill, read only when it's opened. */
 function getBill_(row, id, billNo) {
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   row = Math.floor(Number(row));
   if (!(row >= 2) || row > s.getLastRow()) throw new Error('bill_not_found');
@@ -479,7 +529,7 @@ function pad2_(n) { return (n < 10 ? '0' : '') + n; }
 
 /** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
 function updateBill_(b, by) {
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) throw new Error('bill_not_found');
   const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
@@ -489,7 +539,7 @@ function updateBill_(b, by) {
   if (i < 0 && b.row) { const k = Number(b.row) - 2; if (k >= 0 && k < vals.length && num_(vals[k][B.billNo]) === num_(b.n)) i = k; }
   if (i < 0) throw new Error('bill_not_found');
   const r = vals[i];
-  sheet_(HISTORY, HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
+  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
   r[B.items] = str_(b.items, 3000); r[B.gstBill] = b.gst ? 'Yes' : 'No';
@@ -545,7 +595,7 @@ function payOut_(r, B) {
 
 /** Everyone who owes money, biggest first, with their open bills (oldest first). Needs the PIN. */
 function listDues_() {
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) return { customers: [], total: 0, bills: 0 };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -578,7 +628,7 @@ function listDues_() {
 function recordPayment_(body, by) {
   const amount = r2_(num_(body.amount));
   if (!(amount > 0)) throw new Error('bad_amount');
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) throw new Error('bill_not_found');
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -613,7 +663,7 @@ function recordPayment_(body, by) {
 
 /** Take back the last payment recorded after billing (for a mistake). */
 function undoPayment_(body) {
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) throw new Error('bill_not_found');
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -635,7 +685,7 @@ function undoPayment_(body) {
 /** Recount what one customer owes and store it in the Customers tab. */
 function refreshDue_(mobile) {
   const k = mob10_(mobile); if (!k) return;
-  const s = sheet_(BILLS, BILL_COLS);
+  const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   const B = BILL_COLS.reduce((m, x, i) => (m[x] = i, m), {});
   let due = 0;
@@ -668,10 +718,10 @@ function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); re
 /** The Customers tab: one row per mobile. Built once from existing bills the first time it's needed. */
 function customersSheet_() {
   const ss = ss_();
-  let s = ss.getSheetByName(CUSTOMERS);
+  let s = ss.getSheetByName(tab_('Customers'));
   if (s) return s;
-  s = sheet_(CUSTOMERS, CUST_COLS);
-  const bs = sheet_(BILLS, BILL_COLS);
+  s = sheet_(tab_('Customers'), CUST_COLS);
+  const bs = sheet_(tab_('Bills'), BILL_COLS);
   const n = bs.getLastRow() - 1;
   if (n < 1) return s;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});

@@ -92,6 +92,14 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - `listBills` takes `tz` (the phone's `getTimezoneOffset`, so a day means the phone's day and not the script's time zone), `from`/`to` (`yyyy-mm-dd`, inclusive) and `before` (sheet row, used by "Show more bills"). It returns `bills`, `days`, `all` ({count, total} of every match, shown in the summary line when searching or filtering by year), `years` and `more`. The page size is 60.
 - Delete in Edit item: the confirm box now replaces the Delete button and scrolls into view. Before, it opened below the Save bar, off screen.
 
+## Monthly totals, collapsible groups, several photos (added 3 Oct 2026)
+
+- **Past bills** are grouped month → day → bill. Month headers show the month's bill count and total (`months` in the `listBills` reply, exact like `days`). Tap a month or day header to open or close it. Older months start closed; everything starts open while searching or filtering. Open/closed state is `BL.col` (resets on each new search or filter). Headers stay pinned at the top while scrolling (month at `--blh`, day 44px below it).
+- **Photos:** up to 5 per item (`MAX_PHOTOS` in both files). In Edit item there's a photo strip: ✕ on each photo removes it, tapping a photo makes it the cover (first), and the dashed tile or Gallery adds more (gallery allows picking several at once). "Delete" was renamed **Delete item** to make clear it removes the item, not a photo.
+  - Storage: every photo is its own row in the `Images` tab (the cover keyed `id`, the rest `id#2` … `id#5`). Each is at most 48,000 characters, under Google's 50,000-character cell limit, so more photos never push a cell over the limit. The `Items` row keeps only the cover's small thumbnail plus `imgV` and the new `imgs` column (photo count).
+  - Backend: `setImages` (POST, PIN, `{id, thumb, photos:[{data}|{k}]}`, where `k` keeps an existing photo by key) and `GET ?action=images&id=` (all photos in order). `setImage` (one photo) is kept for older app copies; it replaces all photos with that one. Deleting an item also deletes its extra photo rows.
+  - Phone cache: each photo is kept in IndexedDB `images` under its key, tagged with the item's `imgV`. The item screen shows a swipeable gallery with a "2/4" counter.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).
@@ -111,12 +119,12 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
 ## Data model
 
-- `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell`
+- `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell | imgs`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
 - `Bills`: `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit`
 - `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo` (lookup index, rebuilt from `Bills` if deleted)
 - `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
-- `Images`: `id | data` (base64 JPEG)
+- `Images`: `id | data` (base64 JPEG; one row per photo, keyed `itemId`, `itemId#2` … `itemId#5`)
 
 ## Features
 

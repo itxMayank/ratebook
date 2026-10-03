@@ -24,7 +24,8 @@ const HISTORY = 'BillHistory';
 const CUSTOMERS = 'Customers';
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
-const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell'];
+const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs'];
+const MAX_PHOTOS = 5;   // photos per item; each is its own cell in the Images tab (under 48,000 characters, below Google's 50,000 per cell)
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed …
 const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
@@ -110,6 +111,7 @@ function doGet(e) {
       case 'list': return out_(list_());
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
+      case 'images': return out_(images_(String(p.id || '')));
       default: return out_({ ok: true, app: 'ratebook', rev: getRev_() });
     }
   } catch (err) {
@@ -145,7 +147,8 @@ function list_() {
       imgV: num_(r[C.imgV]),
       updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
       hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
-      altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell])
+      altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]),
+      imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0
     });
   });
   if (fixed) bump_();
@@ -207,6 +210,7 @@ function doPost(e) {
       case 'upsert': res = upsert_(body.items || [], by); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
+      case 'setImages': res = setImages_(str_(body.id, 40), String(body.thumb || ''), body.photos, by); break;
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before }); break;
@@ -278,7 +282,8 @@ function pub_(r, tmp) {
   return { id: String(r[C.id]), tmp: tmp || null, name: str_(r[C.name]), nameHi: str_(r[C.nameHi]), unit: str_(r[C.unit], 30),
     buy: num_(r[C.buy]), sell: num_(r[C.sell]), imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0, updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
     hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
-    altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]) };
+    altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]),
+    imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0 };
 }
 
 function delete_(ids) {
@@ -287,26 +292,59 @@ function delete_(ids) {
   for (let i = values.length - 1; i >= 0; i--) if (want[values[i][C.id]]) s.deleteRow(i + 2);
   const im = sheet_(IMAGES, ['id', 'data']);
   const n = im.getLastRow() - 1;
-  if (n > 0) { const v = im.getRange(2, 1, n, 1).getValues(); for (let i = v.length - 1; i >= 0; i--) if (want[v[i][0]]) im.deleteRow(i + 2); }
+  if (n > 0) { const v = im.getRange(2, 1, n, 1).getValues(); for (let i = v.length - 1; i >= 0; i--) if (want[String(v[i][0]).split('#')[0]]) im.deleteRow(i + 2); }
   return { deleted: Object.keys(want).length };
 }
 
+/** Older app versions: one photo. Same as setImages_ with a single photo (or none). */
 function setImage_(id, thumb, full, by) {
-  if (thumb.length > 20000 || full.length > 48000) throw new Error('image_too_large');
+  return setImages_(id, thumb, full ? [{ data: full }] : [], by);
+}
+
+/**
+ * Save an item's photos (up to MAX_PHOTOS). photos: in order, each {data: 'data:image/jpeg…'} for a new photo or {k: key} to keep an
+ * existing one. The first is the cover: its small version (thumb) goes in the Items row. Images rows are keyed id, id#2, id#3 …
+ */
+function setImages_(id, thumb, photos, by) {
+  photos = (Array.isArray(photos) ? photos : []).slice(0, MAX_PHOTOS);
+  if (thumb.length > 20000) throw new Error('image_too_large');
   const { s, values } = rows_();
   const i = values.findIndex(r => String(r[C.id]) === id);
   if (i < 0) throw new Error('not_found');
-  const v = thumb ? Date.now() : 0;
-  s.getRange(i + 2, C.thumb + 1).setValue(thumb);
-  s.getRange(i + 2, C.imgV + 1).setValue(v);
-  s.getRange(i + 2, C.updatedAt + 1, 1, 2).setValues([[Date.now(), by]]);
   const im = sheet_(IMAGES, ['id', 'data']);
   const n = im.getLastRow() - 1;
-  let row = -1;
-  if (n > 0) { const ids = im.getRange(2, 1, n, 1).getValues(); row = ids.findIndex(r => String(r[0]) === id); }
-  if (full) { if (row >= 0) im.getRange(row + 2, 2).setValue(full); else im.appendRow([id, full]); }
-  else if (row >= 0) im.deleteRow(row + 2);
-  return { imgV: v };
+  const old = {}, oldRows = [];
+  if (n > 0) im.getRange(2, 1, n, 2).getValues().forEach((r, j) => { const k = String(r[0]); if (k === id || k.indexOf(id + '#') === 0) { old[k] = String(r[1] || ''); oldRows.push(j + 2); } });
+  const datas = [];
+  photos.forEach(p => {
+    const d = p && p.data ? String(p.data) : (p && p.k ? (old[String(p.k)] || '') : '');
+    if (!d) return;
+    if (d.length > 48000 || !/^data:image\//.test(d)) throw new Error('image_too_large');
+    datas.push(d);
+  });
+  if (datas.length && !thumb) throw new Error('thumb_missing');
+  if (!datas.length) thumb = '';
+  const rows = datas.map((d, j) => [j ? id + '#' + (j + 1) : id, d]);
+  const reuse = Math.min(rows.length, oldRows.length);
+  for (let j = 0; j < reuse; j++) im.getRange(oldRows[j], 1, 1, 2).setValues([rows[j]]);
+  for (let j = oldRows.length - 1; j >= reuse; j--) im.deleteRow(oldRows[j]);
+  if (rows.length > reuse) im.getRange(im.getLastRow() + 1, 1, rows.length - reuse, 2).setValues(rows.slice(reuse));
+  const v = datas.length ? Date.now() : 0;
+  const r = values[i];
+  r[C.thumb] = thumb; r[C.imgV] = v; r[C.imgs] = datas.length || ''; r[C.updatedAt] = Date.now(); r[C.updatedBy] = by;
+  s.getRange(i + 2, 1, 1, COLS.length).setValues([r]);
+  return { imgV: v, imgs: datas.length };
+}
+
+/** All photos of one item, in order: [{k, data}]. */
+function images_(id) {
+  const im = sheet_(IMAGES, ['id', 'data']);
+  const n = im.getLastRow() - 1;
+  if (n < 1 || !id) return { ok: true, images: [] };
+  const out = [];
+  im.getRange(2, 1, n, 2).getValues().forEach(r => { const k = String(r[0]); if (k === id || k.indexOf(id + '#') === 0) out.push({ k: k, i: k === id ? 1 : Number(k.split('#')[1]) || 99, data: String(r[1] || '') }); });
+  out.sort((a, b) => a.i - b.i);
+  return { ok: true, images: out.map(x => ({ k: x.k, data: x.data })) };
 }
 
 function setConfig_(cfg) {
@@ -365,13 +403,13 @@ function takeBill_(body) {
  * Past bills, newest first, without the big text/lines columns (those come from getBill when a bill is opened). Needs the PIN.
  * opt: q (search), limit, tz (phone's getTimezoneOffset, so "which day" matches the phone), from/to ('yyyy-mm-dd', inclusive),
  * before (sheet row: return only older rows, for "Show more").
- * Also returns: days {day: {count, total}} for every matching bill on the days shown (exact even past the page), years (all years with bills), more.
+ * Also returns: months {yyyy-mm: {count, total}} and days {day: {count, total}} for every matching bill on the days shown (exact even past the page), years (all years with bills), more.
  */
 function listBills_(q, limit, opt) {
   opt = opt || {};
   const s = sheet_(BILLS, BILL_COLS);
   const n = s.getLastRow() - 1;
-  if (n < 1) return { bills: [], days: {}, all: { count: 0, total: 0 }, years: [], more: false };
+  if (n < 1) return { bills: [], days: {}, months: {}, all: { count: 0, total: 0 }, years: [], more: false };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const a = s.getRange(2, 1, n, B.text).getValues();                                      // billNo … igst
   const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();       // billId … profit
@@ -383,7 +421,7 @@ function listBills_(q, limit, opt) {
   const to = /^\d{4}-\d{2}-\d{2}$/.test(opt.to || '') ? opt.to : '';
   const before = Number(opt.before) || 0;
   const max = Math.min(limit, 200);
-  const out = [], days = {}, years = {}, all = { count: 0, total: 0 };
+  const out = [], days = {}, months = {}, years = {}, all = { count: 0, total: 0 };
   let more = false;
   for (let i = n - 1; i >= 0; i--) {
     const r = a[i].concat(['', ''], b[i]);
@@ -402,6 +440,9 @@ function listBills_(q, limit, opt) {
     const k = day || 'unknown';
     if (!days[k]) days[k] = { count: 0, total: 0 };
     days[k].count += 1; days[k].total = Math.round((days[k].total + num_(r[B.total])) * 100) / 100;
+    const mk = k.slice(0, 7);
+    if (!months[mk]) months[mk] = { count: 0, total: 0 };
+    months[mk].count += 1; months[mk].total = Math.round((months[mk].total + num_(r[B.total])) * 100) / 100;
     all.count += 1; all.total = Math.round((all.total + num_(r[B.total])) * 100) / 100;
     if (before && i + 2 >= before) continue;
     if (out.length >= max) { more = true; continue; }
@@ -413,8 +454,8 @@ function listBills_(q, limit, opt) {
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]) });
   }
-  const shown = {}; out.forEach(x => { shown[x.day] = days[x.day]; });
-  return { bills: out, days: shown, all: all, years: Object.keys(years).sort().reverse(), more: more };
+  const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day]; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)]; });
+  return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more };
 }
 
 /** The full text and lines of one bill, read only when it's opened. */

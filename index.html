@@ -325,6 +325,20 @@ label.thumb{cursor:pointer}
 .img-pick{position:relative;flex-wrap:wrap}
 .img-pick .row-btns label.btn{cursor:pointer}
 .img-pick .row-btns svg{width:18px;height:18px}
+.ph-strip{display:flex;gap:10px;overflow-x:auto;padding:8px 8px 4px 0;-webkit-overflow-scrolling:touch}
+.ph{position:relative;flex:none;width:76px;height:76px;border-radius:12px;background:var(--surface-2);cursor:pointer}
+.ph img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+.ph-x{position:absolute;top:-7px;right:-7px;width:26px;height:26px;border-radius:50%;border:2px solid var(--surface);background:var(--fg);color:var(--surface);font-size:12px;font-weight:700;line-height:1;display:grid;place-items:center;padding:0;z-index:1}
+.ph-x::before{content:"";position:absolute;inset:-9px}
+.ph-cover{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.62);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;pointer-events:none}
+.ph-add{display:grid;place-items:center;border:1.5px dashed var(--line);background:transparent;color:var(--muted)}
+.ph-spin{position:absolute;inset:0;margin:auto;width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gal-wrap{position:relative}
+.gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:var(--r);scrollbar-width:none}
+.gal::-webkit-scrollbar{display:none}
+.gal>.hero{flex:0 0 100%;scroll-snap-align:center}
+.gal-n{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.58);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
 .img-busy{font-size:13px;color:var(--muted)}
 /* bill editing */
 .editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:1.5px solid var(--gold);border-radius:var(--r);padding:10px 12px;margin-top:6px}
@@ -340,9 +354,19 @@ label.thumb{cursor:pointer}
 .bl-chip select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:inherit;font:inherit;padding:0 14px 0 0;height:100%;outline:0;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
 .bl-chip input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font-size:16px}
 .bl-clear{width:36px;height:36px;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted);font-size:14px;flex:none}
-.bl-day{position:sticky;top:var(--blh,96px);z-index:2;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:700;color:var(--fg)}
+.bl-grp{display:grid;gap:8px}
+.bl-gb{display:grid;gap:8px}
+.bl-grp.shut>.bl-gb{display:none}
+.bl-mh,.bl-day{position:sticky;display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;cursor:pointer;color:var(--fg)}
+.bl-mh{top:var(--blh,96px);z-index:3;padding:9px 12px;border-radius:12px;background:var(--accent-soft);font:700 15px var(--f-display)}
+.bl-mh .num{color:var(--accent)}
+.bl-day{top:calc(var(--blh,96px) + 44px);z-index:2;padding:7px 12px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:700}
 .bl-day .num{color:var(--muted);font-weight:600}
-.bl-day:first-child,.bl-sum+.bl-day{margin-top:0}
+.bl-ml{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-mh .num,.bl-day .num{white-space:nowrap}
+.bl-mh>.chev,.bl-day>.chev{flex:none;transition:transform .18s;transform:none}
+.bl-grp.shut>button>.chev{transform:rotate(-90deg)}
+.bl-month+.bl-month{margin-top:4px}
 /* past bills + pack units */
 .unitchip{border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px}
 .bills-list{display:grid;gap:8px;margin-top:10px}
@@ -545,8 +569,8 @@ const STR = {
     items:n=>n===1?"1 item":`${n} items`,results:n=>n===1?"1 match":`${n} matches`,showMore:n=>`Show ${n} more`,
     loading:"Loading prices…",emptyT:"No items yet",emptyD:"Add your items with unit, buy rate and sell rate. Everyone you share this with sees the same prices.",
     noMatch:q=>`Nothing matches “${q}”.`,didYouMean:"Did you mean:",addAsNew:q=>`Add “${q}” as new item`,
-    buy:"Buy",sell:"Sell",unit:"Unit",margin:"Margin",item:"Item",itemName:"Item name",hiName:"Hindi name (fills itself)",buyRate:"Buy rate (₹)",sellRate:"Sell rate (₹)",photo:"Photo",addPhoto:"Add photo",changePhoto:"Change photo",removePhoto:"Remove",
-    save:"Save",edit:"Edit",del:"Delete",delQ:"Delete this item for everyone?",yesDel:"Yes, delete",addToBill:"Add to bill",inBill:"In bill",qty:"Qty",
+    buy:"Buy",sell:"Sell",unit:"Unit",margin:"Margin",item:"Item",itemName:"Item name",hiName:"Hindi name (fills itself)",buyRate:"Buy rate (₹)",sellRate:"Sell rate (₹)",photo:"Photo",addPhoto:"Add photo",changePhoto:"Change photo",removePhoto:"Remove photo",photosL:"Photos",photoCover:"Cover",photoTapCover:"Tap a photo to make it the cover.",photoMax:"Up to 5 photos.",photoLoadFail:"Couldn't load the photos. Try again.",
+    save:"Save",edit:"Edit",del:"Delete",delItem:"Delete item",delQ:"Delete this item for everyone?",yesDel:"Yes, delete",addToBill:"Add to bill",inBill:"In bill",qty:"Qty",
     newItem:"New item",editItem:"Edit item",needName:"Enter the item name.",needRate:"Enter a valid sell rate.",dup:"An item with this name already exists.",
     saved:"Saved",deleted:"Deleted",added:"added to bill",updatedAgo:(a,b)=>`Updated ${a}${b?` by ${b}`:""}`,
     billEmptyT:"Bill is empty",billEmptyD:"Search above and tap + Bill on an item. Rates come from the price list; you can change them here.",copied:"Bill copied",copyFail:"Couldn't copy. Long-press to select the text.",
@@ -568,8 +592,8 @@ const STR = {
     items:n=>`${n} सामान`,results:n=>`${n} मिले`,showMore:n=>`${n} और दिखाएँ`,
     loading:"रेट लोड हो रहे हैं…",emptyT:"अभी कोई सामान नहीं",emptyD:"सामान, इकाई, ख़रीद रेट और बिक्री रेट जोड़ें। जिनसे आप शेयर करेंगे, सबको यही रेट दिखेंगे।",
     noMatch:q=>`“${q}” से कुछ नहीं मिला।`,didYouMean:"क्या आपका मतलब:",addAsNew:q=>`“${q}” नया सामान जोड़ें`,
-    buy:"ख़रीद",sell:"बिक्री",unit:"इकाई",margin:"मुनाफ़ा",item:"सामान",itemName:"सामान का नाम",hiName:"हिंदी नाम (अपने-आप भरेगा)",buyRate:"ख़रीद रेट (₹)",sellRate:"बिक्री रेट (₹)",photo:"फ़ोटो",addPhoto:"फ़ोटो जोड़ें",changePhoto:"फ़ोटो बदलें",removePhoto:"हटाएँ",
-    save:"सेव करें",edit:"बदलें",del:"हटाएँ",delQ:"यह सामान सबके लिए हटाएँ?",yesDel:"हाँ, हटाएँ",addToBill:"बिल में जोड़ें",inBill:"बिल में है",qty:"मात्रा",
+    buy:"ख़रीद",sell:"बिक्री",unit:"इकाई",margin:"मुनाफ़ा",item:"सामान",itemName:"सामान का नाम",hiName:"हिंदी नाम (अपने-आप भरेगा)",buyRate:"ख़रीद रेट (₹)",sellRate:"बिक्री रेट (₹)",photo:"फ़ोटो",addPhoto:"फ़ोटो जोड़ें",changePhoto:"फ़ोटो बदलें",removePhoto:"फ़ोटो हटाएँ",photosL:"फ़ोटो",photoCover:"मुख्य",photoTapCover:"किसी फ़ोटो को छूकर उसे मुख्य बनाएँ।",photoMax:"ज़्यादा से ज़्यादा 5 फ़ोटो।",photoLoadFail:"फ़ोटो लोड नहीं हुईं। फिर से कोशिश करें।",
+    save:"सेव करें",edit:"बदलें",del:"हटाएँ",delItem:"सामान हटाएँ",delQ:"यह सामान सबके लिए हटाएँ?",yesDel:"हाँ, हटाएँ",addToBill:"बिल में जोड़ें",inBill:"बिल में है",qty:"मात्रा",
     newItem:"नया सामान",editItem:"सामान बदलें",needName:"सामान का नाम लिखें।",needRate:"सही बिक्री रेट लिखें।",dup:"इस नाम का सामान पहले से है।",
     saved:"सेव हो गया",deleted:"हटा दिया",added:"बिल में जोड़ा",updatedAgo:(a,b)=>`${a} बदला${b?` · ${b}`:""}`,
     billEmptyT:"बिल ख़ाली है",billEmptyD:"ऊपर खोजें और सामान पर + बिल दबाएँ। रेट लिस्ट से आता है, यहाँ बदल भी सकते हैं।",copied:"बिल कॉपी हो गया",copyFail:"कॉपी नहीं हुआ। टेक्स्ट को दबाकर चुनें।",
@@ -1460,7 +1484,7 @@ async function openDetail(id){
   const it=S.byId.get(id); if(!it) return;
   const inB=billQty(id);
   const body=`
-    ${it.imgV?`<img class="hero" id="d-img" src="${esc(thumbOf(it)||"")}" alt="">`:""}
+    ${it.imgV?`<div class="gal-wrap"><div class="gal" id="d-gal"><img class="hero" id="d-img" src="${esc(thumbOf(it)||"")}" alt="">${Array.from({length:(it.imgs||1)-1},(_,j)=>`<img class="hero" data-gi="${j+1}" alt="">`).join("")}</div>${(it.imgs||1)>1?`<span class="gal-n" id="d-gn">1/${it.imgs}</span>`:""}</div>`:""}
     ${it.nameHi?`<div class="sub" lang="hi" style="margin-top:10px;font-size:17px">${esc(it.nameHi)}</div>`:""}
     <div class="kv num">
       <div class="s"><span>${esc(t("sell"))}</span><b>${rs(it.sell)}</b></div>
@@ -1479,7 +1503,12 @@ async function openDetail(id){
   $("#dq-inc").onclick=()=>{ $("#dq").value=(toNum($("#dq").value)||0)+1; };
   $("#d-add").onclick=()=>{ const v=toNum($("#dq").value); addToBill(id, v>0?v:1); closeSheet(); };
   if(S.canWrite) $("#d-edit").onclick=()=>openEdit(id);
-  if(it.imgV){ const full=await loadFull(it); const img=$("#d-img"); if(full && img && $("#sheet-title").textContent===itemTitle(it)) img.src=full; }
+  if(it.imgV){
+    const g=$("#d-gal"); if(g && (it.imgs||1)>1) g.addEventListener("scroll",()=>{ const n=$("#d-gn"); if(n) n.textContent=`${Math.round(g.scrollLeft/g.clientWidth)+1}/${it.imgs}`; },{passive:true});
+    const list=await loadAllPhotos(it).catch(()=>[]);
+    if($("#sheet-title").textContent!==itemTitle(it) || !$("#d-gal")) return;
+    list.forEach((x,j)=>{ const el=j?$(`#d-gal [data-gi="${j}"]`):$("#d-img"); if(el && x.data) el.src=x.data; });
+  }
 }
 
 /* ---------------- Image processing ---------------- */
@@ -1529,7 +1558,7 @@ async function write(body,local){
 function afterLocal(){ S.items.sort((a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"})); S.byId=new Map(S.items.map(i=>[i.id,i])); buildIndex(); saveCache(); renderList(); renderBadge(); if(S.tab==="bill") renderBill(); }
 function upsertLocal(rec){ const i=S.items.findIndex(x=>x.id===rec.id); if(i>=0) S.items[i]={...S.items[i],...rec}; else S.items.push(rec); }
 function mergeSaved(saved){ for(const it of saved||[]){ const key=it.tmp||it.id; const i=S.items.findIndex(x=>x.id===key); const clean={...it}; delete clean.tmp; clean.pending=false;
-    if(i>=0){ const old=S.items[i]; if(it.tmp && S.thumbs[it.tmp]){ S.thumbs[it.id]=S.thumbs[it.tmp]; delete S.thumbs[it.tmp]; } if(it.tmp) S.bill.forEach(l=>{ if(l.id===it.tmp) l.id=it.id; }); S.items[i]={...old,...clean, imgV: clean.imgV||old.imgV||0}; } else S.items.push(clean); }
+    if(i>=0){ const old=S.items[i]; if(it.tmp && S.thumbs[it.tmp]){ S.thumbs[it.id]=S.thumbs[it.tmp]; delete S.thumbs[it.tmp]; } if(it.tmp) S.bill.forEach(l=>{ if(l.id===it.tmp) l.id=it.id; }); S.items[i]={...old,...clean, imgV: clean.imgV||old.imgV||0, imgs: clean.imgV?(clean.imgs||old.imgs||1):(old.imgs||0)}; } else S.items.push(clean); }
   saveBill(); afterLocal(); }
 const tmpId=()=>"tmp_"+Math.random().toString(36).slice(2,10);
 const byName=()=> (S.auth&&S.auth.by)||"";
@@ -1546,10 +1575,27 @@ async function loadFull(it){
   try{ const j=await apiGet({action:"image",id:it.id}); if(j.data){ idb.set("images",it.id,{v:it.imgV,d:j.data}); return j.data; } }catch{}
   return c?c.d:null;
 }
+const MAX_PHOTOS=5;
+const photoKey=(id,j)=> j?`${id}#${j+1}`:id;
+/** All photos of an item, in order: [{k, data}]. Cached on the phone per photo, keyed by the item's photo version. */
+async function loadAllPhotos(it){
+  const n=it.imgV?(it.imgs||1):0; if(!n) return [];
+  if(n===1){ const d=await loadFull(it); return d?[{k:it.id,data:d}]:[]; }
+  const keys=Array.from({length:n},(_,j)=>photoKey(it.id,j));
+  const cached=await Promise.all(keys.map(k=>idb.get("images",k)));
+  if(cached.every(c=>c&&c.v===it.imgV)) return keys.map((k,j)=>({k,data:cached[j].d}));
+  const j=await apiGet({action:"images",id:it.id});
+  const list=(j.images||[]).filter(x=>x.data);
+  list.forEach(x=>idb.set("images",x.k,{v:it.imgV,d:x.data}));
+  return list;
+}
+function thumbFromData(d){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(toJpeg(drawImg(im,112,true),9000)); im.onerror=rej; im.src=d; }); }
 
 function openEdit(id,prefill=""){
   const it = id? S.byId.get(id) : null;
-  let img = { thumb: it?thumbOf(it):null, full: null, changed:false, removed:false };
+  // photos: [{k (existing key) | isNew, thumb, full, src}]; the first is the cover
+  let photos = it&&it.imgV ? Array.from({length:it.imgs||1},(_,j)=>({k:photoKey(it.id,j), thumb:j?null:thumbOf(it), src:j?null:thumbOf(it)})) : [];
+  let photosChanged=false, photosFail=false;
   const camIcon=`<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3.5"/></svg>`;
   const body=`<form class="form" id="ef" novalidate>
     <div class="field"><label for="ef-name">${esc(t("itemName"))}</label><input id="ef-name" value="${esc(it?.name||prefill)}" autocomplete="off" enterkeyhint="next"></div>
@@ -1573,22 +1619,40 @@ function openEdit(id,prefill=""){
       </div>
     </details>
     <div class="field"><label for="ef-hi">${esc(t("hiName"))}</label><input id="ef-hi" value="${esc(it?.nameHi||"")}" autocomplete="off" lang="hi"></div>
-    <div class="img-pick"><label class="thumb" id="ef-th" for="ef-cam" aria-label="${esc(t("takePhoto"))}">${img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon}</label>
-      <div class="row-btns" style="justify-content:flex-start">
+    <div class="field"><label id="ef-phl">${esc(t("photosL"))}</label>
+      <div class="ph-strip" id="ef-ph"></div>
+      <p class="note" id="ef-phn" style="margin:0"></p>
+    <div class="img-pick">
+      <div class="row-btns" style="justify-content:flex-start" id="ef-phb">
         <label class="btn ghost" for="ef-cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>${esc(t("takePhoto"))}</span></label>
         <label class="btn ghost" for="ef-gal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></svg><span>${esc(t("fromGallery"))}</span></label>
-        <button type="button" class="btn ghost" id="ef-rmimg" ${img.thumb?"":"hidden"}>${esc(t("removePhoto"))}</button>
       </div>
       <span class="img-busy" id="ef-busy" hidden></span>
       <input type="file" id="ef-cam" class="vh" accept="image/*" capture="environment" tabindex="-1">
-      <input type="file" id="ef-gal" class="vh" accept="image/*" tabindex="-1">
+      <input type="file" id="ef-gal" class="vh" accept="image/*" multiple tabindex="-1">
+    </div>
     </div>
     <div class="err" id="ef-err" role="alert"></div>
-    ${it?`<div><button type="button" class="btn danger" id="ef-del">${esc(t("del"))}</button></div><div class="confirm" id="ef-delc" hidden><span>${esc(t("delQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn danger" id="ef-dely">${esc(t("yesDel"))}</button><button type="button" class="btn ghost" id="ef-deln">${esc(t("cancel"))}</button></div></div>`:""}
+    ${it?`<div><button type="button" class="btn danger" id="ef-del">${esc(t("delItem"))}</button></div><div class="confirm" id="ef-delc" hidden><span>${esc(t("delQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn danger" id="ef-dely">${esc(t("yesDel"))}</button><button type="button" class="btn ghost" id="ef-deln">${esc(t("cancel"))}</button></div></div>`:""}
   </form>`;
   openSheet(it?t("editItem"):t("newItem"), body, `<button class="btn ghost" id="ef-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ef-save">${esc(t("save"))}</button>`, {full:true});
   if(!it) setTimeout(()=>$("#ef-name")?.focus(),260);
-  const setThumb=()=>{ $("#ef-th").innerHTML = img.thumb?`<img src="${esc(img.thumb)}" alt="">`:camIcon; $("#ef-rmimg").hidden=!img.thumb; };
+  const renderPhotos=()=>{
+    const box=$("#ef-ph"); if(!box) return;
+    box.innerHTML = photos.map((p,i)=>`<div class="ph" data-pi="${i}">${p.src?`<img src="${esc(p.src)}" alt="">`:`<span class="ph-spin"></span>`}${i===0?`<span class="ph-cover">${esc(t("photoCover"))}</span>`:""}<button type="button" class="ph-x" data-px="${i}" aria-label="${esc(t("removePhoto"))}">✕</button></div>`).join("")
+      + (photos.length<MAX_PHOTOS?`<label class="ph ph-add" for="ef-gal" aria-label="${esc(t("addPhoto"))}">${camIcon}</label>`:"");
+    $("#ef-phl").textContent=`${t("photosL")}${photos.length?` (${photos.length}/${MAX_PHOTOS})`:""}`;
+    $("#ef-phn").textContent = photosFail ? t("photoLoadFail") : photos.length>=MAX_PHOTOS ? t("photoMax") : photos.length>1 ? t("photoTapCover") : "";
+    $("#ef-phb").hidden = photos.length>=MAX_PHOTOS;
+  };
+  const photosReady = (it&&it.imgV) ? loadAllPhotos(it).then(list=>{ const m={}; list.forEach(x=>m[x.k]=x.data);
+      photos.forEach(p=>{ if(!p.isNew && m[p.k]){ p.full=m[p.k]; p.src=m[p.k]; } });
+      if(!list.length && (it.imgs||1)>1) photosFail=true; renderPhotos(); }).catch(()=>{ photosFail=true; renderPhotos(); }) : Promise.resolve();
+  renderPhotos();
+  $("#ef-ph").addEventListener("click",e=>{
+    const x=e.target.closest("[data-px]"); if(x){ e.preventDefault(); photos.splice(+x.dataset.px,1); photosChanged=true; renderPhotos(); return; }
+    const t0=e.target.closest("[data-pi]"); if(t0 && +t0.dataset.pi>0){ const [p]=photos.splice(+t0.dataset.pi,1); photos.unshift(p); photosChanged=true; renderPhotos(); }
+  });
   const altHint=()=>{ const u=$("#ef-unit").dataset.unit, a=$("#ef-aunit").dataset.unit, n=toNum($("#ef-aqty").value), sell=toNum($("#ef-sell").value), ap=toNum($("#ef-asell").value);
     $("#ef-aqty-l").textContent=t("perMain",unitL(u));
     $("#ef-ahint").textContent = n>0 ? t("packHint",unitL(u),fmtN(n),unitL(a),rs(!isNaN(ap)?ap:(isNaN(sell)?0:r2(sell/n)))) : ""; };
@@ -1599,13 +1663,11 @@ function openEdit(id,prefill=""){
   $("#ef-unit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   $("#ef-aunit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   ["ef-aqty","ef-asell","ef-sell"].forEach(k=>$("#"+k).addEventListener("input",altHint)); altHint();
-  const onPhoto=async e=>{ const inp=e.target, f=inp.files&&inp.files[0]; inp.value=""; if(!f) return;
+  const onPhoto=async e=>{ const inp=e.target, files=Array.from(inp.files||[]).slice(0,MAX_PHOTOS-photos.length); inp.value=""; if(!files.length) return;
     const busy=$("#ef-busy"); busy.hidden=false; busy.textContent=t("photoWorking");
-    try{ const r=await processImage(f); img={thumb:r.thumb,full:r.full,changed:true,removed:false}; setThumb(); }
-    catch{ toast(t("imgFail")); }
-    finally{ busy.hidden=true; } };
+    for(const f of files){ try{ const r=await processImage(f); if(photos.length<MAX_PHOTOS){ photos.push({isNew:true,thumb:r.thumb,full:r.full,src:r.thumb}); photosChanged=true; renderPhotos(); } } catch{ toast(t("imgFail")); } }
+    busy.hidden=true; };
   $("#ef-cam").addEventListener("change",onPhoto); $("#ef-gal").addEventListener("change",onPhoto);
-  $("#ef-rmimg").onclick=()=>{ img={thumb:null,full:null,changed:true,removed:true}; setThumb(); };
   $("#ef-cancel").onclick=closeSheet;
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };
   ["ef-name","ef-buy"].forEach((k,i)=>$("#"+k).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $(i?"#ef-sell":"#ef-buy").focus(); } }));
@@ -1631,17 +1693,24 @@ function openEdit(id,prefill=""){
     const altUnit = aq>0 ? $("#ef-aunit").dataset.unit : "", altQty = aq>0 ? aq : 0, altSell = (aq>0 && asS!=="") ? aSell : null;
     const hiFinal = nameHi || toHindi(name);
     const rec={ id: id||undefined, tmp: id?undefined:key, name, nameHi:hiFinal, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell };
-    const imgChange=img.changed ? {...img} : null;
+    const imgChange=photosChanged ? photos.slice() : null;
     closeSheet(); toast(t("saving"));
     write({action:"upsert",items:[rec]},()=>{
-      upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.thumb?Date.now():0) : (it?it.imgV:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
-      if(imgChange && imgChange.thumb) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange.thumb};
+      upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.length?Date.now():0) : (it?it.imgV:0), imgs: imgChange ? imgChange.length : (it?it.imgs||0:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
+      if(imgChange && imgChange.length) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange[0].thumb||imgChange[0].src||""};
       const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.nameHi=hiFinal; bl.unit=unit; saveBill(); }
     }).then(async j=>{
       mergeSaved(j.items);
       const realId=(j.items&&j.items[0]&&j.items[0].id)||key;
-      if(imgChange){ const r=await write({action:"setImage",id:realId,thumb:imgChange.thumb||"",full:imgChange.full||""});
-        const x=S.byId.get(realId); if(x){ x.imgV=r.imgV; if(r.imgV){ S.thumbs[realId]={v:r.imgV,d:imgChange.thumb}; idb.set("thumbs",realId,S.thumbs[realId]); idb.set("images",realId,{v:r.imgV,d:imgChange.full}); } else { delete S.thumbs[realId]; idb.del("thumbs",realId); idb.del("images",realId); } afterLocal(); } }
+      if(imgChange){
+        await photosReady;
+        let th="";
+        if(imgChange.length){ const c=imgChange[0]; th=c.thumb || (c.full||c.src ? await thumbFromData(c.full||c.src).catch(()=>"") : ""); if(!th) throw new Error("photo"); }
+        const r=await write({action:"setImages",id:realId,thumb:th,photos:imgChange.map(p=>p.isNew?{data:p.full}:{k:p.k})});
+        const x=S.byId.get(realId); if(x){ x.imgV=r.imgV; x.imgs=r.imgs||0;
+          if(r.imgV){ S.thumbs[realId]={v:r.imgV,d:th}; idb.set("thumbs",realId,S.thumbs[realId]); imgChange.forEach((p,j)=>{ if(p.full) idb.set("images",photoKey(realId,j),{v:r.imgV,d:p.full}); }); }
+          else { delete S.thumbs[realId]; idb.del("thumbs",realId); idb.del("images",realId); }
+          afterLocal(); } }
       toast(t("saved")); resyncSoon();
     }).catch(()=>{});
   };
@@ -1886,8 +1955,8 @@ function profitBox(pf){
 }
 function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
-let billsCache=[], billsReq=0, billsDays={}, billsMore=false, billsAll=null;
-const BL={q:"", year:"", date:""};            // past-bills filters, kept while you open a bill and come back
+let billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
+const BL={q:"", year:"", date:"", col:{}};   // col: month/day groups you opened or closed            // past-bills filters, kept while you open a bill and come back
 const calIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;
 function dayKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function dayLabel(k){
@@ -1896,6 +1965,10 @@ function dayLabel(k){
   if(k===dayKey(now)) return t("blToday"); if(k===dayKey(y)) return t("blYesterday");
   const d=new Date(+k.slice(0,4), +k.slice(5,7)-1, +k.slice(8));
   return d.toLocaleDateString(S.lang==="hi"?"hi-IN":"en-IN",{weekday:"short",day:"2-digit",month:"short",...(d.getFullYear()!==now.getFullYear()?{year:"numeric"}:{})});
+}
+function monthLabel(k){
+  if(!/^\d{4}-\d{2}$/.test(k)) return t("blNoDate");
+  return new Date(+k.slice(0,4), +k.slice(5,7)-1, 1).toLocaleDateString(S.lang==="hi"?"hi-IN":"en-IN",{month:"long",year:"numeric"});
 }
 function openBills(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
@@ -1915,7 +1988,8 @@ function openBills(){
   $("#bl-date").onchange=e=>{ BL.date=e.target.value||""; sync(); loadBills(); };
   $("#bl-dc").onclick=e=>{ const inp=$("#bl-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
   $("#bl-clr").onclick=()=>{ BL.year=""; BL.date=""; $("#bl-year").value=""; $("#bl-date").value=""; sync(); loadBills(); };
-  $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; } const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
+  $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; }
+    const g=e.target.closest("[data-tg]"); if(g){ const k=g.dataset.tg; BL.col[k]=!g.closest(".bl-grp").classList.contains("shut")?true:false; const st=$("#sheet-body").scrollTop; renderBills(); $("#sheet-body").scrollTop=st; return; } const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
   loadBills();
 }
 function billFilter(){
@@ -1934,6 +2008,8 @@ async function loadBills(more){
     const got=j.bills||[];
     billsCache = more ? billsCache.concat(got) : got;
     billsDays = more ? {...billsDays, ...(j.days||{})} : (j.days||{});
+    billsMonths = more ? {...billsMonths, ...(j.months||{})} : (j.months||{});
+    if(!more) BL.col={};
     billsMore = !!j.more; billsAll = j.all||null;
     const ys=j.years||[], sel=$("#bl-year");
     if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
@@ -1950,13 +2026,26 @@ function renderBills(){
     head=`<div class="bl-sum">${esc(t("blSummary",cnt,rs(tot)))}${showP&&!billsMore?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`;
   }
   if(!billsCache.length){ list.innerHTML=`<p class="note">${esc(t("billsNone"))}</p>`; return; }
-  let html=head, cur=null;
-  billsCache.forEach((b,i)=>{
-    const d=b.date?new Date(b.date):null, k=b.day||(d?dayKey(d):"unknown");
-    if(k!==cur){ cur=k; const dd=billsDays[k]||{count:0,total:0};
-      html+=`<div class="bl-day"><span>${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></div>`; }
-    html+=`<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`;
+  // group: month → day → bills. Older months start closed (unless searching/filtering); tap a header to open or close it.
+  const chev=`<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  const anyFilter=!!(BL.q.trim()||BL.year||BL.date);
+  const months=[]; const byM={};
+  billsCache.forEach((b,i)=>{ const d=b.date?new Date(b.date):null, k=b.day||(d?dayKey(d):"unknown"), m=k==="unknown"?"unknown":k.slice(0,7);
+    if(!byM[m]){ byM[m]={days:[],byD:{}}; months.push(m); }
+    const M=byM[m]; if(!M.byD[k]){ M.byD[k]=[]; M.days.push(k); } M.byD[k].push(i); });
+  let html=head;
+  months.forEach((m,mi)=>{
+    const mt=billsMonths[m]||{count:0,total:0}, mShut = m in BL.col ? BL.col[m] : (!anyFilter && mi>0);
+    html+=`<section class="bl-grp bl-month${mShut?" shut":""}"><button type="button" class="bl-mh" data-tg="${esc(m)}" aria-expanded="${!mShut}">${chev}<span class="bl-ml">${esc(monthLabel(m))}</span><span class="num">${esc(t("blSummary",mt.count,rs(mt.total)))}</span></button><div class="bl-gb">`;
+    byM[m].days.forEach(k=>{
+      const dd=billsDays[k]||{count:0,total:0}, dShut = !!BL.col[k];
+      html+=`<div class="bl-grp bl-dgrp${dShut?" shut":""}"><button type="button" class="bl-day" data-tg="${esc(k)}" aria-expanded="${!dShut}">${chev}<span class="bl-ml">${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></button><div class="bl-gb">`;
+      byM[m].byD[k].forEach(i=>{ const b=billsCache[i], d=b.date?new Date(b.date):null;
+        html+=`<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
+        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
+      html+=`</div></div>`;
+    });
+    html+=`</div></section>`;
   });
   if(billsMore) html+=`<button type="button" class="btn ghost" id="bl-more">${esc(t("blMore"))}</button>`;
   list.innerHTML=html;
@@ -2081,7 +2170,7 @@ function applyConfig(x){
   for(const q of S.billQ||[]){ if(q.gst){ if(q.n>=S.cfg.nextGstBill) S.cfg.nextGstBill=q.n+1; } else if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1; }
 }
 function applyItems(list){
-  const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
+  const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
     altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell }); }
   arr.sort((a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"}));
   S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true;

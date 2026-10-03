@@ -634,6 +634,65 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{bo
   body.typing .tabs{display:none}
 }
 
+/* ---- v2 tweaks: smaller floating controls, clearer bill items ---- */
+.addbtn{padding:5px 10px;font-size:12.5px}
+.fab{height:48px;padding:0 16px;font-size:15px;gap:4px}
+.fab svg{width:19px;height:19px}
+@media (max-width:1023px){
+  body{padding-bottom:calc(88px * var(--fz2,1) + env(safe-area-inset-bottom,0px))}
+  .tabs{left:28px;right:28px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:4px;gap:2px}
+  .tabs button{padding:5px 0 4px;font-size:11px;gap:1px}
+  .tabs button svg{width:21px;height:21px}
+  .tabs .badge{top:0;font-size:10px;min-width:16px;line-height:16px}
+  .fab{bottom:calc(76px * var(--fz2,1) + env(safe-area-inset-bottom,0px))}
+  .total{bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1))}
+  .toast{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+}
+/* bill items: numbered, outlined, × always on the quantity row */
+#bill-lines{counter-reset:bl}
+.bill-line{counter-increment:bl;border:1.5px solid var(--line)!important;box-shadow:none!important;padding:10px 12px;gap:8px 10px}
+.bill-line .name{font-size:16px;font-weight:700;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:start}
+.bill-line .name::before{content:counter(bl);grid-row:span 2;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--ink-fg);font:800 13px/26px var(--f-display);text-align:center;margin-top:-1px}
+.bill-line .name .sub{grid-column:2}
+.bill-line .amt{font:800 18px var(--f-display);color:var(--fg);letter-spacing:-.02em}
+.bill-line .ctrl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;flex-wrap:nowrap}
+.bill-line .ctrl>.note,.bill-line .ctrl>.unitchip{display:none}
+.bill-line .ctrl .uwrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.bill-line .step button{width:36px;height:38px;font-size:19px}
+.bill-line .step input{width:46px;height:38px;font-size:16px}
+.bill-line .step{border:1.5px solid var(--line)}
+.bill-line .rate{font-size:13px;gap:3px;color:var(--muted)}
+.bill-line .rate input{width:66px;padding:7px 8px;font-size:15px;font-weight:600;color:var(--fg);background:var(--surface-2);border:0;border-radius:10px}
+.bill-line .uwrap .note{font-size:13px;color:var(--muted)}
+.bill-line .x{margin:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--muted);padding:0}
+.bill-line .x svg{width:16px;height:16px}
+/* long shop names: up to 2 lines instead of cutting to "P…" */
+.brand #shopname{white-space:normal;display:-webkit-inline-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:calc(100% - 62px);vertical-align:middle}
+html.fz-big .brand .hello{display:none}
+html.fz-big #cmd-open{display:none!important}   /* the wand is also in Tools */
+html.fz-big #wa-label{display:none}
+html.fz-big #bill-wa{padding-left:14px;padding-right:14px}
+/* total bar: buttons wrap under the total when text is large */
+.tot-row{flex-wrap:nowrap;gap:6px}
+.tot-row .tot-sum{min-width:0}
+html.fz-big .tot-row .btn.sm{padding:8px 12px}
+html.fz-big .tot-row .iconbtn{width:34px;height:34px}
+.bill-line .rate{white-space:nowrap;min-width:0}
+.bill-line .rate input{flex:0 1 66px;min-width:50px;width:66px}
+html.fz-big .bill-line .rate input{width:58px;flex-basis:58px}
+html.fz-big .bill-line .step input{width:40px}
+.tot-row .btn.sm{flex:none}
+/* text size (this phone): --fz scales content, --fz2 scales the floating controls half as much */
+:root{--fz:1;--fz2:1}
+.top,#view-items,#view-tools,#view-bill,.netbar,#install-wrap,.sheet-h,.sheet-b,.sheet-f,.picker-card,.toast{zoom:var(--fz)}
+@media (max-width:1023px){ .tabs,.fab{zoom:var(--fz2)} }
+.tsize{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--surface-2);border-radius:16px;padding:4px}
+.tsize button{border:0;background:transparent;border-radius:12px;padding:8px 0 6px;display:grid;justify-items:center;gap:2px;color:var(--fg)}
+.tsize button b{font-family:var(--f-display);font-weight:800;line-height:1}
+.tsize button span{font-size:11px;color:var(--muted)}
+.tsize button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
+.tsize button[aria-pressed="true"] span{color:var(--ink-fg);opacity:.75}
+
 /* ===================== Laptop / desktop (phones are not affected: everything below is inside min-width queries) ===================== */
 .side-head,.side-foot{display:none}
 @media (min-width:1024px){
@@ -664,7 +723,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{bo
   .menu-list button{transition:border-color .15s,box-shadow .15s}
   .menu-list button:hover{border-color:color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:var(--shadow)}
   /* the bill is always open on the right */
-  #view-bill{position:fixed;top:0;right:0;bottom:0;width:var(--billw);z-index:15;overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border-left:1px solid var(--line);padding:18px 18px 0;display:flex;flex-direction:column;gap:10px}
+  #view-bill{position:fixed;top:0;right:0;bottom:0;width:calc(var(--billw) / var(--fz,1));z-index:15;overflow-y:auto;overscroll-behavior:contain;background:var(--surface);border-left:1px solid var(--line);padding:18px 18px 0;display:flex;flex-direction:column;gap:10px}
   #view-bill .section-title{margin:6px 0 0}
   #view-bill #bill-search-results:empty{display:none}
   #view-bill .billhead{margin-top:0}
@@ -974,6 +1033,9 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Text size strings */
+Object.assign(STR.en,{tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
+Object.assign(STR.hi,{tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
 /* Refresh strings */
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
@@ -1033,6 +1095,11 @@ const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), i
 S.canWrite = !!(S.auth && S.auth.pin);
 
 const $ = s => document.querySelector(s);
+/* Text size, chosen per phone (Settings → Text size). */
+const TSIZES=[1,1.12,1.25,1.38];
+function fzNow(){ const v=+ls.get("rb_fz",1); return TSIZES.includes(v)?v:1; }
+function setFz(v){ if(!TSIZES.includes(v)) v=1; ls.set("rb_fz",v); const r=document.documentElement.style; r.setProperty("--fz",v); r.setProperty("--fz2",1+(v-1)/2); document.documentElement.classList.toggle("fz-big",v>=1.2); }
+setFz(fzNow());
 const t = (k,...a) => { const v = (STR[S.lang]||STR.en)[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtN = n => Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
@@ -1544,8 +1611,8 @@ function renderBill(){
       <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
-        ${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
-        <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}"></label>
+        <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
+        <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}"></label></div>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
     $("#bill-total").hidden=false;
@@ -2294,6 +2361,9 @@ function openSettings(){
   const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:seriesNext(false), nextGstBill:seriesNext(true), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
   const w=S.canWrite;
   const body=`
+    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("tsizeT"))}</h3>
+      <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
+      <p class="note" style="margin:0">${esc(t("tsizeD"))}</p></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
     <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
       <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
@@ -2321,6 +2391,7 @@ function openSettings(){
   const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
   drawUnits();
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
+  $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
   if(!w) return;
   $("#cf-uadd").onclick=()=>{ const code=$("#cf-ucode").value.trim(), hi=$("#cf-uhi").value.trim(); if(!code) return; if(c.units.some(u=>u.code.toLowerCase()===code.toLowerCase())){ $("#cf-ucode").value=""; return; } c.units.push({code,hi}); $("#cf-ucode").value=""; $("#cf-uhi").value=""; drawUnits(); };
@@ -2875,7 +2946,7 @@ async function fetchThumbs(){
 function renderNet(){
   const bar=$("#netbar"); if(!apiUrl()){ bar.hidden=true; return; }
   const tm=S.lastSync? new Date(S.lastSync).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}) : "";
-  bar.hidden = S.online===null;
+  bar.hidden = S.online===null || (S.tab==="bill" && S.online!==false);   // on the bill screen only show it when something's wrong
   bar.classList.toggle("off", S.online===false);
   $("#net-txt").textContent = S.online ? t("online",tm) : (S.lastSync ? t("offline",tm) : t("neverSynced"));
 }

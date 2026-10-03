@@ -191,6 +191,19 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Item screen with a photo:** `.hero-mode` on `#sheet` (set in `openDetail`, cleared in `openSheet`). The photo goes full-bleed with a round close button over it, and a `.d-card` with the name overlaps the photo.
 - **Desktop:** active sidebar item in ink, bill panel on `--bg` with white cards.
 
+## Size tweaks and text size (added 3 Oct 2026)
+
+- **Smaller floating controls:** the phone tab bar (narrower, 11px labels, 21px icons), the Add button (48px) and the "+ Bill" pills.
+- **Bill items:**
+  - Numbered with a CSS counter (an ink circle before the name) and an outline border, so they stand out from the background.
+  - The controls row is a 3-column grid (stepper | unit + rate in `.uwrap` | ×), so the × never wraps under the stepper.
+- **"Prices up to date" bar:** hidden on the Bill screen unless the phone is offline (`renderNet`).
+- **Text size (per phone):** Settings → first card, Normal / Large / Larger / Largest = 1, 1.12, 1.25, 1.38, stored in `rb_fz`.
+  - `setFz()` sets `--fz` (CSS `zoom` on the header, views, sheets and toast) and `--fz2` (half as much, for the tab bar and Add button).
+  - The `html.fz-big` class (sizes from 1.25 up) hides the greeting and the header wand, shows Share as an icon only, and tightens the total bar.
+  - Sticky total offset and desktop bill-panel width are divided by `--fz` so they stay right.
+  - Locked phones can change it too.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

@@ -332,6 +332,17 @@ label.thumb{cursor:pointer}
 .pill.edited{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
 .editnote{font-size:13px;color:var(--gold);font-weight:600}
 .bl-sum{font-size:14px;color:var(--muted);margin-top:8px}
+.bl-bar{position:sticky;top:-4px;z-index:3;background:var(--surface);padding:4px 0 8px;margin-top:-4px;display:grid;gap:8px}
+.bl-bar input[type=search]{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;color:var(--fg)}
+.bl-chips{display:flex;gap:8px;align-items:center}
+.bl-chip{position:relative;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);color:var(--fg);font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
+.bl-chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.bl-chip select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:inherit;font:inherit;padding:0 14px 0 0;height:100%;outline:0;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
+.bl-chip input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font-size:16px}
+.bl-clear{width:36px;height:36px;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted);font-size:14px;flex:none}
+.bl-day{position:sticky;top:var(--blh,96px);z-index:2;display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:700;color:var(--fg)}
+.bl-day .num{color:var(--muted);font-weight:600}
+.bl-day:first-child,.bl-sum+.bl-day{margin-top:0}
 /* past bills + pack units */
 .unitchip{border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:700;font-size:13px}
 .bills-list{display:grid;gap:8px;margin-top:10px}
@@ -600,7 +611,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
   editStarted:n=>`Editing bill ${n}. Your unfinished bill is kept aside.`,editStartedPlain:n=>`Editing bill ${n}.`,editCancelled:"Editing cancelled. Nothing was changed.",
-  blSummary:(n,tot)=>`${n} bill${n===1?"":"s"} · ${tot}`});
+  blSummary:(n,tot)=>`${n} bill${n===1?"":"s"} · ${tot}`,blToday:"Today",blYesterday:"Yesterday",blNoDate:"No date",blYear:"Year",blAllYears:"All years",blDate:"Date",blClear:"Clear filters",blMore:"Show more bills"});
 Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के लिए। रेट बदलने के लिए एडिटिंग खोलें।",unlockBtn:"खोलें",unlockT:"एडिटिंग खोलें",unlockD:"इस फ़ोन पर रेट जोड़ने या बदलने के लिए दुकान का PIN डालें।",lockT:"इस फ़ोन पर एडिटिंग बंद करें",lockD:n=>`${n} के नाम से एडिटिंग चालू है। बंद करने के लिए दबाएँ।`,yourName:"आपका नाम",pinL:"दुकान का PIN",wrongPin:"गलत PIN। फिर कोशिश करें।",lockedOut:"बहुत बार गलत PIN। 15 मिनट बाद कोशिश करें।",unlocked:"इस फ़ोन पर एडिटिंग खुल गई",lockedNow:"इस फ़ोन पर एडिटिंग बंद हो गई",
   changePin:"दुकान का PIN बदलें",newPin:"नया PIN (4 से 8 अंक)",newPin2:"नया PIN दोबारा",pinMismatch:"दोनों PIN एक जैसे नहीं हैं।",pinRule:"4 से 8 अंक डालें।",pinChanged:"PIN बदल गया। बाकी लोगों को एडिट के लिए नया PIN चाहिए।",
   online:t=>`रेट अपडेटेड · ${t}`,offline:t=>`ऑफ़लाइन · ${t} के सेव रेट दिख रहे हैं`,neverSynced:"अभी रेट लिस्ट तक नहीं पहुँच पाए।",refresh:"रीफ़्रेश",offlineWrite:"आप ऑफ़लाइन हैं। बदलाव सेव करने के लिए इंटरनेट चालू करें।",saving:"सेव हो रहा है…",
@@ -626,7 +637,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
   editStarted:n=>`बिल ${n} बदल रहे हैं। आपका अधूरा बिल अलग रख दिया है।`,editStartedPlain:n=>`बिल ${n} बदल रहे हैं।`,editCancelled:"बदलना रद्द हुआ। कुछ नहीं बदला।",
-  blSummary:(n,tot)=>`${n} बिल · ${tot}`});
+  blSummary:(n,tot)=>`${n} बिल · ${tot}`,blToday:"आज",blYesterday:"कल",blNoDate:"बिना तारीख़",blYear:"साल",blAllYears:"सभी साल",blDate:"तारीख़",blClear:"फ़िल्टर हटाएँ",blMore:"और बिल दिखाएँ"});
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
 
@@ -1599,8 +1610,8 @@ function openEdit(id,prefill=""){
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };
   ["ef-name","ef-buy"].forEach((k,i)=>$("#"+k).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $(i?"#ef-sell":"#ef-buy").focus(); } }));
   if(it){
-    $("#ef-del").onclick=()=>{ $("#ef-delc").hidden=false; };
-    $("#ef-deln").onclick=()=>{ $("#ef-delc").hidden=true; };
+    $("#ef-del").onclick=()=>{ $("#ef-del").hidden=true; const c=$("#ef-delc"); c.hidden=false; setTimeout(()=>c.scrollIntoView({block:"center",behavior:"smooth"}),30); };
+    $("#ef-deln").onclick=()=>{ $("#ef-delc").hidden=true; $("#ef-del").hidden=false; };
     $("#ef-dely").onclick=()=>{ closeSheet(); toast(t("saving")); const snapshot=S.items.slice();
       write({action:"delete",ids:[id]},()=>{ S.items=S.items.filter(x=>x.id!==id); S.bill=S.bill.filter(l=>l.id!==id); saveBill(); }).then(()=>toast(t("deleted"))).catch(()=>{ S.items=snapshot; afterLocal(); }); };
   }
@@ -1875,29 +1886,81 @@ function profitBox(pf){
 }
 function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
-let billsCache=[], billsReq=0;
+let billsCache=[], billsReq=0, billsDays={}, billsMore=false, billsAll=null;
+const BL={q:"", year:"", date:""};            // past-bills filters, kept while you open a bill and come back
+const calIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;
+function dayKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function dayLabel(k){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return t("blNoDate");
+  const now=new Date(), y=new Date(now); y.setDate(now.getDate()-1);
+  if(k===dayKey(now)) return t("blToday"); if(k===dayKey(y)) return t("blYesterday");
+  const d=new Date(+k.slice(0,4), +k.slice(5,7)-1, +k.slice(8));
+  return d.toLocaleDateString(S.lang==="hi"?"hi-IN":"en-IN",{weekday:"short",day:"2-digit",month:"short",...(d.getFullYear()!==now.getFullYear()?{year:"numeric"}:{})});
+}
 function openBills(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
-  const body=`<input id="bl-q" type="search" placeholder="${esc(t("billsSearchPh"))}" autocomplete="off" style="width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px">
+  const body=`<div class="bl-bar" id="bl-bar">
+      <input id="bl-q" type="search" placeholder="${esc(t("billsSearchPh"))}" autocomplete="off" value="${esc(BL.q)}">
+      <div class="bl-chips">
+        <label class="bl-chip${BL.year?" on":""}" id="bl-yc"><select id="bl-year" aria-label="${esc(t("blYear"))}"><option value="">${esc(t("blAllYears"))}</option>${BL.year?`<option value="${esc(BL.year)}" selected>${esc(BL.year)}</option>`:""}</select></label>
+        <span class="bl-chip${BL.date?" on":""}" id="bl-dc">${calIcon}<span id="bl-dl">${esc(BL.date?dayLabel(BL.date):t("blDate"))}</span><input type="date" id="bl-date" aria-label="${esc(t("blDate"))}" value="${esc(BL.date)}"></span>
+        <button type="button" class="bl-clear" id="bl-clr" aria-label="${esc(t("blClear"))}" ${BL.year||BL.date?"":"hidden"}>✕</button>
+      </div>
+    </div>
     <div class="bills-list" id="bl-list"><p class="note">${esc(t("billsLoading"))}</p></div>`;
   openSheet(t("pastBills"), body, "", {full:true});
-  let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>loadBills(e.target.value),400); });
-  $("#bl-list").addEventListener("click",e=>{ const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
-  loadBills("");
+  let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },400); });
+  const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date); };
+  $("#bl-year").onchange=e=>{ BL.year=e.target.value; if(BL.date && BL.date.slice(0,4)!==BL.year){ BL.date=""; $("#bl-date").value=""; } sync(); loadBills(); };
+  $("#bl-date").onchange=e=>{ BL.date=e.target.value||""; sync(); loadBills(); };
+  $("#bl-dc").onclick=e=>{ const inp=$("#bl-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
+  $("#bl-clr").onclick=()=>{ BL.year=""; BL.date=""; $("#bl-year").value=""; $("#bl-date").value=""; sync(); loadBills(); };
+  $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; } const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
+  loadBills();
 }
-async function loadBills(q){
+function billFilter(){
+  if(BL.date) return {from:BL.date, to:BL.date};
+  if(BL.year) return {from:`${BL.year}-01-01`, to:`${BL.year}-12-31`};
+  return {};
+}
+async function loadBills(more){
   const my=++billsReq, list=$("#bl-list"); if(!list) return;
-  list.innerHTML=`<p class="note">${esc(t("billsLoading"))}</p>`;
+  if(more){ const m=$("#bl-more"); if(m){ m.disabled=true; m.textContent=t("billsLoading"); } }
+  else list.innerHTML=`<p class="note">${esc(t("billsLoading"))}</p>`;
   try{
-    const j=await apiPost({action:"listBills",q,limit:60}); if(my!==billsReq || !$("#bl-list")) return;
-    billsCache=j.bills||[];
-    const sum=billsCache.reduce((a,b)=>a+(+b.total||0),0);
-    const showP=S.cfg.showProfit; let pSum=0, cSum=0; if(showP) billsCache.forEach(b=>{ const pf=billProfit(b); if(pf){ pSum+=pf.profit; cSum+=pf.cost; } });
-    $("#bl-list").innerHTML = (billsCache.length&&q.trim()?`<div class="bl-sum">${esc(t("blSummary",billsCache.length,rs(sum)))}${showP?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`:"") + (billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
-      return `<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; }).join("")
-      : `<p class="note">${esc(t("billsNone"))}</p>`);
+    const req={action:"listBills",q:BL.q,limit:60,tz:new Date().getTimezoneOffset(),...billFilter()};
+    if(more && billsCache.length) req.before=billsCache[billsCache.length-1].row;
+    const j=await apiPost(req); if(my!==billsReq || !$("#bl-list")) return;
+    const got=j.bills||[];
+    billsCache = more ? billsCache.concat(got) : got;
+    billsDays = more ? {...billsDays, ...(j.days||{})} : (j.days||{});
+    billsMore = !!j.more; billsAll = j.all||null;
+    const ys=j.years||[], sel=$("#bl-year");
+    if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
+    renderBills();
   }catch(e){ if(my===billsReq && $("#bl-list")) $("#bl-list").innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; }
+}
+function renderBills(){
+  const list=$("#bl-list"); if(!list) return;
+  const showP=S.cfg.showProfit, filtered=!!(BL.q.trim()||(BL.year&&!BL.date));
+  let head="";
+  if(billsCache.length && filtered){
+    const cnt=billsAll?billsAll.count:billsCache.length, tot=billsAll?billsAll.total:billsCache.reduce((a,b)=>a+(+b.total||0),0);
+    let pSum=0, cSum=0; if(showP) billsCache.forEach(b=>{ const pf=billProfit(b); if(pf){ pSum+=pf.profit; cSum+=pf.cost; } });
+    head=`<div class="bl-sum">${esc(t("blSummary",cnt,rs(tot)))}${showP&&!billsMore?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`;
+  }
+  if(!billsCache.length){ list.innerHTML=`<p class="note">${esc(t("billsNone"))}</p>`; return; }
+  let html=head, cur=null;
+  billsCache.forEach((b,i)=>{
+    const d=b.date?new Date(b.date):null, k=b.day||(d?dayKey(d):"unknown");
+    if(k!==cur){ cur=k; const dd=billsDays[k]||{count:0,total:0};
+      html+=`<div class="bl-day"><span>${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></div>`; }
+    html+=`<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
+        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`;
+  });
+  if(billsMore) html+=`<button type="button" class="btn ghost" id="bl-more">${esc(t("blMore"))}</button>`;
+  list.innerHTML=html;
+  const bar=$("#bl-bar"); if(bar) list.style.setProperty("--blh",(bar.offsetHeight-4)+"px");
 }
 /** Bills saved before line details were kept: rebuild lines from the "Name 2 kg x 46" summary when possible. */
 function linesFromItems(b){

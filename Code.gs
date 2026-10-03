@@ -209,7 +209,7 @@ function doPost(e) {
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
-      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50); break;
+      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
@@ -361,30 +361,51 @@ function takeBill_(body) {
   }
 }
 
-/** Past bills, newest first. Needs the PIN because it holds customer names and numbers. */
-/** Past bills, newest first, without the big text/lines columns (those come from getBill when a bill is opened). Needs the PIN. */
-function listBills_(q, limit) {
+/**
+ * Past bills, newest first, without the big text/lines columns (those come from getBill when a bill is opened). Needs the PIN.
+ * opt: q (search), limit, tz (phone's getTimezoneOffset, so "which day" matches the phone), from/to ('yyyy-mm-dd', inclusive),
+ * before (sheet row: return only older rows, for "Show more").
+ * Also returns: days {day: {count, total}} for every matching bill on the days shown (exact even past the page), years (all years with bills), more.
+ */
+function listBills_(q, limit, opt) {
+  opt = opt || {};
   const s = sheet_(BILLS, BILL_COLS);
   const n = s.getLastRow() - 1;
-  if (n < 1) return { bills: [] };
+  if (n < 1) return { bills: [], days: {}, all: { count: 0, total: 0 }, years: [], more: false };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const a = s.getRange(2, 1, n, B.text).getValues();                                      // billNo … igst
   const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();       // billId … profit
   const needle = q.trim().toLowerCase();
   const digits = needle.replace(/\D/g, '');
-  const out = [];
-  for (let i = n - 1; i >= 0 && out.length < Math.min(limit, 200); i--) {
+  const tz = isFinite(Number(opt.tz)) ? Number(opt.tz) : -330;                             // default India
+  const dayOf = d => isNaN(d) ? '' : new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(opt.from || '') ? opt.from : '';
+  const to = /^\d{4}-\d{2}-\d{2}$/.test(opt.to || '') ? opt.to : '';
+  const before = Number(opt.before) || 0;
+  const max = Math.min(limit, 200);
+  const out = [], days = {}, years = {}, all = { count: 0, total: 0 };
+  let more = false;
+  for (let i = n - 1; i >= 0; i--) {
     const r = a[i].concat(['', ''], b[i]);
+    if (r[B.billNo] === '' && r[B.total] === '') continue;
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
+    const day = dayOf(d);
+    if (day) years[day.slice(0, 4)] = 1;
+    if ((from && (!day || day < from)) || (to && (!day || day > to))) continue;
     if (needle) {
-      const dd = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
-      const ds = isNaN(dd) ? '' : [pad2_(dd.getDate()) + '/' + pad2_(dd.getMonth() + 1) + '/' + dd.getFullYear(), pad2_(dd.getDate()) + '-' + pad2_(dd.getMonth() + 1) + '-' + dd.getFullYear()].join(' ');
+      const ds = day ? [day.slice(8) + '/' + day.slice(5, 7) + '/' + day.slice(0, 4), day.slice(8) + '-' + day.slice(5, 7) + '-' + day.slice(0, 4)].join(' ') : '';
       const hay = [r[B.billNo], r[B.customer], r[B.mobile], r[B.customerGstin], r[B.items], ds].join(' ').toLowerCase();
       const mob = String(r[B.mobile]).replace(/\D/g, '');
       const hit = hay.indexOf(needle) >= 0 || String(r[B.billNo]) === needle || (digits.length >= 4 && mob.indexOf(digits) >= 0);
       if (!hit) continue;
     }
-    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
-    out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
+    const k = day || 'unknown';
+    if (!days[k]) days[k] = { count: 0, total: 0 };
+    days[k].count += 1; days[k].total = Math.round((days[k].total + num_(r[B.total])) * 100) / 100;
+    all.count += 1; all.total = Math.round((all.total + num_(r[B.total])) * 100) / 100;
+    if (before && i + 2 >= before) continue;
+    if (out.length >= max) { more = true; continue; }
+    out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), day: k, customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
       total: num_(r[B.total]), items: String(r[B.items] || ''), by: String(r[B.by] || ''), gst: r[B.gstBill] === 'Yes',
       taxable: r[B.taxable] === '' ? null : num_(r[B.taxable]), tax: r[B.tax] === '' ? null : num_(r[B.tax]), custGstin: String(r[B.customerGstin] || ''),
       igst: r[B.igst] === 'IGST',
@@ -392,7 +413,8 @@ function listBills_(q, limit) {
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]) });
   }
-  return { bills: out };
+  const shown = {}; out.forEach(x => { shown[x.day] = days[x.day]; });
+  return { bills: out, days: shown, all: all, years: Object.keys(years).sort().reverse(), more: more };
 }
 
 /** The full text and lines of one bill, read only when it's opened. */

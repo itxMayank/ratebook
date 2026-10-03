@@ -85,6 +85,13 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Change counter** (`rev`) and the sheet id are kept in Apps Script's CacheService (6 hours), so the 25-second checks from every phone don't use up the daily Properties quota. `bump_()` writes both the property and the cache.
 - Still to do (when needed): yearly archive of `Bills` into a separate tab or file, possibly with the GST bill series restarting each financial year (April 1).
 
+## Past bills by date, with filters (added 3 Oct 2026)
+
+- The Past bills list is grouped by day. Each day has a sticky banner: "Today", "Yesterday", or a date like "Thu, 03 Sept". It shows that day's bill count and total. The totals come from the server (`days` in the `listBills` reply), so they're exact even when only part of the day is loaded.
+- Filters sit in one row under the search box: a **Year** chip (years come from `years` in the reply) and a **Date** chip (a native date picker laid invisibly over the chip so it opens on both iPhone and Android), plus ✕ to clear them. The filters live in the app only (`BL` in `index.html`, not saved). They stay set while you open a bill and go back.
+- `listBills` takes `tz` (the phone's `getTimezoneOffset`, so a day means the phone's day and not the script's time zone), `from`/`to` (`yyyy-mm-dd`, inclusive) and `before` (sheet row, used by "Show more bills"). It returns `bills`, `days`, `all` ({count, total} of every match, shown in the summary line when searching or filtering by year), `years` and `more`. The page size is 60.
+- Delete in Edit item: the confirm box now replaces the Delete button and scrolls into view. Before, it opened below the Save bar, off screen.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

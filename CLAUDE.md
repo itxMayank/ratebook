@@ -204,6 +204,18 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Sticky total offset and desktop bill-panel width are divided by `--fz` so they stay right.
   - Locked phones can change it too.
 
+## Themes and appearance (added 3 Oct 2026)
+
+- **Per phone, in Settings:**
+  - Theme: Ink (default, black and white), Maroon, Forest, Indigo, Saffron. Stored in `rb_palette`, applied as `data-palette` on `<html>`; Ink has no attribute.
+  - Appearance: Auto / Light / Dark. Stored in `rb_appear`, applied as `data-theme` on `<html>`; Auto has no attribute and follows the phone.
+  - `applyTheme()` runs at startup and when the phone's dark setting changes. It also sets the `theme-color` meta (status bar).
+- **Each palette sets these tokens:** `--ink`/`--ink-fg` (primary), `--ink-soft`, `--accent`, `--bg`/`--surface-2` tint, with a lighter set for dark mode.
+  - Coloured themes use soft "+ Bill" pills (`--addbg`/`--addfg`) and a solid in-bill state (`--inbg`/`--infg`). Ink keeps a black "+ Bill" and a maroon in-bill state.
+  - In dark mode, coloured themes switch the phone tab bar and toasts to neutral grey (`--nav-*`, `--toast-*`), with only the active tab in the theme colour.
+- **Contrast checked (WCAG):** buttons ≥ 5:1 and soft buttons ≥ 5.2:1 in every theme and mode. Saffron uses #A14B07 in light mode for this reason.
+- **Adding a theme:** add an entry to `PALETTES` in JS, a `:root[data-palette=…]` block plus its two dark blocks in CSS, and a `th…` string.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

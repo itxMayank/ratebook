@@ -693,6 +693,45 @@ html.fz-big .bill-line .step input{width:40px}
 .tsize button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 .tsize button[aria-pressed="true"] span{color:var(--ink-fg);opacity:.75}
 
+/* ---- Themes (this phone): data-palette on <html>; appearance via data-theme (light/dark) ---- */
+:root{--ink-soft:#ECEDF0;--addbg:var(--ink);--addfg:var(--ink-fg);--inbg:var(--accent);--infg:var(--accent-fg)}
+.addbtn{background:var(--addbg);color:var(--addfg)}
+.addbtn.in,.mstep{background:var(--inbg);color:var(--infg)}
+:root[data-palette="maroon"]{--ink:#8C2331;--ink-fg:#FFFFFF;--ink-soft:#F6E6E8;--accent:#8C2331;--accent-fg:#FFFFFF;--accent-soft:#F6E6E8;--bg:#F5F1F0;--surface-2:#F1ECEB;--addbg:var(--ink-soft);--addfg:var(--ink);--inbg:var(--ink);--infg:var(--ink-fg)}
+:root[data-palette="forest"]{--ink:#1F6B4A;--ink-fg:#FFFFFF;--ink-soft:#E3F1EA;--accent:#1F6B4A;--accent-fg:#FFFFFF;--accent-soft:#E3F1EA;--bg:#EFF3F1;--surface-2:#E9EFEC;--addbg:var(--ink-soft);--addfg:var(--ink);--inbg:var(--ink);--infg:var(--ink-fg)}
+:root[data-palette="indigo"]{--ink:#3443A8;--ink-fg:#FFFFFF;--ink-soft:#E7EAF9;--accent:#3443A8;--accent-fg:#FFFFFF;--accent-soft:#E7EAF9;--bg:#F0F2F8;--surface-2:#EAEDF5;--addbg:var(--ink-soft);--addfg:var(--ink);--inbg:var(--ink);--infg:var(--ink-fg)}
+:root[data-palette="saffron"]{--ink:#A14B07;--ink-fg:#FFFFFF;--ink-soft:#FBEEDC;--accent:#A14B07;--accent-fg:#FFFFFF;--accent-soft:#FBEEDC;--bg:#F7F3EE;--surface-2:#F2ECE4;--addbg:var(--ink-soft);--addfg:var(--ink);--inbg:var(--ink);--infg:var(--ink-fg)}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--ink-soft:#2A2C31}
+  :root:not([data-theme="light"])[data-palette="maroon"]{--ink:#EC8E99;--ink-fg:#2A0A10;--ink-soft:#3A1E24;--accent:#EC8E99;--accent-fg:#2A0A10;--accent-soft:#3A1E24;--bg:#110D0E;--surface-2:#251F21}
+  :root:not([data-theme="light"])[data-palette="forest"]{--ink:#5CC594;--ink-fg:#06261A;--ink-soft:#173327;--accent:#5CC594;--accent-fg:#06261A;--accent-soft:#173327;--bg:#0C110F;--surface-2:#1E2522}
+  :root:not([data-theme="light"])[data-palette="indigo"]{--ink:#9AABFF;--ink-fg:#0B1240;--ink-soft:#1D2346;--accent:#9AABFF;--accent-fg:#0B1240;--accent-soft:#1D2346;--bg:#0D0F16;--surface-2:#1F2230}
+  :root:not([data-theme="light"])[data-palette="saffron"]{--ink:#F5A524;--ink-fg:#2B1600;--ink-soft:#3A2810;--accent:#F5A524;--accent-fg:#2B1600;--accent-soft:#3A2810;--bg:#110E0A;--surface-2:#26211A}
+}
+:root[data-theme="dark"]{--ink-soft:#2A2C31}
+:root[data-theme="dark"][data-palette="maroon"]{--ink:#EC8E99;--ink-fg:#2A0A10;--ink-soft:#3A1E24;--accent:#EC8E99;--accent-fg:#2A0A10;--accent-soft:#3A1E24;--bg:#110D0E;--surface-2:#251F21}
+:root[data-theme="dark"][data-palette="forest"]{--ink:#5CC594;--ink-fg:#06261A;--ink-soft:#173327;--accent:#5CC594;--accent-fg:#06261A;--accent-soft:#173327;--bg:#0C110F;--surface-2:#1E2522}
+:root[data-theme="dark"][data-palette="indigo"]{--ink:#9AABFF;--ink-fg:#0B1240;--ink-soft:#1D2346;--accent:#9AABFF;--accent-fg:#0B1240;--accent-soft:#1D2346;--bg:#0D0F16;--surface-2:#1F2230}
+:root[data-theme="dark"][data-palette="saffron"]{--ink:#F5A524;--ink-fg:#2B1600;--ink-soft:#3A2810;--accent:#F5A524;--accent-fg:#2B1600;--accent-soft:#3A2810;--bg:#110E0A;--surface-2:#26211A}
+:root{--nav-bg:var(--ink);--nav-fg:color-mix(in srgb,var(--ink-fg) 62%,transparent);--nav-act-bg:var(--ink-fg);--nav-act-fg:var(--ink);--toast-bg:var(--ink);--toast-fg:var(--ink-fg)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"])[data-palette]{--nav-bg:#212328;--nav-fg:#A3A7AF;--nav-act-bg:var(--ink);--nav-act-fg:var(--ink-fg);--toast-bg:#2A2C31;--toast-fg:#F3F4F6}}
+:root[data-theme="dark"][data-palette]{--nav-bg:#212328;--nav-fg:#A3A7AF;--nav-act-bg:var(--ink);--nav-act-fg:var(--ink-fg);--toast-bg:#2A2C31;--toast-fg:#F3F4F6}
+@media (max-width:1023px){
+  .tabs{background:var(--nav-bg)}
+  .tabs button{color:var(--nav-fg)}
+  .tabs button[aria-selected="true"]{background:var(--nav-act-bg);color:var(--nav-act-fg)}
+  .tabs .badge{box-shadow:0 0 0 2px var(--nav-bg)}
+}
+.toast{background:var(--toast-bg);color:var(--toast-fg)}
+.swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.swatches button{border:0;background:var(--surface-2);border-radius:16px;padding:10px 0 8px;display:grid;justify-items:center;gap:6px;font:600 12px var(--f-body);color:var(--fg)}
+.swatches button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink);background:var(--surface)}
+.sw{width:30px;height:30px;border-radius:50%;position:relative;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.sw::after{content:"";position:absolute;right:0;bottom:0;width:50%;height:50%;background:var(--sw2)}
+.appear{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface-2);border-radius:999px;padding:4px}
+.appear button{border:0;background:transparent;border-radius:999px;padding:8px 0;font:600 14px var(--f-body);color:var(--muted)}
+.appear button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
+
 /* ===================== Laptop / desktop (phones are not affected: everything below is inside min-width queries) ===================== */
 .side-head,.side-foot{display:none}
 @media (min-width:1024px){
@@ -1033,6 +1072,9 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 
 const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
 
+/* Theme strings */
+Object.assign(STR.en,{themeT:"Theme (this phone)",thInk:"Ink",thMaroon:"Maroon",thForest:"Forest",thIndigo:"Indigo",thSaffron:"Saffron",appearT:"Appearance",apAuto:"Auto",apLight:"Light",apDark:"Dark",appearD:"Auto follows the phone's light or dark setting."});
+Object.assign(STR.hi,{themeT:"थीम (इस फ़ोन पर)",thInk:"काला",thMaroon:"मैरून",thForest:"हरा",thIndigo:"नीला",thSaffron:"केसरिया",appearT:"रूप",apAuto:"अपने-आप",apLight:"हल्का",apDark:"गहरा",appearD:"“अपने-आप” फ़ोन की लाइट/डार्क सेटिंग के हिसाब से चलेगा।"});
 /* Text size strings */
 Object.assign(STR.en,{tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
 Object.assign(STR.hi,{tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
@@ -1100,6 +1142,20 @@ const TSIZES=[1,1.12,1.25,1.38];
 function fzNow(){ const v=+ls.get("rb_fz",1); return TSIZES.includes(v)?v:1; }
 function setFz(v){ if(!TSIZES.includes(v)) v=1; ls.set("rb_fz",v); const r=document.documentElement.style; r.setProperty("--fz",v); r.setProperty("--fz2",1+(v-1)/2); document.documentElement.classList.toggle("fz-big",v>=1.2); }
 setFz(fzNow());
+/* Theme and appearance, chosen per phone. [key, light primary, light second, dark primary, status-bar colour] */
+const PALETTES=[["ink","#16171A","#9B2335","#F3F4F6","#F1F2F4"],["maroon","#8C2331","#F6E6E8","#EC8E99","#8C2331"],["forest","#1F6B4A","#E3F1EA","#5CC594","#1F6B4A"],["indigo","#3443A8","#E7EAF9","#9AABFF","#3443A8"],["saffron","#A14B07","#FBEEDC","#F5A524","#A14B07"]];
+function palNow(){ const v=ls.get("rb_palette","ink"); return PALETTES.some(p=>p[0]===v)?v:"ink"; }
+function appearNow(){ const v=ls.get("rb_appear","auto"); return ["auto","light","dark"].includes(v)?v:"auto"; }
+function applyTheme(){
+  const r=document.documentElement, pal=palNow(), ap=appearNow();
+  if(pal==="ink") r.removeAttribute("data-palette"); else r.setAttribute("data-palette",pal);
+  if(ap==="auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme",ap);
+  const dark = ap==="dark" || (ap==="auto" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+  const m=document.querySelector('meta[name="theme-color"]'), p=PALETTES.find(x=>x[0]===pal);
+  if(m) m.setAttribute("content", dark ? (pal==="ink"?"#0E0F11":"#111114") : p[4]);
+}
+applyTheme();
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme); }catch{}
 const t = (k,...a) => { const v = (STR[S.lang]||STR.en)[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtN = n => Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
@@ -2364,6 +2420,11 @@ function openSettings(){
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("tsizeT"))}</h3>
       <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("tsizeD"))}</p></div>
+    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
+      <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
+      <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
+      <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
+      <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
     <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
       <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
@@ -2391,6 +2452,8 @@ function openSettings(){
   const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
   drawUnits();
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
+  $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
+  $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
   if(!w) return;

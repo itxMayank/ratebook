@@ -767,7 +767,7 @@ Object.assign(STR.en,{payL:"Payment",payPaid:"Paid",payCredit:"Credit",payPart:"
   payPreview:"This will:",clearsBill:n=>`clear Bill ${n}`,leavesBill:(n,a)=>`leave ${a} due on Bill ${n}`,payMore:a=>`${a} more than is owed. Only the due amount will be recorded.`,
   paySave:a=>`Save ${a} received`,payDone:(a,c)=>`${a} received.${c?` ${c} bill${c===1?"":"s"} cleared.`:""}`,payFail:"Couldn't save the payment. Check the internet and try again.",
   payHist:"Payments",atBilling:"at billing",undoPay:"Undo last payment",undoDone:a=>`Removed ${a} payment.`,clearedOn:d=>`Fully paid on ${d}`,
-  remindMsg:(name,shop,amt,lines)=>`Namaste${name?" "+name:""},\nThis is a reminder from ${shop||"us"}. ${amt} is pending:\n${lines}\n\n*Total due: ${amt}*\nThank you.`,
+  remindMsg:(name,shop,amt,lines)=>`Namaste${name?" "+name:""},\nThis is a reminder from ${shop||"us"}. ${amt} is pending on the bill${lines.split("Bill No.").length>2?"s":""} below.\n\n${lines}\n\n*Total due: ${amt}*\nThank you.`,
   payUpdate:(d,p,b)=>`_Payment update (${d}): paid ${p}, balance due ${b}_`,payUpdateDone:d=>`_Fully paid on ${d}. Thank you._`,
   pillDue:a=>`Due ${a}`,pillCleared:"Paid later",pendingHint:a=>`${a} pending`,duesTabHint:"Bills on credit or part paid show up here. Mark a bill as Credit or Part paid on the bill screen."});
 Object.assign(STR.hi,{payL:"भुगतान",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
@@ -2360,9 +2360,17 @@ function renderDues(){
   $("#du-list").addEventListener("click",e=>{ const c=e.target.closest("[data-dc]"); if(c) openDueCustomer(list[+c.dataset.dc]); });
 }
 const fmtShort=d=>d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
+/** "PP Bag 200 Gauge 1 kg x 220 [HSN 3923, 18%]; Drone 1 pc x 8" → readable lines with each line's amount. */
+function itemLinesText(items){
+  return String(items||"").split("; ").filter(Boolean).map((part,i)=>{ const x=part.replace(/\s*\[[^\]]*\]\s*$/,""); const m=x.match(/^(.*) ([\d.]+) (\S+) x ([\d.]+)$/);
+    return m ? `   ${i+1}. ${m[1]} — ${fmtN(+m[2])} ${m[3]} × ${rs(+m[4])} = ${rs(r2(+m[2]*+m[4]))}` : `   ${i+1}. ${x}`; }).join("\n");
+}
 function remindText(c){
-  const lines=c.bills.map(b=>`• Bill ${b.n} (${fmtDate(b.date)}): ${rs(b.due)}${b.paid>0?` (of ${rs(b.total)})`:""}`).join("\n");
-  return STR.en.remindMsg(c.name||"",S.cfg.shopName,rs(c.due),lines);
+  const blocks=c.bills.map(b=>{ const head=`*${b.gst?"GST ":""}Bill No. ${b.n}* · ${fmtDate(b.date)}`;
+    const items=itemLinesText(b.items);
+    const tot=`Total ${rs(b.total)}${b.gst?" (incl. GST)":""}`, money=b.paid>0 ? `   ${tot} · Paid ${rs(b.paid)} · *Due ${rs(b.due)}*` : `   ${tot} · *Due ${rs(b.due)}*`;
+    return [head, items, money].filter(Boolean).join("\n"); }).join("\n\n");
+  return STR.en.remindMsg(c.name||"",S.cfg.shopName,rs(c.due),blocks);
 }
 function openDueCustomer(c){
   const m=normMobile(c.mobile||"");
@@ -2373,7 +2381,7 @@ function openDueCustomer(c){
       <button type="button" class="btn primary" id="dc-pay">${esc(t("recordPay"))}</button>
       ${m?`<a class="btn wa" id="dc-wa" target="_blank" rel="noopener" href="${esc(`https://wa.me/${m}?text=${encodeURIComponent(remindText(c))}`)}">${esc(t("remind"))}</a><a class="btn ghost" href="tel:${esc(c.mobile)}">${esc(t("call"))}</a>`:""}
     </div>
-    <div class="bills-list" style="margin-top:0">${c.bills.map((b,i)=>`<button type="button" class="billcard" data-db="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)} · ${esc(fmtShort(b.date))}</b><span class="amt num" style="color:var(--danger)">${rs(b.due)}</span>
+    <div class="bills-list" style="margin-top:0">${c.bills.map((b,i)=>`<button type="button" class="billcard" data-db="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(b.n)} · ${esc(fmtShort(b.date))}</b><span class="amt num" style="color:var(--danger)">${rs(b.due)}</span>
       <span class="meta2">${esc(t("ofTotal",rs(b.paid),rs(b.total)))}${payPill(b)}</span></button>`).join("")}</div></div>`;
   openSheet(c.name||c.mobile||t("duesT"), body, "", {full:true});
   $("#dc-back").onclick=()=>{ if(duesDirty) openDues(); else { openSheet(t("duesT"), `<div id="du-body"></div>`, "", {full:true}); renderDues(); } };

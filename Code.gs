@@ -428,6 +428,14 @@ function takeBill_(body) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
+    const b0 = body.bill || {};
+    if (b0.id) {   // the phone may send the same bill again if the reply got lost: record it only once
+      const bs = sheet_(tab_('Bills'), BILL_COLS), bn = bs.getLastRow() - 1;
+      if (bn > 0) {
+        const from = Math.max(0, bn - 500), ids = bs.getRange(2 + from, BILL_COLS.indexOf('billId') + 1, bn - from, 1).getValues();
+        if (ids.some(r => String(r[0]) === String(b0.id))) return { ok: true, dup: true, rev: getRev_(), config: readConfig_() };
+      }
+    }
     const used = Math.floor(num_(body.n));
     let key = (body.bill && body.bill.gst) ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
@@ -599,12 +607,12 @@ function listDues_() {
   const n = s.getLastRow() - 1;
   if (n < 1) return { customers: [], total: 0, bills: 0 };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const a = s.getRange(2, 1, n, B.total + 1).getValues();                                        // billNo … total
+  const a = s.getRange(2, 1, n, B.gstBill + 1).getValues();                                      // billNo … gstBill
   const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();             // billId … clearedAt
   const map = {}, list = [];
   let total = 0, count = 0;
   for (let i = 0; i < n; i++) {
-    const r = a[i].concat(new Array(B.billId - B.total - 1).fill(''), b[i]);
+    const r = a[i].concat(new Array(B.billId - B.gstBill - 1).fill(''), b[i]);
     const st = String(r[B.payment] || '');
     if (st !== 'Credit' && st !== 'Part paid') continue;
     const due = num_(r[B.due]); if (!(due > 0)) continue;
@@ -614,7 +622,7 @@ function listDues_() {
     if (String(r[B.customer]).trim()) c.name = String(r[B.customer]).trim();
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     c.due = r2_(c.due + due); total = r2_(total + due); count++;
-    c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]) });
+    c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]), items: String(r[B.items] || ''), gst: r[B.gstBill] === 'Yes' });
   }
   list.forEach(c => { c.oldest = c.bills.length ? c.bills[0].date : ''; });
   list.sort((x, y) => y.due - x.due);

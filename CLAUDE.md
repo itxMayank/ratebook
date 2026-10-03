@@ -144,6 +144,11 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - The real `Customers` tab gets each customer's mobile, name and GSTIN, with counts set to 0.
 - **While in test mode:** a gold TEST badge next to the shop name, a note on the bill screen, and the first line of WhatsApp bills reads "TEST BILL (practice, not a real invoice)".
 
+## Reminder details, duplicate guard (added 3 Oct 2026)
+
+- **No duplicate bills:** `takeBill` skips a bill whose `billId` is already among the last 500 rows of that mode's Bills tab, and replies `dup: true`. Before this, a phone that lost the server's reply re-sent the bill from its queue and it was saved twice.
+- **Reminder:** the WhatsApp text now lists each open bill with "GST" in front of GST bills, the date, every item line with its amount, then total, paid and due, and finally the total due. `listDues` returns `items` and `gst` for each bill; `itemLinesText()` turns the items summary into readable lines.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

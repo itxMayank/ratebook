@@ -19,7 +19,7 @@ const ITEMS = 'Items';
 const CONFIG = 'Config';
 const IMAGES = 'Images';
 const BILLS = 'Bills';
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit'];
 const HISTORY = 'BillHistory';
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell'];
@@ -155,6 +155,7 @@ function readConfig_() {
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
   cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
   cfg.nextGstBill = Math.max(1, Math.floor(num_(cfg.nextGstBill)) || 1);
+  cfg.showProfit = cfg.showProfit === true || String(cfg.showProfit).toLowerCase() === 'true';
   cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
   cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
   return cfg;
@@ -281,12 +282,13 @@ function setImage_(id, thumb, full, by) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, showProfit: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
+    if (k === 'showProfit') val = cfg[k] === true || cfg[k] === 'true' ? 'true' : 'false';
     if (k === 'nextBill' || k === 'nextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
     if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
@@ -317,7 +319,7 @@ function takeBill_(body) {
       sheet_(BILLS, BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
-        str_(b.id, 40), '', '', 0]);
+        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)]);
     }
     bump_();
     return { ok: true, rev: getRev_(), config: readConfig_() };
@@ -356,7 +358,8 @@ function listBills_(q, limit) {
       taxable: r[B.taxable] === '' ? null : num_(r[B.taxable]), tax: r[B.tax] === '' ? null : num_(r[B.tax]), custGstin: String(r[B.customerGstin] || ''),
       igst: r[B.igst] === 'IGST', text: String(r[B.text] || ''), lines: lines,
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
-      editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]) });
+      editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
+      cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]) });
   }
   return { bills: out };
 }
@@ -384,7 +387,10 @@ function updateBill_(b, by) {
   r[B.text] = safe(String(b.text || '').slice(0, 45000));
   r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
+  r[B.cost] = costOut_(b.cost); r[B.profit] = costOut_(b.profit);
   r[B.editedAt] = new Date(); r[B.editedBy] = by; r[B.edits] = num_(r[B.edits]) + 1;
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
   return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt].toISOString(), edits: r[B.edits] } };
 }
+
+function costOut_(v) { return v === undefined || v === null || v === '' || !isFinite(Number(v)) ? '' : Math.round(Number(v) * 100) / 100; }

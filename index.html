@@ -267,6 +267,17 @@ body.typing{padding-bottom:0}
 .switch input:checked::after{left:21px}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
+/* profit (past bills only) */
+.profit{font-size:13px;font-weight:700;color:var(--good)}
+.profit.neg{color:var(--danger)}
+.profitbox{display:grid;gap:4px;background:color-mix(in srgb,var(--good) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 35%,var(--line));border-radius:12px;padding:10px 12px;font-size:14px}
+.profitbox .r{display:flex;justify-content:space-between;gap:8px}
+.profitbox .r b{font-weight:700}
+.profitbox .big{font:700 18px var(--f-display);color:var(--good)}
+.profitbox .big.neg{color:var(--danger)}
+.profitbox details{margin-top:4px}
+.profitbox summary{cursor:pointer;color:var(--muted);font-size:13px}
+.profitbox .pl{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted);padding:2px 0}
 /* compact bill header + total */
 #mob-err:empty,#gstin-err:empty{display:none}
 .billhead{gap:8px;padding:10px 12px}
@@ -574,7 +585,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",profitSet:"Profit on past bills",profitSetD:"Shows how much each bill earned, in ₹ and %, in Past bills only. It never appears on WhatsApp bills or the bill screen.",profitL:"Profit",saleExGst:"Sale (before GST)",costL:"Cost (buy rate)",perItem:"Per item",estNote:"Estimated from today's buy rates (this bill was saved before profit was recorded).",profitShort:(p,pc)=>`Profit ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
@@ -600,7 +611,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",profitSet:"पुराने बिलों पर मुनाफ़ा",profitSetD:"हर बिल से कितना मुनाफ़ा हुआ (₹ और %), सिर्फ़ पुराने बिलों में दिखेगा। WhatsApp बिल या बिल स्क्रीन पर कभी नहीं दिखेगा।",profitL:"मुनाफ़ा",saleExGst:"बिक्री (GST से पहले)",costL:"लागत (ख़रीद रेट)",perItem:"हर सामान",estNote:"आज के ख़रीद रेट से अंदाज़ा (यह बिल मुनाफ़ा दर्ज होने से पहले का है)।",profitShort:(p,pc)=>`मुनाफ़ा ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
@@ -613,7 +624,7 @@ const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
   auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
-  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
+  cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923" } };
 S.canWrite = !!(S.auth && S.auth.pin);
 
 const $ = s => document.querySelector(s);
@@ -1036,6 +1047,16 @@ function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
 function itemGst(x){ return (x && x.gst!=null && x.gst!=="" && !isNaN(+x.gst)) ? +x.gst : (+S.cfg.defaultGst||0); }
+/** Buy rate for one unit of this bill line (pack lines use buy ÷ packs). Saved on the line when it's added. */
+function itemBuyFor(it,alt){ if(!it) return null; const b=+it.buy||0; return alt && hasAlt(it) ? r2(b/(+it.altQty||1)) : b; }
+function lineBuy(l){ if(l.buy!=null && l.buy!=="" && !isNaN(+l.buy)) return +l.buy; return itemBuyFor(S.byId.get(l.id), l.alt); }
+/** Profit on the sale before GST. % is on cost, the same way margins are shown on price cards. */
+function profitOf(lines){ let sale=0, cost=0, known=true; const per=[];
+  for(const l of lines||[]){ const q=+l.qty||0, amt=r2(q*(+l.rate||0)), b=lineBuy(l); sale+=amt;
+    if(b==null){ known=false; per.push({name:l.name,amt,cost:null,p:null}); continue; }
+    const c=r2(q*b); cost+=c; per.push({name:l.name,amt,cost:c,p:r2(amt-c)}); }
+  sale=r2(sale); cost=r2(cost); const p=r2(sale-cost);
+  return { sale, cost, profit:p, pct: cost>0 ? Math.round(p/cost*1000)/10 : null, known, per }; }
 function lineInfo(l){ const it=S.byId.get(l.id); return { hsn: l.hsn || itemHsn(it), gst: (l.gst!=null? +l.gst : itemGst(it)) }; }
 const r2=n=>Math.round((+n||0)*100)/100;
 const rs2=n=>"₹"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1115,7 +1136,7 @@ function startEdit(b){
   if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
   const kept=!S.editing && S.bill.length;
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"" }; ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin });
   closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 function endEdit(){
@@ -1129,7 +1150,8 @@ async function saveEdit(){
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})) };
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
+  { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   const btn=$("#bill-done"); btn.disabled=true;
   try{ await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
@@ -1145,8 +1167,9 @@ function finishBill(){
   const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt})),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8) };
+  { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); saveCache();
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
@@ -1281,7 +1304,7 @@ function decFromBill(id){
 function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
-  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it)});
+  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false)});
   saveBill(); if(!l) toast(`${it.name} ${t("added")}`);
   if(S.tab==="bill") renderBill(); else renderList();
 }
@@ -1299,6 +1322,7 @@ document.addEventListener("click",e=>{
   if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); return; }
   const sw=e.target.closest("[data-unitsw]"); if(sw){ const l=S.bill[+sw.dataset.unitsw]; const it=S.byId.get(l.id); if(!it||!hasAlt(it)) return;
     if(l.alt){ l.alt=false; l.unit=it.unit; l.rate=+it.sell||0; } else { l.alt=true; l.unit=it.altUnit; l.rate=altPrice(it); }
+    l.buy=itemBuyFor(it,l.alt);
     saveBill(); renderBill(); }
 });
 document.addEventListener("input",e=>{
@@ -1668,6 +1692,7 @@ function openSettings(){
       <div class="two"><div class="field"><label for="cf-dgst">${esc(t("defGst"))}</label><input id="cf-dgst" class="num" inputmode="decimal" value="${esc(c.defaultGst)}" ${w?"":"disabled"}></div>
         <div class="field"><label for="cf-dhsn">${esc(t("defHsn"))}</label><input id="cf-dhsn" class="num" inputmode="numeric" maxlength="10" value="${esc(c.defaultHsn)}" ${w?"":"disabled"}></div></div>
     </div>
+    <div class="cfg-sec"><label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-profit" ${S.cfg.showProfit?"checked":""} ${w?"":"disabled"}></label></div>
     <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>
     ${w?`<div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`:""}
     <div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
@@ -1692,7 +1717,7 @@ function openSettings(){
     const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); $("#cf-gstin").focus(); return; }
     const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; $("#cf-dgst").focus(); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
-    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), nextBill:nb, nextGstBill:ngb, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), defaultGst:dg, defaultHsn:dh };
+    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), nextBill:nb, nextGstBill:ngb, showProfit:$("#cf-profit").checked, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), defaultGst:dg, defaultHsn:dh };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
 }
 
@@ -1780,6 +1805,23 @@ function oldBillText(b){
   else s+=`\n\n*${t("total")}: ${rs(b.total)}*`;
   return s;
 }
+function billProfit(b){
+  if(b.cost!=null && b.profit!=null){ const sale=r2(+b.cost + +b.profit); return { cost:+b.cost, profit:+b.profit, sale, pct: +b.cost>0 ? Math.round(b.profit/b.cost*1000)/10 : null, est:false, per: (b.lines&&b.lines.length)?profitOf(b.lines).per:[] }; }
+  const lines=(b.lines&&b.lines.length)?b.lines:linesFromItems(b); if(!lines.length) return null;
+  const pf=profitOf(lines); if(!pf.known) return null; return { ...pf, est:true };
+}
+function profitBox(pf){
+  if(!pf) return "";
+  const neg=pf.profit<0;
+  return `<div class="profitbox num">
+    <div class="r"><span>${esc(t("profitL"))}</span><span class="big${neg?" neg":""}">${rs(pf.profit)}${pf.pct!=null?` · ${pf.pct}%`:""}</span></div>
+    <div class="r"><span>${esc(t("saleExGst"))}</span><b>${rs(pf.sale)}</b></div>
+    <div class="r"><span>${esc(t("costL"))}</span><b>${rs(pf.cost)}</b></div>
+    ${pf.per&&pf.per.length?`<details><summary>${esc(t("perItem"))}</summary>${pf.per.map(x=>`<div class="pl"><span>${esc(x.name)}</span><span>${x.p==null?"—":rs(x.p)}</span></div>`).join("")}</details>`:""}
+    ${pf.est?`<div class="note" style="font-size:12px">* ${esc(t("estNote"))}</div>`:""}
+  </div>`;
+}
+function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
 let billsCache=[], billsReq=0;
 function openBills(){
@@ -1798,9 +1840,10 @@ async function loadBills(q){
     const j=await apiPost({action:"listBills",q,limit:60}); if(my!==billsReq || !$("#bl-list")) return;
     billsCache=j.bills||[];
     const sum=billsCache.reduce((a,b)=>a+(+b.total||0),0);
-    $("#bl-list").innerHTML = (billsCache.length&&q.trim()?`<div class="bl-sum">${esc(t("blSummary",billsCache.length,rs(sum)))}</div>`:"") + (billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
+    const showP=S.cfg.showProfit; let pSum=0, cSum=0; if(showP) billsCache.forEach(b=>{ const pf=billProfit(b); if(pf){ pSum+=pf.profit; cSum+=pf.cost; } });
+    $("#bl-list").innerHTML = (billsCache.length&&q.trim()?`<div class="bl-sum">${esc(t("blSummary",billsCache.length,rs(sum)))}${showP?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`:"") + (billsCache.length ? billsCache.map((b,i)=>{ const d=b.date?new Date(b.date):null;
       return `<button type="button" class="billcard" data-bi="${i}"><b>${esc(t("billNoL"))} ${esc(b.n)}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}</span></button>`; }).join("")
+        <span class="meta2">${d?esc(d.toLocaleDateString("en-IN",{day:"2-digit",month:"short"})+", "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; }).join("")
       : `<p class="note">${esc(t("billsNone"))}</p>`);
   }catch(e){ if(my===billsReq && $("#bl-list")) $("#bl-list").innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; }
 }
@@ -1818,6 +1861,7 @@ function showBill(b){
     <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
     ${b.editedAt?`<div class="editnote">${esc(t("editedInfo",fmtDT(b.editedAt),b.editedBy,b.edits))}</div>`:""}
     <pre class="billtext" id="bd-text">${esc(text)}</pre>
+    ${S.cfg.showProfit?profitBox(billProfit(b)):""}
     <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
@@ -1831,7 +1875,7 @@ function showBill(b){
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
   $("#bd-back").onclick=()=>{ openBills(); };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
-  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt}));
+  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy}));
     S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
     ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
@@ -1911,7 +1955,7 @@ document.addEventListener("click",async e=>{ if(!e.target.closest("#setup-go")) 
 function applyConfig(x){
   x=x||{};
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
-  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1),
+  S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1), showProfit: x.showProfit===true || String(x.showProfit).toLowerCase()==="true",
     shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923") };
   // bills taken on this phone but not yet recorded keep the number moving forward
   for(const q of S.billQ||[]){ if(q.gst){ if(q.n>=S.cfg.nextGstBill) S.cfg.nextGstBill=q.n+1; } else if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1; }

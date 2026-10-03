@@ -68,8 +68,13 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 - Each bill line stores the buy rate at the time it was added (`buy` in `lines`; pack lines use buy ÷ packs). Each saved bill stores `cost` and `profit` columns in `Bills` (sale before GST minus cost). Editing a bill recalculates both.
 - Profit % is profit ÷ cost, the same way the price cards show margin.
-- **Settings → Profit on past bills** (`showProfit` in `Config`, off by default, shared) controls whether profit is shown. When on, the bill screen and Past bills shows "Profit ₹82 · 20.4%" on each bill, the total profit in search summaries, and a breakdown in bill detail (sale before GST, cost, profit for each item). It also shows live on the bill screen while a bill is being made: a small "+₹82 · 20.4%" under the total, plus the full breakdown in the expanded total panel. Profit never appears in WhatsApp text.
+- **Settings → Profit on past bills** (`showProfit` in `Config`, off by default, shared) controls whether profit is shown. When on, the bill screen and Past bills shows "Profit ₹82 · 20.4%" on each bill, the total profit in search summaries, and a breakdown in bill detail (sale before GST, cost, profit for each item). It also shows on the bill screen while a bill is being made, hidden until tapped: under the total there's a small "Profit" with an eye icon. Tapping it shows "+₹82 · 20.4%" and the breakdown in the expanded total panel. Tapping again hides it, and it hides itself after each bill and when the app goes to the background. Profit never appears in WhatsApp text.
 - Bills saved before cost was recorded show an estimate from today's buy rates, marked with `*`.
+
+## Returning customers (added 3 Oct 2026)
+
+- Typing a 10-digit mobile on the bill page looks up past bills for that number. It fills the customer name (if the name field is empty or was filled automatically) and the GSTIN (if empty), and shows a line such as "Sunil Traders · 4 bills before · last 02 Oct · total ₹3,250". A name you've typed yourself is never overwritten.
+- Sources: a per-phone cache of customers from bills made on that phone (`rb_customers` in browser storage, up to 2,000), and for unlocked phones the `findCustomer` backend action (POST with PIN, read-only), which searches the whole `Bills` tab by the last 10 digits of the mobile. Locked phones use only their own cache, so customer details aren't readable without the PIN.
 
 ## How to update
 

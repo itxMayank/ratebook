@@ -183,10 +183,11 @@ function doPost(e) {
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50); break;
+      case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (body.action !== 'verify' && body.action !== 'listBills') bump_();
+    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer') bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -394,3 +395,25 @@ function updateBill_(b, by) {
 }
 
 function costOut_(v) { return v === undefined || v === null || v === '' || !isFinite(Number(v)) ? '' : Math.round(Number(v) * 100) / 100; }
+
+/** Look up a returning customer by mobile (last 10 digits) from past bills. Needs the PIN. */
+function findCustomer_(mobile) {
+  const want = String(mobile).replace(/\D/g, '').slice(-10);
+  if (want.length !== 10) return { customer: null };
+  const s = sheet_(BILLS, BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) return { customer: null };
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  let name = '', gstin = '', count = 0, total = 0, last = null, lastTotal = 0;
+  for (let i = vals.length - 1; i >= 0; i--) {
+    const r = vals[i];
+    if (String(r[B.mobile]).replace(/\D/g, '').slice(-10) !== want) continue;
+    count++; total += num_(r[B.total]);
+    if (!last) { const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]); last = isNaN(d) ? null : d; lastTotal = num_(r[B.total]); }
+    if (!name && String(r[B.customer]).trim()) name = String(r[B.customer]).trim();
+    if (!gstin && String(r[B.customerGstin]).trim()) gstin = String(r[B.customerGstin]).trim();
+  }
+  if (!count) return { customer: null };
+  return { customer: { name: name, gstin: gstin, count: count, total: Math.round(total * 100) / 100, last: last ? last.toISOString() : '', lastTotal: lastTotal } };
+}

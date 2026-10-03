@@ -68,7 +68,7 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 - Each bill line stores the buy rate at the time it was added (`buy` in `lines`; pack lines use buy ÷ packs). Each saved bill stores `cost` and `profit` columns in `Bills` (sale before GST minus cost). Editing a bill recalculates both.
 - Profit % is profit ÷ cost, the same way the price cards show margin.
-- **Settings → Profit on past bills** (`showProfit` in `Config`, off by default, shared) controls whether profit is shown. When on, Past bills shows "Profit ₹82 · 20.4%" on each bill, the total profit in search summaries, and a breakdown in bill detail (sale before GST, cost, profit for each item). Profit never appears in WhatsApp text or on the bill screen.
+- **Settings → Profit on past bills** (`showProfit` in `Config`, off by default, shared) controls whether profit is shown. When on, the bill screen and Past bills shows "Profit ₹82 · 20.4%" on each bill, the total profit in search summaries, and a breakdown in bill detail (sale before GST, cost, profit for each item). It also shows live on the bill screen while a bill is being made: a small "+₹82 · 20.4%" under the total, plus the full breakdown in the expanded total panel. Profit never appears in WhatsApp text.
 - Bills saved before cost was recorded show an estimate from today's buy rates, marked with `*`.
 
 ## How to update

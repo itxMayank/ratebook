@@ -270,6 +270,8 @@ body.typing{padding-bottom:0}
 /* profit (past bills only) */
 .profit{font-size:13px;font-weight:700;color:var(--good)}
 .profit.neg{color:var(--danger)}
+.tot-sum .profit{color:var(--good);font-size:12px;font-weight:700}
+.tot-sum .profit.neg{color:var(--danger)}
 .profitbox{display:grid;gap:4px;background:color-mix(in srgb,var(--good) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--good) 35%,var(--line));border-radius:12px;padding:10px 12px;font-size:14px}
 .profitbox .r{display:flex;justify-content:space-between;gap:8px}
 .profitbox .r b{font-weight:700}
@@ -447,13 +449,14 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
-        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b></div>
+        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b><span class="profit num" id="bill-profit" hidden></span></div>
         <a class="btn wa sm" id="bill-wa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg><span id="wa-label">Share</span></a>
         <button class="btn primary sm" id="bill-done">Done</button>
         <button type="button" class="iconbtn sm" id="tot-more" aria-expanded="false" aria-label="More options"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
       </div>
       <div id="tot-extra" hidden>
         <div class="gstsum num" id="gst-sum" hidden></div>
+        <div id="bill-pbox"></div>
         <div class="acts">
           <button class="btn ghost" id="bill-copy" data-t="copy">Copy</button>
           <button class="btn ghost" id="bill-clear" data-t="clear">Clear</button>
@@ -585,7 +588,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",profitSet:"Profit on past bills",profitSetD:"Shows how much each bill earned, in ₹ and %, in Past bills only. It never appears on WhatsApp bills or the bill screen.",profitL:"Profit",saleExGst:"Sale (before GST)",costL:"Cost (buy rate)",perItem:"Per item",estNote:"Estimated from today's buy rates (this bill was saved before profit was recorded).",profitShort:(p,pc)=>`Profit ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",profitSet:"Profit on past bills",profitSetD:"Shows how much each bill earns, in ₹ and %, on the bill screen while you make it and in Past bills. It never appears on WhatsApp bills.",profitL:"Profit",saleExGst:"Sale (before GST)",costL:"Cost (buy rate)",perItem:"Per item",estNote:"Estimated from today's buy rates (this bill was saved before profit was recorded).",profitShort:(p,pc)=>`Profit ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
@@ -611,7 +614,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
-  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",profitSet:"पुराने बिलों पर मुनाफ़ा",profitSetD:"हर बिल से कितना मुनाफ़ा हुआ (₹ और %), सिर्फ़ पुराने बिलों में दिखेगा। WhatsApp बिल या बिल स्क्रीन पर कभी नहीं दिखेगा।",profitL:"मुनाफ़ा",saleExGst:"बिक्री (GST से पहले)",costL:"लागत (ख़रीद रेट)",perItem:"हर सामान",estNote:"आज के ख़रीद रेट से अंदाज़ा (यह बिल मुनाफ़ा दर्ज होने से पहले का है)।",profitShort:(p,pc)=>`मुनाफ़ा ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
+  packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",profitSet:"पुराने बिलों पर मुनाफ़ा",profitSetD:"हर बिल से कितना मुनाफ़ा हो रहा है (₹ और %), बिल बनाते समय बिल स्क्रीन पर और पुराने बिलों में दिखेगा। WhatsApp बिल पर कभी नहीं दिखेगा।",profitL:"मुनाफ़ा",saleExGst:"बिक्री (GST से पहले)",costL:"लागत (ख़रीद रेट)",perItem:"हर सामान",estNote:"आज के ख़रीद रेट से अंदाज़ा (यह बिल मुनाफ़ा दर्ज होने से पहले का है)।",profitShort:(p,pc)=>`मुनाफ़ा ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
@@ -1099,6 +1102,11 @@ function renderBill(){
   renderBillSearch();
 }
 function updateBillTotals(){
+  const bp=$("#bill-profit"), pb=$("#bill-pbox");
+  if(S.cfg.showProfit && S.bill.length){ const pf=profitOf(S.bill);
+    bp.hidden=false; bp.classList.toggle("neg",pf.profit<0); bp.textContent=`${pf.profit<0?"−":"+"}${rs(Math.abs(pf.profit))}${pf.pct!=null?` · ${pf.pct}%`:""}`;
+    pb.innerHTML=profitBox({...pf,est:false}); }
+  else { bp.hidden=true; pb.innerHTML=""; }
   const gs=$("#gst-sum");
   if(S.gst && S.bill.length){ const g=gstCalc();
     gs.hidden=false;

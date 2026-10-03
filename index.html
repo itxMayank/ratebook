@@ -332,14 +332,42 @@ label.thumb{cursor:pointer}
 .ph-x::before{content:"";position:absolute;inset:-9px}
 .ph-cover{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.62);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:1px 6px;pointer-events:none}
 .ph-add{display:grid;place-items:center;border:1.5px dashed var(--line);background:transparent;color:var(--muted)}
-.ph-spin{position:absolute;inset:0;margin:auto;width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+.ph-spin{position:absolute;inset:0;margin:auto}
+/* (spin keyframes are in the loader kit) */
 .gal-wrap{position:relative}
 .gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:var(--r);scrollbar-width:none}
 .gal::-webkit-scrollbar{display:none}
 .gal>.hero{flex:0 0 100%;scroll-snap-align:center}
 .gal-n{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.58);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
-.img-busy{font-size:13px;color:var(--muted)}
+.img-busy{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+/* Loader kit: ring spinner, dots, skeleton shimmer, top progress bar */
+.ld{--s:20px;display:inline-block;flex:none;width:var(--s);height:var(--s);border-radius:50%;background:conic-gradient(from 90deg,transparent 0 12%,var(--accent) 100%);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));animation:spin .75s linear infinite;vertical-align:middle}
+.ld.sm{--s:16px}.ld.lg{--s:34px}
+.ld.on-dark{background:conic-gradient(from 90deg,transparent 0 12%,currentColor 100%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-block{display:grid;justify-items:center;gap:12px;padding:36px 12px;color:var(--muted);font-size:14px;text-align:center}
+.ld-block span{animation:ldfade 1.6s ease-in-out infinite}
+@keyframes ldfade{50%{opacity:.45}}
+.skel{position:relative;overflow:hidden;background:var(--surface-2);border-radius:8px}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:shimmer 1.3s ease-in-out infinite}
+@media (prefers-color-scheme:dark){.skel::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent)}}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.skel-card{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--surface)}
+.skel-card .skel.a{width:56px;height:56px;border-radius:10px;grid-row:span 2}
+.skel-card .skel.b{height:14px;width:70%}
+.skel-card .skel.c{height:12px;width:40%}
+.skel-card .skel.d{height:18px;width:54px;grid-row:span 2}
+.skel-card.bill{grid-template-columns:1fr auto}
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;z-index:90;pointer-events:none;opacity:0;transition:opacity .25s;overflow:hidden}
+.topbar.on{opacity:1}
+.topbar::before{content:"";position:absolute;top:0;bottom:0;width:40%;left:-40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),var(--gold));animation:topbar 1.1s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes topbar{to{left:100%}}
+.btn .ld{--s:16px;margin-right:6px}
+.btn.busy{pointer-events:none;opacity:.85}
+.toast .ld{margin-right:8px;background:conic-gradient(from 90deg,transparent 0 12%,currentColor 100%)}
+.mob-wrap{position:relative}
+.mob-wrap .ld{position:absolute;right:12px;top:50%;margin-top:-8px}
+.cust-hint.looking{color:var(--muted)}
 /* bill editing */
 .editbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--gold) 16%,var(--surface));border:1.5px solid var(--gold);border-radius:var(--r);padding:10px 12px;margin-top:6px}
 .editbar span{flex:1;min-width:0;font-weight:600}
@@ -387,7 +415,11 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .billno input:focus{border-style:solid;border-color:var(--accent);outline:none}
 .billno .auto{font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
 .billno .auto button{border:0;background:none;color:var(--accent);font-weight:600;padding:0 2px}
-.taxline{font-size:12px;color:var(--muted)}
+.taxline{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;margin-top:2px}
+.hsned{display:inline-flex;align-items:center;gap:4px}
+.hsned input{width:8.5ch;font:600 12px var(--f-body);color:var(--fg);background:var(--bg);border:1px dashed var(--muted);border-radius:6px;padding:2px 6px;font-variant-numeric:tabular-nums}
+.hsned input:focus{border-style:solid;border-color:var(--accent);outline:0}
+.inwords{grid-column:1/-1;font-size:12px;font-style:italic;color:var(--muted);line-height:1.35}
 .gstsum{display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .gstsum div{display:flex;justify-content:space-between}
 .gstsum b{color:var(--fg);font-weight:600}
@@ -550,6 +582,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
 <script>
@@ -626,7 +659,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   taxInvoice:"TAX INVOICE",gstinL:"GSTIN",autoNo:n=>`Next auto number: ${n}`,useAuto:"Use",billNoManualBad:"Bill number must be 1 or more.",
   gstSet:"GST bills",shopGstin:"Shop GSTIN",shopAddress:"Shop address (shown on GST bills)",defGst:"Default GST %",defHsn:"Default HSN code",
   gstinBad:"GSTIN should be 15 characters, e.g. 09ABCDE1234F1Z5.",billSearchPh:"Search item to add to bill…",dec:"Reduce",hsnShort:"HSN",
-  pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Customer, mobile, GSTIN, bill no., item or date (dd/mm/yyyy)",billsNone:"No bills found.",billsLoading:"Loading bills…",
+  pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Customer, mobile, GSTIN, bill no., item or date (dd/mm/yyyy)",billsNone:"No bills found.",billsLoading:"Loading bills…",billOpening:"Opening bill…",custLooking:"Looking up this number…",custNew:"New customer, no past bills.",inWordsL:"Amount in words",
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
   back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
@@ -652,7 +685,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   taxInvoice:"टैक्स इनवॉइस",gstinL:"GSTIN",autoNo:n=>`अगला अपने-आप नंबर: ${n}`,useAuto:"लगाएँ",billNoManualBad:"बिल नंबर 1 या ज़्यादा होना चाहिए।",
   gstSet:"GST बिल",shopGstin:"दुकान का GSTIN",shopAddress:"दुकान का पता (GST बिल पर)",defGst:"डिफ़ॉल्ट GST %",defHsn:"डिफ़ॉल्ट HSN कोड",
   gstinBad:"GSTIN 15 अक्षरों का होता है, जैसे 09ABCDE1234F1Z5।",billSearchPh:"बिल में जोड़ने के लिए सामान खोजें…",dec:"कम करें",hsnShort:"HSN",
-  pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"ग्राहक, मोबाइल, GSTIN, बिल नं., सामान या तारीख़ (dd/mm/yyyy)",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",
+  pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"ग्राहक, मोबाइल, GSTIN, बिल नं., सामान या तारीख़ (dd/mm/yyyy)",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",billOpening:"बिल खुल रहा है…",custLooking:"इस नंबर को ढूँढ रहे हैं…",custNew:"नया ग्राहक, कोई पुराना बिल नहीं।",inWordsL:"शब्दों में राशि",
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
   back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
@@ -1035,7 +1068,7 @@ function renderList(){
   hint.innerHTML = (apiUrl() && S.canWrite && looksLikeCommand(q)) ? `<button class="cmdhint" data-act="cmdq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg><span>${esc(t("cmdHintL"))} <b>${esc(t("cmdHintA"))} →</b></span></button>` : "";
   $("#setup-wrap").innerHTML = apiUrl() ? "" : setupHTML();
   if(!apiUrl()){ list.innerHTML=""; more.innerHTML=""; sug.innerHTML=""; $("#meta-l").textContent=""; return; }
-  if(!S.loaded){ $("#meta-l").textContent=t("loading"); $("#meta-r").textContent=""; return; }
+  if(!S.loaded){ $("#meta-l").textContent=t("loading"); $("#meta-r").textContent=""; if(!S.items.length){ list.innerHTML=skelCards(6); more.innerHTML=""; sug.innerHTML=""; } return; }
   if(!S.items.length){
     sug.innerHTML=""; more.innerHTML=""; $("#meta-l").textContent=""; $("#meta-r").textContent="";
     list.innerHTML=`<div class="empty"><h2>${esc(t("emptyT"))}</h2><p>${esc(t("emptyD"))}</p>${S.canWrite?`<div class="row-btns"><button class="btn primary" data-act="add">${esc(t("addItem"))}</button><button class="btn ghost" data-act="bulkadd">${esc(t("bulkAdd"))}</button><button class="btn ghost" data-act="cmd">${esc(t("cmdTitle"))}</button></div>`:`<div class="row-btns"><button class="btn primary" data-act="unlock">${esc(t("unlockT"))}</button></div>`}</div>`;
@@ -1079,9 +1112,20 @@ function gstBillText(){
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
-  s+=`*${t("grandTotal")}: ${rs(g.total)}*`;
+  s+=`*${t("grandTotal")}: ${rs(g.total)}*\n_${t("inWordsL")}: ${inWords(g.total)}_`;
   if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`;
   return s;
+}
+/** Indian-style amount in words, e.g. 1,25,430.50 → "Rupees One Lakh Twenty Five Thousand Four Hundred Thirty and Fifty Paise Only". */
+function inWords(amount){
+  const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const two=n=>n<20?ones[n]:tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");
+  const three=n=>{ const h=Math.floor(n/100), r=n%100; return (h?ones[h]+" Hundred"+(r?" ":""):"")+(r?two(r):""); };
+  const words=n=>{ if(!n) return "Zero"; const out=[]; const cr=Math.floor(n/1e7); n%=1e7; const l=Math.floor(n/1e5); n%=1e5; const th=Math.floor(n/1000); n%=1000;
+    if(cr) out.push(words(cr)+" Crore"); if(l) out.push(two(l)+" Lakh"); if(th) out.push(two(th)+" Thousand"); if(n) out.push(three(n)); return out.join(" "); };
+  const neg=amount<0, paiseAll=Math.round(Math.abs(+amount||0)*100), r=Math.floor(paiseAll/100), p=paiseAll%100;
+  return `${neg?"Minus ":""}Rupees ${words(r)}${p?` and ${two(p)} Paise`:""} Only`;
 }
 function curBillNo(){ if(S.editing) return S.editing.n; const o=Math.floor(+S.billNoOvr); return o>=1 ? o : autoBillNo(); }
 const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
@@ -1131,7 +1175,7 @@ function renderBill(){
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
-      <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num">${esc(t("hsnShort"))} ${esc(lineInfo(l).hsn)} · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
+      <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
         ${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
@@ -1153,7 +1197,7 @@ function updateBillTotals(){
   const gs=$("#gst-sum");
   if(S.gst && S.bill.length){ const g=gstCalc();
     gs.hidden=false;
-    gs.innerHTML=`<div><span>${esc(t("taxable"))}</span><b>${rs2(g.taxable)}</b></div>`+g.rows.map(r=>`<div><span>${esc(r.label)}</span><b>${rs2(r.v)}</b></div>`).join("")+(g.roundOff?`<div><span>${esc(t("roundOff"))}</span><b>${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}</b></div>`:"");
+    gs.innerHTML=`<div><span>${esc(t("taxable"))}</span><b>${rs2(g.taxable)}</b></div>`+g.rows.map(r=>`<div><span>${esc(r.label)}</span><b>${rs2(r.v)}</b></div>`).join("")+(g.roundOff?`<div><span>${esc(t("roundOff"))}</span><b>${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}</b></div>`:"")+`<div class="inwords">${esc(inWords(g.total))}</div>`;
     $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
@@ -1284,7 +1328,14 @@ function setTab(tab){
   $("#searchbox").hidden = tab==="tools"; if(tab==="tools") $("#mictip").hidden=true;
   renderAll(); window.scrollTo(0,0);
 }
-let toastT; function toast(msg){ const el=$("#toast"); el.textContent=msg; el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
+const LD=(cls="")=>`<span class="ld ${cls}" role="progressbar" aria-label="${esc(t("loading"))}"></span>`;
+const ldBlock=msg=>`<div class="ld-block">${LD("lg")}<span>${esc(msg||t("loading"))}</span></div>`;
+const skelCards=(n,bill)=>`<div class="list" aria-busy="true">${Array.from({length:n},()=>bill?`<div class="skel-card bill"><div class="skel b"></div><div class="skel d"></div><div class="skel c"></div></div>`:`<div class="skel-card"><div class="skel a"></div><div class="skel b"></div><div class="skel d"></div><div class="skel c"></div></div>`).join("")}</div>`;
+function btnBusy(b,on){ if(!b) return; if(on){ if(!b.dataset.label) b.dataset.label=b.innerHTML; b.classList.add("busy"); b.disabled=true; b.innerHTML=LD("sm on-dark")+b.dataset.label; } else { b.classList.remove("busy"); b.disabled=false; if(b.dataset.label){ b.innerHTML=b.dataset.label; delete b.dataset.label; } } }
+/* Thin bar at the top of the screen while the app talks to the sheet (not for the quiet 25-second checks). */
+let netBusy=0; function netTrack(p){ netBusy++; $("#topbar").classList.add("on"); const done=()=>{ netBusy=Math.max(0,netBusy-1); if(!netBusy) $("#topbar").classList.remove("on"); }; p.then(done,done); return p; }
+const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
+let toastT; function toast(msg){ const el=$("#toast"); const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); if(e.target.value) $("#mictip").hidden=true; });
 $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(S.canWrite && looksLikeCommand(S.q)) openCmd(S.q,true); else e.target.blur(); } });
@@ -1382,7 +1433,11 @@ document.addEventListener("input",e=>{
   const q=e.target.dataset?.qty, r=e.target.dataset?.rate;
   if(q!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+q].qty=v; saveBill(); updateBillTotals(); } }
   if(r!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
+  const h=e.target.dataset?.hsn;
+  if(h!=null){ const v=e.target.value.replace(/\D/g,"").slice(0,8); if(v!==e.target.value) e.target.value=v; const l=S.bill[+h]; if(!l) return; if(v) l.hsn=v; else delete l.hsn; saveBill(); updateBillTotals(); }
 });
+/* HSN left empty on a bill line goes back to the item's own HSN. */
+document.addEventListener("focusout",e=>{ if(e.target.dataset?.hsn!=null && !e.target.value.trim()){ const l=S.bill[+e.target.dataset.hsn]; if(l) e.target.value=lineInfo(l).hsn; } });
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
 $("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#cust-mob").focus(); } });
 $("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); custLookup(); });
@@ -1397,7 +1452,7 @@ function rememberCustomer(mob,name,gstin,total){ const k=custKey(mob); if(!k) re
   c[k]={ name:name||o.name||"", gstin:gstin||o.gstin||"", count:(o.count||0)+1, total:r2((o.total||0)+(+total||0)), last:new Date().toISOString() };
   const keys=Object.keys(c); if(keys.length>2000){ keys.sort((a,b)=>String(c[a].last).localeCompare(String(c[b].last))).slice(0,keys.length-2000).forEach(x=>delete c[x]); }
   ls.set("rb_customers",c); }
-function showCustHint(info){ const h=$("#cust-hint"); if(!info||!info.count){ h.hidden=true; h.innerHTML=""; return; }
+function showCustHint(info){ const h=$("#cust-hint"); h.classList.remove("looking"); if(!info||!info.count){ h.hidden=true; h.innerHTML=""; return; }
   const d=info.last?new Date(info.last).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
   h.hidden=false; h.innerHTML=`<span><b>${esc(info.name||"")}</b>${info.name?" · ":""}${esc(t("custBack","",info.count,d))}${info.total?` · ${esc(t("custTotal",rs(info.total)))}`:""}</span>`; }
 function applyCustomer(info){
@@ -1415,9 +1470,13 @@ function custLookup(){
   if(k===S.custQ) return; S.custQ=k;
   const local=custCache()[k]; if(local) applyCustomer(local);
   if(!S.canWrite || !apiUrl() || navigator.onLine===false) return;
+  const h=$("#cust-hint");
+  if(!local){ h.hidden=false; h.classList.add("looking"); h.innerHTML=`${LD("sm")}<span>${esc(t("custLooking"))}</span>`; }
   custT=setTimeout(async()=>{ try{ const j=await apiPost({action:"findCustomer",mobile:k}); if(S.custQ!==k) return;
+      h.classList.remove("looking");
       if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",count:j.customer.count,total:j.customer.total,last:j.customer.last}; ls.set("rb_customers",c); applyCustomer(c[k]); }
-    }catch{} },350);
+      else if(!local){ h.hidden=false; h.innerHTML=`<span>${esc(t("custNew"))}</span>`; }
+    }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
 $("#cust").addEventListener("input",()=>{ S.custAuto=""; });
 $("#bill-wa").addEventListener("click",e=>{ if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); setTimeout(finishBill,400); });
@@ -1531,13 +1590,15 @@ function pickImage(){ return new Promise(res=>{ const f=$("#file"); f.value=""; 
 
 /* ---------------- Talking to the Google Sheet ---------------- */
 function apiUrl(){ return API_URL || ls.get("rb_api",""); }
-async function apiGet(params){
+function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
+function apiPost(body){ return netTrack(apiPost0(body)); }
+async function apiGet0(params){
   const u=apiUrl()+"?"+new URLSearchParams({...params,_:String(Date.now())});
   const r=await fetch(u,{cache:"no-store",redirect:"follow"});
   if(!r.ok) throw {code:"http"};
   const j=await r.json(); if(!j.ok) throw {code:j.error||"server"}; return j;
 }
-async function apiPost(body){
+async function apiPost0(body){
   if(navigator.onLine===false) throw {code:"offline"};
   const a=S.auth||{};
   const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({pin:a.pin,by:a.by||"",...body})});
@@ -1639,7 +1700,7 @@ function openEdit(id,prefill=""){
   if(!it) setTimeout(()=>$("#ef-name")?.focus(),260);
   const renderPhotos=()=>{
     const box=$("#ef-ph"); if(!box) return;
-    box.innerHTML = photos.map((p,i)=>`<div class="ph" data-pi="${i}">${p.src?`<img src="${esc(p.src)}" alt="">`:`<span class="ph-spin"></span>`}${i===0?`<span class="ph-cover">${esc(t("photoCover"))}</span>`:""}<button type="button" class="ph-x" data-px="${i}" aria-label="${esc(t("removePhoto"))}">✕</button></div>`).join("")
+    box.innerHTML = photos.map((p,i)=>`<div class="ph" data-pi="${i}">${p.src?`<img src="${esc(p.src)}" alt="">`:`<span class="ph-spin ld"></span>`}${i===0?`<span class="ph-cover">${esc(t("photoCover"))}</span>`:""}<button type="button" class="ph-x" data-px="${i}" aria-label="${esc(t("removePhoto"))}">✕</button></div>`).join("")
       + (photos.length<MAX_PHOTOS?`<label class="ph ph-add" for="ef-gal" aria-label="${esc(t("addPhoto"))}">${camIcon}</label>`:"");
     $("#ef-phl").textContent=`${t("photosL")}${photos.length?` (${photos.length}/${MAX_PHOTOS})`:""}`;
     $("#ef-phn").textContent = photosFail ? t("photoLoadFail") : photos.length>=MAX_PHOTOS ? t("photoMax") : photos.length>1 ? t("photoTapCover") : "";
@@ -1664,7 +1725,7 @@ function openEdit(id,prefill=""){
   $("#ef-aunit").onclick=e=>onUnitBtn(e.currentTarget,altHint);
   ["ef-aqty","ef-asell","ef-sell"].forEach(k=>$("#"+k).addEventListener("input",altHint)); altHint();
   const onPhoto=async e=>{ const inp=e.target, files=Array.from(inp.files||[]).slice(0,MAX_PHOTOS-photos.length); inp.value=""; if(!files.length) return;
-    const busy=$("#ef-busy"); busy.hidden=false; busy.textContent=t("photoWorking");
+    const busy=$("#ef-busy"); busy.hidden=false; busy.innerHTML=LD("sm")+esc(t("photoWorking"));
     for(const f of files){ try{ const r=await processImage(f); if(photos.length<MAX_PHOTOS){ photos.push({isNew:true,thumb:r.thumb,full:r.full,src:r.thumb}); photosChanged=true; renderPhotos(); } } catch{ toast(t("imgFail")); } }
     busy.hidden=true; };
   $("#ef-cam").addEventListener("change",onPhoto); $("#ef-gal").addEventListener("change",onPhoto);
@@ -1933,7 +1994,7 @@ function oldBillText(b){
     if(!m) return `${i+1}. ${x}`;
     const qty=+m[2], rate=+m[4];
     return `${i+1}. ${m[1].trim()}${m[5]?` (${m[5]})`:""} — ${fmtN(qty)} ${unitL(m[3])} × ${rs(rate)} = ${rs(r2(qty*rate))}`; }).join("\n");
-  if(b.gst && b.taxable!=null){ s+=`\n\n${t("taxable")}: ${rs2(b.taxable)}`; if(b.tax!=null) s+=`\nGST${b.igst?" (IGST)":" (CGST+SGST)"}: ${rs2(b.tax)}`; s+=`\n*${t("grandTotal")}: ${rs(b.total)}*`; }
+  if(b.gst && b.taxable!=null){ s+=`\n\n${t("taxable")}: ${rs2(b.taxable)}`; if(b.tax!=null) s+=`\nGST${b.igst?" (IGST)":" (CGST+SGST)"}: ${rs2(b.tax)}`; s+=`\n*${t("grandTotal")}: ${rs(b.total)}*\n_${t("inWordsL")}: ${inWords(b.total)}_`; }
   else s+=`\n\n*${t("total")}: ${rs(b.total)}*`;
   return s;
 }
@@ -1980,7 +2041,7 @@ function openBills(){
         <button type="button" class="bl-clear" id="bl-clr" aria-label="${esc(t("blClear"))}" ${BL.year||BL.date?"":"hidden"}>✕</button>
       </div>
     </div>
-    <div class="bills-list" id="bl-list"><p class="note">${esc(t("billsLoading"))}</p></div>`;
+    <div class="bills-list" id="bl-list">${skelCards(5,true)}</div>`;
   openSheet(t("pastBills"), body, "", {full:true});
   let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },400); });
   const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date); };
@@ -1999,8 +2060,8 @@ function billFilter(){
 }
 async function loadBills(more){
   const my=++billsReq, list=$("#bl-list"); if(!list) return;
-  if(more){ const m=$("#bl-more"); if(m){ m.disabled=true; m.textContent=t("billsLoading"); } }
-  else list.innerHTML=`<p class="note">${esc(t("billsLoading"))}</p>`;
+  if(more) btnBusy($("#bl-more"),true);
+  else list.innerHTML=skelCards(5,true);
   try{
     const req={action:"listBills",q:BL.q,limit:60,tz:new Date().getTimezoneOffset(),...billFilter()};
     if(more && billsCache.length) req.before=billsCache[billsCache.length-1].row;
@@ -2060,7 +2121,7 @@ function linesFromItems(b){
 async function showBill(b){
   if(!b) return;
   if(b.text===undefined && b.row){
-    openSheet(`${t("billNoL")} ${b.n}`, `<p class="note">${esc(t("billsLoading"))}</p>`, "", {full:true});
+    openSheet(`${t("billNoL")} ${b.n}`, ldBlock(t("billOpening")), "", {full:true});
     try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); b.text=j.bill.text||""; b.lines=j.bill.lines||[]; }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>openBills(); return; }
   }
@@ -2145,9 +2206,9 @@ function openUnlock(){
   $("#ul-go").onclick=async()=>{ const by=$("#ul-name").value.trim(), pin=$("#ul-pin").value.trim(), err=$("#ul-err");
     if(!by){ err.textContent=t("needYourName"); $("#ul-name").focus(); return; }
     if(!pin){ $("#ul-pin").focus(); return; }
-    $("#ul-go").disabled=true;
+    btnBusy($("#ul-go"),true);
     try{ await apiPost({action:"verify",pin,by}); S.auth={pin,by}; ls.set("rb_auth",S.auth); ls.set("rb_name",by); S.canWrite=true; closeSheet(); renderAll(); toast(t("unlocked")); }
-    catch(e){ err.textContent=errMsg(e); const b=$("#ul-go"); if(b) b.disabled=false; }
+    catch(e){ err.textContent=errMsg(e); btnBusy($("#ul-go"),false); }
   };
 }
 function lockPhone(){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; renderAll(); toast(t("lockedNow")); }

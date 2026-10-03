@@ -100,6 +100,17 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Backend: `setImages` (POST, PIN, `{id, thumb, photos:[{data}|{k}]}`, where `k` keeps an existing photo by key) and `GET ?action=images&id=` (all photos in order). `setImage` (one photo) is kept for older app copies; it replaces all photos with that one. Deleting an item also deletes its extra photo rows.
   - Phone cache: each photo is kept in IndexedDB `images` under its key, tagged with the item's `imgV`. The item screen shows a swipeable gallery with a "2/4" counter.
 
+## Loaders, HSN on bill, amount in words (added 3 Oct 2026)
+
+- **Loader kit** (CSS `.ld` ring, `.ld-block`, `.skel` shimmer, `#topbar`; JS `LD()`, `ldBlock()`, `skelCards()`, `btnBusy()`, `netTrack()`):
+  - A thin animated bar at the top shows whenever the app talks to the sheet. All `apiPost` calls count, plus `apiGet` calls except `rev` and `thumbs`. The raw calls are `apiPost0` and `apiGet0`.
+  - Skeleton cards show on first load (no cache yet) and while Past bills load.
+  - "Opening bill…" shows while a past bill loads.
+  - A ring spinner appears in the "Show more bills" and Unlock buttons, while photos are processed, on photo tiles still loading, and in "Saving…" toasts.
+- **Customer lookup:** while the number is checked, the hint shows a spinner and "Looking up this number…". If nothing is found, it shows "New customer, no past bills." This only runs on unlocked phones without a local match.
+- **HSN on the bill:** on a GST bill each line's HSN is a small editable box. The change applies to that bill only (`line.hsn`), never the item. Clearing it falls back to the item's HSN.
+- **Amount in words:** `inWords()` uses Indian numbering (Lakh/Crore, paise). It's added under the total in the GST WhatsApp text ("Amount in words: Rupees … Only"), in rebuilt old GST bills, and in the on-screen GST breakdown.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

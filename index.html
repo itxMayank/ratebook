@@ -543,7 +543,9 @@ body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
 .fchips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;margin:0 -2px}
 .fchips::-webkit-scrollbar{display:none}
 .rates .sold{color:var(--muted);font-weight:600}
-.fchip.sortchip{margin-left:auto;display:inline-flex;align-items:center;gap:5px;border-style:dashed}
+.sortseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;padding:2px;gap:2px;background:var(--surface)}
+.sortseg button{border:0;background:none;color:var(--muted);font:700 12px var(--f-body,inherit);padding:4px 10px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.sortseg button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 .fchip{flex:none;border:0;background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 16px;font:600 14px var(--f-body);box-shadow:var(--shadow);transition:background .15s,color .15s}
 .fchip[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 .fchip .n{margin-left:6px;opacity:.6;font-weight:700}
@@ -1794,7 +1796,8 @@ function renderList(){
   else if(S.filter==="recent") res=res.filter(r=>Date.now()-(+r.e.it.updatedAt||0)<7*864e5);
   else if(S.filter==="photo") res=res.filter(r=>r.e.it.imgV);
   $("#meta-l").textContent = q ? t("results", exact?res.length:0) : t("items",res.length);
-  $("#meta-r").textContent = "";
+  { const mr=$("#meta-r"); const hasPop=!!S.pop && Object.keys(S.pop).length>0;
+    mr.innerHTML = hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : ""; }
   if(q && !exact && !hint.innerHTML){
     sug.innerHTML=`<div class="suggest"><p>${esc(t("noMatch",q))} ${suggest.length?esc(t("didYouMean")):""}</p>
       ${suggest.length?`<div class="chips">${suggest.map(it=>`<button class="chip" data-pick="${esc(it.name)}">${esc(itemTitle(it))}</button>`).join("")}</div>`:""}
@@ -1809,9 +1812,9 @@ function renderFilters(){
   const inBill=S.bill.length, recent=S.items.filter(it=>Date.now()-(+it.updatedAt||0)<7*864e5).length, photo=S.items.filter(it=>it.imgV).length;
   const opts=[["all",t("fAll"),0],["bill",t("fInBill"),inBill],["recent",t("fRecent"),recent],["photo",t("fPhoto"),photo]].filter(o=>o[0]==="all"||o[2]>0||S.filter===o[0]);
   const hasPop=!!S.pop && Object.keys(S.pop).length>0;
-  box.hidden = opts.length<2 && !hasPop;
+  box.hidden = opts.length<2;
   box.innerHTML=opts.map(([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`).join("")
-    + (hasPop?`<button type="button" class="fchip sortchip" id="sort-chip" aria-label="${esc(t("sortL"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>${esc(t(S.sortBy==="az"?"sortAz":"sortPop"))}</button>`:"");
+    ;
 }
 function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidden=!n; b.textContent=n; }
 function billText(){
@@ -2740,7 +2743,7 @@ function flyToBill(a){
 }
 document.addEventListener("pointerdown",e=>{ const a=e.target.closest&&e.target.closest("[data-add]"); if(a) window.__addSrc=a; },true);
 document.addEventListener("click",e=>{
-  if(e.target.closest("#sort-chip")){ setSort(S.sortBy==="az"?"pop":"az"); return; }
+  { const so=e.target.closest("[data-sort]"); if(so){ if(so.dataset.sort!==S.sortBy) setSort(so.dataset.sort); return; } }
   const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }
   const a=e.target.closest("[data-add]"); if(a){ e.stopPropagation(); addToBill(a.dataset.add); return; }
@@ -3863,6 +3866,7 @@ if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){ window.
 /* ---------------- Start ---------------- */
 async function boot(){
   const cache=ls.get("rb_cache",null);
+  if(!ls.get("rb_sort_v2",false)){ ls.set("rb_sort","pop"); ls.set("rb_sort_v2",true); }
   S.sortBy=ls.get("rb_sort","pop");
   if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
   applyLang(); renderBadge();

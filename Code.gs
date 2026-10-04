@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 11;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 12;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -170,7 +170,7 @@ function list_() {
  * Kept in the cache for 30 minutes, keyed by the number of bill rows, so a new bill refreshes it.
  */
 function pop_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet(), s = ss.getSheetByName('Bills');
+  const s = ss_().getSheetByName('Bills');   // ss_(): the app's sheet, also when the script isn't attached to it
   if (!s) return {};
   const n = s.getLastRow() - 1; if (n < 1) return {};
   const cache = CacheService.getScriptCache(), key = 'pop:' + n;
@@ -201,7 +201,7 @@ function curBuyMap_() {
   return out;
 }
 
-function popReset_() { try { const b = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
+function popReset_() { try { const b = ss_().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
 
 function thumbs_(ids) {
   const want = {}; ids.slice(0, 60).forEach(id => want[id] = 1);

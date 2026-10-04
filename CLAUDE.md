@@ -242,6 +242,20 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
   `report_()` in Code.gs now returns per item: `bills, cost, costQty, costAmt, gstQty, min, max, rates[], profit`. Profit uses only lines that saved a buy price. `SCRIPT_VERSION` 8 / `NEED_SV` 8. The Item sales CSV gained Bills, Avg selling price, and (with profit on) Avg buy price and Profit.
 - **Notifications (toast) top-right**: `#toast` slides in from the right edge at the top (springy ease), stays about 2.8 s, then slides back out to the right. It briefly covers the wand and EN/हि buttons, but taps pass through (`pointer-events:none`). On desktop it sits at the right edge of the middle column, left of the bill panel. The CSS override is at the end of the `<style>`.
+- **Past bills search runs on the phone**:
+  - `listBills` with `full:true` returns up to 3000 recent bills. The app keeps that copy in IndexedDB (`images` store, key `bills:<mode>`, in memory as `BLC`).
+  - Search and the year/date filters run on the copy (`blcQuery`, same matching as the server), at about 0.1–0.2 s.
+  - **Sync between phones**: every bill change bumps a bills version (`brev_<mode>` script property, `bumpB_`) and logs the changed bill id in `blog_<mode>` (last 150 entries).
+  - Every time Past bills opens, the phone shows its copy at once and asks the server with its `brev`. The reply is one of:
+    - `same`: about 80 bytes, nothing changed;
+    - `delta`: only the changed bills, which replace or prepend by id;
+    - full copy: after hand edits in the sheet (`onEdit`/`watchSheet`), a restore, deleted rows, a payment spread over several bills, or a copy too old for the log.
+  - Opening a bill always re-reads it with `getBill` (if not read in the last 30 s), which now returns payments, due, cancel and edit state. So a bill changed on another phone shows its latest state, and the edit-count check still blocks overwriting.
+  - Bills made on this phone but not yet sent (`S.billQ`) are merged into the list, so they don't disappear when the copy refreshes.
+  - Size: about 0.5 KB per bill raw, so the 3000 cap is about 1.5 MB of phone storage at most (less after browser compression). Network is tiny except for a full copy.
+  - "Search older bills on the sheet" button beyond 3000 bills; falls back to server search with an older script.
+  - `SCRIPT_VERSION` 14 / `NEED_SV` 14.
+- **Files (PDF/CSV)**: `shareFile()` downloads straight away on a laptop, or on a phone that can't share files. On phones it opens a small bottom sheet (`#fileact`) with **Download** (saves to Downloads) and **Share**. The share call happens on that tap, which also fixes shares failing after slow PDF builds. Back closes the sheet.
 - **Always open the sheet with `ss_()`**, never `SpreadsheetApp.getActiveSpreadsheet()`: the script may be standalone (made at script.google.com), where that returns null. `pop_()` used it, so most-sold order silently came back empty on the real setup (fixed in `SCRIPT_VERSION` 12). The test mock now returns null for `getActiveSpreadsheet()` once `SHEET_ID` is set, to catch this.
 - **Most-sold order (default)**: `pop_()` in Code.gs counts, per item id, the number of *real* bills (`Bills` tab, never Test) the item appears on. Quantity doesn't matter, the same item twice on one bill counts once, and cancelled bills don't count. Cached 30 min under `pop:<row count>` (a new bill changes the key), and cleared by `popReset_()` on cancel/restore and bill edits. Returned as `pop` in `list`; `SCRIPT_VERSION` 7 / `NEED_SV` 7.
   - App: `S.pop` (saved in `rb_cache`), `sortItems()` sorts by count, then A–Z. Search keeps relevance first, then count. The order changes only when the list reloads (app open, or a price change from any phone), so cards don't jump mid-bill.

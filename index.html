@@ -212,6 +212,18 @@ body.typing{padding-bottom:0}
 .g .unitbtn{padding:8px;font-size:15px;border-radius:8px;border-color:transparent}
 .g .unitbtn.changed{border-color:var(--gold)}
 .picker{position:fixed;inset:0;z-index:55;display:grid;place-items:end center;background:rgba(10,8,8,.45);padding:0 0 var(--kb,0px)}
+.fileact{position:fixed;inset:0;z-index:58;display:grid;place-items:end center;background:rgba(10,8,8,0);transition:background .2s}
+.fileact.on{background:rgba(10,8,8,.45)}
+.fa-card{background:var(--surface);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);zoom:var(--fz)}
+.fileact.on .fa-card{transform:none}
+.fa-file{display:flex;align-items:center;gap:12px;min-width:0}
+.fa-file>div{display:grid;min-width:0}
+.fa-file b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fa-file span{color:var(--muted);font-size:13px}
+.fa-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:800 12px var(--f-display)}
+.fa-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fa-btns .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px}
+.fa-x{border:0;background:none;color:var(--muted);font-weight:700;padding:6px;cursor:pointer}
 .picker-card{background:var(--surface);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;max-height:80%;overflow:auto}
 .picker-card h3{margin:0;font:700 19px var(--f-display)}
 .pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
@@ -1289,7 +1301,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
   rpPNoBuy:a=>`${a} of items had no buy price on the bill, so they are left out of profit.`,rpPGst:(a,b)=>`Total sales ${a} includes GST and bill round-off; items add up to ${b} before GST.`,
   riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
   riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
@@ -1302,7 +1314,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
   rpPNoBuy:a=>`${a} के सामान में खरीद रेट नहीं था, इसलिए मुनाफ़े में नहीं गिना।`,rpPGst:(a,b)=>`कुल बिक्री ${a} में GST और राउंड-ऑफ़ शामिल है; सामान GST से पहले ${b} का है।`,
   riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
   riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
@@ -1387,7 +1399,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=12;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=14;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -2183,6 +2195,7 @@ function finishBill(opts){
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
+  blcAdd(rec);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
   if(opts.keep){
     rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
@@ -2248,7 +2261,7 @@ async function flushBills(){
   try{
     while(S.billQ.length){
       const rec=S.billQ[0];
-      const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,k:ls.get("rb_view",""),pin:(S.auth&&S.auth.pin)||"",dev:DEV})});
+      blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,k:ls.get("rb_view",""),pin:(S.auth&&S.auth.pin)||"",dev:DEV})});
       const j=await r.json();
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
       S.needCode=false;
@@ -2332,10 +2345,27 @@ async function makeInvoicePdf(inv){
   doc.text("This is a computer-generated "+(inv.gst?"invoice":"bill")+".",M,y);
   return doc.output("blob");
 }
-async function shareFile(blob,name,text){
+function downloadBlob(blob,name){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.rel="noopener"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },8000); }
+/** A PDF or CSV is ready: on a laptop it downloads straight away; on a phone you pick Download (saved to the phone) or Share. */
+function shareFile(blob,name,text){
   const file=new File([blob],name,{type:blob.type||"application/octet-stream"});
-  if(navigator.canShare && navigator.canShare({files:[file]})){ try{ await navigator.share({files:[file],title:name,text:text||""}); return "shared"; }catch(e){ if(e&&e.name==="AbortError") return "cancelled"; } }
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },4000); return "downloaded";
+  const canShare=!!(navigator.canShare && navigator.canShare({files:[file]}));
+  if(DESK() || !canShare){ downloadBlob(blob,name); toast(t("fileSaved",name)); return Promise.resolve("downloaded"); }
+  return new Promise(res=>{
+    const old=document.getElementById("fileact"); if(old) old.remove();
+    const ext=(name.split(".").pop()||"").toUpperCase(), kb=Math.max(1,Math.round(blob.size/1024));
+    const el=document.createElement("div"); el.id="fileact"; el.className="fileact"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true");
+    el.innerHTML=`<div class="fa-card"><div class="fa-file"><span class="fa-ic">${esc(ext)}</span><div><b>${esc(name)}</b><span>${esc(kb+" KB")}</span></div></div>
+      <div class="fa-btns"><button type="button" class="btn ghost" id="fa-dl"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>${esc(t("fileDl"))}</button>
+      <button type="button" class="btn primary" id="fa-sh"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>${esc(t("fileShare"))}</button></div>
+      <button type="button" class="fa-x" id="fa-x">${esc(t("cancel"))}</button></div>`;
+    document.body.appendChild(el); requestAnimationFrame(()=>el.classList.add("on"));
+    const close=r=>{ el.classList.remove("on"); setTimeout(()=>el.remove(),200); res(r); };
+    el.addEventListener("click",e=>{ if(e.target===el) close("cancelled"); });
+    el.querySelector("#fa-x").onclick=()=>close("cancelled");
+    el.querySelector("#fa-dl").onclick=()=>{ downloadBlob(blob,name); toast(t("fileSaved",name)); close("downloaded"); };
+    el.querySelector("#fa-sh").onclick=async()=>{ try{ await navigator.share({files:[file],title:name,text:text||""}); close("shared"); }catch(e){ if(e&&e.name==="AbortError") close("cancelled"); else { downloadBlob(blob,name); toast(t("fileSaved",name)); close("downloaded"); } } };
+  });
 }
 async function pdfFor(inv,btn){
   if(!inv.lines.length) return;
@@ -2581,6 +2611,7 @@ let backAt=0;
 function pushGuard(){ try{ history.pushState({rb:1},""); }catch{} }
 try{ if(!history.state || !history.state.rb){ history.replaceState({rb:0},""); pushGuard(); } }catch{}
 window.addEventListener("popstate",()=>{
+  { const fa=document.getElementById("fileact"); if(fa){ const x=fa.querySelector("#fa-x"); if(x) x.click(); pushGuard(); return; } }
   if(!$("#picker").hidden){ closePicker(null); pushGuard(); return; }
   if(!$("#sheet").hidden){
     const back=[...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null);
@@ -2933,7 +2964,8 @@ function pickImage(){ return new Promise(res=>{ const f=$("#file"); f.value=""; 
 /* ---------------- Talking to the Google Sheet ---------------- */
 function apiUrl(){ return API_URL || ls.get("rb_api",""); }
 function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
-function apiPost(body){ return netTrack(apiPost0(body)); }
+const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
+function apiPost(body){ if(body && BILL_CHANGES.has(body.action)) blcDirty(); return netTrack(apiPost0(body)); }
 async function apiGet0(params){
   const u=apiUrl()+"?"+new URLSearchParams({...params,...(params.action==="list"&&params.k===undefined?{k:ls.get("rb_view","")}:{}),_:String(Date.now())});
   const r=await fetch(u,{cache:"no-store",redirect:"follow"});
@@ -3436,7 +3468,7 @@ function profitBox(pf){
 }
 function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
-let billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
+let billsServer=false, billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
 const BL={q:"", year:"", date:"", col:{}};   // col: month/day groups you opened or closed            // past-bills filters, kept while you open a bill and come back
 const calIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;
 function dayKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
@@ -3464,13 +3496,13 @@ function openBills(){
     </div>
     <div class="bills-list" id="bl-list">${skelCards(5,true)}</div>`;
   openSheet(t("pastBills"), body, "", {full:true});
-  let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },400); });
+  let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },120); });
   const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date); };
   $("#bl-year").onchange=e=>{ BL.year=e.target.value; if(BL.date && BL.date.slice(0,4)!==BL.year){ BL.date=""; $("#bl-date").value=""; } sync(); loadBills(); };
   $("#bl-date").onchange=e=>{ BL.date=e.target.value||""; sync(); loadBills(); };
   $("#bl-dc").onclick=e=>{ const inp=$("#bl-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
   $("#bl-clr").onclick=()=>{ BL.year=""; BL.date=""; $("#bl-year").value=""; $("#bl-date").value=""; sync(); loadBills(); };
-  $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; }
+  $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; } if(e.target.closest("#bl-older")){ loadBillsServer(); return; }
     const g=e.target.closest("[data-tg]"); if(g){ const k=g.dataset.tg; BL.col[k]=!g.closest(".bl-grp").classList.contains("shut")?true:false; const st=$("#sheet-body").scrollTop; renderBills(); $("#sheet-body").scrollTop=st; return; } const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
   loadBills();
 }
@@ -3479,7 +3511,81 @@ function billFilter(){
   if(BL.year) return {from:`${BL.year}-01-01`, to:`${BL.year}-12-31`};
   return {};
 }
+/* ---------------- Past bills: searched on the phone ----------------
+ * The phone keeps a copy of the recent bills (up to 3000, IndexedDB, per test/real mode). Searching and the year/date
+ * filters run on that copy, so results show as you type. The copy is refreshed in the background each time Past bills
+ * opens, and right after any change to bills. Older bills beyond the copy can still be searched on the sheet. */
+let BLC=null, blcLoading=null, blcFreshAt=0;
+const blcKey=()=>"bills:"+S.cfg.mode;
+function blcDirty(){ blcFreshAt=0; }
+/** A bill just made on this phone shows in Past bills straight away; the next refresh replaces it with the sheet's copy. */
+function blcAdd(rec){ try{ if(!BLC || BLC.env!==S.cfg.mode) return; const now=new Date(), due=+rec.due||0;
+  BLC.bills.unshift({ n:rec.n, date:now.toISOString(), day:dayKey(now), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
+    taxable:rec.gst?rec.taxable:null, tax:rec.gst?rec.tax:null, custGstin:rec.custGstin, igst:rec.igst, id:rec.id, row:0, editedAt:"", editedBy:"", edits:0, cost:rec.cost, profit:rec.profit,
+    pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines });
+  }catch{} }
+async function blcGet(){ if(BLC && BLC.env===S.cfg.mode) return BLC; const v=await idb.get("images",blcKey()); if(v && Array.isArray(v.bills) && v.env===S.cfg.mode) BLC=v; return BLC && BLC.env===S.cfg.mode ? BLC : null; }
+function blcRefresh(){
+  if(blcLoading) return blcLoading;
+  const env=S.cfg.mode;
+  const have=BLC && BLC.env===env ? BLC : null;
+  blcLoading=(async()=>{ const j=await apiPost0({action:"listBills",q:"",limit:3000,full:true,tz:new Date().getTimezoneOffset(),brev:have&&have.brev||""});
+      if(!j.full) return null;                                   // older Apps Script: no full copy, search on the sheet instead
+      if(j.same && have){ have.at=Date.now(); if(env===S.cfg.mode) blcFreshAt=Date.now(); return have; }   // nothing changed on any phone: nothing downloaded
+      if(j.delta && have){                                                 // only the bills that changed: swap them in, new ones on top
+        const at=new Map(have.bills.map((x,i)=>[x.id,i])), fresh=[];
+        (j.bills||[]).forEach(x=>{ if(x.id && at.has(x.id)) have.bills[at.get(x.id)]=x; else fresh.push(x); });
+        have.bills=fresh.concat(have.bills); if(have.bills.length>3000){ have.bills.length=3000; have.more=true; }
+        have.brev=j.brev||""; have.years=j.years||have.years; have.at=Date.now();
+        if(env===S.cfg.mode){ BLC=have; blcFreshAt=Date.now(); } idb.set("images","bills:"+env,have); return have; }
+      const C={env, at:Date.now(), brev:j.brev||"", bills:j.bills||[], more:!!j.more, years:j.years||[]};
+      if(env===S.cfg.mode){ BLC=C; blcFreshAt=Date.now(); }
+      idb.set("images","bills:"+env,C); return C; })().finally(()=>{ blcLoading=null; });
+  return blcLoading;
+}
+function blcQuery(C){
+  const ids=new Set(C.bills.map(b=>b.id)), pend=(S.billQ||[]).filter(q=>(q.env||"test")===C.env && !ids.has(q.id)).map(q=>{ const d=q.at?new Date(q.at):new Date(), due=+q.due||0;
+    return { n:q.n, date:d.toISOString(), day:dayKey(d), customer:q.customer, mobile:q.mobile, total:q.total, items:q.items, gst:q.gst, custGstin:q.custGstin, igst:q.igst, id:q.id, row:0, edits:0,
+      cost:q.cost, profit:q.profit, pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", text:q.text, lines:q.lines, pending:true }; });
+  const src=pend.length ? pend.reverse().concat(C.bills) : C.bills;
+  const needle=BL.q.trim().toLowerCase(), digits=needle.replace(/\D/g,""), f=billFilter();
+  const days={}, months={}, all={count:0,total:0}, out=[];
+  for(const b of src){ const k=b.day||"unknown";
+    if((f.from && (k==="unknown"||k<f.from)) || (f.to && (k==="unknown"||k>f.to))) continue;
+    if(needle){ const ds=k!=="unknown"?`${k.slice(8)}/${k.slice(5,7)}/${k.slice(0,4)} ${k.slice(8)}-${k.slice(5,7)}-${k.slice(0,4)}`:"";
+      const hay=[b.n,dispNo(b.n,b.gst,b.fy),b.customer,b.mobile,b.custGstin,b.items,ds].join(" ").toLowerCase(), mob=String(b.mobile||"").replace(/\D/g,"");
+      if(!(hay.includes(needle) || String(b.n)===needle || (digits.length>=4 && mob.includes(digits)))) continue; }
+    if(!b.cancelled){ const t2=+b.total||0, mk=k.slice(0,7);
+      (days[k]=days[k]||{count:0,total:0}); days[k].count++; days[k].total=r2(days[k].total+t2);
+      (months[mk]=months[mk]||{count:0,total:0}); months[mk].count++; months[mk].total=r2(months[mk].total+t2);
+      all.count++; all.total=r2(all.total+t2); }
+    out.push(b); }
+  return {out,days,months,all};
+}
+function renderLocalBills(C,keep){
+  if(!$("#bl-list")) return;
+  const r=blcQuery(C);
+  billsCache=r.out.slice(0,BL.shown||60); billsDays=r.days; billsMonths=r.months; billsAll=r.all;
+  billsMore=r.out.length>billsCache.length; billsServer=false;
+  if(!keep) BL.col={};
+  const ys=C.years||[], sel=$("#bl-year");
+  if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
+  renderBills();
+  if(C.more && BL.q.trim()){ const l=$("#bl-list"); if(l) l.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost" id="bl-older">${esc(t("blOlder"))}</button>`); }
+}
 async function loadBills(more){
+  const list=$("#bl-list"); if(!list) return;
+  if(billsServer && more) return loadBillsServer(true);
+  BL.shown = more ? (BL.shown||60)+60 : 60;
+  const C=await blcGet();
+  if(C){ renderLocalBills(C,more);
+    if(!more) blcRefresh().then(C2=>{ if(C2 && $("#bl-list")){ const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; renderLocalBills(C2,true); if(sc) sc.scrollTop=st; } }).catch(()=>{});
+    return; }
+  list.innerHTML=skelCards(5,true);
+  try{ const C2=await blcRefresh(); if(!$("#bl-list")) return; if(C2) renderLocalBills(C2); else return loadBillsServer(more); }
+  catch(e){ if($("#bl-list")) $("#bl-list").innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; }
+}
+async function loadBillsServer(more){
   const my=++billsReq, list=$("#bl-list"); if(!list) return;
   if(more) btnBusy($("#bl-more"),true);
   else list.innerHTML=skelCards(5,true);
@@ -3492,7 +3598,7 @@ async function loadBills(more){
     billsDays = more ? {...billsDays, ...(j.days||{})} : (j.days||{});
     billsMonths = more ? {...billsMonths, ...(j.months||{})} : (j.months||{});
     if(!more) BL.col={};
-    billsMore = !!j.more; billsAll = j.all||null;
+    billsMore = !!j.more; billsAll = j.all||null; billsServer = true;
     const ys=j.years||[], sel=$("#bl-year");
     if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
     renderBills();
@@ -3541,10 +3647,10 @@ function linesFromItems(b){
 }
 async function showBill(b){
   if(!b) return;
-  if(b.text===undefined && b.row){
+  if(b.row && (b.text===undefined || Date.now()-(b._at||0)>30000)){   // read the sheet's latest copy (other phones may have changed it)
     openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
-    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[];
-      ["edits","fy","igst","custGstin","pos"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // the saved values, so an edit keeps GST details and knows the edit count
+    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
+      ["edits","fy","igst","custGstin","pos","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // always the sheet's latest: payments, cancel and edits made on other phones   // the saved values, so an edit keeps GST details and knows the edit count
       if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile; }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }

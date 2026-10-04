@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 12;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 14;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -99,10 +99,23 @@ function getRev_() {
   if (!v) { v = PropertiesService.getScriptProperties().getProperty('rev') || '0'; cache.put('rev', v, 21600); }
   return v;
 }
+/* Bills version per mode: changes whenever any bill changes, so phones only download their copy of bills when needed. */
+function brev_() { return PropertiesService.getScriptProperties().getProperty('brev_' + ENV_) || '0'; }
+/* With each change, a short log notes which bill changed (by id), so a phone can fetch just those bills. Anything else (sheet edited
+   by hand, restore, a payment spread over several bills) is logged as "full" and that phone downloads its whole copy again. */
+function blog_(env) { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('blog_' + env) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function bumpB_(both, id) {
+  const p = PropertiesService.getScriptProperties(), v = String(Date.now());
+  (both ? ['live', 'test'] : [ENV_]).forEach(en => {
+    p.setProperty('brev_' + en, v);
+    let L = blog_(en); L.push(id ? { v: v, id: String(id) } : { v: v, full: 1 }); if (L.length > 150) L = L.slice(-150);
+    try { p.setProperty('blog_' + en, JSON.stringify(L)); } catch (e) { p.deleteProperty('blog_' + en); }
+  });
+}
 function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
-function onEdit(e) { try { bump_(); } catch (err) {} }
+function onEdit(e) { try { bump_(); bumpB_(true); } catch (err) {} }
 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
@@ -288,6 +301,7 @@ function dedupeOnce_() {
       const seen = {}, gone = [];
       ids.forEach((r, i) => { const k = String(r[0] || ''); if (!k) return; if (seen[k]) gone.push(i + 2); else seen[k] = 1; });
       for (let j = gone.length - 1; j >= 0; j--) s.deleteRow(gone[j]);
+      if (gone.length) bumpB_(true);
       report[env] = gone.length;
       if (gone.length) recountCustomers_();
     });
@@ -353,7 +367,8 @@ function doPost(e) {
   try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') {      // anyone making a bill can do this (with the shop code if one is set)
     if (!codeOk_(body.k)) { const a0 = body.pin ? auth_(body) : { error: 'x' }; if (a0.error) return out_({ ok: false, error: 'need_code' }); }
-    return out_(takeBill_(body));
+    const tb = takeBill_(body); try { if (tb && tb.ok !== false) bumpB_(false, body.bill && body.bill.id); } catch (err) {}
+    return out_(tb);
   }
   const who = auth_(body);
   if (who.error) return out_({ ok: false, error: who.error });
@@ -372,18 +387,18 @@ function doPost(e) {
       case 'setImages': res = setImages_(str_(body.id, 40), String(body.thumb || ''), body.photos, by); break;
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
-      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before }); break;
+      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
-      case 'updateBill': res = updateBill_(body.bill || {}, by); break;
+      case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = listDues_(); break;
-      case 'recordPayment': res = recordPayment_(body, by); break;
-      case 'undoPayment': res = undoPayment_(body); break;
+      case 'recordPayment': res = recordPayment_(body, by); bumpB_(false, body.billId); break;
+      case 'undoPayment': res = undoPayment_(body); bumpB_(false, body.billId); break;
       case 'backupInfo': res = backupInfo_(); break;
       case 'backupNow': res = { backup: backupNow_('manual') , info: backupInfo_() }; break;
-      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), by); break;
-      case 'cancelBill': res = cancelBill_(body, by, true); break;
-      case 'restoreBill': res = cancelBill_(body, by, false); break;
+      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), by); bumpB_(true); break;
+      case 'cancelBill': res = cancelBill_(body, by, true); bumpB_(false, body.id); break;
+      case 'restoreBill': res = cancelBill_(body, by, false); bumpB_(false, body.id); break;
       case 'report': res = report_(body); break;
       case 'listUsers': res = listUsers_(); break;
       case 'saveUser': res = saveUser_(body.user || {}); break;
@@ -485,7 +500,7 @@ function ensureTriggers_() {
 function watchSheet() {
   const changed = DriveApp.getFileById(ss_().getId()).getLastUpdated().getTime();
   const rev = Number(PropertiesService.getScriptProperties().getProperty('rev') || 0);
-  if (changed > rev + 15000) bump_();     // edited by hand after the app's last change
+  if (changed > rev + 15000) { bump_(); bumpB_(true); }     // edited by hand after the app's last change
 }
 
 /* ---------- financial year (April–March, India) ---------- */
@@ -708,6 +723,10 @@ function takeBill_(body) {
  */
 function listBills_(q, limit, opt) {
   opt = opt || {};
+  if (opt.full && opt.brev && opt.brev === brev_()) return { same: true, full: true, brev: opt.brev };   // the phone's copy is already up to date
+  let dIds = null;                                                                                          // only these bills changed since the phone's copy
+  if (opt.full && opt.brev) { const L = blog_(ENV_), k = L.findIndex(e => e.v === opt.brev), later = k >= 0 ? L.slice(k + 1) : [];
+    if (later.length && !later.some(e => e.full || !e.id)) { dIds = {}; later.forEach(e => dIds[e.id] = 1); } }
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) return { bills: [], days: {}, months: {}, all: { count: 0, total: 0 }, years: [], more: false };
@@ -721,12 +740,13 @@ function listBills_(q, limit, opt) {
   const from = /^\d{4}-\d{2}-\d{2}$/.test(opt.from || '') ? opt.from : '';
   const to = /^\d{4}-\d{2}-\d{2}$/.test(opt.to || '') ? opt.to : '';
   const before = Number(opt.before) || 0;
-  const max = Math.min(limit, 200);
+  const max = opt.full ? 3000 : Math.min(limit, 200);   // full: the phone keeps its own copy of recent bills and searches it instantly
   const out = [], days = {}, months = {}, years = {}, all = { count: 0, total: 0 };
   let more = false;
   for (let i = n - 1; i >= 0; i--) {
     const r = a[i].concat(['', ''], b[i]);
     if (r[B.billNo] === '' && r[B.total] === '') continue;
+    if (dIds && !dIds[String(r[B.billId])]) { const d0 = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]), dy = dayOf(d0); if (dy) years[dy.slice(0, 4)] = 1; continue; }
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     const day = dayOf(d);
     if (day) years[day.slice(0, 4)] = 1;
@@ -760,6 +780,8 @@ function listBills_(q, limit, opt) {
       fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || '') });
   }
   const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day] || { count: 0, total: 0 }; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)] || { count: 0, total: 0 }; });
+  if (dIds) return { bills: out, delta: true, full: true, brev: brev_(), years: Object.keys(years).sort().reverse() };
+  if (opt.full) return { bills: out, days: days, months: months, all: all, years: Object.keys(years).sort().reverse(), more: more, full: true, brev: brev_() };
   return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more };
 }
 
@@ -774,7 +796,10 @@ function getBill_(row, id, billNo) {
   let lines = [];
   try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   return { bill: { text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), gst: r[B.gstBill] === 'Yes',
-    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || '') } };
+    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
+    total: num_(r[B.total]), items: String(r[B.items] || ''), cancelled: r[B.status] === 'Cancelled', cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''),
+    cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''),
+    editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), editedBy: String(r[B.editedBy] || ''), ...payOut_(r, B) } };
 }
 
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }

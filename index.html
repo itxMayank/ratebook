@@ -637,6 +637,13 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{bo
 /* ---- v2 tweaks: smaller floating controls, clearer bill items ---- */
 .addbtn{padding:5px 10px;font-size:12.5px}
 .fab{height:48px;padding:0 16px;font-size:15px;gap:4px}
+/* Phones: while the search box is focused but still empty, keep the tab bar and Add button (above the keyboard).
+   They hide once something is typed and results appear. */
+@media (max-width:1023px){
+  body.typing.qe .tabs{display:grid;bottom:calc(var(--kb,0px) + 12px + env(safe-area-inset-bottom,0px))}
+  body.typing.qe .fab{display:flex;bottom:calc(var(--kb,0px) + 98px + env(safe-area-inset-bottom,0px))}
+  body.typing.qe .fab[hidden]{display:none}
+}
 .fab svg{width:19px;height:19px}
 @media (max-width:1023px){
   body{padding-bottom:calc(88px * var(--fz2,1) + env(safe-area-inset-bottom,0px))}
@@ -2377,14 +2384,16 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
 });
 let blurT;
+function syncQe(){ const a=document.activeElement; document.body.classList.toggle("qe", !DESK() && !!a && a.id==="q" && !a.value.trim()); }
 document.addEventListener("focusin",e=>{
+  syncQe();
   if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop
   const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]),textarea")) return;
   clearTimeout(blurT); document.body.classList.add("typing");
   if(el.closest(".top")) return;
   [80,350,700].forEach(d=>setTimeout(()=>{ if(document.activeElement===el) el.scrollIntoView({block:"center",behavior:d<100?"auto":"smooth"}); },d));
 });
-document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=document.activeElement; if(!a || !a.matches("input:not([type=checkbox]),textarea")) document.body.classList.remove("typing"); },200); });
+document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=document.activeElement; if(!a || !a.matches("input:not([type=checkbox]),textarea")) document.body.classList.remove("typing"); syncQe(); },200); });
 
 /* ---------------- Tabs, search, toast ---------------- */
 function setTab(tab){
@@ -2405,11 +2414,11 @@ let netBusy=0; function netTrack(p){ netBusy++; $("#topbar").classList.add("on")
 const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
 let toastT; function toast(msg){ const el=$("#toast"); const place=()=>{ const tb=$("#bill-total"); el.style.bottom = (!DESK() && S.tab==="bill" && tb && !tb.hidden) ? Math.round(innerHeight - tb.getBoundingClientRect().top + 10)+"px" : ""; }; place(); clearInterval(toast._iv); toast._iv=setInterval(place,150); setTimeout(()=>clearInterval(toast._iv),3000); /* keep it just above the total bar while shown */ const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
-$("#q").addEventListener("input",e=>{ onQuery(e.target.value); if(e.target.value) $("#mictip").hidden=true; });
+$("#q").addEventListener("input",e=>{ onQuery(e.target.value); syncQe(); if(e.target.value) $("#mictip").hidden=true; });
 $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);
   else if(DESK() && S.q.trim()){ const top=runSearch(S.q.trim()).res[0]; if(top){ addToBill(top.e.it.id); e.target.value=""; onQuery(""); } }
   else e.target.blur(); } });
-$("#q-clear").onclick=()=>{ $("#q").value=""; onQuery(""); $("#q").focus(); };
+$("#q-clear").onclick=()=>{ $("#q").value=""; onQuery(""); $("#q").focus(); syncQe(); };
 $("#lang-en").onclick=()=>{ S.lang="en"; ls.set("rb_lang","en"); applyLang(); };
 $("#lang-hi").onclick=()=>{ S.lang="hi"; ls.set("rb_lang","hi"); applyLang(); };
 $("#tab-items").onclick=()=>setTab("items"); $("#tab-bill").onclick=()=>{ setTab("bill"); checkRev(); }; $("#tab-tools").onclick=()=>setTab("tools");
@@ -2497,7 +2506,12 @@ function flyToBill(a){
   const pop=()=>{ badge.classList.remove("pop"); tab.classList.remove("nudge"); void badge.offsetWidth; badge.classList.add("pop"); tab.classList.add("nudge"); };
   const reduce=window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!a || (!a.width && !a.height) || reduce || !document.body.animate){ pop(); return; }
-  const b=tab.querySelector("svg").getBoundingClientRect();
+  let b=tab.querySelector("svg").getBoundingClientRect();
+  if(!b.width && !b.height){            // tab bar hidden because the search box was focused: close the keyboard, show the bar, then aim
+    const ae=document.activeElement; if(ae && ae.blur && ae.matches("input,textarea")) ae.blur();
+    document.body.classList.remove("typing"); syncQe(); b=tab.querySelector("svg").getBoundingClientRect();
+    if(!b.width && !b.height){ pop(); return; } }
+  if(vv){ const maxY=vv.offsetTop+vv.height-28; if(b.top>maxY) b={left:b.left,width:b.width,top:maxY,height:b.height}; }   // keyboard still closing: stay on screen
   const x0=a.left+a.width/2, y0=a.top+a.height/2, x1=b.left+b.width/2, y1=b.top+b.height/2;
   const d=document.createElement("div"); d.className="flydot"; d.style.left=x0+"px"; d.style.top=y0+"px"; document.body.appendChild(d);
   const dx=x1-x0, dy=y1-y0;

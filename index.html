@@ -1375,7 +1375,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=8;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=9;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -2107,7 +2107,7 @@ document.addEventListener("keydown",e=>{ if(!DESK() || !e.altKey) return; const 
 function startEdit(b){
   if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
   const kept=!S.editing && S.bill.length;
-  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:+b.edits||0, fy:b.fy||"" }; ls.set("rb_editing",S.editing);
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"" };   // null = edit count not known: don't block the save ls.set("rb_editing",S.editing);
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
   closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
@@ -2133,11 +2133,11 @@ async function saveEdit(opts){
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; }
-  rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
+  if(ed.edits!==null && ed.edits!==undefined) rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
   const btn=$("#bill-done"); btn.disabled=true;
   try{ const j=await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
-    if(opts.keep){ ed.edits=(j.bill&&j.bill.edits)||(+ed.edits||0)+1; ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); }
+    if(opts.keep){ ed.edits=(j.bill&&j.bill.edits)||(ed.edits==null?null:(+ed.edits||0)+1); ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); }
     else { toast(ed.fresh?t("billDoneN",dispNo(ed.n,S.gst,ed.fy)):t("billUpdated",ed.n)); endEdit(); } }
   catch(e){ toast(e&&e.code==="bad_pin"?t("wrongPin"):e&&e.code==="offline"?t("editOffline"):e&&e.code==="bill_changed"?t("billChanged"):e&&e.code==="not_allowed"?t("notAllowed"):t("editFail")); }
   finally{ btn.disabled=false; }
@@ -3517,7 +3517,9 @@ async function showBill(b){
   if(!b) return;
   if(b.text===undefined && b.row){
     openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
-    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); b.text=j.bill.text||""; b.lines=j.bill.lines||[]; }
+    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[];
+      ["edits","fy","igst","custGstin","pos"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // the saved values, so an edit keeps GST details and knows the edit count
+      if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile; }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 8;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 9;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -763,7 +763,8 @@ function getBill_(row, id, billNo) {
   if ((id && String(r[B.billId]) !== String(id)) || (!id && num_(r[B.billNo]) !== num_(billNo))) throw new Error('bill_moved');
   let lines = [];
   try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
-  return { bill: { text: String(r[B.text] || ''), lines: lines } };
+  return { bill: { text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), gst: r[B.gstBill] === 'Yes',
+    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || '') } };
 }
 
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }
@@ -861,7 +862,8 @@ function listDues_() {
     if (String(r[B.customer]).trim()) c.name = String(r[B.customer]).trim();
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     c.due = r2_(c.due + due); total = r2_(total + due); count++;
-    c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]), items: String(r[B.items] || ''), gst: r[B.gstBill] === 'Yes' });
+    c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]), items: String(r[B.items] || ''), gst: r[B.gstBill] === 'Yes',
+      edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || '') });
   }
   list.forEach(c => { c.oldest = c.bills.length ? c.bills[0].date : ''; });
   list.sort((x, y) => y.due - x.due);

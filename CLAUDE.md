@@ -223,6 +223,10 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Search clearing**: switching tabs (`setTab` to a different tab) empties the search, including the Past bills and Credit screen searches (`BL.q`, `duesQ`). Adding an item from the Bill tab search, or from the desktop list while searching, clears the box and results; on phones it also closes the keyboard and flashes the new line. On the Prices tab the search stays after "+ Bill", so several results can be added.
 - **Main search x (`#q-clear`)** is a small grey circle (`.search .iconbtn.clear`). It used to inherit the white icon colour of the mic button and was invisible on the white search box.
 - **Clear (x) on every search box**: `addSearchX()` wraps any `input[type=search]` (except `#q`, which has `#q-clear`) and adds an x. A MutationObserver applies it to boxes drawn later in sheets. The x fires an `input` event, so the box's own handler runs.
+- **Editing a bill opened from the Credit screen**: the credit list (`listDues_`) used to leave out `edits`, `fy`, `igst`, `custGstin` and `pos`. The app then assumed 0 edits, so any bill that had been saved once (for example after Share) failed with "someone else changed it". GSTIN and IGST could also be lost on edit. Now:
+  - `listDues_` and `getBill_` return those fields, and `showBill` merges them from `getBill`.
+  - `startEdit` stores `edits:null` when the count is unknown, and `saveEdit` then skips the `baseEdits` check rather than blocking the save.
+  - `SCRIPT_VERSION` 9 / `NEED_SV` 9.
 - **Reports**: always open on **Today** (`openReports` resets `RP.k`). Tapping a top item expands `rpItemDetail()`, which shows:
   - number of bills, quantity and sales
   - average selling price (sales ÷ qty, with the sum written out)

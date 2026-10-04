@@ -689,6 +689,29 @@ html.fz-big .tot-row .iconbtn{width:34px;height:34px}
 /* price and number boxes: centred */
 .bill-line.flash{animation:flash 1.1s ease-out}
 @keyframes flash{0%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 45%,transparent);background:var(--accent-soft)}100%{box-shadow:0 0 0 0 transparent}}
+/* Open (held) bills: a chip per bill, only shown when more than one bill is open */
+.heldrow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 10px;margin:0 -2px;scroll-snap-type:x proximity}
+.heldrow::-webkit-scrollbar{display:none}
+.heldrow[hidden]{display:none}
+.hchip{flex:none;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:92px;max-width:170px;padding:7px 12px 7px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.hchip .hn{font-weight:700;font-size:14px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hchip .ht{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.hchip .ht b{color:inherit;font-weight:700}
+.hchip.on{background:var(--ink);border-color:var(--ink);color:var(--ink-fg)}
+.hchip.on .ht{color:var(--ink-fg);opacity:.75}
+.hchip .old{position:absolute;top:-6px;right:8px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--warn,#c98a00);color:#fff}
+.hchip.add{min-width:0;justify-content:center;align-items:center;flex-direction:row;gap:4px;border-style:dashed;color:var(--muted);font-weight:700;font-size:14px}
+.hchip:active{transform:scale(.97)}
+.chip-t.newb{display:inline-flex;align-items:center;gap:4px;color:var(--ink);border-style:dashed}
+.chip-t.newb[hidden]{display:none}
+#bh-no{white-space:nowrap}
+.bi-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.bi-head .chip-t.newb{padding:6px 12px;font-size:13px}
+.addto{display:flex;align-items:center;gap:6px;white-space:nowrap;min-width:0;max-width:100%;overflow:hidden;box-sizing:border-box;margin:0 0 8px;padding:6px 12px;border-radius:12px;background:var(--accent-soft);color:var(--ink);font-size:13px;font-weight:600;border:0;width:100%;text-align:left;cursor:pointer}
+.addto[hidden]{display:none}
+.addto .at-l{flex:none;color:var(--muted)}
+.addto .at-n{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:0 1 auto}
+.addto .at-m{flex:none;margin-left:auto;color:var(--muted);font-weight:700;white-space:nowrap}
 /* Cash given -> change to return */
 .cashrow{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;border-top:1px dashed var(--line);padding-top:8px}
 .cash-in{display:flex;align-items:center;gap:4px;flex:none;font-size:12px;font-weight:600;color:var(--muted)}
@@ -967,6 +990,7 @@ html.fz-big .bill-line .step input{width:40px}
     <div class="ro lockline" id="ro-note" hidden><span data-t="readOnly2">View only. Unlock editing to change prices.</span><button class="btn ghost" data-act="unlock" data-t="unlockBtn">Unlock</button><button type="button" class="x" id="ro-x" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
     <div id="setup-wrap"></div>
     <div id="cmdhint-wrap"></div>
+    <div class="addto" id="addto" role="button" tabindex="0" hidden></div>
     <div class="fchips" id="fchips" role="group" aria-label="Filter"></div>
     <div class="meta"><span id="meta-l"></span><span id="meta-r"></span></div>
     <div id="suggest"></div>
@@ -979,6 +1003,7 @@ html.fz-big .bill-line .step input{width:40px}
   <section id="view-bill" hidden>
     <div class="editbar" id="editbar" hidden><span id="editbar-t"></span><button type="button" class="btn ghost" id="edit-cancel" data-t="cancelEdit">Cancel editing</button></div>
     <div id="bill-search-results" class="mini-results"></div>
+    <div class="heldrow" id="heldrow" hidden role="tablist" aria-label="Open bills"></div>
     <div class="billhead" id="billhead">
       <div class="bh-row">
         <button type="button" class="bh-no" id="bh-no-btn"><span data-t="billNoL">Bill No.</span><b class="num" id="bh-no">1</b><i id="bh-manual" hidden></i></button>
@@ -1011,7 +1036,7 @@ html.fz-big .bill-line .step input{width:40px}
     </div>
     <div class="envnote" id="bill-envnote" hidden></div>
     <div class="lastbill" id="lastbill" hidden></div>
-    <h2 class="section-title" data-t="billItems">Bill items</h2>
+    <div class="bi-head"><h2 class="section-title" data-t="billItems">Bill items</h2><button type="button" class="chip-t newb" id="bill-new" hidden><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-t="newBillChip">New bill</span></button></div>
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
@@ -1281,7 +1306,8 @@ Object.assign(STR.hi,{testBadge:"टेस्ट",envT:"टेस्ट मो�
   envYesLive:"हाँ, असली बिलिंग शुरू करें",envYesTest:"हाँ, टेस्ट मोड करें",envLiveNow:"असली बिलिंग चालू है। बिल नंबर 1 से शुरू।",envTestNow:"टेस्ट मोड चालू है।",
   envBanner:"टेस्ट मोड: अभी बने बिल अभ्यास के बिल हैं।",testBillLine:"_TEST BILL (practice, not a real invoice)_",envNumsNote:"ये नंबर टेस्ट बिलों के हैं। असली बिलों के नंबर अलग हैं।"});
 /* Credit (udhaar) strings */
-Object.assign(STR.en,{cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amount",clearX:"Clear",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
+Object.assign(STR.en,{newBillChip:"New bill",heldNew:"New",heldEmpty:"New bill",heldItems:n=>`${n} item${n===1?"":"s"}`,heldOld:"old",heldToast:n=>`${n} kept aside. Tap it on top to go back.`,heldMax:n=>`${n} bills are already open. Finish or remove one first.`,heldDelQ:"Remove this open bill?",heldDelD:"Its items will be removed. No bill number is used.",heldDelYes:"Yes, remove",heldDeleted:"Open bill removed.",addingTo:"Adding to:",heldMore:n=>`+${n} open`,heldNoteEditing:n=>`#${n} · editing`,
+cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amount",clearX:"Clear",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
   creditNeeds:"Name and mobile are needed for a credit bill.",recvBad:"Enter the amount received now (less than the total).",recvAll:"That's the full amount. Choose Paid instead.",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
   duesT:"Credit (Udhaar)",duesD:"Who owes money, and record payments",duesSum:(a,n)=>`${a} pending · ${n} customer${n===1?"":"s"}`,duesNone:"Nobody owes anything right now.",duesFrom:(n,b)=>`from ${n} customer${n===1?"":"s"} · ${b} bill${b===1?"":"s"}`,
@@ -1293,7 +1319,8 @@ Object.assign(STR.en,{cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",
   remindMsg:(name,shop,amt,lines)=>`Namaste${name?" "+name:""},\nThis is a reminder from ${shop||"us"}. ${amt} is pending on the bill${lines.split("Bill No.").length>2?"s":""} below.\n\n${lines}\n\n*Total due: ${amt}*\nThank you.`,
   payUpdate:(d,p,b)=>`_Payment update (${d}): paid ${p}, balance due ${b}_`,payUpdateDone:d=>`_Fully paid on ${d}. Thank you._`,
   pillDue:a=>`Due ${a}`,pillCleared:"Paid later",pendingHint:a=>`${a} pending`,duesTabHint:"Bills on credit or part paid show up here. Mark a bill as Credit or Part paid on the bill screen."});
-Object.assign(STR.hi,{cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें",cashShort:"कम हैं",cashExact:"पूरे पैसे",clearX:"साफ़ करें",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
+Object.assign(STR.hi,{newBillChip:"नया बिल",heldNew:"नया",heldEmpty:"नया बिल",heldItems:n=>`${n} सामान`,heldOld:"पुराना",heldToast:n=>`${n} अलग रखा गया। वापस जाने के लिए ऊपर उस पर दबाएँ।`,heldMax:n=>`${n} बिल पहले से खुले हैं। पहले कोई एक पूरा करें या हटाएँ।`,heldDelQ:"यह खुला बिल हटाएँ?",heldDelD:"इसका सामान हट जाएगा। कोई बिल नंबर इस्तेमाल नहीं होगा।",heldDelYes:"हाँ, हटाएँ",heldDeleted:"खुला बिल हटा दिया।",addingTo:"इसमें जुड़ रहा:",heldMore:n=>`+${n} खुले`,heldNoteEditing:n=>`#${n} · बदल रहे`,
+cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें",cashShort:"कम हैं",cashExact:"पूरे पैसे",clearX:"साफ़ करें",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
   creditNeeds:"उधार बिल के लिए नाम और मोबाइल ज़रूरी है।",recvBad:"अभी मिली राशि डालें (कुल से कम)।",recvAll:"यह पूरी राशि है। “पूरा मिला” चुनें।",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
   duesT:"उधार खाता",duesD:"किसका कितना बाकी है, और भुगतान दर्ज करें",duesSum:(a,n)=>`${a} बाकी · ${n} ग्राहक`,duesNone:"अभी किसी का कुछ बाकी नहीं है।",duesFrom:(n,b)=>`${n} ग्राहक · ${b} बिल`,
@@ -1892,7 +1919,7 @@ function updateBillTotals(){
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   { const p=payInfo(billTotal()), dc=$("#bill-duechip"); dc.hidden = p.mode==="paid" || !S.bill.length; dc.textContent=t("dueAmt",rs(p.due));
     $("#pay-due").textContent = S.pay==="part" ? t("dueAmt",rs(p.due)) : ""; }
-  renderCash();
+  renderCash(); renderHeld();
   $("#bill-wa").href=waLink();
   const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
   const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing){ $("#editbar-t").textContent = S.editing.fresh ? t("savedBar",dispNo(S.editing.n,S.gst,S.editing.fy)) : t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):""); $("#edit-cancel").textContent = S.editing.fresh ? t("newBill") : t("cancelEdit"); eb.classList.toggle("fresh",!!S.editing.fresh); }
@@ -1941,6 +1968,96 @@ function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.m
   ls.set("rb_pay",S.pay); ls.set("rb_recv",S.recv); $("#pay-recv").value=S.recv; renderPay();
   ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",S.billNoOvr);
   $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin; saveBill(); }
+/* ---------------- Open (held) bills ----------------
+ * Several bills can be open at once on this phone. The one on screen is the normal bill state (S.bill, S.cust …);
+ * the others sit in localStorage "rb_held" (per test/real mode). Nothing is numbered until Done/Share, so whichever
+ * bill finishes first takes the next number in its own series (normal or GST) and there are never gaps. */
+const HELD_MAX=8;
+function heldGet(){ const h=ls.get(envKey("rb_held"),[]); return Array.isArray(h)?h:[]; }
+function heldSet(h){ ls.set(envKey("rb_held"),h); }
+function draftAt(){ let a=ls.get(envKey("rb_draftat"),0); if(!a){ a=Date.now(); ls.set(envKey("rb_draftat"),a); } return a; }
+function draftEmpty(){ return !S.bill.length && !S.cust.trim() && !S.mob.trim() && !S.editing; }
+function snapDraft(){ return { hid:"h"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), at:draftAt(), held:Date.now(),
+  d:{...draftState(), posSel:S.posSel||"", cash:S.cash||""}, editing:S.editing||null, stash:S.editing?ls.get("rb_stash",null):null }; }
+function blankDraft(){
+  S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); S.pendShare=false; ls.set("rb_pshare",0);
+  applyDraft({}); S.cash=""; $("#cash-in").value=""; S.posSel=""; ls.set("rb_pos",""); $("#pos-sel").value="";
+  S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),Date.now());
+}
+function loadDraft(e){
+  applyDraft(e.d||{}); S.cash=(e.d&&e.d.cash)||""; $("#cash-in").value=S.cash; S.posSel=(e.d&&e.d.posSel)||""; ls.set("rb_pos",S.posSel); $("#pos-sel").value=S.posSel;
+  S.editing=e.editing||null; ls.set("rb_editing",S.editing); ls.set("rb_stash",e.stash||null);
+  S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),e.at||Date.now());
+}
+function heldLabel(d,editing){
+  if(d.cust && d.cust.trim()) return d.cust.trim();
+  if(editing && !editing.fresh) return t("heldNoteEditing",dispNo(editing.n,d.gst,editing.fy));
+  if(editing && editing.fresh) return "#"+dispNo(editing.n,d.gst,editing.fy);
+  if(d.mob && d.mob.trim()) return d.mob.trim();
+  const b=d.bill||[]; if(b.length) return lineName(b[0])+(b.length>1?` +${b.length-1}`:"");
+  return t("heldEmpty");
+}
+function heldTotal(d){   // same total the bill would show (GST, round-off), worked out by briefly swapping the bill fields
+  const keep={bill:S.bill,gst:S.gst,igst:S.igst,custGstin:S.custGstin,posSel:S.posSel};
+  try{ S.bill=d.bill||[]; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.posSel=d.posSel||""; return billTotal(); }
+  catch{ return (d.bill||[]).reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0); }
+  finally{ Object.assign(S,keep); } }
+/** Put the bill on screen aside and start an empty one. */
+function newHeldBill(){
+  if(draftEmpty()) return;
+  const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; }
+  const snap=snapDraft(); h.push(snap); heldSet(h);
+  blankDraft(); renderBill(); renderList(); renderHeld();
+  try{ navigator.vibrate && navigator.vibrate(10); }catch{}
+  toast(t("heldToast",heldLabel(snap.d,snap.editing)));
+  if(S.tab==="bill" && !DESK()) window.scrollTo({top:0,behavior:"smooth"});
+}
+/** Bring an open bill back on screen; the current one (if it has anything) goes aside in its place. */
+function resumeHeld(hid){
+  const h=heldGet(); const i=h.findIndex(x=>x.hid===hid); if(i<0) return;
+  const e=h.splice(i,1)[0];
+  if(!draftEmpty()) h.push(snapDraft());
+  heldSet(h); loadDraft(e); renderBill(); renderList(); renderHeld();
+  if(S.tab!=="bill" && !DESK()) setTab("bill");
+}
+function removeHeld(hid){
+  const h=heldGet(), e=h.find(x=>x.hid===hid); if(!e) return;
+  const n=(e.d.bill||[]).length;
+  openSheet(t("heldDelQ"), `<p style="margin:0 0 6px"><b>${esc(heldLabel(e.d,e.editing))}</b> · ${esc(t("heldItems",n))} · ${esc(rs(heldTotal(e.d)))}</p><p class="note" style="margin:0">${esc(t("heldDelD"))}</p>`,
+    `<button class="btn ghost" id="hd-no">${esc(t("cancel"))}</button><button class="btn danger" id="hd-yes">${esc(t("heldDelYes"))}</button>`);
+  $("#hd-no").onclick=closeSheet;
+  $("#hd-yes").onclick=()=>{ heldSet(heldGet().filter(x=>x.hid!==hid)); closeSheet(); renderHeld(); toast(t("heldDeleted")); };
+}
+function renderHeld(){
+  const row=$("#heldrow"); if(!row) return;
+  const h=heldGet();
+  const nb=$("#bill-new"); if(nb) nb.hidden = !!h.length || draftEmpty();
+  const at=$("#addto");
+  if(!h.length){ row.hidden=true; row.innerHTML=""; if(at) at.hidden=true; return; }
+  const today=new Date().toDateString();
+  const cur={hid:"", at:draftAt(), d:draftState(), editing:S.editing, cur:true};
+  const all=[...h,cur].sort((a,b)=>(a.at||0)-(b.at||0));
+  row.hidden=false;
+  row.innerHTML=all.map(e=>{ const n=(e.d.bill||[]).length; const old=!e.cur && new Date(e.held||e.at).toDateString()!==today;
+    return `<button type="button" class="hchip${e.cur?" on":""}" role="tab" aria-selected="${e.cur?"true":"false"}" ${e.cur?"":`data-held="${esc(e.hid)}"`}>${old?`<span class="old">${esc(t("heldOld"))}</span>`:""}<span class="hn">${esc(heldLabel(e.d,e.editing))}</span><span class="ht">${n?`<b class="num">${esc(rs(e.cur?billTotal():heldTotal(e.d)))}</b> · ${esc(t("heldItems",n))}`:"—"}</span></button>`; }).join("")
+    + (draftEmpty()?"":`<button type="button" class="hchip add" id="held-add" aria-label="${esc(t("newBillChip"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${esc(t("heldNew"))}</button>`);
+  const on=row.querySelector(".hchip.on"); if(on && row.scrollWidth>row.clientWidth){ const r=on.offsetLeft-row.clientWidth/2+on.offsetWidth/2; row.scrollLeft=Math.max(0,r); }
+  if(at){ at.hidden=DESK(); at.innerHTML=`<span class="at-l">${esc(t("addingTo"))}</span><span class="at-n">${esc(heldLabel(cur.d,cur.editing))}</span><span class="at-m">${esc(t("heldMore",h.length))} ›</span>`; }
+}
+/* tap = switch, long-press = remove */
+(function(){
+  const row=$("#heldrow"); let lpT=0, lpFired=false;
+  row.addEventListener("pointerdown",e=>{ const c=e.target.closest("[data-held]"); if(!c) return; lpFired=false; clearTimeout(lpT); lpT=setTimeout(()=>{ lpFired=true; try{navigator.vibrate&&navigator.vibrate(20);}catch{} removeHeld(c.dataset.held); },600); });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>row.addEventListener(ev,()=>clearTimeout(lpT)));
+  row.addEventListener("scroll",()=>clearTimeout(lpT),{passive:true});
+  row.addEventListener("contextmenu",e=>{ if(e.target.closest("[data-held]")) e.preventDefault(); });
+  row.addEventListener("click",e=>{ if(e.target.closest("#held-add")){ newHeldBill(); return; }
+    const c=e.target.closest("[data-held]"); if(!c) return; if(lpFired){ lpFired=false; return; } resumeHeld(c.dataset.held); });
+})();
+$("#bill-new").onclick=newHeldBill;
+$("#addto").onclick=()=>setTab("bill");
+document.addEventListener("keydown",e=>{ if(!DESK() || !e.altKey) return; const k=parseInt(e.key,10); if(!(k>=1&&k<=9)) return;
+  const chips=[...document.querySelectorAll("#heldrow .hchip:not(.add)")]; const c=chips[k-1]; if(!c) return; e.preventDefault(); if(c.dataset.held) resumeHeld(c.dataset.held); });
 function startEdit(b){
   if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
   const kept=!S.editing && S.bill.length;
@@ -1948,7 +2065,7 @@ function startEdit(b){
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
   closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
-function endEdit(){ S.cash=""; 
+function endEdit(){ S.cash=""; ls.set(envKey("rb_draftat"),Date.now()); 
   S.editing=null; ls.set("rb_editing",null);
   const st=ls.get("rb_stash",null); ls.set("rb_stash",null);
   applyDraft(st||{}); renderBill(); renderList();
@@ -2017,6 +2134,7 @@ function finishBill(opts){
     renderBill(); renderList(); toast(t("billSavedKeep",dispNo(n,wasGst,curFY())));
     return;
   }
+  ls.set(envKey("rb_draftat"),Date.now());
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));

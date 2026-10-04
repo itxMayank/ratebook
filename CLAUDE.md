@@ -223,6 +223,14 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 - **Search clearing**: switching tabs (`setTab` to a different tab) empties the search, including the Past bills and Credit screen searches (`BL.q`, `duesQ`). Adding an item from the Bill tab search, or from the desktop list while searching, clears the box and results; on phones it also closes the keyboard and flashes the new line. On the Prices tab the search stays after "+ Bill", so several results can be added.
 - **Main search x (`#q-clear`)** is a small grey circle (`.search .iconbtn.clear`). It used to inherit the white icon colour of the mic button and was invisible on the white search box.
 - **Clear (x) on every search box**: `addSearchX()` wraps any `input[type=search]` (except `#q`, which has `#q-clear`) and adds an x. A MutationObserver applies it to boxes drawn later in sheets. The x fires an `input` event, so the box's own handler runs.
+- **Reports**: always open on **Today** (`openReports` resets `RP.k`). Tapping a top item expands `rpItemDetail()`, which shows:
+  - number of bills, quantity and sales
+  - average selling price (sales ÷ qty, with the sum written out)
+  - the prices charged, with qty and bills at each price
+  - average buy price and profit, with the calculation (when `showProfit` is on and buy prices are visible)
+  - a note when some lines had no buy price saved, and a note that GST-bill prices are before GST
+
+  `report_()` in Code.gs now returns per item: `bills, cost, costQty, costAmt, gstQty, min, max, rates[], profit`. Profit uses only lines that saved a buy price. `SCRIPT_VERSION` 8 / `NEED_SV` 8. The Item sales CSV gained Bills, Avg selling price, and (with profit on) Avg buy price and Profit.
 - **Notifications (toast) top-right**: `#toast` slides in from the right edge at the top (springy ease), stays about 2.8 s, then slides back out to the right. It briefly covers the wand and EN/हि buttons, but taps pass through (`pointer-events:none`). On desktop it sits at the right edge of the middle column, left of the bill panel. The CSS override is at the end of the `<style>`.
 - **Most-sold order (default)**: `pop_()` in Code.gs counts, per item id, the number of *real* bills (`Bills` tab, never Test) the item appears on. Quantity doesn't matter, the same item twice on one bill counts once, and cancelled bills don't count. Cached 30 min under `pop:<row count>` (a new bill changes the key), and cleared by `popReset_()` on cancel/restore and bill edits. Returned as `pop` in `list`; `SCRIPT_VERSION` 7 / `NEED_SV` 7.
   - App: `S.pop` (saved in `rb_cache`), `sortItems()` sorts by count, then A–Z. Search keeps relevance first, then count. The order changes only when the list reloads (app open, or a price change from any phone), so cards don't jump mid-bill.

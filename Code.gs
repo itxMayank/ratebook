@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 7;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 8;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1210,10 +1210,18 @@ function report_(body) {
     if (!byDay[day]) byDay[day] = { d: day, sales: 0, bills: 0 };
     byDay[day].sales = r2_(byDay[day].sales + total); byDay[day].bills++;
     let lines = []; try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+    const seenItem = {};
     lines.forEach(l => {
-      const amt = r2_(num_(l.qty) * num_(l.rate)), key = String(l.name || '?') + '|' + String(l.unit || '');
-      if (!items[key]) items[key] = { name: String(l.name || '?'), unit: String(l.unit || ''), qty: 0, amount: 0 };
-      items[key].qty = r2_(items[key].qty + num_(l.qty)); items[key].amount = r2_(items[key].amount + amt);
+      const q = num_(l.qty), rt = num_(l.rate), amt = r2_(q * rt), key = String(l.name || '?') + '|' + String(l.unit || '');
+      if (!items[key]) items[key] = { name: String(l.name || '?'), unit: String(l.unit || ''), qty: 0, amount: 0, bills: 0, cost: 0, costQty: 0, costAmt: 0, gstQty: 0, min: null, max: null, rates: {} };
+      const it = items[key];
+      it.qty = r2_(it.qty + q); it.amount = r2_(it.amount + amt);
+      if (!seenItem[key]) { seenItem[key] = 1; it.bills++; }
+      if (gst) it.gstQty = r2_(it.gstQty + q);
+      if (it.min === null || rt < it.min) it.min = rt; if (it.max === null || rt > it.max) it.max = rt;
+      const rk = String(rt); if (!it.rates[rk]) it.rates[rk] = { rate: rt, qty: 0, bills: 0, _b: {} };
+      const rr = it.rates[rk]; rr.qty = r2_(rr.qty + q); const bk = String(r[B.billId] || r[B.billNo]); if (!rr._b[bk]) { rr._b[bk] = 1; rr.bills++; }
+      if (l.buy !== undefined && l.buy !== null && l.buy !== '' && num_(l.buy) > 0) { it.cost = r2_(it.cost + q * num_(l.buy)); it.costQty = r2_(it.costQty + q); it.costAmt = r2_(it.costAmt + amt); }
     });
     if (gst) {
       T.gstBills++;
@@ -1236,7 +1244,9 @@ function report_(body) {
         taxable: taxable, cgst: igst ? 0 : r2_(tax / 2), sgst: igst ? 0 : r2_(tax / 2), igst: igst ? tax : 0, total: total, status: '' });
     }
   });
-  const itemList = Object.keys(items).map(k => items[k]).sort((a, b) => b.amount - a.amount);
+  const itemList = Object.keys(items).map(k => { const it = items[k];
+    it.rates = Object.keys(it.rates).map(x => { const v = it.rates[x]; return { rate: v.rate, qty: v.qty, bills: v.bills }; }).sort((a, b) => b.qty - a.qty).slice(0, 8);
+    it.profit = it.costQty ? r2_(it.costAmt - it.cost) : null; return it; }).sort((a, b) => b.amount - a.amount);
   return { report: { from: from, to: to, totals: T, byDay: Object.keys(byDay).sort().map(k => byDay[k]), items: itemList.slice(0, 100), itemCount: itemList.length,
     gst: { b2b: g.b2b, b2c: g.b2c, rates: Object.keys(rates).map(k => rates[k]).sort((a, b) => a.rate - b.rate), hsn: Object.keys(hsn).map(k => hsn[k]) },
     received: received, creditGiven: r2_(creditGiven), outstanding: outstanding, register: register.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.no - b.no) } };

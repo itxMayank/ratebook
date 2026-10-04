@@ -819,6 +819,26 @@ html.fz-big .bill-line .step input{width:40px}
 .rp-chart rect.zero{fill:var(--line)}
 .rp-chart text{font:600 8px var(--f-body);fill:var(--muted);text-anchor:middle}
 .rp-items{display:grid;gap:6px}
+.rp-iw{border:1.5px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.rp-iw.open{border-color:var(--ink)}
+.rp-iw .rp-item{border:0;border-radius:0;width:100%;background:none;color:inherit;text-align:left;cursor:pointer;grid-template-columns:24px 1fr auto auto 16px}
+.rp-item .chev{color:var(--muted);transition:transform .2s}
+.rp-iw.open .rp-item .chev{transform:rotate(180deg)}
+.rp-idet{display:grid;gap:8px;padding:4px 12px 12px;border-top:1px dashed var(--line);animation:rpdet .2s ease-out}
+@keyframes rpdet{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.rp-ichips{display:flex;flex-wrap:wrap;gap:6px;padding-top:8px}
+.rp-ichips span{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink)}
+.rp-irow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px}
+.rp-irow span{color:var(--muted);font-weight:600}
+.rp-irow b{font-weight:800}
+.rp-irow b small{font-size:12px;font-weight:600;color:var(--muted)}
+.rp-irow.big b{font:800 20px var(--f-display)}
+.rp-irow.good b{color:var(--good)}
+.rp-irow.neg b{color:var(--danger)}
+.rp-calc{margin:-4px 0 0;font-size:12px;color:var(--muted);text-align:right}
+.rp-rates{display:grid;gap:4px}
+.rp-rates div{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 10px;border-radius:10px;background:var(--surface-2)}
+.rp-rates span{color:var(--muted);font-weight:600}
 .rp-item{display:grid;grid-template-columns:24px 1fr auto auto;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:8px 10px;font-size:14px}
 .rp-item .rk{width:22px;height:22px;border-radius:50%;background:var(--surface-2);font:800 11px/22px var(--f-display);text-align:center}
 .rp-item .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
@@ -1259,7 +1279,11 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpAll:n=>`Show all ${n}`,rpQty:"Qty",rpAmt:"Amount",rpGstT:"GST summary",rpB2B:"B2B (with GSTIN)",rpB2C:"B2C (no GSTIN)",rpByRate:"By rate",rpHsn:"By HSN",rpTaxable:"Taxable",rpNone:"No bills in this period.",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",
+  riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
+  riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
+  riPartial:(a,b,u)=>`Profit counts ${a} of ${b} ${u}; the rest had no buy price saved on the bill.`,riNoBuy:"No buy price was saved on these bills, so profit can't be worked out.",
+  riGstNote:"On GST bills the price is before GST.",riOld:"Update the Apps Script (New version) to see price and profit details.",rpAll:n=>`Show all ${n}`,rpQty:"Qty",rpAmt:"Amount",rpGstT:"GST summary",rpB2B:"B2B (with GSTIN)",rpB2C:"B2C (no GSTIN)",rpByRate:"By rate",rpHsn:"By HSN",rpTaxable:"Taxable",rpNone:"No bills in this period.",
   rpExport:"Files for your CA",rpReg:"Invoice register",rpHsnCsv:"HSN summary",rpItemsCsv:"Item-wise sales",rpExportD:"CSV files open in Excel or Google Sheets. GST bills only, except item-wise sales.",
   pplT:"People & PINs",pplD:"Give each person their own PIN. Their name is filled in automatically and their role decides what they can do.",pplAdd:"Add person",pplNone:"Only the shop PIN is in use.",pplEdit:"Edit",pplName:"Name",pplPin:"PIN (4–8 digits)",pplNewPin:"New PIN (leave empty to keep)",pplRole:"Role",pplActive:"Active",pplRemove:"Remove",pplSaved:"Saved.",pplTaken:"That PIN is already used. Pick another.",
   roleOwnerD:"Everything: prices, settings, people, backups.",roleManagerD:"Prices, bills, credit and reports. No settings.",roleStaffD:"Bills and collecting credit only.",
@@ -1267,7 +1291,11 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpAll:n=>`सभी ${n} देखें`,rpQty:"मात्रा",rpAmt:"राशि",rpGstT:"GST सार",rpB2B:"B2B (GSTIN वाले)",rpB2C:"B2C (बिना GSTIN)",rpByRate:"दर के हिसाब से",rpHsn:"HSN के हिसाब से",rpTaxable:"कर योग्य",rpNone:"इस समय में कोई बिल नहीं।",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",
+  riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
+  riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
+  riPartial:(a,b,u)=>`मुनाफ़ा ${b} में से ${a} ${u} पर गिना गया; बाकी बिलों में खरीद रेट सेव नहीं था।`,riNoBuy:"इन बिलों में खरीद रेट सेव नहीं था, इसलिए मुनाफ़ा नहीं निकल सकता।",
+  riGstNote:"GST बिलों में रेट GST से पहले का है।",riOld:"रेट और मुनाफ़ा देखने के लिए Apps Script अपडेट करें (New version)।",rpAll:n=>`सभी ${n} देखें`,rpQty:"मात्रा",rpAmt:"राशि",rpGstT:"GST सार",rpB2B:"B2B (GSTIN वाले)",rpB2C:"B2C (बिना GSTIN)",rpByRate:"दर के हिसाब से",rpHsn:"HSN के हिसाब से",rpTaxable:"कर योग्य",rpNone:"इस समय में कोई बिल नहीं।",
   rpExport:"CA के लिए फ़ाइलें",rpReg:"इनवॉइस रजिस्टर",rpHsnCsv:"HSN सार",rpItemsCsv:"सामान के हिसाब से बिक्री",rpExportD:"CSV फ़ाइलें Excel या Google Sheets में खुलती हैं। सामान वाली को छोड़कर सिर्फ़ GST बिल।",
   pplT:"लोग और PIN",pplD:"हर व्यक्ति को अपना PIN दें। नाम अपने-आप भरेगा और भूमिका तय करेगी कि वे क्या कर सकते हैं।",pplAdd:"व्यक्ति जोड़ें",pplNone:"अभी सिर्फ़ दुकान का PIN चल रहा है।",pplEdit:"बदलें",pplName:"नाम",pplPin:"PIN (4–8 अंक)",pplNewPin:"नया PIN (वही रखना हो तो ख़ाली छोड़ें)",pplRole:"भूमिका",pplActive:"चालू",pplRemove:"हटाएँ",pplSaved:"सेव हो गया।",pplTaken:"यह PIN पहले से इस्तेमाल में है। दूसरा चुनें।",
   roleOwnerD:"सब कुछ: रेट, सेटिंग, लोग, बैकअप।",roleManagerD:"रेट, बिल, उधार और रिपोर्ट। सेटिंग नहीं।",roleStaffD:"सिर्फ़ बिल और उधार वसूली।",
@@ -1347,7 +1375,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=7;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=8;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -2318,9 +2346,10 @@ function rpRange(k){
   if(k==="lastFy") return [isoDay(fyStart(fyy-1)),isoDay(new Date(fyy,2,31))];
   return null;
 }
-let RP={k:"month",from:"",to:"",data:null,allItems:false};
+let RP={k:"today",from:"",to:"",data:null,allItems:false,open:""};
 function openReports(){
   if(!can("manager")){ toast(t("notAllowed")); return; }
+  RP.k="today"; RP.open=""; RP.allItems=false;   // always opens on Today
   const chips=[["today","rpToday"],["yest","rpYest"],["week","rpWeek"],["month","rpMonth"],["lastMonth","rpLastMonth"],["fy","rpFy"],["lastFy","rpLastFy"],["custom","rpCustom"]];
   openSheet(t("repT"), `<div class="rp">
     <div class="fchips" id="rp-chips">${chips.map(([k,l])=>`<button type="button" class="fchip" data-rp="${k}" aria-pressed="${RP.k===k}">${esc(t(l))}</button>`).join("")}</div>
@@ -2362,7 +2391,8 @@ function renderReport(){
     ${T.cancelled?`<p class="note" style="margin:0">${esc(t("rpCancelled",T.cancelled))}</p>`:""}
     <h3 class="rp-h">${esc(t("rpTrend"))}</h3>${rpChart(R.byDay)}
     <h3 class="rp-h">${esc(t("rpTop"))}</h3>
-    <div class="rp-items">${items.map((it,i)=>`<div class="rp-item"><span class="rk">${i+1}</span><span class="nm">${esc(it.name)}</span><span class="q num">${esc(fmtN(it.qty))} ${esc(unitL(it.unit))}</span><b class="num">${rs(it.amount)}</b></div>`).join("")}</div>
+    <p class="rp-sub" style="margin:0">${esc(t("rpTapItem"))}</p>
+    <div class="rp-items">${items.map((it,i)=>{ const k=it.name+"|"+it.unit, open=RP.open===k; return `<div class="rp-iw${open?" open":""}"><button type="button" class="rp-item" data-rpi="${esc(k)}" aria-expanded="${open}"><span class="rk">${i+1}</span><span class="nm">${esc(it.name)}</span><span class="q num">${esc(fmtN(it.qty))} ${esc(unitL(it.unit))}</span><b class="num">${rs(it.amount)}</b><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>${open?rpItemDetail(it):""}</div>`; }).join("")}</div>
     ${!RP.allItems&&R.items.length>10?`<button type="button" class="btn ghost" id="rp-allitems">${esc(t("rpAll",R.itemCount))}</button>`:""}
     ${T.gstBills?`<h3 class="rp-h">${esc(t("rpGstT"))}</h3>
       ${gt([[t("rpB2B"),G.b2b.count,rs(G.b2b.taxable),rs(G.b2b.cgst),rs(G.b2b.sgst),rs(G.b2b.igst)],[t("rpB2C"),G.b2c.count,rs(G.b2c.taxable),rs(G.b2c.cgst),rs(G.b2c.sgst),rs(G.b2c.igst)]],["",t("rpBills"),t("rpTaxable"),"CGST","SGST","IGST"])}
@@ -2372,7 +2402,37 @@ function renderReport(){
     <div class="row-btns" style="justify-content:flex-start">${T.gstBills?`<button type="button" class="btn ghost" data-csv="reg">${esc(t("rpReg"))}</button><button type="button" class="btn ghost" data-csv="hsn">${esc(t("rpHsnCsv"))}</button>`:""}<button type="button" class="btn ghost" data-csv="items">${esc(t("rpItemsCsv"))}</button></div>
     <p class="note" style="margin:0">${esc(t("rpExportD"))}</p>`;
   if($("#rp-allitems")) $("#rp-allitems").onclick=()=>{ RP.allItems=true; renderReport(); };
+  box.querySelectorAll("[data-rpi]").forEach(b=>b.onclick=()=>{ const k=b.dataset.rpi; RP.open = RP.open===k ? "" : k;
+    const sc=$("#sheet-body"), top=b.getBoundingClientRect().top; renderReport();
+    const nb=[...document.querySelectorAll("[data-rpi]")].find(x=>x.dataset.rpi===k); if(nb && sc){ sc.scrollTop += nb.getBoundingClientRect().top - top; } });
   box.querySelectorAll("[data-csv]").forEach(b=>b.onclick=()=>exportCsv(b.dataset.csv));
+}
+/* One item's detail in the report: how many bills, average price, the prices charged, buy cost and profit. */
+const rsx=n=>{ const v=Math.round((+n||0)*100)/100; return Number.isInteger(v)?rs(v):rs2(v); };
+function rpItemDetail(it){
+  const u=unitL(it.unit)||"", per=t("riPer",u||"unit");
+  if(it.bills===undefined) return `<div class="rp-idet"><div class="rp-irow"><span>${esc(t("riAvgSell"))}</span><b class="num">${rsx(it.qty?it.amount/it.qty:0)} <small>${esc(per)}</small></b></div><p class="note" style="margin:0">${esc(t("riOld"))}</p></div>`;
+  const avg=it.qty?it.amount/it.qty:0;
+  const showPf=!!S.cfg.showProfit && !hideBuy();
+  const row=(l,v,cls)=>`<div class="rp-irow${cls?" "+cls:""}"><span>${esc(l)}</span><b class="num">${v}</b></div>`;
+  let h=`<div class="rp-idet">
+    <div class="rp-ichips"><span>${esc(t("riBills",it.bills))}</span><span>${esc(t("riSold"))} ${esc(fmtN(it.qty))} ${esc(u)}</span><span>${esc(t("riSales"))} ${esc(rs(it.amount))}</span></div>
+    ${row(t("riAvgSell"),`${rsx(avg)} <small>${esc(per)}</small>`,"big")}
+    <p class="rp-calc num">${esc(rs(it.amount))} ÷ ${esc(fmtN(it.qty))} ${esc(u)} = ${esc(rsx(avg))}</p>`;
+  if(it.rates && it.rates.length>1){
+    h+=`<p class="rp-sub" style="margin:2px 0 0">${esc(t("riRange",rsx(it.min),rsx(it.max)))}</p><div class="rp-rates">${it.rates.map(r=>`<div><b class="num">${rsx(r.rate)}</b><span>${esc(t("riRateRow",fmtN(r.qty),u,r.bills))}</span></div>`).join("")}</div>`;
+  }
+  if(showPf){
+    if(it.costQty>0){
+      const avgBuy=it.cost/it.costQty, pf=it.profit, mg=it.cost>0?Math.round(pf/it.cost*1000)/10:null;
+      h+=row(t("riAvgBuy"),`${rsx(avgBuy)} <small>${esc(per)}</small>`);
+      h+=row(t("riProfit"),`${pf<0?"−":""}${rsx(Math.abs(pf))}${mg!=null?` <small>· ${mg}%</small>`:""}`,pf<0?"neg":"good");
+      h+=`<p class="rp-calc num">${esc(fmtN(it.costQty))} ${esc(u)} × (${esc(rsx(it.costAmt/it.costQty))} − ${esc(rsx(avgBuy))}) = ${esc((pf<0?"−":"")+rsx(Math.abs(pf)))}</p>`;
+      if(it.costQty < it.qty-1e-9) h+=`<p class="note" style="margin:0">${esc(t("riPartial",fmtN(it.costQty),fmtN(it.qty),u))}</p>`;
+    } else h+=`<p class="note" style="margin:0">${esc(t("riNoBuy"))}</p>`;
+  }
+  if(it.gstQty>0) h+=`<p class="note" style="margin:0">${esc(t("riGstNote"))}</p>`;
+  return h+`</div>`;
 }
 function exportCsv(kind){
   const R=RP.data; if(!R) return;
@@ -2380,7 +2440,8 @@ function exportCsv(kind){
   let rows, name;
   if(kind==="reg"){ name="invoice-register"; rows=[["Date","Invoice No","Customer","GSTIN","Place of supply","Taxable value","CGST","SGST","IGST","Invoice total","Status"]].concat(R.register.map(r=>[r.date,(fyOn()&&r.fy?fyShort(r.fy)+"/":"")+r.no,r.customer,r.gstin,r.pos,r.taxable,r.cgst,r.sgst,r.igst,r.total,r.status])); }
   else if(kind==="hsn"){ name="hsn-summary"; rows=[["HSN","GST rate %","Quantity","Taxable value","Total tax"]].concat(R.gst.hsn.map(h=>[h.hsn,h.rate,h.qty,h.taxable,h.tax])); }
-  else { name="item-sales"; rows=[["Item","Unit","Quantity","Amount"]].concat(R.items.map(i=>[i.name,i.unit,i.qty,i.amount])); }
+  else { name="item-sales"; const pf=!!S.cfg.showProfit && !hideBuy(); const r2=v=>Math.round(v*100)/100;
+    rows=[["Item","Unit","Quantity","Amount","Bills","Avg selling price"].concat(pf?["Avg buy price","Profit"]:[])].concat(R.items.map(i=>[i.name,i.unit,i.qty,i.amount,i.bills==null?"":i.bills,i.qty?r2(i.amount/i.qty):""].concat(pf?[i.costQty?r2(i.cost/i.costQty):"",i.profit==null?"":i.profit]:[]))); }
   const csv="﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n");
   shareFile(new Blob([csv],{type:"text/csv"}), `${name}_${R.from||"all"}_to_${R.to||"all"}.csv`, `${S.cfg.shopName||"Rate Book"} · ${name}`);
 }

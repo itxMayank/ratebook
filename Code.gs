@@ -26,14 +26,15 @@ const IMAGES = 'Images';
 let ENV_ = 'live';
 function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
 function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos'];
 
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs'];
 const MAX_PHOTOS = 5;   // photos per item; each is its own cell in the Images tab (under 48,000 characters, below Google's 50,000 per cell)
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
-const MAX_FAILS = 8;           // wrong PIN tries allowed …
+const MAX_FAILS = 8;           // wrong PIN tries allowed per phone …
+const GLOBAL_MAX_FAILS = 60;   // … and for the whole shop per hour (stops guessing by rotating phones)
 const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
 
 /* ---------- setup & helpers ---------- */
@@ -114,7 +115,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'rev': return out_({ ok: true, rev: getRev_() });
-      case 'list': ensureEnv_(); dedupeOnce_(); return out_(list_());
+      case 'list': { ensureEnv_(); dedupeOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
       case 'images': return out_(images_(String(p.id || '')));
@@ -266,6 +267,7 @@ function recountCustomers_() {
   const stat = {};
   if (n > 0) bs.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
     const k = mob10_(r[B.mobile]); if (!k) return;
+    if (r[B.status] === 'Cancelled') return;
     const x = stat[k] || (stat[k] = { bills: 0, total: 0, last: '', lastNo: '', due: 0 });
     x.bills++; x.total = r2_(x.total + num_(r[B.total])); x.last = r[B.date]; x.lastNo = r[B.billNo];
     if (r[B.payment] === 'Credit' || r[B.payment] === 'Part paid') x.due = r2_(x.due + num_(r[B.due]));
@@ -291,6 +293,10 @@ function readConfig_() {
   cfg.testNextBill = Math.max(1, Math.floor(num_(cfg.testNextBill)) || 1);
   cfg.testNextGstBill = Math.max(1, Math.floor(num_(cfg.testNextGstBill)) || 1);
   cfg.mode = cfg.mode === 'live' ? 'live' : 'test';
+  cfg.fyReset = !(cfg.fyReset === false || String(cfg.fyReset).toLowerCase() === 'false');
+  cfg.gstFy = String(cfg.gstFy || ''); cfg.testGstFy = String(cfg.testGstFy || '');
+  cfg.fyNow = fy_(new Date());
+  cfg.shopState = String(cfg.shopState || '');
   cfg.showProfit = cfg.showProfit === true || String(cfg.showProfit).toLowerCase() === 'true';
   cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
   cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
@@ -304,16 +310,21 @@ function doPost(e) {
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
   try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
-  if (body.action === 'takeBill') return out_(takeBill_(body));   // anyone making a bill can do this, no PIN
-  const auth = checkPin_(body.pin);
-  if (auth !== 'ok') return out_({ ok: false, error: auth });
+  if (body.action === 'takeBill') {      // anyone making a bill can do this (with the shop code if one is set)
+    if (!codeOk_(body.k)) { const a0 = body.pin ? auth_(body) : { error: 'x' }; if (a0.error) return out_({ ok: false, error: 'need_code' }); }
+    return out_(takeBill_(body));
+  }
+  const who = auth_(body);
+  if (who.error) return out_({ ok: false, error: who.error });
+  if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
+  if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
-    const by = str_(body.by, 60);
+    const by = who.name || str_(body.by, 60);
     let res = {};
     switch (body.action) {
-      case 'verify': break;
+      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master }, view: viewCode_() }; break;
       case 'upsert': res = upsert_(body.items || [], by); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
@@ -323,17 +334,25 @@ function doPost(e) {
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
-      case 'updateBill': res = updateBill_(body.bill || {}, str_(body.by, 60)); break;
+      case 'updateBill': res = updateBill_(body.bill || {}, by); break;
       case 'listDues': res = listDues_(); break;
-      case 'recordPayment': res = recordPayment_(body, str_(body.by, 60)); break;
+      case 'recordPayment': res = recordPayment_(body, by); break;
       case 'undoPayment': res = undoPayment_(body); break;
       case 'backupInfo': res = backupInfo_(); break;
       case 'backupNow': res = { backup: backupNow_('manual') , info: backupInfo_() }; break;
-      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), str_(body.by, 60)); break;
+      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), by); break;
+      case 'cancelBill': res = cancelBill_(body, by, true); break;
+      case 'restoreBill': res = cancelBill_(body, by, false); break;
+      case 'report': res = report_(body); break;
+      case 'listUsers': res = listUsers_(); break;
+      case 'saveUser': res = saveUser_(body.user || {}); break;
+      case 'removeUser': res = removeUser_(String(body.id || '')); break;
+      case 'getAccess': res = getAccess_(); break;
+      case 'setAccess': res = setAccess_(!!body.on, !!body.regen); break;
       case 'setBackupEmail': res = setBackupEmail_(String(body.email || '')); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (body.action !== 'verify' && body.action !== 'listBills' && body.action !== 'findCustomer' && body.action !== 'getBill' && body.action !== 'listDues' && body.action !== 'backupInfo' && body.action !== 'backupNow' && body.action !== 'setBackupEmail') bump_();
+    if (['verify', 'listBills', 'findCustomer', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -342,14 +361,98 @@ function doPost(e) {
   }
 }
 
-function checkPin_(pin) {
+/* ---------- people, roles and PINs ----------
+ * The shop PIN (script property PIN) always works and means "owner" (the name is typed on the phone).
+ * Personal PINs live in script property USERS as [{id, name, h (salted SHA-256), role, active}]; the name comes from the PIN.
+ * Roles: owner (everything), manager (prices, bills, credit, reports), staff (bills and credit only).
+ * Wrong PINs lock only that phone (dev id) after MAX_FAILS in 15 min; GLOBAL_MAX_FAILS per hour locks everyone.
+ */
+const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
+const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
+  upsert: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
+  setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
+  listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
+function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
+function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
+function salt_() { const p = PropertiesService.getScriptProperties(); let v = p.getProperty('SALT'); if (!v) { v = Utilities.getUuid(); p.setProperty('SALT', v); } return v; }
+function hashPin_(pin) { return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt_() + ':' + pin)); }
+function auth_(body) {
   const cache = CacheService.getScriptCache();
-  const fails = Number(cache.get('fails') || 0);
-  if (fails >= MAX_FAILS) return 'locked';
-  const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
-  if (String(pin || '') === real) return 'ok';
-  cache.put('fails', String(fails + 1), FAIL_WINDOW_SEC);
-  return 'bad_pin';
+  const dev = String(body.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40) || 'nodev';
+  const g = Number(cache.get('gfails') || 0), d = Number(cache.get('fails_' + dev) || 0);
+  if (g >= GLOBAL_MAX_FAILS || d >= MAX_FAILS) return { error: 'locked' };
+  const pin = String(body.pin || '');
+  if (pin) {
+    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
+    if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true };
+    const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
+    if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id };
+  }
+  cache.put('fails_' + dev, String(d + 1), FAIL_WINDOW_SEC);
+  cache.put('gfails', String(g + 1), 3600);
+  return { error: 'bad_pin' };
+}
+/** Kept for older callers: 'ok' or an error code. */
+function checkPin_(pin) { const a = auth_({ pin: pin }); return a.error || 'ok'; }
+
+function listUsers_() { return { users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false })) }; }
+function saveUser_(u) {
+  const list = users_();
+  const name = str_(u.name || '', 40).trim(); if (!name) throw new Error('need_name');
+  const role = ROLE_RANK[u.role] ? u.role : 'staff';
+  let x = u.id ? list.filter(y => y.id === u.id)[0] : null;
+  const pin = String(u.pin || '');
+  if (!x && !/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
+  if (pin) {
+    if (!/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
+    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
+    const h = hashPin_(pin);
+    if (pin === real || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
+    if (x) x.h = h;
+  }
+  if (x) { x.name = name; x.role = role; x.active = u.active !== false; }
+  else { list.push({ id: Utilities.getUuid().slice(0, 8), name: name, h: hashPin_(pin), role: role, active: true }); }
+  saveUsers_(list);
+  return listUsers_();
+}
+function removeUser_(id) { saveUsers_(users_().filter(u => u.id !== id)); return listUsers_(); }
+
+/* ---------- shop code: hides buy rates and blocks bill saving for anyone who only has the link ---------- */
+function viewCode_() { return PropertiesService.getScriptProperties().getProperty('VIEW_CODE') || ''; }
+function getAccess_() { const c = viewCode_(); return { access: { on: !!c, code: c } }; }
+function setAccess_(on, regen) {
+  const p = PropertiesService.getScriptProperties();
+  if (!on) { p.deleteProperty('VIEW_CODE'); return getAccess_(); }
+  if (regen || !viewCode_()) {
+    const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = '';
+    for (let i = 0; i < 6; i++) c += abc.charAt(Math.floor(Math.random() * abc.length));
+    p.setProperty('VIEW_CODE', c);
+  }
+  return getAccess_();
+}
+function codeOk_(k) { const c = viewCode_(); return !c || String(k || '').toUpperCase() === c; }
+
+/* ---------- hand edits in the sheet: a 5-minute check tells phones to reload ---------- */
+function ensureTriggers_() {
+  const cache = CacheService.getScriptCache();
+  if (cache.get('TRIG_OK') === '1') return;
+  try {
+    if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(5).create();
+    cache.put('TRIG_OK', '1', 21600);
+  } catch (err) { cache.put('TRIG_OK', '1', 3600); }   // needs the one-time setupBackups permission; try again in an hour
+}
+function watchSheet() {
+  const changed = DriveApp.getFileById(ss_().getId()).getLastUpdated().getTime();
+  const rev = Number(PropertiesService.getScriptProperties().getProperty('rev') || 0);
+  if (changed > rev + 15000) bump_();     // edited by hand after the app's last change
+}
+
+/* ---------- financial year (April–March, India) ---------- */
+function fy_(d) {
+  const s = Utilities.formatDate(d || new Date(), BK_TZ, 'yyyy-MM');
+  const y = Number(s.slice(0, 4)), m = Number(s.slice(5, 7));
+  const start = m >= 4 ? y : y - 1;
+  return start + '-' + String(start + 1).slice(2);
 }
 
 function upsert_(items, by) {
@@ -359,11 +462,13 @@ function upsert_(items, by) {
   const now = Date.now();
   const saved = [];
   const appended = [];
+  const conflicts = [];
   items.slice(0, 300).forEach(it => {
     if (!it || typeof it !== 'object') return;
     const id = it.id && rowOf[it.id] !== undefined ? String(it.id) : null;
     if (id) {
       const r = values[rowOf[id]];
+      if (it.base && num_(r[C.updatedAt]) > num_(it.base)) { conflicts.push({ id: id, by: str_(r[C.updatedBy], 60), at: num_(r[C.updatedAt]) }); return; }
       ['name', 'nameHi', 'unit'].forEach(k => { if (it[k] !== undefined) r[C[k]] = str_(it[k], k === 'unit' ? 30 : 200); });
       ['buy', 'sell'].forEach(k => { if (it[k] !== undefined && it[k] !== null) r[C[k]] = num_(it[k]); });
       if (it.hsn !== undefined) { const h = hsn_(it.hsn); r[C.hsn] = h ? "'" + h : ''; }
@@ -389,7 +494,7 @@ function upsert_(items, by) {
     }
   });
   if (appended.length) s.getRange(s.getLastRow() + 1, 1, appended.length, COLS.length).setValues(appended);
-  return { items: saved };
+  return { items: saved, conflicts: conflicts };
 }
 
 function pub_(r, tmp) {
@@ -463,7 +568,7 @@ function images_(id) {
 
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
@@ -471,6 +576,7 @@ function setConfig_(cfg) {
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
     if (k === 'showProfit') val = cfg[k] === true || cfg[k] === 'true' ? 'true' : 'false';
     if (k === 'mode') val = cfg[k] === 'live' ? 'live' : 'test';
+    if (k === 'fyReset') val = cfg[k] === false || cfg[k] === 'false' ? 'false' : 'true';
     if (k === 'nextBill' || k === 'nextGstBill' || k === 'testNextBill' || k === 'testNextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
     if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
@@ -499,10 +605,39 @@ function takeBill_(body) {
         if (ids.some(r => String(r[0]) === String(b0.id))) return { ok: true, dup: true, rev: getRev_(), config: readConfig_() };
       }
     }
-    const used = Math.floor(num_(body.n));
-    let key = (body.bill && body.bill.gst) ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
+    let used = Math.floor(num_(body.n));
+    const isGst = !!(body.bill && body.bill.gst);
+    let key = isGst ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
-    const cur = readConfig_()[key];
+    const cfg0 = readConfig_(), fyNow = fy_(new Date());
+    let cur = cfg0[key];
+    const fyKey = ENV_ === 'test' ? 'testGstFy' : 'gstFy';
+    if (isGst && cfg0.fyReset && cfg0[fyKey] !== fyNow) {
+      if (!cfg0[fyKey]) { const o = {}; o[fyKey] = fyNow; setConfig_(o); }                  // first run: just note the current year
+      else { cur = 1; const o = {}; o[key] = 1; o[fyKey] = fyNow; setConfig_(o); }          // new financial year: GST invoices start again from 1
+    }
+    // Two phones (or a hand-typed number) can pick a number that's already used in this series: give the next free one
+    let renumbered = null;
+    if (used > 0) {
+      const bs = sheet_(tab_('Bills'), BILL_COLS), bn = bs.getLastRow() - 1;
+      if (bn > 0) {
+        const BI = BILL_COLS.reduce((m, k2, i2) => (m[k2] = i2, m), {});
+        const nos = bs.getRange(2, 1, bn, 2).getValues(), gcol = bs.getRange(2, BI.gstBill + 1, bn, 1).getValues(), fcol = bs.getRange(2, BI.fy + 1, bn, 1).getValues();
+        const taken = {};
+        for (let i = 0; i < bn; i++) {
+          if ((gcol[i][0] === 'Yes') !== isGst) continue;
+          if (isGst && cfg0.fyReset && (String(fcol[i][0] || '') || fy_(nos[i][1] instanceof Date ? nos[i][1] : new Date(nos[i][1]))) !== fyNow) continue;
+          taken[num_(nos[i][0])] = 1;
+        }
+        if (taken[used]) {
+          let nn = Math.max(cur, used + 1); while (taken[nn]) nn++;
+          renumbered = { from: used, to: nn };
+          const b1 = body.bill;
+          if (b1.text && b1.noLine) b1.text = String(b1.text).replace(String(b1.noLine), String(b1.noLine).replace(String(b1.noToken || used), String(b1.noToken || used).replace(new RegExp(used + '$'), String(nn))));
+          used = nn;
+        }
+      }
+    }
     const next = used >= cur ? used + 1 : cur;
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
@@ -511,12 +646,12 @@ function takeBill_(body) {
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
-        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60)))));
+        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60))), [fyNow, '', '', '', '', str_(b.pos || '', 40)]));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       try { refreshDue_(b.mobile); } catch (err) {}
     }
     bump_();
-    return { ok: true, rev: getRev_(), config: readConfig_() };
+    return { ok: true, rev: getRev_(), config: readConfig_(), renumbered: renumbered };
   } catch (err) {
     return { ok: false, error: String(err && err.message || err) };
   } finally {
@@ -563,12 +698,15 @@ function listBills_(q, limit, opt) {
       if (!hit) continue;
     }
     const k = day || 'unknown';
+    const cancelled = r[B.status] === 'Cancelled';
+    if (!cancelled) {
     if (!days[k]) days[k] = { count: 0, total: 0 };
     days[k].count += 1; days[k].total = Math.round((days[k].total + num_(r[B.total])) * 100) / 100;
     const mk = k.slice(0, 7);
     if (!months[mk]) months[mk] = { count: 0, total: 0 };
     months[mk].count += 1; months[mk].total = Math.round((months[mk].total + num_(r[B.total])) * 100) / 100;
     all.count += 1; all.total = Math.round((all.total + num_(r[B.total])) * 100) / 100;
+    }
     if (before && i + 2 >= before) continue;
     if (out.length >= max) { more = true; continue; }
     out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), day: k, customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
@@ -577,9 +715,10 @@ function listBills_(q, limit, opt) {
       igst: r[B.igst] === 'IGST',
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
-      cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B) });
+      cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B),
+      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || '') });
   }
-  const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day]; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)]; });
+  const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day] || { count: 0, total: 0 }; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)] || { count: 0, total: 0 }; });
   return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more };
 }
 
@@ -610,12 +749,15 @@ function updateBill_(b, by) {
   if (i < 0 && b.row) { const k = Number(b.row) - 2; if (k >= 0 && k < vals.length && num_(vals[k][B.billNo]) === num_(b.n)) i = k; }
   if (i < 0) throw new Error('bill_not_found');
   const r = vals[i];
+  if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
+  if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) throw new Error('bill_changed');   // someone else saved it after this phone opened it
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
   r[B.items] = str_(b.items, 3000); r[B.gstBill] = b.gst ? 'Yes' : 'No';
   r[B.taxable] = b.gst ? num_(b.taxable) : ''; r[B.tax] = b.gst ? num_(b.tax) : '';
   r[B.customerGstin] = str_(b.custGstin, 20); r[B.igst] = b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '';
+  if (b.pos !== undefined) r[B.pos] = str_(b.pos || '', 40);
   r[B.text] = safe(String(b.text || '').slice(0, 45000));
   r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
@@ -678,6 +820,7 @@ function listDues_() {
     const r = a[i].concat(new Array(B.billId - B.gstBill - 1).fill(''), b[i]);
     const st = String(r[B.payment] || '');
     if (st !== 'Credit' && st !== 'Part paid') continue;
+    if (r[B.status] === 'Cancelled') continue;
     const due = num_(r[B.due]); if (!(due > 0)) continue;
     const k = mob10_(r[B.mobile]) || ('name:' + String(r[B.customer]).trim().toLowerCase());
     if (!map[k]) { map[k] = { mobile: mob10_(r[B.mobile]), name: '', due: 0, bills: [] }; list.push(map[k]); }
@@ -712,7 +855,7 @@ function recordPayment_(body, by) {
     targets = [i];
   } else {
     const want = mob10_(body.mobile); if (!want) throw new Error('bad_mobile');
-    for (let i = 0; i < n; i++) if (mob10_(vals[i][B.mobile]) === want && num_(vals[i][B.due]) > 0 && (vals[i][B.payment] === 'Credit' || vals[i][B.payment] === 'Part paid')) targets.push(i);
+    for (let i = 0; i < n; i++) if (mob10_(vals[i][B.mobile]) === want && num_(vals[i][B.due]) > 0 && vals[i][B.status] !== 'Cancelled' && (vals[i][B.payment] === 'Credit' || vals[i][B.payment] === 'Part paid')) targets.push(i);
   }
   let left = amount, cleared = 0, mob = '';
   const note = str_(body.note || '', 120);
@@ -763,7 +906,8 @@ function refreshDue_(mobile) {
   if (n > 0) {
     const mobs = s.getRange(2, B.mobile + 1, n, 1).getValues();
     const pd = s.getRange(2, B.payment + 1, n, 3).getValues();                 // payment, paid, due
-    for (let i = 0; i < n; i++) if (mob10_(mobs[i][0]) === k && (pd[i][0] === 'Credit' || pd[i][0] === 'Part paid')) due += num_(pd[i][2]);
+    const stc = s.getRange(2, B.status + 1, n, 1).getValues();
+    for (let i = 0; i < n; i++) if (mob10_(mobs[i][0]) === k && stc[i][0] !== 'Cancelled' && (pd[i][0] === 'Credit' || pd[i][0] === 'Part paid')) due += num_(pd[i][2]);
   }
   const cs = customersSheet_(), row = custRow_(cs, k);
   if (row > 0) cs.getRange(row, CUST_COLS.indexOf('due') + 1).setValue(r2_(due));
@@ -979,4 +1123,87 @@ function weeklyMail_(force) {
   props.setProperty('BK_MAIL_LAST', new Date().toISOString());
   props.deleteProperty('BK_MAIL_ERR');
   return true;
+}
+
+
+/* ---------- cancel a bill (GST-friendly: the number stays used, the bill is marked Cancelled with a reason) ---------- */
+function cancelBill_(body, by, cancel) {
+  const s = sheet_(tab_('Bills'), BILL_COLS);
+  const n = s.getLastRow() - 1;
+  if (n < 1) throw new Error('bill_not_found');
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  let i = body.id ? vals.findIndex(r => String(r[B.billId]) === String(body.id)) : -1;
+  if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
+  if (i < 0) throw new Error('bill_not_found');
+  const r = vals[i];
+  if (cancel) {
+    const reason = str_(body.reason || '', 120).trim(); if (!reason) throw new Error('need_reason');
+    s.getRange(i + 2, B.status + 1, 1, 4).setValues([['Cancelled', new Date(), by, reason]]);
+  } else s.getRange(i + 2, B.status + 1, 1, 4).setValues([['', '', '', '']]);
+  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, (cancel ? 'CANCELLED: ' + str_(body.reason || '', 120) : 'RESTORED') ]);
+  try { recountCustomers_(); } catch (err) {}
+  return { bill: { id: String(r[B.billId] || ''), cancelled: cancel } };
+}
+
+/* ---------- reports: sales, items, GST summary and the invoice register for a date range ---------- */
+function report_(body) {
+  const tz = isFinite(Number(body.tz)) ? Number(body.tz) : -330;
+  const dayOf = d => isNaN(d) ? '' : new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
+  const from = String(body.from || ''), to = String(body.to || '');
+  const s = sheet_(tab_('Bills'), BILL_COLS);
+  const n = s.getLastRow() - 1;
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const T = { bills: 0, sales: 0, taxable: 0, tax: 0, profit: 0, cost: 0, profitBills: 0, cancelled: 0, gstBills: 0 };
+  const byDay = {}, items = {}, rates = {}, hsn = {};
+  const g = { b2b: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 }, b2c: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 } };
+  const register = [];
+  let received = 0, creditGiven = 0, outstanding = 0;
+  if (n > 0) s.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
+    const day = dayOf(d);
+    const st = String(r[B.payment] || '');
+    const isCan = r[B.status] === 'Cancelled';
+    if (!isCan && (st === 'Credit' || st === 'Part paid')) outstanding = r2_(outstanding + num_(r[B.due]));
+    payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd && (!from || pd >= from) && (!to || pd <= to) && !isCan) received = r2_(received + num_(p.a)); });
+    if (!day || (from && day < from) || (to && day > to)) return;
+    const gst = r[B.gstBill] === 'Yes';
+    if (isCan) { T.cancelled++; if (gst) register.push({ date: day, no: num_(r[B.billNo]), fy: String(r[B.fy] || ''), customer: String(r[B.customer] || ''), gstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0, status: 'Cancelled' }); return; }
+    const total = num_(r[B.total]);
+    T.bills++; T.sales = r2_(T.sales + total);
+    if (r[B.profit] !== '' && r[B.profit] !== null) { T.profit = r2_(T.profit + num_(r[B.profit])); T.cost = r2_(T.cost + num_(r[B.cost])); T.profitBills++; }
+    if ((st === 'Credit' || st === 'Part paid')) { const pays = payList_(r[B.payments]); creditGiven = r2_(creditGiven + total - pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); }
+    if (!byDay[day]) byDay[day] = { d: day, sales: 0, bills: 0 };
+    byDay[day].sales = r2_(byDay[day].sales + total); byDay[day].bills++;
+    let lines = []; try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+    lines.forEach(l => {
+      const amt = r2_(num_(l.qty) * num_(l.rate)), key = String(l.name || '?') + '|' + String(l.unit || '');
+      if (!items[key]) items[key] = { name: String(l.name || '?'), unit: String(l.unit || ''), qty: 0, amount: 0 };
+      items[key].qty = r2_(items[key].qty + num_(l.qty)); items[key].amount = r2_(items[key].amount + amt);
+    });
+    if (gst) {
+      T.gstBills++;
+      const taxable = num_(r[B.taxable]), tax = num_(r[B.tax]), igst = r[B.igst] === 'IGST';
+      T.taxable = r2_(T.taxable + taxable); T.tax = r2_(T.tax + tax);
+      const bucket = String(r[B.customerGstin] || '').trim() ? g.b2b : g.b2c;
+      bucket.count++; bucket.taxable = r2_(bucket.taxable + taxable); bucket.total = r2_(bucket.total + total);
+      if (igst) bucket.igst = r2_(bucket.igst + tax); else { bucket.cgst = r2_(bucket.cgst + tax / 2); bucket.sgst = r2_(bucket.sgst + tax / 2); }
+      lines.forEach(l => {
+        const amt = r2_(num_(l.qty) * num_(l.rate)), rate = num_(l.gst), t = r2_(amt * rate / 100);
+        const rk = String(rate);
+        if (!rates[rk]) rates[rk] = { rate: rate, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
+        rates[rk].taxable = r2_(rates[rk].taxable + amt);
+        if (igst) rates[rk].igst = r2_(rates[rk].igst + t); else { rates[rk].cgst = r2_(rates[rk].cgst + t / 2); rates[rk].sgst = r2_(rates[rk].sgst + t / 2); }
+        const hk = String(l.hsn || '') + '|' + rk;
+        if (!hsn[hk]) hsn[hk] = { hsn: String(l.hsn || ''), rate: rate, qty: 0, taxable: 0, tax: 0 };
+        hsn[hk].qty = r2_(hsn[hk].qty + num_(l.qty)); hsn[hk].taxable = r2_(hsn[hk].taxable + amt); hsn[hk].tax = r2_(hsn[hk].tax + t);
+      });
+      register.push({ date: day, no: num_(r[B.billNo]), fy: String(r[B.fy] || ''), customer: String(r[B.customer] || ''), gstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''),
+        taxable: taxable, cgst: igst ? 0 : r2_(tax / 2), sgst: igst ? 0 : r2_(tax / 2), igst: igst ? tax : 0, total: total, status: '' });
+    }
+  });
+  const itemList = Object.keys(items).map(k => items[k]).sort((a, b) => b.amount - a.amount);
+  return { report: { from: from, to: to, totals: T, byDay: Object.keys(byDay).sort().map(k => byDay[k]), items: itemList.slice(0, 100), itemCount: itemList.length,
+    gst: { b2b: g.b2b, b2c: g.b2c, rates: Object.keys(rates).map(k => rates[k]).sort((a, b) => a.rate - b.rate), hsn: Object.keys(hsn).map(k => hsn[k]) },
+    received: received, creditGiven: r2_(creditGiven), outstanding: outstanding, register: register.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.no - b.no) } };
 }

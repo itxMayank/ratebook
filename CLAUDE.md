@@ -227,6 +227,57 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   3. else switch to Prices;
   4. else show "Press back again to exit", and a second press within 2 s leaves the app.
 
+## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
+
+**Security**
+- **Wrong PINs** are counted per phone (`dev`, a random id kept in `rb_dev` and sent with every request): `MAX_FAILS` (8) per 15 minutes locks that phone only. `GLOBAL_MAX_FAILS` (60) per hour locks everyone.
+- **Shop code** (script property `VIEW_CODE`, owner sets it in Settings → Shop code):
+  - Without it, `GET list` returns `buy:null` with `limited:true`, and `takeBill` returns `need_code`.
+  - The phone sends `k` (`rb_view`) on list requests and bills. Unlocked phones get the code from `verify` automatically.
+  - Locked phones see a "Enter the shop code" card (`#code-note`).
+
+**People and roles**
+- **Personal PINs:** script property `USERS` = `[{id, name, h, role, active}]`, where `h` is a salted SHA-256 (salt in property `SALT`). The shop PIN still works and means owner (name typed).
+- **Roles:**
+  - owner: everything
+  - manager: prices, bills, credit, undo payment, cancel, reports
+  - staff: bills, past bills, credit and collecting payments
+- `NEEDS` maps each action to the minimum role; `not_allowed` otherwise.
+- `verify` returns `{me:{name, role, personal}, view}`. `refreshMe()` re-checks once per app start (role changes, removed PINs lock the phone).
+- The app gates price editing with `can("manager")` and settings with `can("owner")`.
+
+**Correctness**
+- **Hand edits:** `ensureTriggers_()` (from `GET list`) installs a 5-minute `watchSheet` trigger. It bumps rev when Drive's last-updated time is newer than rev + 15 s. This needs the permission from running `setupBackups` once.
+- **Duplicate bill numbers:** `takeBill` checks the series (normal or GST; GST within the financial year). If the number is taken, it uses the next free one, rewrites the number in the stored text (the phone sends `noLine`/`noToken`) and returns `renumbered:{from,to}`. The phone shows "Bill number changed". A number typed below the next auto number shows a warning.
+- **Share** no longer saves the bill straight away. It sets `rb_pshare`; when the app is visible or focused again, `askSent()` asks "Did the bill go on WhatsApp?" (Yes saves, No keeps editing). It also asks on next start if the app was closed.
+- **Conflicts:** item edits send `base` (`updatedAt` when opened). The server skips stale rows and returns `conflicts:[{id, by}]`, and the phone reloads. Bill edits send `baseEdits`; the server throws `bill_changed` if someone else saved since.
+- **Queue bar** (`#queuebar`): "N bills waiting to send · Send now", or red when the shop code is needed.
+- **Cancel bill** (manager+): `cancelBill`/`restoreBill` set `status='Cancelled'`, `cancelledAt`, `cancelledBy` and `cancelReason`, plus a BillHistory row. Cancelled bills are left out of totals, dues, customer stats and reports, can't be edited, show struck through, and their text and PDF are marked CANCELLED.
+
+**GST**
+- **Financial year:**
+  - Bills store `fy` ('2026-27'). Config `fyReset` (default on) restarts the GST series each April (`gstFy`/`testGstFy` track the year; the first run only records it).
+  - GST numbers are shown as `26-27/7` (`dispNo()`), and the WhatsApp text says "Invoice No: …".
+  - Normal bills keep counting.
+- **Place of supply** (`posCode()`/`posLabel()`):
+  - Taken from the customer's GSTIN state, else the state picked for IGST (`#pos-sel`), else the shop state (Settings → Shop's state, or the first 2 digits of the shop GSTIN).
+  - Entering an out-of-state GSTIN switches IGST on.
+  - Stored in the `pos` column and shown on the text and PDF.
+- **PDF invoice** (Bill screen ⌄ → PDF; Past bill → PDF):
+  - Built with jsPDF + AutoTable, bundled as `pdf.js` next to `index.html` and loaded on first use (then cached by the service worker).
+  - Contents: shop and customer details, item table with HSN, tax lines, round off, amount in words, HSN summary, paid/balance for credit, and a TEST banner in test mode.
+  - Shared through the phone's share sheet (`navigator.share` with files), or downloaded.
+  - ASCII only (₹ becomes "Rs.").
+
+**Reports** (Tools → Reports, manager+), `report` action:
+- Periods: today, yesterday, this week, this month, last month, this FY, last FY, or custom.
+- Shows: sales, bills, average, GST, profit, credit received / given / pending, daily trend chart, top items, and a GST summary (B2B/B2C, by rate, by HSN).
+- CSV exports: invoice register, HSN summary, item-wise sales (Excel-friendly, with a BOM).
+
+**Sheet changes**
+- New `Bills` columns: `fy`, `status`, `cancelledAt`, `cancelledBy`, `cancelReason`, `pos`.
+- New script properties: `USERS`, `SALT`, `VIEW_CODE`.
+
 ## How to update
 
 - **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-3`).

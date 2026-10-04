@@ -23,7 +23,7 @@ Paste your link between the quotes and save.
 ## 3. Put the app online (free)
 
 1. Sign in at github.com and create a new **public** repository, for example `ratebook`.
-2. Choose **Add file → Upload files** and drag in every file from this folder (`index.html`, `sw.js`, `manifest.webmanifest` and all the `.png` icons). Press **Commit**.
+2. Choose **Add file → Upload files** and drag in every file from this folder (`index.html`, `pdf.js`, `sw.js`, `manifest.webmanifest` and all the `.png` icons). Press **Commit**.
 3. Go to **Settings → Pages**. Under *Branch*, pick `main` and `/ (root)`, then press **Save**.
 4. After a minute your app is at `https://<your-username>.github.io/ratebook/`.
 
@@ -46,7 +46,7 @@ In the Apps Script editor, pick **setupBackups** in the function list at the top
 
 ## Good to know
 
-- You can also edit prices directly in the Google Sheet's **Items** tab. Phones pick up the change within about 30 seconds.
+- You can also edit prices directly in the Google Sheet's **Items** tab. Phones pick up the change within about 5 minutes (needs the one-time **setupBackups** run, which also allows this check).
 - Without internet the app shows the last prices it saw. Saving changes needs internet.
 - After 8 wrong PIN tries in 15 minutes, saving is blocked for everyone until the 15 minutes are up.
 - If you ever change `Code.gs`, use **Deploy → Manage deployments → Edit → Version: New version** so the link stays the same.

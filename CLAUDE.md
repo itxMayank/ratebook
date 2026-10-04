@@ -249,7 +249,14 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 **Correctness**
 - **Hand edits:** `ensureTriggers_()` (from `GET list`) installs a 5-minute `watchSheet` trigger. It bumps rev when Drive's last-updated time is newer than rev + 15 s. This needs the permission from running `setupBackups` once.
 - **Duplicate bill numbers:** `takeBill` checks the series (normal or GST; GST within the financial year). If the number is taken, it uses the next free one, rewrites the number in the stored text (the phone sends `noLine`/`noToken`) and returns `renumbered:{from,to}`. The phone shows "Bill number changed". A number typed below the next auto number shows a warning.
-- **Share** no longer saves the bill straight away. It sets `rb_pshare`; when the app is visible or focused again, `askSent()` asks "Did the bill go on WhatsApp?" (Yes saves, No keeps editing). It also asks on next start if the app was closed.
+- **Share saves the bill straight away and keeps it open:**
+  - `finishBill({keep:true})` records it (queued as usual) and turns the screen into a "fresh" saved bill: `S.editing.fresh`, with `sig` holding the content at save time. A green bar says "Bill 7 is saved. Changes here update it.", with a "New bill" button.
+  - Changes after that update the same bill. If it's still queued, `saveEdit` replaces it in the queue; otherwise it sends `updateBill` with `fresh:true`, which doesn't set the Edited marker.
+  - On return from WhatsApp, `askSent()` asks "Did it go?": Yes saves any changes and clears the screen; No keeps it.
+  - Done / New bill with no changes just clears.
+  - If the server renumbers the bill, the open bill's number updates too.
+  - Waiting bills are retried when the connection returns and on each 25-second check.
+- **Script version:** `SCRIPT_VERSION` in Code.gs is returned as `sv` by list. If it's below `NEED_SV` in the app, managers and owners see an "Update the sheet script" note, and `bad_action` errors say how to deploy a New version (they used to say "check your connection").
 - **Conflicts:** item edits send `base` (`updatedAt` when opened). The server skips stale rows and returns `conflicts:[{id, by}]`, and the phone reloads. Bill edits send `baseEdits`; the server throws `bill_changed` if someone else saved since.
 - **Queue bar** (`#queuebar`): "N bills waiting to send · Send now", or red when the shop code is needed.
 - **Cancel bill** (manager+): `cancelBill`/`restoreBill` set `status='Cancelled'`, `cancelledAt`, `cancelledBy` and `cancelReason`, plus a BillHistory row. Cancelled bills are left out of totals, dues, customer stats and reports, can't be edited, show struck through, and their text and PDF are marked CANCELLED.

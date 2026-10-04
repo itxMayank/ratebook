@@ -14,6 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
+const SCRIPT_VERSION = 6;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -115,7 +116,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'rev': return out_({ ok: true, rev: getRev_() });
-      case 'list': { ensureEnv_(); dedupeOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); return out_(L); }
+      case 'list': { ensureEnv_(); dedupeOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
       case 'images': return out_(images_(String(p.id || '')));
@@ -762,7 +763,8 @@ function updateBill_(b, by) {
   r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
   r[B.cost] = costOut_(b.cost); r[B.profit] = costOut_(b.profit);
-  r[B.editedAt] = new Date(); r[B.editedBy] = by; r[B.edits] = num_(r[B.edits]) + 1;
+  if (!b.fresh) { r[B.editedAt] = new Date(); r[B.editedBy] = by; }   // fresh: tweaks right after sharing, not an edit of an old bill
+  r[B.edits] = num_(r[B.edits]) + 1;
   const oldMob = vals[i][B.mobile];
   { const pays = payList_(r[B.payments]), later = pays.filter(p => !p.at), atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
     const mode = b.pay ? b.pay : modeOf_(r[B.payment], pays);
@@ -773,7 +775,7 @@ function updateBill_(b, by) {
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
   try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) {}
   try { refreshDue_(b.mobile); if (mob10_(oldMob) !== mob10_(b.mobile)) refreshDue_(oldMob); } catch (err) {}
-  return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt].toISOString(), edits: r[B.edits] } };
+  return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
 }
 
 /* ---------- credit (udhaar) ----------

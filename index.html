@@ -723,6 +723,9 @@ html.fz-big .bill-line .step input{width:40px}
   .tabs .badge{box-shadow:0 0 0 2px var(--nav-bg)}
 }
 .toast{background:var(--toast-bg);color:var(--toast-fg)}
+.editbar.fresh{background:color-mix(in srgb,var(--good) 12%,var(--surface));color:var(--fg);border-color:var(--good)}
+.svnote{display:grid;gap:4px;font-size:13px;background:color-mix(in srgb,var(--danger) 10%,var(--surface));color:var(--fg);border:1.5px solid color-mix(in srgb,var(--danger) 40%,transparent);border-radius:14px;padding:10px 12px;margin:4px 0}
+.svnote b{color:var(--danger)}
 .queuebar{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:999px;padding:6px 8px 6px 12px;margin:4px 0}
 .queuebar .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none}
 .queuebar.bad{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
@@ -917,6 +920,7 @@ html.fz-big .bill-line .step input{width:40px}
 </header>
 
 <main>
+  <div class="svnote" id="sv-note" hidden></div>
   <div class="queuebar" id="queuebar" hidden></div>
   <div class="netbar" id="netbar" hidden><span class="dot"></span><span id="net-txt"></span><button id="net-refresh" data-t="refresh">Refresh</button></div>
   <div id="install-wrap"></div>
@@ -1190,6 +1194,10 @@ Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pd
   pplT:"लोग और PIN",pplD:"हर व्यक्ति को अपना PIN दें। नाम अपने-आप भरेगा और भूमिका तय करेगी कि वे क्या कर सकते हैं।",pplAdd:"व्यक्ति जोड़ें",pplNone:"अभी सिर्फ़ दुकान का PIN चल रहा है।",pplEdit:"बदलें",pplName:"नाम",pplPin:"PIN (4–8 अंक)",pplNewPin:"नया PIN (वही रखना हो तो ख़ाली छोड़ें)",pplRole:"भूमिका",pplActive:"चालू",pplRemove:"हटाएँ",pplSaved:"सेव हो गया।",pplTaken:"यह PIN पहले से इस्तेमाल में है। दूसरा चुनें।",
   roleOwnerD:"सब कुछ: रेट, सेटिंग, लोग, बैकअप।",roleManagerD:"रेट, बिल, उधार और रिपोर्ट। सेटिंग नहीं।",roleStaffD:"सिर्फ़ बिल और उधार वसूली।",
   accT:"दुकान का कोड",accD:"कोड के बिना, जिसके पास सिर्फ़ ऐप का लिंक है वह ख़रीद रेट नहीं देख पाएगा और बिल सेव नहीं कर पाएगा। अनलॉक किए फ़ोनों को यह अपने-आप मिल जाता है।",accOn:"दुकान का कोड ज़रूरी करें",accShare:"कोड भेजें",accNew:"नया कोड",accMsg:c=>`Rate Book दुकान का कोड: ${c}`});
+Object.assign(STR.en,{oldScript:"The Google Sheet script is older than this app. Owner: in Apps Script choose Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy.",svT:"Update the sheet script",
+  savedBar:n=>`Bill ${n} is saved. Changes here update it.`,newBill:"New bill",billSavedKeep:n=>`Bill ${n} saved.`,billDoneN:n=>`Bill ${n} done.`});
+Object.assign(STR.hi,{oldScript:"Google शीट की स्क्रिप्ट इस ऐप से पुरानी है। मालिक: Apps Script में Deploy → Manage deployments → Edit (पेंसिल) → Version: New version → Deploy करें।",svT:"शीट की स्क्रिप्ट अपडेट करें",
+  savedBar:n=>`बिल ${n} सेव है। यहाँ बदलाव करने से वही बिल बदलेगा।`,newBill:"नया बिल",billSavedKeep:n=>`बिल ${n} सेव हुआ।`,billDoneN:n=>`बिल ${n} पूरा।`});
 /* Back-button strings */
 Object.assign(STR.en,{backExit:"Press back again to exit"});
 Object.assign(STR.hi,{backExit:"बाहर जाने के लिए फिर से Back दबाएँ"});
@@ -1259,6 +1267,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
+const NEED_SV=6;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1765,7 +1774,8 @@ function curBillNo(){ if(S.editing) return S.editing.n; const o=Math.floor(+S.bi
 const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
 const fmtDT=d=>{ const x=new Date(d); return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+", "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
 function billDateStr(){ return S.editing && S.editing.date ? fmtDate(S.editing.date) : fmtDate(Date.now()); }
-function editedLine(){ return S.editing ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
+function editedLine(){ return S.editing && !S.editing.fresh ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
+const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel]);
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
@@ -1841,9 +1851,9 @@ function updateBillTotals(){
     $("#pay-due").textContent = S.pay==="part" ? t("dueAmt",rs(p.due)) : ""; }
   $("#bill-wa").href=waLink();
   const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
-  const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing) $("#editbar-t").textContent=t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):"");
-  $("#bill-done").textContent = S.editing ? t("saveShort") : t("billDone");
-  $("#wa-label").textContent = S.editing ? t("saveShareShort") : t("shareShort");
+  const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing){ $("#editbar-t").textContent = S.editing.fresh ? t("savedBar",dispNo(S.editing.n,S.gst,S.editing.fy)) : t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):""); $("#edit-cancel").textContent = S.editing.fresh ? t("newBill") : t("cancelEdit"); eb.classList.toggle("fresh",!!S.editing.fresh); }
+  $("#bill-done").textContent = S.editing && !(S.editing.fresh && draftSig()===S.editing.sig) ? t("saveShort") : t("billDone");
+  $("#wa-label").textContent = S.editing && !(S.editing.fresh && draftSig()===S.editing.sig) ? t("saveShareShort") : t("shareShort");
   $("#bh-no").textContent = curBillDisp();
   const man=!S.editing && Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo(); $("#bh-manual").hidden=!man; if(man) $("#bh-manual").textContent=t("manualNo");
   const au=$("#bill-auto"); const ovr=!S.editing && Math.floor(+S.billNoOvr)>=1 && Math.floor(+S.billNoOvr)!==autoBillNo();
@@ -1856,7 +1866,7 @@ function updateBillTotals(){
   renderLastBill();
 }
 function renderLastBill(){
-  const el=$("#lastbill"), lb=S.lastBill;
+  const el=$("#lastbill"), lb=(S.editing && S.lastBill && S.editing.fresh) ? null : S.lastBill;   // the saved bill is already on screen
   if(!lb){ el.hidden=true; return; }
   el.hidden=false;
   el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a><button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
@@ -1899,26 +1909,49 @@ function endEdit(){
   const st=ls.get("rb_stash",null); ls.set("rb_stash",null);
   applyDraft(st||{}); renderBill(); renderList();
 }
-async function saveEdit(){
+async function saveEdit(opts){
+  opts=opts||{};
+  const ed=S.editing;
+  if(!opts.keep && ed.fresh && draftSig()===ed.sig){ const n=dispNo(ed.n,S.gst,ed.fy); endEdit(); toast(t("billDoneN",n)); return; }   // nothing changed since Share
+  if(ed.fresh){ const qi=S.billQ.findIndex(q=>q.id===ed.id);
+    if(qi>=0){   // still waiting to be sent: just replace it in the queue
+      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env }); ls.set("rb_billq",S.billQ); flushBills();
+      if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
+      return; } }
   if(navigator.onLine===false){ toast(t("editOffline")); return; }
-  const g=S.gst?gstCalc():null, ed=S.editing;
+  const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; }
-  rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():"";
+  rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
   const btn=$("#bill-done"); btn.disabled=true;
-  try{ await apiPost({action:"updateBill",bill:rec});
+  try{ const j=await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
-    toast(t("billUpdated",ed.n)); endEdit(); }
+    if(opts.keep){ ed.edits=(j.bill&&j.bill.edits)||(+ed.edits||0)+1; ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); }
+    else { toast(ed.fresh?t("billDoneN",dispNo(ed.n,S.gst,ed.fy)):t("billUpdated",ed.n)); endEdit(); } }
   catch(e){ toast(e&&e.code==="bad_pin"?t("wrongPin"):e&&e.code==="offline"?t("editOffline"):e&&e.code==="bill_changed"?t("billChanged"):e&&e.code==="not_allowed"?t("notAllowed"):t("editFail")); }
   finally{ btn.disabled=false; }
 }
-function finishBill(){
+/** The bill on screen as a record for the sheet. */
+function draftRec(extra){
+  const g=S.gst?gstCalc():null;
+  const rec={ customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
+    noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
+  { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
+  return rec;
+}
+/** keep:true (Share) saves the bill but leaves it on screen as "saved"; later changes update the same bill. */
+function finishBill(opts){
+  opts=opts||{};
   if(!S.bill.length) return;
-  if(S.editing){ saveEdit(); return; }
+  if(S.editing){ saveEdit(opts); return; }
   const n=curBillNo(), auto=autoBillNo();
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
@@ -1931,6 +1964,15 @@ function finishBill(){
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
+  if(opts.keep){
+    rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
+    if(rec.due>0){ const ds=ls.get(envKey("rb_dues_sum"),{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set(envKey("rb_dues_sum"),ds); duesSub(); }
+    S.editing={ id:rec.id, row:0, n:rec.n, date:new Date().toISOString(), edits:0, fy:curFY(), fresh:true }; S.editing.sig=draftSig();
+    ls.set("rb_editing",S.editing); ls.set("rb_stash",null);
+    S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
+    renderBill(); renderList(); toast(t("billSavedKeep",dispNo(n,wasGst,curFY())));
+    return;
+  }
   S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));
@@ -1943,6 +1985,7 @@ function finishBill(){
 let flushing=false;
 async function flushBills(){
   if(flushing || !S.billQ.length || !apiUrl()) return;
+  renderQueue();
   if(navigator.onLine===false){ toast(t("billQueued")); return; }
   flushing=true;
   try{
@@ -1952,7 +1995,7 @@ async function flushBills(){
       const j=await r.json();
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
       S.needCode=false;
-      if(j.renumbered) showRenumbered(j.renumbered);
+      if(j.renumbered){ if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); } showRenumbered(j.renumbered); }
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }
@@ -1964,11 +2007,11 @@ async function flushBills(){
 let askingSent=false;
 function askSent(){
   if(!S.pendShare || askingSent) return;
-  if(!S.bill.length){ S.pendShare=false; ls.set("rb_pshare",0); return; }
+  if(!S.bill.length || !S.editing){ S.pendShare=false; ls.set("rb_pshare",0); return; }
   askingSent=true;
   openSheet(t("sentQ"), `<p class="note" style="margin:0">${esc(t("sentQD"))}</p>`, `<button class="btn ghost" id="sq-no">${esc(t("sentNo"))}</button><button class="btn primary" id="sq-yes">${esc(t("sentYes"))}</button>`, {onClose:()=>{ askingSent=false; }});
   const done=()=>{ S.pendShare=false; ls.set("rb_pshare",0); };
-  $("#sq-yes").onclick=()=>{ done(); closeSheet(); finishBill(); };
+  $("#sq-yes").onclick=()=>{ done(); closeSheet(); if(S.editing) saveEdit(); else finishBill(); };
   $("#sq-no").onclick=()=>{ done(); closeSheet(); };
 }
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.pendShare) setTimeout(askSent,400); });
@@ -2175,7 +2218,12 @@ function renderQueue(){
   el.innerHTML=`<span class="dot"></span><span>${esc(S.needCode?t("queueCode"):t("queueN",n))}</span>${S.needCode?"":`<button type="button" id="queue-send">${esc(t("queueSend"))}</button>`}`;
   const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); flushBills(); };
 }
+function renderSvNote(){
+  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && can("manager");
+  el.hidden=!old; if(old) el.innerHTML=`<b>⚠ ${esc(t("svT"))}</b><span>${esc(t("oldScript"))}</span>`;
+}
 function renderCodeNote(){
+  renderSvNote();
   const el=$("#code-note"); if(!el) return;
   const need = !S.canWrite && ((S.codeOn && !ls.get("rb_view","")) || S.needCode);
   el.hidden=!need; if(!need) return;
@@ -2282,7 +2330,7 @@ function btnBusy(b,on){ if(!b) return; if(on){ if(!b.dataset.label) b.dataset.la
 /* Thin bar at the top of the screen while the app talks to the sheet (not for the quiet 25-second checks). */
 let netBusy=0; function netTrack(p){ netBusy++; $("#topbar").classList.add("on"); const done=()=>{ netBusy=Math.max(0,netBusy-1); if(!netBusy) $("#topbar").classList.remove("on"); }; p.then(done,done); return p; }
 const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
-let toastT; function toast(msg){ const el=$("#toast"); { const tb=$("#bill-total"); el.style.bottom = (!DESK() && S.tab==="bill" && tb && !tb.hidden) ? Math.round(innerHeight - tb.getBoundingClientRect().top + 10)+"px" : ""; } const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
+let toastT; function toast(msg){ const el=$("#toast"); const place=()=>{ const tb=$("#bill-total"); el.style.bottom = (!DESK() && S.tab==="bill" && tb && !tb.hidden) ? Math.round(innerHeight - tb.getBoundingClientRect().top + 10)+"px" : ""; }; place(); clearInterval(toast._iv); toast._iv=setInterval(place,150); setTimeout(()=>clearInterval(toast._iv),3000); /* keep it just above the total bar while shown */ const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); if(e.target.value) $("#mictip").hidden=true; });
 $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);
@@ -2449,12 +2497,12 @@ function custLookup(){
     }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
 $("#cust").addEventListener("input",()=>{ S.custAuto=""; });
-$("#bill-wa").addEventListener("click",e=>{ if(!payCheck()){ e.preventDefault(); return; } if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); S.pendShare=true; ls.set("rb_pshare",1); });
+$("#bill-wa").addEventListener("click",e=>{ if(!payCheck()){ e.preventDefault(); return; } if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); finishBill({keep:true}); S.pendShare=true; ls.set("rb_pshare",1); });
 $("#bill-no").addEventListener("input",e=>{ const v=Math.floor(toNum(e.target.value)); if(v>=1){ S.billNoOvr = v===autoBillNo()?null:v; ls.set("rb_billno",S.billNoOvr); const keep=document.activeElement; updateBillTotals(); } });
 $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.value)); if(!(v>=1)){ toast(t("billNoManualBad")); } e.target.value=curBillNo(); updateBillTotals(); });
 $("#bill-no").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 document.addEventListener("click",e=>{ if(e.target.closest("#bill-useauto")){ S.billNoOvr=null; ls.set("rb_billno",null); updateBillTotals(); } });
-$("#edit-cancel").onclick=()=>{ endEdit(); toast(t("editCancelled")); };
+$("#edit-cancel").onclick=()=>{ if(S.editing && S.editing.fresh){ if(draftSig()!==S.editing.sig) saveEdit(); else { endEdit(); } return; } endEdit(); toast(t("editCancelled")); };
 $("#gst-chip").onclick=()=>{ S.gst=!S.gst; ls.set("rb_gst",S.gst); if(!S.editing){ S.billNoOvr=null; ls.set("rb_billno",null); } renderBill(); };
 $("#igst-chip").onclick=()=>{ S.igst=!S.igst; ls.set("rb_igst",S.igst); updateBillTotals(); };
 $("#igst-on").onchange=e=>{ S.igst=e.target.checked; ls.set("rb_igst",S.igst); updateBillTotals(); };
@@ -2581,7 +2629,7 @@ async function apiPost0(body){
   if(!r.ok) throw {code:"http"};
   const j=await r.json(); if(!j.ok) throw {code:j.error||"server"}; return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
 let chain=Promise.resolve();
 function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
 let resyncT; function resyncSoon(){ clearTimeout(resyncT); resyncT=setTimeout(sync,1500); }
@@ -3440,7 +3488,7 @@ function sync(){
   if(!apiUrl()) return Promise.resolve();
   if(syncing) return syncing;
   syncing=(async()=>{
-    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); refreshMe(j); }
+    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); refreshMe(j); }
     catch{ S.online=false; renderNet(); }
     finally{ syncing=null; }
   })();
@@ -3448,7 +3496,7 @@ function sync(){
 }
 async function checkRev(){
   if(!apiUrl() || document.hidden) return;
-  try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); } }
+  try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); } }
   catch{ S.online=false; renderNet(); }
 }
 async function fetchThumbs(){
@@ -3467,7 +3515,7 @@ function renderNet(){
   $("#net-txt").textContent = S.online ? t("online",tm) : (S.lastSync ? t("offline",tm) : t("neverSynced"));
 }
 $("#net-refresh").onclick=()=>{ $("#net-txt").textContent=t("loading"); sync(); };
-window.addEventListener("online",()=>checkRev());
+window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); });
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkRev(); });
 setInterval(checkRev,25000);

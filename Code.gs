@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 9;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 10;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1190,7 +1190,7 @@ function report_(body) {
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const T = { bills: 0, sales: 0, taxable: 0, tax: 0, profit: 0, cost: 0, profitBills: 0, cancelled: 0, gstBills: 0 };
+  const T = { bills: 0, sales: 0, taxable: 0, tax: 0, profit: 0, cost: 0, profitBills: 0, cancelled: 0, gstBills: 0, pSale: 0, pCost: 0, pBills: 0, noBuyAmt: 0, lineSale: 0 };
   const byDay = {}, items = {}, rates = {}, hsn = {};
   const g = { b2b: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 }, b2c: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 } };
   const register = [];
@@ -1223,7 +1223,10 @@ function report_(body) {
       if (it.min === null || rt < it.min) it.min = rt; if (it.max === null || rt > it.max) it.max = rt;
       const rk = String(rt); if (!it.rates[rk]) it.rates[rk] = { rate: rt, qty: 0, bills: 0, _b: {} };
       const rr = it.rates[rk]; rr.qty = r2_(rr.qty + q); const bk = String(r[B.billId] || r[B.billNo]); if (!rr._b[bk]) { rr._b[bk] = 1; rr.bills++; }
-      if (l.buy !== undefined && l.buy !== null && l.buy !== '' && num_(l.buy) > 0) { it.cost = r2_(it.cost + q * num_(l.buy)); it.costQty = r2_(it.costQty + q); it.costAmt = r2_(it.costAmt + amt); }
+      T.lineSale = r2_(T.lineSale + amt);
+      if (l.buy !== undefined && l.buy !== null && l.buy !== '' && num_(l.buy) > 0) { it.cost = r2_(it.cost + q * num_(l.buy)); it.costQty = r2_(it.costQty + q); it.costAmt = r2_(it.costAmt + amt);
+        T.pSale = r2_(T.pSale + amt); T.pCost = r2_(T.pCost + q * num_(l.buy)); if (!seenItem.__p) { seenItem.__p = 1; T.pBills++; } }
+      else T.noBuyAmt = r2_(T.noBuyAmt + amt);
     });
     if (gst) {
       T.gstBills++;

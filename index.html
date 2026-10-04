@@ -819,6 +819,14 @@ html.fz-big .bill-line .step input{width:40px}
 .rp-chart rect.zero{fill:var(--line)}
 .rp-chart text{font:600 8px var(--f-body);fill:var(--muted);text-anchor:middle}
 .rp-items{display:grid;gap:6px}
+.rp-pbtn{text-align:left;cursor:pointer;font:inherit;color:inherit;border:0;width:100%}
+.rp-pbtn i{font-style:normal;opacity:.6}
+.rp-pdet{display:grid;gap:6px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;animation:rpdet .2s ease-out}
+.rp-pdet>div{display:flex;justify-content:space-between;gap:10px}
+.rp-pdet>div span{color:var(--muted);font-weight:600}
+.rp-pdet>div.tot{border-top:1px dashed var(--line);padding-top:6px}
+.rp-pdet>div.tot b{color:var(--good);font-size:16px}
+.rp-pdet .note{margin:0;font-size:12px}
 .rp-iw{border:1.5px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
 .rp-iw.open{border-color:var(--ink)}
 .rp-iw .rp-item{border:0;border-radius:0;width:100%;background:none;color:inherit;text-align:left;cursor:pointer;grid-template-columns:24px 1fr auto auto 16px}
@@ -1279,7 +1287,8 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
+  rpPNoBuy:a=>`${a} of items had no buy price on the bill, so they are left out of profit.`,rpPGst:(a,b)=>`Total sales ${a} includes GST and bill round-off; items add up to ${b} before GST.`,
   riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
   riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
   riPartial:(a,b,u)=>`Profit counts ${a} of ${b} ${u}; the rest had no buy price saved on the bill.`,riNoBuy:"No buy price was saved on these bills, so profit can't be worked out.",
@@ -1291,7 +1300,8 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
+  rpPNoBuy:a=>`${a} के सामान में खरीद रेट नहीं था, इसलिए मुनाफ़े में नहीं गिना।`,rpPGst:(a,b)=>`कुल बिक्री ${a} में GST और राउंड-ऑफ़ शामिल है; सामान GST से पहले ${b} का है।`,
   riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
   riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
   riPartial:(a,b,u)=>`मुनाफ़ा ${b} में से ${a} ${u} पर गिना गया; बाकी बिलों में खरीद रेट सेव नहीं था।`,riNoBuy:"इन बिलों में खरीद रेट सेव नहीं था, इसलिए मुनाफ़ा नहीं निकल सकता।",
@@ -1375,7 +1385,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=9;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=10;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1900,11 +1910,11 @@ function itemGst(x){ return (x && x.gst!=null && x.gst!=="" && !isNaN(+x.gst)) ?
 function itemBuyFor(it,alt){ if(!it) return null; const b=+it.buy||0; return alt && hasAlt(it) ? r2(b/(+it.altQty||1)) : b; }
 function lineBuy(l){ if(l.buy!=null && l.buy!=="" && !isNaN(+l.buy)) return +l.buy; return itemBuyFor(S.byId.get(l.id), l.alt); }
 /** Profit on the sale before GST. % is on cost, the same way margins are shown on price cards. */
-function profitOf(lines){ let sale=0, cost=0, known=true; const per=[];
+function profitOf(lines){ let sale=0, csale=0, cost=0, known=true; const per=[];
   for(const l of lines||[]){ const q=+l.qty||0, amt=r2(q*(+l.rate||0)), b=lineBuy(l); sale+=amt;
-    if(b==null){ known=false; per.push({name:l.name,amt,cost:null,p:null}); continue; }
-    const c=r2(q*b); cost+=c; per.push({name:l.name,amt,cost:c,p:r2(amt-c)}); }
-  sale=r2(sale); cost=r2(cost); const p=r2(sale-cost);
+    if(b==null || !(+b>0)){ known=false; per.push({name:l.name,amt,cost:null,p:null}); continue; }   // no buy price: not counted as profit
+    const c=r2(q*b); cost+=c; csale+=amt; per.push({name:l.name,amt,cost:c,p:r2(amt-c)}); }
+  sale=r2(sale); csale=r2(csale); cost=r2(cost); const p=r2(csale-cost);
   return { sale, cost, profit:p, pct: cost>0 ? Math.round(p/cost*1000)/10 : null, known, per }; }
 function lineInfo(l){ const it=S.byId.get(l.id); return { hsn: l.hsn || itemHsn(it), gst: (l.gst!=null? +l.gst : itemGst(it)) }; }
 const r2=n=>Math.round((+n||0)*100)/100;
@@ -2383,11 +2393,21 @@ function renderReport(){
   const T=R.totals;
   if(!T.bills){ box.innerHTML=`<p class="note">${esc(t("rpNone"))}</p>${T.cancelled?`<p class="note">${esc(t("rpCancelled",T.cancelled))}</p>`:""}`; return; }
   const stat=(l,v,cls)=>`<div class="rp-stat${cls?" "+cls:""}"><span>${esc(l)}</span><b class="num">${esc(v)}</b></div>`;
-  const pf=S.cfg.showProfit&&T.profitBills ? stat(t("rpProfit"),`${rs(T.profit)}${T.cost>0?` · ${Math.round(T.profit/T.cost*1000)/10}%`:""}`,"good") : "";
+  const lineP = T.pSale!==undefined, P = lineP ? r2(T.pSale-T.pCost) : T.profit, C = lineP ? T.pCost : T.cost;
+  const pf=S.cfg.showProfit&&(lineP?T.pCost>0:T.profitBills) ? `<button type="button" class="rp-stat good rp-pbtn" id="rp-pbtn" aria-expanded="${!!RP.pOpen}"><span>${esc(t("rpProfit"))} <i>ⓘ</i></span><b class="num">${esc(rs(P))}${C>0?` · ${Math.round(P/C*1000)/10}%`:""}</b></button>` : "";
+  const pdet = pf && RP.pOpen && lineP ? `<div class="rp-pdet num">
+      <div><span>${esc(t("rpPSale"))}</span><b>${rs(T.pSale)}</b></div>
+      <div><span>− ${esc(t("rpPCost"))}</span><b>${rs(T.pCost)}</b></div>
+      <div class="tot"><span>= ${esc(t("rpProfit"))}</span><b>${rs(P)}</b></div>
+      <div><span>${esc(t("rpPOver"))}</span><b>${T.pCost>0?Math.round(P/T.pCost*1000)/10:0}%</b></div>
+      <div><span>${esc(t("rpPOfSale"))}</span><b>${T.pSale>0?Math.round(P/T.pSale*1000)/10:0}%</b></div>
+      ${T.noBuyAmt>0?`<p class="note">${esc(t("rpPNoBuy",rs(T.noBuyAmt)))}</p>`:""}
+      ${T.gstBills||T.sales>T.lineSale+1?`<p class="note">${esc(t("rpPGst",rs(T.sales),rs(T.lineSale)))}</p>`:""}
+    </div>` : "";
   const items=RP.allItems?R.items:R.items.slice(0,10);
   const gt=(rows,head)=>`<div class="rp-table"><table><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="num"':""}>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   const G=R.gst;
-  box.innerHTML=`<div class="rp-grid">${stat(t("rpSales"),rs(T.sales),"big")}${stat(t("rpBills"),String(T.bills))}${stat(t("rpAvg"),rs(Math.round(T.sales/T.bills)))}${T.gstBills?stat(t("rpGst"),rs(T.tax)):""}${pf}${stat(t("rpRecv"),rs(R.received))}${stat(t("rpCredit"),rs(R.creditGiven))}${stat(t("rpOut"),rs(R.outstanding),"warn")}</div>
+  box.innerHTML=`<div class="rp-grid">${stat(t("rpSales"),rs(T.sales),"big")}${stat(t("rpBills"),String(T.bills))}${stat(t("rpAvg"),rs(Math.round(T.sales/T.bills)))}${T.gstBills?stat(t("rpGst"),rs(T.tax)):""}${pf}${stat(t("rpRecv"),rs(R.received))}${stat(t("rpCredit"),rs(R.creditGiven))}${stat(t("rpOut"),rs(R.outstanding),"warn")}</div>${pdet}
     ${T.cancelled?`<p class="note" style="margin:0">${esc(t("rpCancelled",T.cancelled))}</p>`:""}
     <h3 class="rp-h">${esc(t("rpTrend"))}</h3>${rpChart(R.byDay)}
     <h3 class="rp-h">${esc(t("rpTop"))}</h3>
@@ -2402,6 +2422,7 @@ function renderReport(){
     <div class="row-btns" style="justify-content:flex-start">${T.gstBills?`<button type="button" class="btn ghost" data-csv="reg">${esc(t("rpReg"))}</button><button type="button" class="btn ghost" data-csv="hsn">${esc(t("rpHsnCsv"))}</button>`:""}<button type="button" class="btn ghost" data-csv="items">${esc(t("rpItemsCsv"))}</button></div>
     <p class="note" style="margin:0">${esc(t("rpExportD"))}</p>`;
   if($("#rp-allitems")) $("#rp-allitems").onclick=()=>{ RP.allItems=true; renderReport(); };
+  if($("#rp-pbtn")) $("#rp-pbtn").onclick=()=>{ RP.pOpen=!RP.pOpen; const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; renderReport(); if(sc) sc.scrollTop=st; };
   box.querySelectorAll("[data-rpi]").forEach(b=>b.onclick=()=>{ const k=b.dataset.rpi; RP.open = RP.open===k ? "" : k;
     const sc=$("#sheet-body"), top=b.getBoundingClientRect().top; renderReport();
     const nb=[...document.querySelectorAll("[data-rpi]")].find(x=>x.dataset.rpi===k); if(nb && sc){ sc.scrollTop += nb.getBoundingClientRect().top - top; } });

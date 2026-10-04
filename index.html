@@ -957,6 +957,11 @@ html.fz-big .bill-line .step input{width:40px}
   :root{--billw:460px}
   #list{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
 }
+
+/* Notifications sit at the top, over the shop-name line: nothing is tapped there while billing, the keyboard never
+   covers it, and taps pass straight through (pointer-events:none). */
+.toast,body[data-tab="items"] .toast,body[data-tab="bill"] .toast{top:calc(env(safe-area-inset-top,0px) + 10px);bottom:auto;transform:translateY(-14px)}
+.toast.on,body[data-tab] .toast.on{transform:none}
 </style>
 </head>
 <body>
@@ -2541,7 +2546,7 @@ function btnBusy(b,on){ if(!b) return; if(on){ if(!b.dataset.label) b.dataset.la
 /* Thin bar at the top of the screen while the app talks to the sheet (not for the quiet 25-second checks). */
 let netBusy=0; function netTrack(p){ netBusy++; $("#topbar").classList.add("on"); const done=()=>{ netBusy=Math.max(0,netBusy-1); if(!netBusy) $("#topbar").classList.remove("on"); }; p.then(done,done); return p; }
 const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
-let toastT; function toast(msg){ const el=$("#toast"); const place=()=>{ const tb=$("#bill-total"); el.style.bottom = (!DESK() && S.tab==="bill" && tb && !tb.hidden) ? Math.round(innerHeight - tb.getBoundingClientRect().top + 10)+"px" : ""; }; place(); clearInterval(toast._iv); toast._iv=setInterval(place,150); setTimeout(()=>clearInterval(toast._iv),3000); /* keep it just above the total bar while shown */ const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
+let toastT; function toast(msg){ const el=$("#toast"); /* shown at the top of the screen (see .toast CSS), clear of the bill and the keyboard */ const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); syncQe(); if(e.target.value) $("#mictip").hidden=true; });
 $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);

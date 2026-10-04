@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 6;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 7;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -160,8 +160,38 @@ function list_() {
     });
   });
   if (fixed) bump_();
-  return { ok: true, rev: getRev_(), items, config: readConfig_() };
+  let pop = {}; try { pop = pop_(); } catch (err) {}
+  return { ok: true, rev: getRev_(), items, config: readConfig_(), pop };
 }
+
+/**
+ * Most-sold order: for each item, the number of real bills it appears on (not the quantity).
+ * Always read from the real Bills tab, so test bills never change the order. Cancelled bills don't count.
+ * Kept in the cache for 30 minutes, keyed by the number of bill rows, so a new bill refreshes it.
+ */
+function pop_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet(), s = ss.getSheetByName('Bills');
+  if (!s) return {};
+  const n = s.getLastRow() - 1; if (n < 1) return {};
+  const cache = CacheService.getScriptCache(), key = 'pop:' + n;
+  const hit = cache.get(key); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const width = s.getLastColumn();
+  const lines = s.getRange(2, B.lines + 1, n, 1).getValues();
+  const status = width > B.status ? s.getRange(2, B.status + 1, n, 1).getValues() : null;
+  const pop = {};
+  for (let i = 0; i < n; i++) {
+    if (status && String(status[i][0]).toLowerCase() === 'cancelled') continue;
+    let arr; try { arr = JSON.parse(lines[i][0] || '[]'); } catch (e) { continue; }
+    if (!Array.isArray(arr)) continue;
+    const seen = {};
+    arr.forEach(l => { const id = l && l.id ? String(l.id) : ''; if (id && !seen[id] && id.indexOf('tmp_') !== 0) { seen[id] = 1; pop[id] = (pop[id] || 0) + 1; } });
+  }
+  try { cache.put(key, JSON.stringify(pop), 1800); } catch (e) {}
+  return pop;
+}
+
+function popReset_() { try { const b = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
 
 function thumbs_(ids) {
   const want = {}; ids.slice(0, 60).forEach(id => want[id] = 1);
@@ -740,6 +770,7 @@ function pad2_(n) { return (n < 10 ? '0' : '') + n; }
 
 /** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
 function updateBill_(b, by) {
+  popReset_();
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) throw new Error('bill_not_found');
@@ -1130,6 +1161,7 @@ function weeklyMail_(force) {
 
 /* ---------- cancel a bill (GST-friendly: the number stays used, the bill is marked Cancelled with a reason) ---------- */
 function cancelBill_(body, by, cancel) {
+  popReset_();
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   if (n < 1) throw new Error('bill_not_found');

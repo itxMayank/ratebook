@@ -542,6 +542,8 @@ body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
 /* filter chips */
 .fchips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:8px 2px 2px;margin:0 -2px}
 .fchips::-webkit-scrollbar{display:none}
+.rates .sold{color:var(--muted);font-weight:600}
+.fchip.sortchip{margin-left:auto;display:inline-flex;align-items:center;gap:5px;border-style:dashed}
 .fchip{flex:none;border:0;background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 16px;font:600 14px var(--f-body);box-shadow:var(--shadow);transition:background .15s,color .15s}
 .fchip[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 .fchip .n{margin-left:6px;opacity:.6;font-weight:700}
@@ -1306,7 +1308,7 @@ Object.assign(STR.hi,{testBadge:"टेस्ट",envT:"टेस्ट मो�
   envYesLive:"हाँ, असली बिलिंग शुरू करें",envYesTest:"हाँ, टेस्ट मोड करें",envLiveNow:"असली बिलिंग चालू है। बिल नंबर 1 से शुरू।",envTestNow:"टेस्ट मोड चालू है।",
   envBanner:"टेस्ट मोड: अभी बने बिल अभ्यास के बिल हैं।",testBillLine:"_TEST BILL (practice, not a real invoice)_",envNumsNote:"ये नंबर टेस्ट बिलों के हैं। असली बिलों के नंबर अलग हैं।"});
 /* Credit (udhaar) strings */
-Object.assign(STR.en,{newBillChip:"New bill",heldNew:"New",heldEmpty:"New bill",heldItems:n=>`${n} item${n===1?"":"s"}`,heldOld:"old",heldToast:n=>`${n} kept aside. Tap it on top to go back.`,heldMax:n=>`${n} bills are already open. Finish or remove one first.`,heldDelQ:"Remove this open bill?",heldDelD:"Its items will be removed. No bill number is used.",heldDelYes:"Yes, remove",heldDeleted:"Open bill removed.",addingTo:"Adding to:",heldMore:n=>`+${n} open`,heldNoteEditing:n=>`#${n} · editing`,
+Object.assign(STR.en,{sortL:"Change order",sortPop:"Most sold",sortAz:"A–Z",soldIn:n=>`On ${n} bill${n===1?"":"s"}`,newBillChip:"New bill",heldNew:"New",heldEmpty:"New bill",heldItems:n=>`${n} item${n===1?"":"s"}`,heldOld:"old",heldToast:n=>`${n} kept aside. Tap it on top to go back.`,heldMax:n=>`${n} bills are already open. Finish or remove one first.`,heldDelQ:"Remove this open bill?",heldDelD:"Its items will be removed. No bill number is used.",heldDelYes:"Yes, remove",heldDeleted:"Open bill removed.",addingTo:"Adding to:",heldMore:n=>`+${n} open`,heldNoteEditing:n=>`#${n} · editing`,
 cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amount",clearX:"Clear",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
   creditNeeds:"Name and mobile are needed for a credit bill.",recvBad:"Enter the amount received now (less than the total).",recvAll:"That's the full amount. Choose Paid instead.",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
@@ -1319,7 +1321,7 @@ cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amoun
   remindMsg:(name,shop,amt,lines)=>`Namaste${name?" "+name:""},\nThis is a reminder from ${shop||"us"}. ${amt} is pending on the bill${lines.split("Bill No.").length>2?"s":""} below.\n\n${lines}\n\n*Total due: ${amt}*\nThank you.`,
   payUpdate:(d,p,b)=>`_Payment update (${d}): paid ${p}, balance due ${b}_`,payUpdateDone:d=>`_Fully paid on ${d}. Thank you._`,
   pillDue:a=>`Due ${a}`,pillCleared:"Paid later",pendingHint:a=>`${a} pending`,duesTabHint:"Bills on credit or part paid show up here. Mark a bill as Credit or Part paid on the bill screen."});
-Object.assign(STR.hi,{newBillChip:"नया बिल",heldNew:"नया",heldEmpty:"नया बिल",heldItems:n=>`${n} सामान`,heldOld:"पुराना",heldToast:n=>`${n} अलग रखा गया। वापस जाने के लिए ऊपर उस पर दबाएँ।`,heldMax:n=>`${n} बिल पहले से खुले हैं। पहले कोई एक पूरा करें या हटाएँ।`,heldDelQ:"यह खुला बिल हटाएँ?",heldDelD:"इसका सामान हट जाएगा। कोई बिल नंबर इस्तेमाल नहीं होगा।",heldDelYes:"हाँ, हटाएँ",heldDeleted:"खुला बिल हटा दिया।",addingTo:"इसमें जुड़ रहा:",heldMore:n=>`+${n} खुले`,heldNoteEditing:n=>`#${n} · बदल रहे`,
+Object.assign(STR.hi,{sortL:"क्रम बदलें",sortPop:"सबसे ज़्यादा बिकने वाले",sortAz:"A–Z",soldIn:n=>`${n} बिल में`,newBillChip:"नया बिल",heldNew:"नया",heldEmpty:"नया बिल",heldItems:n=>`${n} सामान`,heldOld:"पुराना",heldToast:n=>`${n} अलग रखा गया। वापस जाने के लिए ऊपर उस पर दबाएँ।`,heldMax:n=>`${n} बिल पहले से खुले हैं। पहले कोई एक पूरा करें या हटाएँ।`,heldDelQ:"यह खुला बिल हटाएँ?",heldDelD:"इसका सामान हट जाएगा। कोई बिल नंबर इस्तेमाल नहीं होगा।",heldDelYes:"हाँ, हटाएँ",heldDeleted:"खुला बिल हटा दिया।",addingTo:"इसमें जुड़ रहा:",heldMore:n=>`+${n} खुले`,heldNoteEditing:n=>`#${n} · बदल रहे`,
 cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें",cashShort:"कम हैं",cashExact:"पूरे पैसे",clearX:"साफ़ करें",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
   creditNeeds:"उधार बिल के लिए नाम और मोबाइल ज़रूरी है।",recvBad:"अभी मिली राशि डालें (कुल से कम)।",recvAll:"यह पूरी राशि है। “पूरा मिला” चुनें।",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
@@ -1337,7 +1339,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=6;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=7;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1425,6 +1427,12 @@ function tokScore(q,toks){
   }
   return best;
 }
+/* Item order: "Most sold" = how many real bills an item was on (from the sheet, not quantity), then A–Z.
+   The count comes with the price list (S.pop) and only changes when the list reloads, so cards don't jump while billing. */
+const popN=id=>(S.pop && +S.pop[id])||0;
+const nameCmp=(a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"});
+function sortItems(arr){ if(S.sortBy==="az" || !S.pop) arr.sort(nameCmp); else arr.sort((a,b)=>popN(b.id)-popN(a.id) || nameCmp(a,b)); return arr; }
+function setSort(m){ S.sortBy=m; ls.set("rb_sort",m); sortItems(S.items); buildIndex(); S.limit=40; renderList(); window.scrollTo({top:0}); }
 function buildIndex(){
   S.index = S.items.map(it => { const toks=[...phonTokens(it.name),...phonTokens(it.nameHi)]; return { it, toks, key: phonTokens(it.name).join(" ") }; });
 }
@@ -1437,7 +1445,7 @@ function runSearch(q){
     for(const tq of qt){ const s=tokScore(tq,e.toks); if(s<=0){ total=-1; break; } if(s<60) fuzzy=true; total+=s; }
     if(total>0){ if(e.key.startsWith(joined)) total+=30; out.push({e,score:total,fuzzy}); }
   }
-  out.sort((a,b)=>b.score-a.score || a.e.it.name.localeCompare(b.e.it.name));
+  out.sort((a,b)=>b.score-a.score || (S.sortBy==="az"?0:popN(b.e.it.id)-popN(a.e.it.id)) || a.e.it.name.localeCompare(b.e.it.name));
   let suggest=[];
   const exact = out.some(o=>!o.fuzzy);
   if(exact) return { res:out.filter(o=>!o.fuzzy), suggest, exact };
@@ -1704,7 +1712,7 @@ function marginPct(it){ const b=+it.buy, s=+it.sell; if(!(b>0)||!(s>=0)) return 
 function billQty(id){ const l=S.bill.find(x=>x.id===id); return l? l.qty : 0; }
 function cardHTML(it,q){
   const inB=billQty(it.id);
-  const rates = hideBuy() ? "" : `<div class="rates num"><span>${t("buy")} <b>${rs(it.buy)}</b></span>${marginPct(it)?`<span>${t("margin")} <b>${marginPct(it)}</b></span>`:""}</div>`;
+  const rates = hideBuy() ? "" : `<div class="rates num"><span>${t("buy")} <b>${rs(it.buy)}</b></span>${marginPct(it)?`<span>${t("margin")} <b>${marginPct(it)}</b></span>`:""}${popN(it.id)?`<span class="sold">${esc(t("soldIn",popN(it.id)))}</span>`:""}</div>`;
   return `<div class="card${it.pending?" pending":""}" data-id="${esc(it.id)}">
     ${thumbHTML(it)}
     <div class="info"><div class="name">${highlight(it.name,q)}</div>
@@ -1754,8 +1762,10 @@ function renderFilters(){
   const box=$("#fchips"); if(!box) return;
   const inBill=S.bill.length, recent=S.items.filter(it=>Date.now()-(+it.updatedAt||0)<7*864e5).length, photo=S.items.filter(it=>it.imgV).length;
   const opts=[["all",t("fAll"),0],["bill",t("fInBill"),inBill],["recent",t("fRecent"),recent],["photo",t("fPhoto"),photo]].filter(o=>o[0]==="all"||o[2]>0||S.filter===o[0]);
-  box.hidden = opts.length<2;
-  box.innerHTML=opts.map(([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`).join("");
+  const hasPop=!!S.pop && Object.keys(S.pop).length>0;
+  box.hidden = opts.length<2 && !hasPop;
+  box.innerHTML=opts.map(([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`).join("")
+    + (hasPop?`<button type="button" class="fchip sortchip" id="sort-chip" aria-label="${esc(t("sortL"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>${esc(t(S.sortBy==="az"?"sortAz":"sortPop"))}</button>`:"");
 }
 function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidden=!n; b.textContent=n; }
 function billText(){
@@ -2638,6 +2648,7 @@ function flyToBill(a){
 }
 document.addEventListener("pointerdown",e=>{ const a=e.target.closest&&e.target.closest("[data-add]"); if(a) window.__addSrc=a; },true);
 document.addEventListener("click",e=>{
+  if(e.target.closest("#sort-chip")){ setSort(S.sortBy==="az"?"pop":"az"); return; }
   const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }
   const a=e.target.closest("[data-add]"); if(a){ e.stopPropagation(); addToBill(a.dataset.add); return; }
@@ -2852,7 +2863,7 @@ async function write(body,local){
   try{ const j=await enqueue(()=>apiPost(body)); return j; }
   catch(e){ toast(errMsg(e)); if(e.code==="bad_pin"){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; renderAll(); } sync(); throw e; }
 }
-function afterLocal(){ S.items.sort((a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"})); S.byId=new Map(S.items.map(i=>[i.id,i])); buildIndex(); saveCache(); renderList(); renderBadge(); if(S.tab==="bill") renderBill(); }
+function afterLocal(){ sortItems(S.items); S.byId=new Map(S.items.map(i=>[i.id,i])); buildIndex(); saveCache(); renderList(); renderBadge(); if(S.tab==="bill") renderBill(); }
 function upsertLocal(rec){ const i=S.items.findIndex(x=>x.id===rec.id); if(i>=0) S.items[i]={...S.items[i],...rec}; else S.items.push(rec); }
 function mergeSaved(saved){ for(const it of saved||[]){ const key=it.tmp||it.id; const i=S.items.findIndex(x=>x.id===key); const clean={...it}; delete clean.tmp; clean.pending=false;
     if(i>=0){ const old=S.items[i]; if(it.tmp && S.thumbs[it.tmp]){ S.thumbs[it.id]=S.thumbs[it.tmp]; delete S.thumbs[it.tmp]; } if(it.tmp) S.bill.forEach(l=>{ if(l.id===it.tmp) l.id=it.id; }); S.items[i]={...old,...clean, imgV: clean.imgV||old.imgV||0, imgs: clean.imgV?(clean.imgs||old.imgs||1):(old.imgs||0)}; } else S.items.push(clean); }
@@ -3691,16 +3702,16 @@ function applyConfig(x){
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
     altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell }); }
-  arr.sort((a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"}));
+  sortItems(arr);
   S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true;
 }
-function saveCache(){ ls.set("rb_cache",{ items:S.items.filter(x=>!String(x.id).startsWith("tmp_")).map(x=>{ const y={...x}; delete y.pending; return y; }), cfg:S.cfg, rev:S.rev, at:S.lastSync }); }
+function saveCache(){ ls.set("rb_cache",{ pop:S.pop||null, items:S.items.filter(x=>!String(x.id).startsWith("tmp_")).map(x=>{ const y={...x}; delete y.pending; return y; }), cfg:S.cfg, rev:S.rev, at:S.lastSync }); }
 let syncing=null;
 function sync(){
   if(!apiUrl()) return Promise.resolve();
   if(syncing) return syncing;
   syncing=(async()=>{
-    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); refreshMe(j); }
+    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; if(j.pop && typeof j.pop==="object") S.pop=j.pop; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); refreshMe(j); }
     catch{ S.online=false; renderNet(); }
     finally{ syncing=null; }
   })();
@@ -3758,7 +3769,8 @@ if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){ window.
 /* ---------------- Start ---------------- */
 async function boot(){
   const cache=ls.get("rb_cache",null);
-  if(cache){ applyConfig(cache.cfg); applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
+  S.sortBy=ls.get("rb_sort","pop");
+  if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
   applyLang(); renderBadge();
   S.thumbs=await idb.all("thumbs"); if(S.loaded) renderList();
   if(apiUrl()) sync();

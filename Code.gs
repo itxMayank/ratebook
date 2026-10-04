@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 14;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 15;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -389,6 +389,7 @@ function doPost(e) {
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
+      case 'listCustomers': res = listCustomers_(String(body.brev || '')); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = listDues_(); break;
@@ -408,7 +409,7 @@ function doPost(e) {
       case 'setBackupEmail': res = setBackupEmail_(String(body.email || '')); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -424,7 +425,7 @@ function doPost(e) {
  * Wrong PINs lock only that phone (dev id) after MAX_FAILS in 15 min; GLOBAL_MAX_FAILS per hour locks everyone.
  */
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
-const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
+const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
@@ -996,6 +997,22 @@ function findCustomer_(mobile) {
   const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
   const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
   return { customer: { name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]), due: num_(r[7]) } };
+}
+
+/**
+ * Every customer (one per mobile) for the suggestions while typing on the bill: [mobile, name, gstin, bills, total, lastISO, due].
+ * Uses the same bills version as Past bills, since customer totals only change when bills change; "same" means the phone's copy is current.
+ */
+function listCustomers_(brev) {
+  const v = brev_();
+  if (brev && brev === v) return { same: true, brev: v };
+  const s = customersSheet_(), n = s.getLastRow() - 1, out = [];
+  if (n > 0) s.getRange(2, 1, n, CUST_COLS.length).getValues().forEach(r => {
+    const m = mob10_(r[0]); if (!m) return;
+    const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
+    out.push([m, String(r[1] || ''), String(r[2] || ''), num_(r[3]), num_(r[4]), isNaN(d) ? '' : d.toISOString(), num_(r[7])]);
+  });
+  return { customers: out, brev: v };
 }
 
 function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? d : ''; }

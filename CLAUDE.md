@@ -242,6 +242,12 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
   `report_()` in Code.gs now returns per item: `bills, cost, costQty, costAmt, gstQty, min, max, rates[], profit`. Profit uses only lines that saved a buy price. `SCRIPT_VERSION` 8 / `NEED_SV` 8. The Item sales CSV gained Bills, Avg selling price, and (with profit on) Avg buy price and Profit.
 - **Notifications (toast) top-right**: `#toast` slides in from the right edge at the top (springy ease), stays about 2.8 s, then slides back out to the right. It briefly covers the wand and EN/हि buttons, but taps pass through (`pointer-events:none`). On desktop it sits at the right edge of the middle column, left of the bill panel. The CSS override is at the end of the `<style>`.
+- **Customer suggestions on the bill (name, mobile, GSTIN)**:
+  - A typeahead under the name/mobile row (`#sug-cust`) and under GSTIN (`#sug-gstin`). Nothing opens on tap; it opens only when typing matches: name 1+ letters (start of name, then start of a word, then anywhere), mobile 3+ digits, GSTIN 2+ characters. Up to 5 rows show name, mobile, GSTIN, bills and due.
+  - Tap (or ↑/↓ + Enter on a laptop) fills name, mobile and GSTIN, shows the returning-customer hint at once, then `findCustomer` refreshes it.
+  - Data: `listCustomers` (Customers tab, compact arrays) cached in IndexedDB (`images` store, key `cust:<mode>`). It's refreshed when a customer box gets focus (at most every 15 s), using the same bills version (`brev`) as Past bills: "same" means nothing is downloaded. Customers remembered on this phone (`rb_customers`, not yet on the sheet) are merged in. Locked phones use only the phone's own remembered customers, as before.
+  - Browser autofill is discouraged with made-up `autocomplete`/`name` values, and the mobile box is `type=text inputmode=tel`; Chrome ignores `autocomplete="off"` on name/phone fields.
+  - `SCRIPT_VERSION` 15 / `NEED_SV` 15 (`listCustomers` is in the read-only list, so it doesn't bump the price-list rev).
 - **Past bills search runs on the phone**:
   - `listBills` with `full:true` returns up to 3000 recent bills. The app keeps that copy in IndexedDB (`images` store, key `bills:<mode>`, in memory as `BLC`).
   - Search and the year/date filters run on the copy (`blcQuery`, same matching as the server), at about 0.1–0.2 s.

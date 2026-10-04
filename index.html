@@ -280,6 +280,16 @@ body.typing{padding-bottom:0}
 @media (prefers-reduced-motion: reduce){.dots i{animation:none}}
 
 /* returning customer + tap-to-reveal profit */
+.sugbox{display:grid;gap:2px;margin-top:6px;padding:4px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);animation:sugin .14s ease-out}
+.sugbox[hidden]{display:none}
+@keyframes sugin{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.sug{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer;font:inherit}
+.sug.on,.sug:hover{background:var(--accent-soft)}
+.sug .sn{font-weight:700;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sug .sm{grid-column:1;font-size:12.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sug .sr{grid-row:1/3;grid-column:2;text-align:right;font-size:12px;color:var(--muted);display:grid;gap:2px;justify-items:end}
+.sug .sr .due{color:var(--danger);font-weight:700}
+.sug mark{background:none;color:var(--accent);font-weight:800}
 .custhint{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted);background:var(--accent-soft);border-radius:10px;padding:6px 10px}
 .custhint b{color:var(--accent)}
 .custhint button{border:0;background:none;color:var(--accent);font-weight:700;padding:0 2px;margin-left:auto}
@@ -1066,9 +1076,10 @@ html.fz-big .bill-line .step input{width:40px}
         </div>
       </div>
       <div class="bh-cust">
-        <input id="cust" autocomplete="off" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
-        <input id="cust-mob" type="tel" inputmode="tel" autocomplete="off" maxlength="16" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
+        <input id="cust" name="rb-cust-x" autocomplete="rb-cust-name" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
+        <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="16" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
       </div>
+      <div class="sugbox" id="sug-cust" role="listbox" hidden></div>
       <span class="err" id="mob-err"></span>
       <div class="custhint" id="cust-hint" hidden></div>
       <div class="paybar" id="paybar">
@@ -1083,7 +1094,7 @@ html.fz-big .bill-line .step input{width:40px}
         <div class="bh-field"><label for="bill-no"><span data-t="billNoL">Bill No.</span> <span class="auto" id="bill-auto" hidden></span></label><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No." style="width:110px;text-align:right;font:700 22px/1 var(--f-display);color:var(--accent);border:1.5px dashed var(--line);background:none;border-radius:10px;padding:4px 8px"></div>
         <div class="bh-field" id="igst-row" hidden><label for="igst-on" data-t="outState">Out of state (IGST)</label><label class="switch" style="flex:none"><input type="checkbox" id="igst-on"></label></div>
         <div class="field" id="pos-wrap" hidden><label for="pos-sel" data-t="posPick">Customer's state (place of supply)</label><select id="pos-sel"></select></div>
-        <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" autocomplete="off" maxlength="15" style="text-transform:uppercase"><span class="err" id="gstin-err"></span></div>
+        <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" name="rb-gstin-x" autocomplete="rb-cust-gstin" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-gstin" aria-expanded="false" maxlength="15" style="text-transform:uppercase"><div class="sugbox" id="sug-gstin" role="listbox" hidden></div><span class="err" id="gstin-err"></span></div>
       </div>
     </div>
     <div class="envnote" id="bill-envnote" hidden></div>
@@ -1301,7 +1312,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet",sugBills:n=>`${n} bill${n===1?"":"s"}`,sugNoName:"No name",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
   rpPNoBuy:a=>`${a} of items had no buy price on the bill, so they are left out of profit.`,rpPGst:(a,b)=>`Total sales ${a} includes GST and bill round-off; items add up to ${b} before GST.`,
   riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
   riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
@@ -1314,7 +1325,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें",sugBills:n=>`${n} बिल`,sugNoName:"नाम नहीं",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
   rpPNoBuy:a=>`${a} के सामान में खरीद रेट नहीं था, इसलिए मुनाफ़े में नहीं गिना।`,rpPGst:(a,b)=>`कुल बिक्री ${a} में GST और राउंड-ऑफ़ शामिल है; सामान GST से पहले ${b} का है।`,
   riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
   riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
@@ -1399,7 +1410,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=14;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=15;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -2818,7 +2829,8 @@ function custCache(){ return ls.get(envKey("rb_customers"),{}); }
 function rememberCustomer(mob,name,gstin,total,due){ const k=custKey(mob); if(!k) return; const c=custCache(); const o=c[k]||{count:0,total:0};
   c[k]={ name:name||o.name||"", gstin:gstin||o.gstin||"", count:(o.count||0)+1, total:r2((o.total||0)+(+total||0)), last:new Date().toISOString(), due:r2((+o.due||0)+(+due||0)) };
   const keys=Object.keys(c); if(keys.length>2000){ keys.sort((a,b)=>String(c[a].last).localeCompare(String(c[b].last))).slice(0,keys.length-2000).forEach(x=>delete c[x]); }
-  ls.set(envKey("rb_customers"),c); }
+  ls.set(envKey("rb_customers"),c); custLV++; }
+let custLV=0;
 function showCustHint(info){ const h=$("#cust-hint"); h.classList.remove("looking"); if(!info||!info.count){ h.hidden=true; h.innerHTML=""; return; }
   const d=info.last?new Date(info.last).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
   h.hidden=false; h.innerHTML=`<span><b>${esc(info.name||"")}</b>${info.name?" · ":""}${esc(t("custBack","",info.count,d))}${info.total?` · ${esc(t("custTotal",rs(info.total)))}`:""}${info.due>0?` · <b class="due">${esc(t("pendingHint",rs(info.due)))}</b>`:""}</span>`; }
@@ -2846,6 +2858,91 @@ function custLookup(){
     }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
 $("#cust").addEventListener("input",()=>{ S.custAuto=""; });
+
+/* ---------------- Customer suggestions while typing (name, mobile, GSTIN) ----------------
+ * Nothing shows on tap; suggestions appear only once something typed matches (name: 1+ letters, mobile: 3+ digits, GSTIN: 2+).
+ * Source: every customer on the sheet (cached on the phone in IndexedDB, refreshed with the same bills version as Past bills,
+ * so it downloads only when bills changed on some phone) plus customers remembered on this phone that aren't on the sheet yet. */
+let CUSTD=null, custdLoading=null, custdAt=0, custIdx=null, custIdxKey="";
+async function custdGet(){ if(CUSTD && CUSTD.env===S.cfg.mode) return CUSTD; const v=await idb.get("images","cust:"+S.cfg.mode); if(v && v.env===S.cfg.mode && Array.isArray(v.list)) CUSTD=v; return CUSTD && CUSTD.env===S.cfg.mode ? CUSTD : null; }
+function custdRefresh(force){
+  if(!S.canWrite || !apiUrl() || navigator.onLine===false) return Promise.resolve(null);
+  if(custdLoading) return custdLoading;
+  if(!force && Date.now()-custdAt<15000 && CUSTD && CUSTD.env===S.cfg.mode) return Promise.resolve(CUSTD);
+  const env=S.cfg.mode;
+  custdLoading=(async()=>{ await custdGet(); const have=CUSTD && CUSTD.env===env ? CUSTD : null;
+      const j=await apiPost0({action:"listCustomers",brev:have&&have.brev||""});
+      if(j.same && have){ custdAt=Date.now(); return have; }
+      if(!Array.isArray(j.customers)) return have;
+      const C={env, brev:j.brev||"", list:j.customers};
+      if(env===S.cfg.mode){ CUSTD=C; custdAt=Date.now(); custIdx=null; }
+      idb.set("images","cust:"+env,C); return C; })().catch(()=>null).finally(()=>{ custdLoading=null; });
+  return custdLoading;
+}
+function custIndex(){
+  const local=custCache(), key=(CUSTD&&CUSTD.brev||"")+"|"+S.cfg.mode+"|"+custLV+"|"+Object.keys(local).length+"|"+((CUSTD&&CUSTD.list.length)||0);
+  if(custIdx && custIdxKey===key) return custIdx;
+  const m=new Map();
+  for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])) m.set(r[0],{mob:r[0],name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6]});
+  for(const k of Object.keys(local)){ const o=local[k], e=m.get(k); if(!e) m.set(k,{mob:k,name:o.name||"",gstin:o.gstin||"",count:o.count||0,total:o.total||0,last:o.last||"",due:+o.due||0});
+    else { if(!e.name && o.name) e.name=o.name; if(!e.gstin && o.gstin) e.gstin=o.gstin; } }
+  custIdx=[...m.values()].map(c=>({...c, ln:String(c.name||"").toLowerCase(), lg:String(c.gstin||"").toUpperCase()})); custIdxKey=key; return custIdx;
+}
+function custMatches(field,raw){
+  const L=custIndex(); let q, out=[];
+  if(field==="mob"){ q=String(raw||"").replace(/\D/g,""); if(q.length>10) q=q.slice(-10); if(q.length<3) return [];
+    for(const c of L){ const i=c.mob.indexOf(q); if(i>=0) out.push({c,s:i===0?3:1}); } }
+  else if(field==="gstin"){ q=String(raw||"").toUpperCase().replace(/\s/g,""); if(q.length<2) return [];
+    for(const c of L){ if(!c.lg) continue; const i=c.lg.indexOf(q); if(i>=0) out.push({c,s:i===0?3:1}); } }
+  else { q=String(raw||"").trim().toLowerCase(); if(!q) return [];
+    for(const c of L){ if(!c.ln) continue; const s2=c.ln.startsWith(q)?3:(" "+c.ln).includes(" "+q)?2:c.ln.includes(q)?1:0; if(s2) out.push({c,s:s2}); } }
+  out.sort((a,b)=>b.s-a.s || (b.c.count||0)-(a.c.count||0) || String(b.c.last).localeCompare(String(a.c.last)));
+  return out.slice(0,5).map(x=>x.c);
+}
+const SUG={field:"", list:[], on:-1};
+function hiMark(text,q,digits){ const s=String(text||""); if(!q) return esc(s); let i, len=q.length;
+  if(digits){ i=s.indexOf(q); } else { i=s.toLowerCase().indexOf(q.toLowerCase()); }
+  return i<0 ? esc(s) : esc(s.slice(0,i))+"<mark>"+esc(s.slice(i,i+len))+"</mark>"+esc(s.slice(i+len)); }
+function sugBox(field){ return field==="gstin" ? $("#sug-gstin") : $("#sug-cust"); }
+function sugClose(){ ["#sug-cust","#sug-gstin"].forEach(k=>{ const b=$(k); if(b){ b.hidden=true; b.innerHTML=""; } }); ["#cust","#cust-mob","#cust-gstin"].forEach(k=>$(k).setAttribute("aria-expanded","false")); SUG.field=""; SUG.list=[]; SUG.on=-1; }
+function sugShow(field){
+  const el=field==="mob"?$("#cust-mob"):field==="gstin"?$("#cust-gstin"):$("#cust");
+  if(document.activeElement!==el){ sugClose(); return; }
+  const raw=el.value, list=custMatches(field,raw);
+  const q=field==="mob"?String(raw).replace(/\D/g,"").slice(-10):field==="gstin"?String(raw).toUpperCase():String(raw).trim();
+  const exact=list.length===1 && ((field==="mob"&&list[0].mob===q) || (field==="gstin"&&list[0].lg===q) || (field==="name"&&list[0].ln===q.toLowerCase() && (!S.mob||custKey(S.mob)===list[0].mob)));
+  if(!list.length || exact){ sugClose(); return; }
+  if(SUG.field && SUG.field!==field) sugClose();
+  SUG.field=field; SUG.list=list; if(SUG.on>=list.length) SUG.on=-1;
+  const box=sugBox(field);
+  box.innerHTML=list.map((c,i)=>`<button type="button" class="sug${i===SUG.on?" on":""}" role="option" aria-selected="${i===SUG.on}" data-sug="${i}">
+      <span class="sn">${c.name?hiMark(c.name,field==="name"?q:""):`<span style="color:var(--muted)">${esc(t("sugNoName"))}</span>`}</span>
+      <span class="sm">${hiMark(c.mob,field==="mob"?q:"",true)}${c.gstin?` · ${hiMark(c.gstin,field==="gstin"?q:"")}`:""}</span>
+      <span class="sr"><span>${esc(t("sugBills",c.count||0))}</span>${c.due>0?`<span class="due">${esc(t("dueAmt",rs(c.due)))}</span>`:""}</span></button>`).join("");
+  box.hidden=false; el.setAttribute("aria-expanded","true");
+}
+function sugPick(i){
+  const c=SUG.list[i]; if(!c) return; const field=SUG.field; sugClose();
+  S.cust=c.name||S.cust; S.custAuto=""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);
+  S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); $("#mob-err").textContent=""; $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
+  if(c.gstin){ S.custGstin=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; }
+  { const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once
+  S.custQ=""; custLookup(); updateBillTotals();
+  const el=field==="gstin"?$("#cust-gstin"):field==="mob"?$("#cust-mob"):$("#cust"); el.blur();
+  try{ navigator.vibrate && navigator.vibrate(8); }catch{}
+}
+[["#cust","name"],["#cust-mob","mob"],["#cust-gstin","gstin"]].forEach(([sel,field])=>{
+  const el=$(sel);
+  el.addEventListener("input",()=>{ SUG.on=-1; if(!CUSTD) custdGet().then(()=>{ custIdx=null; sugShow(field); }); sugShow(field); });
+  el.addEventListener("focus",()=>{ custdRefresh().then(C=>{ if(C){ custIdx=null; if(document.activeElement===el && el.value) sugShow(field); } }); });   // never opens on tap alone
+  el.addEventListener("blur",()=>setTimeout(()=>{ if(!["cust","cust-mob","cust-gstin"].includes((document.activeElement||{}).id)) sugClose(); },120));
+  el.addEventListener("keydown",e=>{ if(SUG.field!==field || !SUG.list.length) return;   // capture: runs before Enter moves to the next box
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); const n=SUG.list.length; SUG.on = e.key==="ArrowDown" ? (SUG.on+1)%n : (SUG.on<=0?n-1:SUG.on-1); sugShow(field); }
+    else if(e.key==="Enter" && SUG.on>=0){ e.preventDefault(); e.stopImmediatePropagation(); sugPick(SUG.on); }
+    else if(e.key==="Escape"){ e.stopImmediatePropagation(); sugClose(); } },true);
+});
+["#sug-cust","#sug-gstin"].forEach(k=>{ const b=$(k); b.addEventListener("pointerdown",e=>e.preventDefault()); b.addEventListener("mousedown",e=>e.preventDefault());
+  b.addEventListener("click",e=>{ const x=e.target.closest("[data-sug]"); if(x) sugPick(+x.dataset.sug); }); });
 $("#bill-wa").addEventListener("click",e=>{ if(!payCheck()){ e.preventDefault(); return; } if(S.gst && !gstinOk(S.custGstin)){ e.preventDefault(); setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ e.preventDefault(); $("#cust-mob").focus(); toast(t("mobBad")); return; } $("#bill-wa").href=waLink(); finishBill({keep:true}); S.pendShare=true; ls.set("rb_pshare",1); });
 $("#bill-no").addEventListener("input",e=>{ const v=Math.floor(toNum(e.target.value)); if(v>=1){ S.billNoOvr = v===autoBillNo()?null:v; ls.set("rb_billno",S.billNoOvr); const keep=document.activeElement; updateBillTotals(); } });
 $("#bill-no").addEventListener("blur",e=>{ const v=Math.floor(toNum(e.target.value)); if(!(v>=1)){ toast(t("billNoManualBad")); } e.target.value=curBillNo(); updateBillTotals(); });

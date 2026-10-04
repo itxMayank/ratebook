@@ -678,6 +678,8 @@ html.fz-big #bill-wa{padding-left:14px;padding-right:14px}
 html.fz-big .tot-row .btn.sm{padding:8px 12px}
 html.fz-big .tot-row .iconbtn{width:34px;height:34px}
 .bill-line .rate{white-space:nowrap;min-width:0}
+/* price and number boxes: centred */
+input[inputmode="decimal"],input.num,.bill-line .rate input,.billno input,#bill-no,#pay-recv,#rp-amt,.gridwrap input,.t.num{text-align:center!important}
 .bill-line .rate input{flex:0 1 66px;min-width:50px;width:66px}
 html.fz-big .bill-line .rate input{width:58px;flex-basis:58px}
 html.fz-big .bill-line .step input{width:40px}
@@ -2409,16 +2411,20 @@ function addToBill(id,qty=1){
   saveBill();
   if(DESK()){ renderBill(); renderList(); const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
   if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); renderBill(); }
-  else { const src=window.__addSrc; window.__addSrc=null; renderList(); flyToBill(src); }
+  else { const src=window.__addSrc; window.__addSrc=null;
+    let r0=src && src.isConnected ? src.getBoundingClientRect() : null;      // measure before the card re-draws
+    renderList();
+    if(!r0 || (!r0.width && !r0.height)){ const c=document.querySelector(`#list [data-add="${CSS.escape(id)}"]`)||document.querySelector(`#list [data-decid="${CSS.escape(id)}"]`); if(c) r0=c.getBoundingClientRect(); }
+    flyToBill(r0); }
 }
 /* Phones: show "added" by flying a dot into the Bill tab (no message in the middle of the screen). */
-function flyToBill(src){
+function flyToBill(a){
   const tab=$("#tab-bill"), badge=$("#bill-badge"); if(!tab) return;
   try{ navigator.vibrate && navigator.vibrate(12); }catch{}
   const pop=()=>{ badge.classList.remove("pop"); tab.classList.remove("nudge"); void badge.offsetWidth; badge.classList.add("pop"); tab.classList.add("nudge"); };
   const reduce=window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if(!src || reduce || !document.body.animate){ pop(); return; }
-  const a=src.getBoundingClientRect(), b=tab.querySelector("svg").getBoundingClientRect();
+  if(!a || (!a.width && !a.height) || reduce || !document.body.animate){ pop(); return; }
+  const b=tab.querySelector("svg").getBoundingClientRect();
   const x0=a.left+a.width/2, y0=a.top+a.height/2, x1=b.left+b.width/2, y1=b.top+b.height/2;
   const d=document.createElement("div"); d.className="flydot"; d.style.left=x0+"px"; d.style.top=y0+"px"; document.body.appendChild(d);
   const dx=x1-x0, dy=y1-y0;

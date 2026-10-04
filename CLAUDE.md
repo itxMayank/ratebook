@@ -219,7 +219,8 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 ## Tile contrast, add feedback, Back button (added 3 Oct 2026)
 
 - **Tiles inside sheets** (bill cards, customer cards, backup items, payment box, skeletons) get a 1.5px `--line` outline and no shadow, so they don't blend into the white sheet. In-sheet search boxes and chips use `--surface-2`. Dark-mode sheets use #141518.
-- **Add to bill on phones** (Prices tab): no toast. `flyToBill()` animates a dot from the tapped button to the Bill tab, then pops the badge and nudges the icon, with a 12 ms vibration. It respects reduced motion. The source button is captured on `pointerdown` (`window.__addSrc`). The Bill tab and desktop keep their own feedback.
+- **Add to bill on phones** (Prices tab): no toast. `flyToBill()` animates a dot from the tapped button to the Bill tab, then pops the badge and nudges the icon, with a 12 ms vibration. It respects reduced motion. The source button is captured on `pointerdown` (`window.__addSrc`), and its position is measured *before* `renderList()` redraws the card (after the redraw the old button is detached and would report 0,0, which made the dot start at the top-left). If that fails it falls back to the item's new `[data-add]`/`[data-decid]` button, or just pops the badge.
+- **Number boxes are centred**: one CSS rule (`input[inputmode="decimal"], input.num, .bill-line .rate input, .billno input, #bill-no, #pay-recv, #rp-amt, .gridwrap input, .t.num`) sets `text-align:center`. Add new price/qty inputs to it or give them `inputmode="decimal"`. The Bill tab and desktop keep their own feedback.
 - **Messages** are a small centred pill: just above the Add button on Prices, just above the total bar on Bill (worked out from its position in `toast()`), and just above the tab bar elsewhere (`body[data-tab]`).
 - **Back button:** one guard entry in history (`pushGuard`). On `popstate`:
   1. close the unit picker;

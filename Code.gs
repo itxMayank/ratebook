@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 10;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 11;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -189,6 +189,16 @@ function pop_() {
   }
   try { cache.put(key, JSON.stringify(pop), 1800); } catch (e) {}
   return pop;
+}
+
+/** Current buy price per item (by id and by name), for report lines that were saved without one. */
+function curBuyMap_() {
+  const s = sheet_(ITEMS, COLS), n = s.getLastRow() - 1, out = { byId: {}, byName: {} };
+  if (n < 1) return out;
+  const a = s.getRange(2, 1, n, C.buy + 1).getValues(), q = s.getRange(2, C.altQty + 1, n, 1).getValues();
+  for (let i = 0; i < n; i++) { const v = { buy: num_(a[i][C.buy]), altQty: num_(q[i][0]) };
+    if (a[i][C.id]) out.byId[String(a[i][C.id])] = v; const nm = String(a[i][C.name] || '').trim().toLowerCase(); if (nm && !out.byName[nm]) out.byName[nm] = v; }
+  return out;
 }
 
 function popReset_() { try { const b = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
@@ -1190,7 +1200,8 @@ function report_(body) {
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const T = { bills: 0, sales: 0, taxable: 0, tax: 0, profit: 0, cost: 0, profitBills: 0, cancelled: 0, gstBills: 0, pSale: 0, pCost: 0, pBills: 0, noBuyAmt: 0, lineSale: 0 };
+  const T = { bills: 0, sales: 0, taxable: 0, tax: 0, profit: 0, cost: 0, profitBills: 0, cancelled: 0, gstBills: 0, pSale: 0, pCost: 0, pBills: 0, noBuyAmt: 0, lineSale: 0, estAmt: 0 };
+  const curBuy = curBuyMap_();   // today's buy prices, used for old bill lines that saved none
   const byDay = {}, items = {}, rates = {}, hsn = {};
   const g = { b2b: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 }, b2c: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 } };
   const register = [];
@@ -1224,6 +1235,10 @@ function report_(body) {
       const rk = String(rt); if (!it.rates[rk]) it.rates[rk] = { rate: rt, qty: 0, bills: 0, _b: {} };
       const rr = it.rates[rk]; rr.qty = r2_(rr.qty + q); const bk = String(r[B.billId] || r[B.billNo]); if (!rr._b[bk]) { rr._b[bk] = 1; rr.bills++; }
       T.lineSale = r2_(T.lineSale + amt);
+      let lb = (l.buy !== undefined && l.buy !== null && l.buy !== '') ? num_(l.buy) : 0, est = false;
+      if (!(lb > 0)) { const cb = curBuy.byId[String(l.id || '')] || curBuy.byName[String(l.name || '').trim().toLowerCase()];
+        if (cb && cb.buy > 0) { lb = l.alt && cb.altQty > 0 ? r2_(cb.buy / cb.altQty) : cb.buy; est = true; } }
+      if (lb > 0) { l = Object.assign({}, l, { buy: lb }); if (est) { T.estAmt = r2_(T.estAmt + amt); it.estQty = r2_((it.estQty || 0) + q); } }
       if (l.buy !== undefined && l.buy !== null && l.buy !== '' && num_(l.buy) > 0) { it.cost = r2_(it.cost + q * num_(l.buy)); it.costQty = r2_(it.costQty + q); it.costAmt = r2_(it.costAmt + amt);
         T.pSale = r2_(T.pSale + amt); T.pCost = r2_(T.pCost + q * num_(l.buy)); if (!seenItem.__p) { seenItem.__p = 1; T.pBills++; } }
       else T.noBuyAmt = r2_(T.noBuyAmt + amt);

@@ -227,7 +227,8 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Lines with no buy price (missing or 0) are now left out of profit completely, both their sale and their cost. Before, `profitOf()` counted their whole sale as profit, which inflated the amount.
   - The report's Profit stat is built from bill lines (`T.pSale`, `T.pCost`, `T.noBuyAmt`, `T.lineSale` from `report_()`), not from the stored per-bill profit, so old bills saved with an inflated profit no longer distort it.
   - The % shown is profit over cost, the same as "Margin" on item cards. Tapping the stat opens the breakdown: sales with a buy price − buy cost = profit, % over cost, % of those sales, plus notes about items left out and GST/round-off.
-  - `SCRIPT_VERSION` 10 / `NEED_SV` 10.
+  - Bill lines saved without a buy price use the item's **current** buy price in reports (`curBuyMap_()`, matched by id, then by name; for alt-unit lines it's buy ÷ altQty). Once a buy price is set in the price list, reports recalculate on their own; the bills themselves aren't changed. These amounts are counted in `T.estAmt` and per item in `estQty`, and the breakdown and item detail say so. Lines whose item still has no buy price stay out of profit (`T.noBuyAmt`).
+  - `SCRIPT_VERSION` 11 / `NEED_SV` 11.
 - **Editing a bill opened from the Credit screen**: the credit list (`listDues_`) used to leave out `edits`, `fy`, `igst`, `custGstin` and `pos`. The app then assumed 0 edits, so any bill that had been saved once (for example after Share) failed with "someone else changed it". GSTIN and IGST could also be lost on edit. Now:
   - `listDues_` and `getBill_` return those fields, and `showBill` merges them from `getBill`.
   - `startEdit` stores `edits:null` when the count is unknown, and `saveEdit` then skips the `baseEdits` check rather than blocking the save.

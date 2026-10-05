@@ -2602,10 +2602,15 @@ function prSystem(inv,paper){
   if(prRoll(paper)){ root.style.cssText="position:fixed;left:-9999px;top:0;display:block;visibility:hidden"; const mm=Math.ceil(root.offsetHeight/3.78)+8; root.style.cssText="";
     st.textContent=`@page{size:${paper}mm ${Math.max(60,mm)}mm;margin:0}`; }
   else st.textContent=`@page{size:${paper.toUpperCase()};margin:12mm}`;
+  /* Android Chrome fires "afterprint" straight away and builds the printout afterwards, so .printing must NOT be removed on
+     afterprint (that printed the whole app). It only matters inside @media print, so it stays on until the next print. */
   document.body.classList.add("printing");
-  const done=()=>{ document.body.classList.remove("printing"); window.removeEventListener("afterprint",done); };
-  window.addEventListener("afterprint",done);
-  setTimeout(()=>{ try{ window.print(); }catch{} },60);   // .printing only matters inside @media print, so it can safely stay until afterprint
+  /* The page title becomes the saved file's name ("Bill 10 - Sunil Traders.pdf"); put back on the next tap. */
+  if(!prSystem.title) prSystem.title=document.title;
+  document.title=`${inv.gst?"Invoice":"Bill"} ${inv.no}${inv.cust&&inv.cust.name?" - "+inv.cust.name:""}`.replace(/[\\/:*?"<>|]/g,"").slice(0,80);
+  const at=Date.now(), back=()=>{ if(Date.now()-at<1500) return; document.title=prSystem.title; prSystem.title=""; document.removeEventListener("pointerdown",back,true); };
+  document.addEventListener("pointerdown",back,true);
+  setTimeout(()=>{ try{ window.print(); }catch{} },60);
 }
 async function printInv(inv,btn){
   if(!inv || !inv.lines || !inv.lines.length){ toast(t("prNothing")); return; }

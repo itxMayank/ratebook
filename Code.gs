@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 16;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 17;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -107,11 +107,13 @@ function blog_(env) { try { const a = JSON.parse(PropertiesService.getScriptProp
 function bumpB_(both, id) {
   const p = PropertiesService.getScriptProperties(), v = String(Date.now());
   (both ? ['live', 'test'] : [ENV_]).forEach(en => {
-    p.setProperty('brev_' + en, v);
+    p.setProperty('brev_' + en, v); try { CacheService.getScriptCache().put('brev_' + en, v, 21600); } catch (e) {}
     let L = blog_(en); L.push(id ? { v: v, id: String(id) } : { v: v, full: 1 }); if (L.length > 150) L = L.slice(-150);
     try { p.setProperty('blog_' + en, JSON.stringify(L)); } catch (e) { p.deleteProperty('blog_' + en); }
   });
 }
+/* Bills version for the 25-second check: from the short-term cache, so it costs no Properties quota. */
+function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('brev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('brev_' + en) || '0'; c.put('brev_' + en, v, 21600); } return v; }
 function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
@@ -128,7 +130,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   try {
     switch (p.action) {
-      case 'rev': return out_({ ok: true, rev: getRev_() });
+      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test') });
       case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));

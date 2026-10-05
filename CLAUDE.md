@@ -263,6 +263,11 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
     - full copy: after hand edits in the sheet (`onEdit`/`watchSheet`), a restore, deleted rows, a payment spread over several bills, or a copy too old for the log.
   - Opening a bill always re-reads it with `getBill` (if not read in the last 30 s), which now returns payments, due, cancel and edit state. So a bill changed on another phone shows its latest state, and the edit-count check still blocks overwriting.
   - Bills made on this phone but not yet sent (`S.billQ`) are merged into the list, so they don't disappear when the copy refreshes.
+  - **Kept fresh in the background** (`SCRIPT_VERSION` 17):
+    - Every bill made on this phone goes into a small local list (`rb_bloc_<mode>`, via `blcAdd`) at once, whether or not Past bills was opened since the app started. `blcQuery` merges it until the copy contains that bill (or after 30 min). Before, `blcAdd` did nothing when the copy wasn't loaded in memory, so bills sent quickly in a row could be missing until a second open, and a refresh that finished just after a bill was sent could hide it.
+    - After the queue is sent, and after any bill change through `apiPost`, `blcSoon()` runs one batched delta refresh (1.2 s debounce, waits while bills are still sending).
+    - The 25-second `rev` check now also returns `bl`/`bt` (bills version per mode, from CacheService, so no Properties quota). If it differs from the copy's `brev`, the phone pulls the delta quietly, so bills from other phones are already there when Past bills opens. Only for unlocked phones that already keep a copy.
+    - If Past bills is open, it redraws in place (`blcShow`, scroll kept) and briefly highlights bills that just arrived (`.bl-new`). A small "Updating" spinner (`#bl-sync`) shows while a refresh is running.
   - Size: about 0.5 KB per bill raw, so the 3000 cap is about 1.5 MB of phone storage at most (less after browser compression). Network is tiny except for a full copy.
   - "Search older bills on the sheet" button beyond 3000 bills; falls back to server search with an older script.
   - `SCRIPT_VERSION` 14 / `NEED_SV` 14.
@@ -279,6 +284,13 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Editing a past bill still uses `rb_stash`; holding an editing bill carries its `editing` object and stash with it, so cancelling the edit later still restores the draft.
   - Prices tab shows "Adding to: X · +N open" (`#addto`, phones only) while any bill is held. It has `overflow:hidden; min-width:0`, because without them its no-wrap text widened the grid and the whole page scrolled sideways.
   - Max 8 open bills (`HELD_MAX`). A held bill from an earlier day gets an "old" tag.
+- **Loose quantities (250 g of a kg item)**, `index.html` only:
+  - Applies to lines whose unit is kg or litre (`fracSub()` via `UNIT_ALIASES`: kg → g, L → ml). Pc/packet/roll lines are unchanged.
+  - Phones: the qty box on those lines is `readonly` (no keyboard). Tapping it opens the quick strip `#qpick` (fixed, floats under the box, follows scroll, closes on pick/outside tap/Back): 250g · 500g · 750g | 1 · 1.5 · 2 · 5 | keyboard icon. `QP_PARTS`/`QP_WHOLE` hold the presets. The keyboard icon makes the box editable for odd amounts; leaving it redraws the line.
+  - − / + (`stepQty`) move in quarters below 1 kg (1 → 750g → 500g → 250g → removed) and by 1 above. Same on the Prices card stepper.
+  - Display: under 1 the box shows "250g" (`qtyShort`), the unit label moves after the rate ("× ₹220 /kg", hidden at the larger text sizes). WhatsApp, PDF, reminders and rebuilt old bills say "250 g × ₹220/kg = ₹55" (`qtyText`, `rateText`). Still stored as 0.25 kg, so the items summary, reports, profit and most-sold are unchanged.
+  - Typing: `parseQty` accepts "250g"/"500 ml" (laptop). A whole number 50–999 typed on a kg/L line shows a one-tap "250 g?" chip (`qpHint`); it's never converted automatically.
+  - Laptop: clicking the box opens the same strip and selects the value; typing closes the strip and works as normal ("250g" accepted). Esc closes it, Enter closes and leaves the box.
 - **Cash given / change**: a row under the total (`#cashrow`). Shows next-note chips (`cashNotes`: rounded up to 50/100/500/2000) or a typed amount, then "Return ₹X" (green), "Short ₹X" (red) or "Exact". It compares against the total for Paid, or the received amount for Part paid; hidden for Credit. Kept in memory only (`S.cash`), never saved or sent; reset when a bill is finished, cleared or an edit ends.
 - **Fly animation while searching**: when the search box is focused and has text, the tab bar is hidden (`body.typing`), so the Bill tab measured 0,0 and the first dot flew to the top-left. `flyToBill` now closes the keyboard and shows the bar first, then aims (clamped to the visible screen while the keyboard is closing).
 - **Tab bar while the search is focused (phones)**: `syncQe()` sets `body.qe` when `#q` is focused and empty; CSS keeps the tab bar and Add button visible, lifted above the keyboard with `--kb`. Once something is typed they hide as before. Other inputs still hide the bar.

@@ -452,6 +452,26 @@ label.thumb{cursor:pointer}
 .bl-chip select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:inherit;font:inherit;padding:0 14px 0 0;height:100%;outline:0;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
 .bl-chip input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font-size:16px}
 .bl-clear{width:36px;height:36px;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted);font-size:14px;flex:none}
+.bl-sync{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;flex:none}
+.bl-sync[hidden]{display:none}
+.qpick{position:fixed;z-index:60;display:flex;align-items:center;gap:3px;padding:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.18);max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none;animation:qpin .14s ease-out}
+.qpick[hidden]{display:none}
+.qpick::-webkit-scrollbar{display:none}
+.qpick button{flex:none;min-width:34px;height:38px;padding:0 7px;border:0;border-radius:10px;background:var(--surface-2);color:var(--fg);font:700 13.5px var(--f-display);white-space:nowrap}
+.qpick button[aria-selected="true"]{background:var(--ink);color:var(--ink-fg)}
+.qpick button.qp-t{color:var(--muted);display:grid;place-items:center}
+.qpick i{flex:none;width:1px;height:22px;background:var(--line);margin:0 1px}
+.qpick.hint button{background:var(--ink);color:var(--ink-fg)}
+@keyframes qpin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.bill-line .step input.fq{width:54px;font-size:15px;cursor:pointer;caret-color:transparent}
+.bill-line .step input.fq:not([readonly]){caret-color:auto}
+.bill-line .step input.qp-on{background:var(--surface-2);box-shadow:inset 0 0 0 2px var(--ink)}
+.bill-line .rate .per{margin-left:2px}
+html.fz-big .bill-line .rate .per{display:none}
+.bl-sync .ld{--s:13px}
+.billcard.bl-new{animation:blnew 1.8s ease-out}
+@keyframes blnew{0%{box-shadow:0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.billcard.bl-new{animation:none}}
 .bl-grp{display:grid;gap:8px}
 .bl-gb{display:grid;gap:8px}
 .bl-grp.shut>.bl-gb{display:none}
@@ -1312,7 +1332,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet",sugBills:n=>`${n} bill${n===1?"":"s"}`,sugNoName:"No name",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", qpType:"Type quantity", qpHint:x=>`${x}?`,sugBills:n=>`${n} bill${n===1?"":"s"}`,sugNoName:"No name",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
   rpPNoBuy:a=>`${a} of items had no buy price on the bill, so they are left out of profit.`,rpPGst:(a,b)=>`Total sales ${a} includes GST and bill round-off; items add up to ${b} before GST.`,
   riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
   riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
@@ -1325,7 +1345,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें",sugBills:n=>`${n} बिल`,sugNoName:"नाम नहीं",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", qpType:"मात्रा लिखें", qpHint:x=>`${x}?`,sugBills:n=>`${n} बिल`,sugNoName:"नाम नहीं",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
   rpPNoBuy:a=>`${a} के सामान में खरीद रेट नहीं था, इसलिए मुनाफ़े में नहीं गिना।`,rpPGst:(a,b)=>`कुल बिक्री ${a} में GST और राउंड-ऑफ़ शामिल है; सामान GST से पहले ${b} का है।`,
   riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
   riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
@@ -1444,6 +1464,22 @@ const rs = n => "₹" + fmtN(n);
 const unitHi = u => (S.cfg.units.find(x=>x.code===u)||{}).hi;
 const unitL = u => S.lang==="hi" && unitHi(u) ? unitHi(u) : (u||"");
 const devDigits = s => String(s).replace(/[०-९]/g,d=>"०१२३४५६७८९".indexOf(d));
+/* Loose quantities: kg and litre lines can be sold in parts (250 g). Saved as kg/L (0.25), shown as grams/ml under 1. */
+const fracSub = u => { const x=String(u||"").toLowerCase(); return UNIT_ALIASES.kg.includes(x)?"g" : UNIT_ALIASES.L.includes(x)?"ml" : null; };
+const isPart = (q,u) => !!fracSub(u) && +q>0 && +q<1;
+/** "250 g" (Hindi unit names when the app is in Hindi; plain codes for the PDF). */
+function qtyText(q,u,plain){ const sub=fracSub(u); if(sub && +q>0 && +q<1) return `${fmtN(Math.round(q*1000))} ${plain?sub:unitL(sub)}`; return `${fmtN(q)} ${plain?u:unitL(u)}`; }
+/** Short form for the small qty box: "250g", "1.5". */
+function qtyShort(q,u){ const sub=fracSub(u); return sub && +q>0 && +q<1 ? `${Math.round(q*1000)}${sub}` : fmtN(q); }
+/** Rate, with "/kg" when the quantity is shown in grams, so ₹220 isn't read as the price of 250 g. */
+function rateText(l,plain){ return rs(l.rate)+(isPart(l.qty,l.unit)?"/"+(plain?l.unit:unitL(l.unit)):""); }
+/** Typed quantity: "250g" / "500 ml" become 0.25 / 0.5 on kg/L lines. */
+function parseQty(v,u){ const m=String(v||"").trim().toLowerCase().match(/^([\d.,]+)\s*(g|gm|gms|gram|grams|ml)$/); if(m && fracSub(u)) return toNum(m[1])/1000; return toNum(v); }
+/** − and + on kg/L lines move in quarters below 1 (1 → 750 g → 500 g → 250 g), by 1 above. */
+function stepQty(q,u,up){ q=+q||0; const r=x=>Math.round(x*1000)/1000;
+  if(!fracSub(u)) return Math.max(0,r(q+(up?1:-1)));
+  if(up) return q<1 ? r(Math.floor(q*4+1e-9)/4+0.25) : r(q+1);
+  return q>1 ? r(q-1) : Math.max(0,r(Math.ceil(q*4-1e-9)/4-0.25)); }
 const toNum = v => { if (v==null) return NaN; const s=devDigits(v).replace(/[₹,\s]/g,""); if(s==="") return NaN; return Number(s); };
 
 /* ---------------- Phonetic search ---------------- */
@@ -1790,7 +1826,7 @@ function cardHTML(it,q){
       ${it.nameHi?`<div class="sub" lang="hi">${highlight(it.nameHi,q)}</div>`:""}${rates}
     </div>
     <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>${hasAlt(it)?`<div class="per num">${rs(altPrice(it))} / ${esc(unitL(it.altUnit))}</div>`:""}
-      ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${fmtN(inB)}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
+      ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${esc(qtyShort(inB,it.unit))}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
         :`<button class="addbtn" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+ ${esc(t("tabBill"))}</button>`}</div>
   </div>`;
 }
@@ -1845,7 +1881,7 @@ function billText(){
   const d=billDateStr();
   let s=S.cfg.mode==="test"?`${t("testBillLine")}\n`:""; if(S.cfg.shopName) s+=`*${S.cfg.shopName}*\n`;
   s+=`${t("billNoLine",curBillNo())} · ${d}\n`+editedLine(); if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`; if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`; s+="\n";
-  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineLabel(l)} — ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ s+=`${i+1}. ${lineLabel(l)} — ${qtyText(l.qty,l.unit)} × ${rateText(l)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n*${t("total")}: ${rs(billSum())}*`+payText(billSum()); if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
 /* ---------------- Credit (udhaar) on the bill ---------------- */
@@ -1903,7 +1939,7 @@ function gstBillText(){
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
   if(posLabel()) s+=`${t("posL")}: ${posLabel()}\n`;
   s+="\n";
-  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineLabel(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${fmtN(l.qty)} ${unitL(l.unit)} × ${rs(l.rate)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineLabel(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${qtyText(l.qty,l.unit)} × ${rateText(l)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
@@ -1975,9 +2011,9 @@ function renderBill(){
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
       <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
-        <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num" inputmode="decimal" value="${String(l.qty)}" data-qty="${i}" aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
-        <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:`<span class="note">${esc(unitL(l.unit))}</span>`}
-        <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}"></label></div>
+        <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
+        <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:(isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`)}
+        <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
     $("#bill-total").hidden=false;
@@ -2158,7 +2194,7 @@ async function saveEdit(opts){
   if(!opts.keep && ed.fresh && draftSig()===ed.sig){ const n=dispNo(ed.n,S.gst,ed.fy); endEdit(); toast(t("billDoneN",n)); return; }   // nothing changed since Share
   if(ed.fresh){ const qi=S.billQ.findIndex(q=>q.id===ed.id);
     if(qi>=0){   // still waiting to be sent: just replace it in the queue
-      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env }); ls.set("rb_billq",S.billQ); flushBills();
+      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
       if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
   if(navigator.onLine===false){ toast(t("editOffline")); return; }
@@ -2280,7 +2316,7 @@ async function flushBills(){
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }
-    saveCache(); updateBillTotals();
+    saveCache(); updateBillTotals(); blcBump(); blcSoon();
   }catch{ /* try again on next sync */ }
   finally{ flushing=false; renderQueue(); }
 }
@@ -2331,8 +2367,8 @@ async function makeInvoicePdf(inv){
   to.forEach((l,i)=>doc.text(l,M,y+i*13)); y+=to.length*13+8;
   const g=inv.gst ? gstCalcFor(inv.lines, inv.igst) : null;
   const body=inv.lines.map((l,i)=>{ const amt=r2(l.qty*l.rate);
-    return inv.gst ? [i+1, asc(l.name), l.hsn, `${fmtN(l.qty)} ${asc(l.unit)}`, R(l.rate), R(amt), fmtN(l.gst)+"%", R(r2(amt*l.gst/100)), R(r2(amt*(1+l.gst/100)))]
-                   : [i+1, asc(l.name), `${fmtN(l.qty)} ${asc(l.unit)}`, R(l.rate), R(amt)]; });
+    return inv.gst ? [i+1, asc(l.name), l.hsn, asc(qtyText(l.qty,l.unit,true)), R(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), R(amt), fmtN(l.gst)+"%", R(r2(amt*l.gst/100)), R(r2(amt*(1+l.gst/100)))]
+                   : [i+1, asc(l.name), asc(qtyText(l.qty,l.unit,true)), R(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), R(amt)]; });
   doc.autoTable({ startY:y, margin:{left:M,right:M}, head:[inv.gst?["#","Item","HSN","Qty","Rate","Taxable","GST","Tax","Amount"]:["#","Item","Qty","Rate","Amount"]], body,
     styles:{fontSize:8.8,cellPadding:4}, headStyles:{fillColor:[22,23,26],textColor:255}, didParseCell:d=>{ if(d.section==="head" && (inv.gst?[4,5,6,7,8]:[3,4]).includes(d.column.index)) d.cell.styles.halign="right"; }, columnStyles: inv.gst?{0:{cellWidth:20},4:{halign:"right"},5:{halign:"right"},6:{halign:"right"},7:{halign:"right"},8:{halign:"right"}}:{0:{cellWidth:20},3:{halign:"right"},4:{halign:"right"}} });
   y=doc.lastAutoTable.finalY+12;
@@ -2623,6 +2659,7 @@ function pushGuard(){ try{ history.pushState({rb:1},""); }catch{} }
 try{ if(!history.state || !history.state.rb){ history.replaceState({rb:0},""); pushGuard(); } }catch{}
 window.addEventListener("popstate",()=>{
   { const fa=document.getElementById("fileact"); if(fa){ const x=fa.querySelector("#fa-x"); if(x) x.click(); pushGuard(); return; } }
+  { const qp=document.getElementById("qpick"); if(qp && !qp.hidden){ qpClose(); pushGuard(); return; } }
   if(!$("#picker").hidden){ closePicker(null); pushGuard(); return; }
   if(!$("#sheet").hidden){
     const back=[...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null);
@@ -2654,7 +2691,7 @@ function syncQe(){ const a=document.activeElement; document.body.classList.toggl
 document.addEventListener("focusin",e=>{
   syncQe();
   if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop
-  const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]),textarea")) return;
+  const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]):not([readonly]),textarea")) return;
   clearTimeout(blurT); document.body.classList.add("typing");
   if(el.closest(".top")) return;
   [80,350,700].forEach(d=>setTimeout(()=>{ if(document.activeElement===el) el.scrollIntoView({block:"center",behavior:d<100?"auto":"smooth"}); },d));
@@ -2747,7 +2784,7 @@ $("#mictip-x").onclick=()=>{ $("#mictip").hidden=true; };
 /* ---------------- Bill actions ---------------- */
 function decFromBill(id){
   const i=S.bill.findIndex(x=>x.id===id); if(i<0) return;
-  const l=S.bill[i]; l.qty=Math.round((+l.qty-1)*1000)/1000; if(l.qty<=0) S.bill.splice(i,1);
+  const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,false); if(l.qty<=0) S.bill.splice(i,1);
   saveBill(); if(S.tab==="bill") renderBill(); else renderList();
 }
 function addToBill(id,qty=1){
@@ -2796,7 +2833,7 @@ document.addEventListener("click",e=>{
     if(k==="more"){ S.limit+=40; renderList(); } else if(k==="add") openEdit(null); else if(k==="addq") openEdit(null,S.q.trim());
     else if(k==="bulkadd") openBulkAdd(); else if(k==="bills") openBills(); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
   const inc=e.target.closest("[data-inc]"), dec=e.target.closest("[data-dec]"), rm=e.target.closest("[data-rm]");
-  if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=Math.max(0,Math.round((+l.qty+(inc?1:-1))*1000)/1000); if(l.qty===0) S.bill.splice(i,1); saveBill(); renderBill(); return; }
+  if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,!!inc); if(l.qty===0) S.bill.splice(i,1); qpClose(); saveBill(); renderBill(); return; }
   if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); return; }
   const sw=e.target.closest("[data-unitsw]"); if(sw){ const l=S.bill[+sw.dataset.unitsw]; const it=S.byId.get(l.id); if(!it||!hasAlt(it)) return;
     if(l.alt){ l.alt=false; l.unit=it.unit; l.rate=+it.sell||0; } else { l.alt=true; l.unit=it.altUnit; l.rate=altPrice(it); }
@@ -2805,11 +2842,48 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const q=e.target.dataset?.qty, r=e.target.dataset?.rate;
-  if(q!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+q].qty=v; saveBill(); updateBillTotals(); } }
+  if(q!=null){ const l=S.bill[+q], v=parseQty(e.target.value,l&&l.unit); if(l && !isNaN(v)&&v>=0){ l.qty=v; saveBill(); updateBillTotals(); qpHint(e.target,+q); } else if(l) qpHint(e.target,+q); }
   if(r!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
   const h=e.target.dataset?.hsn;
   if(h!=null){ const v=e.target.value.replace(/\D/g,"").slice(0,8); if(v!==e.target.value) e.target.value=v; const l=S.bill[+h]; if(!l) return; if(v) l.hsn=v; else delete l.hsn; saveBill(); updateBillTotals(); }
 });
+/* ---------------- Quick quantity strip (kg / litre lines) ----------------
+ * Tapping the qty box on a kg or L line opens a small strip under it instead of the keyboard: 250 g · 500 g · 750 g ·
+ * 1 · 1.5 · 2 · 5 · Type. It floats over the next line and closes after a pick, so the bill line itself takes no extra
+ * space. "Type" opens the keyboard (decimal) for odd amounts. Typing 250 on a kg line offers a one-tap "250 g?" fix. */
+const QP_PARTS=[0.25,0.5,0.75], QP_WHOLE=[1,1.5,2,5];
+function qpEl(){ let el=$("#qpick"); if(!el){ el=document.createElement("div"); el.id="qpick"; el.className="qpick"; el.setAttribute("role","listbox"); el.hidden=true; document.body.appendChild(el);
+    el.addEventListener("pointerdown",e=>e.preventDefault());
+    el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; const i=+el.dataset.i, l=S.bill[i]; if(!l){ qpClose(); return; }
+      if(b.dataset.type!=null){ qpClose(); const inp=$("#bq-"+i); if(inp && !inp.readOnly){ inp.focus(); try{ inp.select(); }catch{} return; } if(inp){ inp.blur(); inp.readOnly=false; inp.value=String(l.qty); inp.focus(); try{ inp.select(); }catch{} } return; }
+      l.qty=+b.dataset.q; qpClose(); saveBill(); renderBill(); try{navigator.vibrate&&navigator.vibrate(8);}catch{}
+      const ln=document.querySelector(`.bill-line[data-i="${i}"]`); if(ln){ ln.classList.remove("flash"); void ln.offsetWidth; ln.classList.add("flash"); } }); }
+  return el; }
+function qpPlace(el,anchor){ const r=anchor.getBoundingClientRect(), w=Math.min(window.innerWidth-16, el.offsetWidth||320);
+  let x=Math.max(8, Math.min(r.left-8, window.innerWidth-w-8)), y=r.bottom+6;
+  const vh=(window.visualViewport?window.visualViewport.height:window.innerHeight); if(y+56>vh) y=Math.max(8,r.top-56-6);
+  el.style.left=x+"px"; el.style.top=y+"px"; }
+function qpOpen(i,anchor){ const l=S.bill[i]; if(!l) return; const sub=fracSub(l.unit); if(!sub) return; const el=qpEl(); el.dataset.i=i;
+  const chip=(q,lab)=>`<button type="button" data-q="${q}" aria-selected="${Math.abs(q-l.qty)<1e-9}">${esc(lab)}</button>`;
+  el.innerHTML=QP_PARTS.map(q=>chip(q,`${q*1000}${sub}`)).join("")+`<i></i>`+QP_WHOLE.map(q=>chip(q,fmtN(q))).join("")+`<i></i><button type="button" class="qp-t" data-type aria-label="${esc(t("qpType"))}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>`;
+  el.classList.remove("hint"); el.hidden=false; qpPlace(el,anchor); anchor.classList.add("qp-on"); }
+function qpClose(){ const el=$("#qpick"); if(el && !el.hidden){ el.hidden=true; document.querySelectorAll(".qp-on").forEach(x=>x.classList.remove("qp-on")); } }
+/** Typed a whole number of 50+ on a kg/L line (keyboard has no "g"): offer "250 g?" — never changed on its own. */
+function qpHint(inp,i){ const l=S.bill[i], sub=l&&fracSub(l.unit), raw=String(inp.value).trim();
+  if(!sub || !/^\d+$/.test(raw) || +raw<50 || +raw>=1000){ qpClose(); return; }
+  const el=qpEl(); el.dataset.i=i; el.innerHTML=`<button type="button" data-q="${+raw/1000}">${esc(t("qpHint",raw+" "+unitL(sub)))}</button>`; el.classList.add("hint"); el.hidden=false; qpPlace(el,inp); }
+document.addEventListener("click",e=>{ const fq=e.target.closest("[data-fq]"); if(fq){ const i=+fq.dataset.fq, el=$("#qpick"), open=el && !el.hidden && +el.dataset.i===i && !el.classList.contains("hint");
+    if(fq.readOnly){ if(open) qpClose(); else qpOpen(i,fq); return; }
+    if(!open && DESK()){ qpOpen(i,fq); setTimeout(()=>{ try{ fq.select(); }catch{} },0); } return; }   // laptop: strip opens, and typing still works (it closes the strip)
+  if(!e.target.closest("#qpick")) qpClose(); },true);
+document.addEventListener("keydown",e=>{ if(e.target.dataset?.fq!=null && (e.key==="Escape"||e.key==="Enter")){ const el=$("#qpick"); if(el && !el.hidden){ if(e.key==="Escape") e.stopPropagation(); qpClose(); } if(e.key==="Enter") e.target.blur(); } },true);
+/* Leaving a typed qty box: redraw so it shows "250g" again (and goes back to tap-to-pick). */
+document.addEventListener("focusout",e=>{ if(e.target.dataset?.qty!=null && e.target.classList.contains("fq")){ setTimeout(()=>{ const el=$("#qpick"); if(el && el.classList.contains("hint") && !el.hidden) return; if(!document.activeElement || document.activeElement.dataset?.qty==null) renderBill(); },150); } });
+/* Scrolling moves the strip with its line; it closes once the line leaves the screen. */
+function qpFollow(e){ const el=$("#qpick"); if(!el || el.hidden || (e && e.target && e.target.closest && e.target.closest("#qpick"))) return;
+  const a=$("#bq-"+el.dataset.i); if(!a){ qpClose(); return; } const r=a.getBoundingClientRect(), vh=window.visualViewport?window.visualViewport.height:innerHeight;
+  if(r.bottom<0 || r.top>vh || (!r.width && !r.height)) qpClose(); else qpPlace(el,a); }
+document.addEventListener("scroll",qpFollow,{passive:true,capture:true}); window.addEventListener("resize",()=>qpFollow());
 /* HSN left empty on a bill line goes back to the item's own HSN. */
 document.addEventListener("focusout",e=>{ if(e.target.dataset?.hsn!=null && !e.target.value.trim()){ const l=S.bill[+e.target.dataset.hsn]; if(l) e.target.value=lineInfo(l).hsn; } });
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
@@ -3062,7 +3136,7 @@ function pickImage(){ return new Promise(res=>{ const f=$("#file"); f.value=""; 
 function apiUrl(){ return API_URL || ls.get("rb_api",""); }
 function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
-function apiPost(body){ if(body && BILL_CHANGES.has(body.action)) blcDirty(); return netTrack(apiPost0(body)); }
+function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
 async function apiGet0(params){
   const u=apiUrl()+"?"+new URLSearchParams({...params,...(params.action==="list"&&params.k===undefined?{k:ls.get("rb_view","")}:{}),_:String(Date.now())});
   const r=await fetch(u,{cache:"no-store",redirect:"follow"});
@@ -3542,7 +3616,7 @@ function oldBillText(b){
   s+="\n"+parts.map((x,i)=>{ const m=x.match(/^(.*) ([\d.]+) (\S+) x ([\d.]+)(?: \[(.*)\])?$/);
     if(!m) return `${i+1}. ${x}`;
     const qty=+m[2], rate=+m[4];
-    return `${i+1}. ${m[1].trim()}${m[5]?` (${m[5]})`:""} — ${fmtN(qty)} ${unitL(m[3])} × ${rs(rate)} = ${rs(r2(qty*rate))}`; }).join("\n");
+    return `${i+1}. ${m[1].trim()}${m[5]?` (${m[5]})`:""} — ${qtyText(qty,m[3])} × ${rs(rate)}${isPart(qty,m[3])?"/"+unitL(m[3]):""} = ${rs(r2(qty*rate))}`; }).join("\n");
   if(b.gst && b.taxable!=null){ s+=`\n\n${t("taxable")}: ${rs2(b.taxable)}`; if(b.tax!=null) s+=`\nGST${b.igst?" (IGST)":" (CGST+SGST)"}: ${rs2(b.tax)}`; s+=`\n*${t("grandTotal")}: ${rs(b.total)}*\n_${t("inWordsL")}: ${inWords(b.total)}_`; }
   else s+=`\n\n*${t("total")}: ${rs(b.total)}*`;
   return s;
@@ -3589,6 +3663,7 @@ function openBills(){
         <label class="bl-chip${BL.year?" on":""}" id="bl-yc"><select id="bl-year" aria-label="${esc(t("blYear"))}"><option value="">${esc(t("blAllYears"))}</option>${BL.year?`<option value="${esc(BL.year)}" selected>${esc(BL.year)}</option>`:""}</select></label>
         <span class="bl-chip${BL.date?" on":""}" id="bl-dc">${calIcon}<span id="bl-dl">${esc(BL.date?dayLabel(BL.date):t("blDate"))}</span><input type="date" id="bl-date" aria-label="${esc(t("blDate"))}" value="${esc(BL.date)}"></span>
         <button type="button" class="bl-clear" id="bl-clr" aria-label="${esc(t("blClear"))}" ${BL.year||BL.date?"":"hidden"}>✕</button>
+        <span class="bl-sync" id="bl-sync" hidden><span class="ld"></span>${esc(t("blSyncing"))}</span>
       </div>
     </div>
     <div class="bills-list" id="bl-list">${skelCards(5,true)}</div>`;
@@ -3615,17 +3690,45 @@ function billFilter(){
 let BLC=null, blcLoading=null, blcFreshAt=0;
 const blcKey=()=>"bills:"+S.cfg.mode;
 function blcDirty(){ blcFreshAt=0; }
-/** A bill just made on this phone shows in Past bills straight away; the next refresh replaces it with the sheet's copy. */
-function blcAdd(rec){ try{ if(!BLC || BLC.env!==S.cfg.mode) return; const now=new Date(), due=+rec.due||0;
-  BLC.bills.unshift({ n:rec.n, date:now.toISOString(), day:dayKey(now), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
+/** A bill made on this phone shows in Past bills straight away, even before it reaches the sheet and even if Past bills was
+ *  never opened. It's kept in a small list (rb_bloc_<mode>) until the phone's copy of bills includes it (or 30 min pass). */
+const blocKey=env=>"rb_bloc_"+env;
+function blocGet(env){ const a=ls.get(blocKey(env),[]); return Array.isArray(a)?a:[]; }
+function blcAdd(rec){ try{ const env=rec.env||S.cfg.mode, now=new Date(), due=+rec.due||0, L=blocGet(env).filter(x=>x.id!==rec.id), prev=blocGet(env).find(x=>x.id===rec.id);
+  const at=prev?new Date(prev.date):now;
+  L.unshift({ n:rec.n, date:at.toISOString(), day:dayKey(at), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
     taxable:rec.gst?rec.taxable:null, tax:rec.gst?rec.tax:null, custGstin:rec.custGstin, igst:rec.igst, id:rec.id, row:0, editedAt:"", editedBy:"", edits:0, cost:rec.cost, profit:rec.profit,
-    pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines });
-  }catch{} }
+    pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines, _t:Date.now() });
+  ls.set(blocKey(env), L.slice(0,60)); blcBump(); }catch{} }
+/* Keep Past bills fresh in the background: after this phone sends bills or changes one, and when the 25-second check says
+ * bills changed on another phone. Several quick bills are batched into one small "what changed" request. Only for phones
+ * that already keep a copy (Past bills opened once); the copy downloads on first open otherwise. */
+let blcT=0, blcWant="";
+function blcSoon(ms,want){ blcWant=want||""; clearTimeout(blcT); blcT=setTimeout(blcBg, ms==null?1200:ms); }
+async function blcBg(){
+  if(!S.canWrite || document.hidden || !apiUrl() || navigator.onLine===false) return;
+  if(flushing || S.billQ.length) return blcSoon(2500);           // wait until this phone's bills have reached the sheet
+  const C=await blcGet(); if(!C) return;
+  if(blcWant && C.brev===blcWant){ blcWant=""; return; }          // already up to date
+  blcWant="";
+  try{ const C2=await blcRefresh(); if(C2) blcShow(C2); }catch{}
+}
+/** Redraw Past bills (if open) from the copy, keeping the scroll position and flashing bills that just appeared. */
+function blcShow(C){
+  const l=$("#bl-list"); if(!l || billsServer) return;
+  const had=new Set(billsCache.map(b=>b.id)), sc=$("#sheet-body"), st=sc?sc.scrollTop:0;
+  renderLocalBills(C,true); if(sc) sc.scrollTop=st;
+  if(had.size) l.querySelectorAll("[data-bid]").forEach(el=>{ if(!had.has(el.dataset.bid)) el.classList.add("bl-new"); });
+}
+/** Something on this phone changed the list (new bill, sent bill): redraw if Past bills is open. */
+function blcBump(){ if(BLC && $("#bl-list") && !billsServer) blcShow(BLC); }
+function blcSyncUi(on){ const e=$("#bl-sync"); if(e) e.hidden=!on; }
 async function blcGet(){ if(BLC && BLC.env===S.cfg.mode) return BLC; const v=await idb.get("images",blcKey()); if(v && Array.isArray(v.bills) && v.env===S.cfg.mode) BLC=v; return BLC && BLC.env===S.cfg.mode ? BLC : null; }
 function blcRefresh(){
   if(blcLoading) return blcLoading;
   const env=S.cfg.mode;
   const have=BLC && BLC.env===env ? BLC : null;
+  blcSyncUi(true);
   blcLoading=(async()=>{ const j=await apiPost0({action:"listBills",q:"",limit:3000,full:true,tz:new Date().getTimezoneOffset(),brev:have&&have.brev||""});
       if(!j.full) return null;                                   // older Apps Script: no full copy, search on the sheet instead
       if(j.same && have){ have.at=Date.now(); if(env===S.cfg.mode) blcFreshAt=Date.now(); return have; }   // nothing changed on any phone: nothing downloaded
@@ -3637,14 +3740,18 @@ function blcRefresh(){
         if(env===S.cfg.mode){ BLC=have; blcFreshAt=Date.now(); } idb.set("images","bills:"+env,have); return have; }
       const C={env, at:Date.now(), brev:j.brev||"", bills:j.bills||[], more:!!j.more, years:j.years||[]};
       if(env===S.cfg.mode){ BLC=C; blcFreshAt=Date.now(); }
-      idb.set("images","bills:"+env,C); return C; })().finally(()=>{ blcLoading=null; });
+      idb.set("images","bills:"+env,C); return C; })().finally(()=>{ blcLoading=null; blcSyncUi(false); });
   return blcLoading;
 }
 function blcQuery(C){
   const ids=new Set(C.bills.map(b=>b.id)), pend=(S.billQ||[]).filter(q=>(q.env||"test")===C.env && !ids.has(q.id)).map(q=>{ const d=q.at?new Date(q.at):new Date(), due=+q.due||0;
     return { n:q.n, date:d.toISOString(), day:dayKey(d), customer:q.customer, mobile:q.mobile, total:q.total, items:q.items, gst:q.gst, custGstin:q.custGstin, igst:q.igst, id:q.id, row:0, edits:0,
       cost:q.cost, profit:q.profit, pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", text:q.text, lines:q.lines, pending:true }; });
-  const src=pend.length ? pend.reverse().concat(C.bills) : C.bills;
+  const pids=new Set(pend.map(x=>x.id)), L0=blocGet(C.env), keep=L0.filter(x=>!ids.has(x.id) && Date.now()-(x._t||0)<30*60000);
+  if(keep.length!==L0.length) ls.set(blocKey(C.env),keep);                 // the copy has them now (or they're old): drop
+  const loc=keep.filter(x=>!pids.has(x.id)).map(x=>({...x, pending:(S.billQ||[]).some(q=>q.id===x.id)}));
+  const top=pend.reverse().concat(loc).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const src=top.length ? top.concat(C.bills) : C.bills;
   const needle=BL.q.trim().toLowerCase(), digits=needle.replace(/\D/g,""), f=billFilter();
   const days={}, months={}, all={count:0,total:0}, out=[];
   for(const b of src){ const k=b.day||"unknown";
@@ -3676,7 +3783,7 @@ async function loadBills(more){
   BL.shown = more ? (BL.shown||60)+60 : 60;
   const C=await blcGet();
   if(C){ renderLocalBills(C,more);
-    if(!more) blcRefresh().then(C2=>{ if(C2 && $("#bl-list")){ const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; renderLocalBills(C2,true); if(sc) sc.scrollTop=st; } }).catch(()=>{});
+    if(!more){ blcSyncUi(true); blcRefresh().then(C2=>{ if(C2) blcShow(C2); }).catch(()=>{}).finally(()=>blcSyncUi(!!blcLoading)); }
     return; }
   list.innerHTML=skelCards(5,true);
   try{ const C2=await blcRefresh(); if(!$("#bl-list")) return; if(C2) renderLocalBills(C2); else return loadBillsServer(more); }
@@ -3726,7 +3833,7 @@ function renderBills(){
       const dd=billsDays[k]||{count:0,total:0}, dShut = !!BL.col[k];
       html+=`<div class="bl-grp bl-dgrp${dShut?" shut":""}"><button type="button" class="bl-day" data-tg="${esc(k)}" aria-expanded="${!dShut}">${chev}<span class="bl-ml">${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></button><div class="bl-gb">`;
       byM[m].byD[k].forEach(i=>{ const b=billsCache[i], d=b.date?new Date(b.date):null;
-        html+=`<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-bi="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
+        html+=`<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-bi="${i}" data-bid="${esc(b.id||"")}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
         <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
       html+=`</div></div>`;
     });
@@ -3857,7 +3964,7 @@ const fmtShort=d=>d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:
 /** "PP Bag 200 Gauge 1 kg x 220 [HSN 3923, 18%]; Drone 1 pc x 8" → readable lines with each line's amount. */
 function itemLinesText(items){
   return String(items||"").split("; ").filter(Boolean).map((part,i)=>{ const x=part.replace(/\s*\[[^\]]*\]\s*$/,""); const m=x.match(/^(.*) ([\d.]+) (\S+) x ([\d.]+)$/);
-    return m ? `   ${i+1}. ${m[1]} — ${fmtN(+m[2])} ${m[3]} × ${rs(+m[4])} = ${rs(r2(+m[2]*+m[4]))}` : `   ${i+1}. ${x}`; }).join("\n");
+    return m ? `   ${i+1}. ${m[1]} — ${qtyText(+m[2],m[3],true)} × ${rs(+m[4])}${isPart(+m[2],m[3])?"/"+m[3]:""} = ${rs(r2(+m[2]*+m[4]))}` : `   ${i+1}. ${x}`; }).join("\n");
 }
 function remindText(c){
   const blocks=c.bills.map(b=>{ const head=`*${b.gst?"GST ":""}Bill No. ${b.n}* · ${fmtDate(b.date)}`;
@@ -4019,7 +4126,8 @@ function sync(){
 }
 async function checkRev(){
   if(!apiUrl() || document.hidden) return;
-  try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); } }
+  try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); }
+    const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv)); }
   catch{ S.online=false; renderNet(); }
 }
 async function fetchThumbs(){

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 18;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 19;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -373,6 +373,8 @@ function readConfig_() {
   const cfg = {};
   if (n > 0) s.getRange(2, 1, n, 2).getValues().forEach(r => { if (r[0]) cfg[String(r[0])] = r[1]; });
   if (cfg.units) { try { cfg.units = JSON.parse(cfg.units); } catch (err) { delete cfg.units; } }
+  try { cfg.groups = cfg.groups ? JSON.parse(cfg.groups) : []; if (!Array.isArray(cfg.groups)) cfg.groups = []; } catch (err) { cfg.groups = []; }
+  cfg.bizType = String(cfg.bizType || '');
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
   cfg.nextBill = Math.max(1, Math.floor(num_(cfg.nextBill)) || 1);
   cfg.nextGstBill = Math.max(1, Math.floor(num_(cfg.nextGstBill)) || 1);
@@ -417,6 +419,7 @@ function doPost(e) {
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
       case 'setImages': res = setImages_(str_(body.id, 40), String(body.thumb || ''), body.photos, by); break;
       case 'setConfig': res = setConfig_(body.config || {}); break;
+      case 'setGroups': res = setGroups_(body.groups); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); break;
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
@@ -457,7 +460,7 @@ function doPost(e) {
  */
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
-  upsert: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
+  upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
@@ -658,9 +661,19 @@ function images_(id) {
   return { ok: true, images: out.map(x => ({ k: x.k, data: x.data })) };
 }
 
+/* Item groups list (Config "groups", JSON). Managers can change it (they edit items); renaming/removing is done by the app
+   re-saving the items and then sending the new list. */
+function setGroups_(list) {
+  const clean = []; (Array.isArray(list) ? list : []).forEach(g => { const v = str_(g, 40).replace(/\s+/g, ' ').trim(); if (v && !clean.some(x => x.toLowerCase() === v.toLowerCase())) clean.push(v); });
+  const s = sheet_(CONFIG, ['key', 'value']); const n = s.getLastRow() - 1;
+  const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
+  const val = JSON.stringify(clean.slice(0, 120)).slice(0, 5000), i = keys.indexOf('groups');
+  if (i >= 0) s.getRange(i + 2, 2).setValue(val); else s.appendRow(['groups', val]);
+  return { config: readConfig_() };
+}
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, bizType: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {

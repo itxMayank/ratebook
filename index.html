@@ -605,6 +605,14 @@ body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
 .card .aka{font-size:12.5px;color:var(--muted);margin-top:1px}
 .catpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .catpick:empty{display:none}
+.catpick button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+.catpick button .n{margin-left:5px;opacity:.6;font-weight:700}
+.catpick .cat-add{border-style:dashed;color:var(--accent)}
+.catnew{display:flex;gap:6px;margin-top:6px}
+.catnew input{flex:1;min-width:0;border:1.5px solid var(--line);background:var(--surface-2);border-radius:10px;padding:9px 10px;font:500 14px var(--f-body);color:var(--fg);text-align:left!important}
+.catnew .btn{flex:none;padding:8px 14px}
+.autotag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font:700 11px var(--f-body);vertical-align:1px}
+.grp-man{display:grid;gap:8px;padding-bottom:12px;margin-bottom:12px;border-bottom:1.5px solid var(--line)}
 .catpick button{border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 11px;font:600 13px var(--f-body)}
 .grp-head{display:grid;grid-template-columns:1fr 1fr;gap:8px;font:700 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 2px 4px}
 .grp-list{display:grid;gap:8px}
@@ -1410,7 +1418,9 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", akaL:"Also:", akaField:"Other names", akaPh:"e.g. thaili, panni, carry bag", akaPhShort:"+ add", akaD:"Names customers use. Search finds the item by these too. Separate with commas.", catField:"Group", catPh:"e.g. Bags",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", catAuto:"auto", catNew:"New group", catNewPh:"New group name", catRename:"Rename", catRemove:"Remove", catRemoveD:"Removing a group keeps its items; they just have no group.", catRenamed:"Group renamed", catRemoved:"Group removed",
+  bizL:"Type of business", bizPick:"Pick your type of business", biz_plastics:"Plastics & housekeeping", biz_kirana:"Kirana / grocery", biz_stationery:"Stationery", biz_hardware:"Hardware & paints", biz_other:"Other (learn from my items)",
+  bizAddSug:n=>`Add ${n} suggested group${n===1?"":"s"}`, grpSetT:"Item groups", grpManage:"Manage groups", grpCount:n=>`${n} group${n===1?"":"s"}`, akaL:"Also:", akaField:"Other names", akaPh:"e.g. thaili, panni, carry bag", akaPhShort:"+ add", akaD:"Names customers use. Search finds the item by these too. Separate with commas.", catField:"Group", catPh:"e.g. Bags",
   layGrid:"Photo grid", layList:"List", grpT:"Groups & other names", grpToolD:"Sort items into groups, add names customers use", grpHelp:"Groups show as chips above the price list. Grey groups are suggestions from the name: keep, change or clear them. Other names (comma separated) are found by search.",
   grpOnlyEmpty:"Only items without a group", grpSaveN:n=>`Save ${n} change${n===1?"":"s"}`, grpNone:"No changes", grpAllDone:"Every item has a group.", printBtn:"Print", prNothing:"Nothing to print yet", prT:"Printer (this phone / laptop)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
   prPageD:"Office printer: a full invoice on A4 or A5 paper, through this device's print screen.", prRollD:"Receipt printer: a narrow bill sized to the paper roll. Choose how this device reaches the printer:",
@@ -1430,7 +1440,9 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", akaL:"और नाम:", akaField:"दूसरे नाम", akaPh:"जैसे थैली, पन्नी, कैरी बैग", akaPhShort:"+ जोड़ें", akaD:"ग्राहक जो नाम बोलते हैं। सर्च इनसे भी आइटम ढूँढेगा। कॉमा से अलग करें।", catField:"ग्रुप", catPh:"जैसे Bags",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", catAuto:"अपने आप", catNew:"नया ग्रुप", catNewPh:"नए ग्रुप का नाम", catRename:"नाम बदलें", catRemove:"हटाएँ", catRemoveD:"ग्रुप हटाने से आइटम नहीं हटते; बस उनका ग्रुप नहीं रहता।", catRenamed:"ग्रुप का नाम बदला", catRemoved:"ग्रुप हटाया",
+  bizL:"दुकान का प्रकार", bizPick:"अपनी दुकान का प्रकार चुनें", biz_plastics:"प्लास्टिक और हाउसकीपिंग", biz_kirana:"किराना", biz_stationery:"स्टेशनरी", biz_hardware:"हार्डवेयर और पेंट", biz_other:"दूसरा (मेरे आइटम से सीखें)",
+  bizAddSug:n=>`${n} सुझाए ग्रुप जोड़ें`, grpSetT:"आइटम ग्रुप", grpManage:"ग्रुप सँभालें", grpCount:n=>`${n} ग्रुप`, akaL:"और नाम:", akaField:"दूसरे नाम", akaPh:"जैसे थैली, पन्नी, कैरी बैग", akaPhShort:"+ जोड़ें", akaD:"ग्राहक जो नाम बोलते हैं। सर्च इनसे भी आइटम ढूँढेगा। कॉमा से अलग करें।", catField:"ग्रुप", catPh:"जैसे Bags",
   layGrid:"फ़ोटो ग्रिड", layList:"लिस्ट", grpT:"ग्रुप और दूसरे नाम", grpToolD:"आइटम ग्रुप में बाँटें, ग्राहकों वाले नाम जोड़ें", grpHelp:"ग्रुप रेट लिस्ट के ऊपर चिप्स में दिखते हैं। धूसर ग्रुप नाम से सुझाए गए हैं: रखें, बदलें या हटा दें। दूसरे नाम (कॉमा से अलग) सर्च में मिलते हैं।",
   grpOnlyEmpty:"सिर्फ़ बिना ग्रुप वाले आइटम", grpSaveN:n=>`${n} बदलाव सेव करें`, grpNone:"कोई बदलाव नहीं", grpAllDone:"हर आइटम का ग्रुप है।", printBtn:"प्रिंट", prNothing:"अभी प्रिंट करने को कुछ नहीं", prT:"प्रिंटर (यह फ़ोन / लैपटॉप)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
   prPageD:"ऑफ़िस प्रिंटर: A4 या A5 कागज़ पर पूरा बिल, इस डिवाइस की प्रिंट स्क्रीन से।", prRollD:"रसीद प्रिंटर: रोल की चौड़ाई जितना छोटा बिल। प्रिंटर से कैसे जुड़ा है, चुनें:",
@@ -1522,7 +1534,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=18;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=19;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1633,7 +1645,7 @@ const nameCmp=(a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"});
 function sortItems(arr){ if(S.sortBy==="az" || !S.pop) arr.sort(nameCmp); else arr.sort((a,b)=>popN(b.id)-popN(a.id) || nameCmp(a,b)); return arr; }
 function setSort(m){ S.sortBy=m; ls.set("rb_sort",m); sortItems(S.items); buildIndex(); S.limit=40; renderList(); window.scrollTo({top:0}); }
 function buildIndex(){
-  S.index = S.items.map(it => { const toks=[...phonTokens(it.name),...phonTokens(it.nameHi),...phonTokens(it.aliases),...phonTokens(it.cat)]; /* other names and group are searchable too */ return { it, toks, key: phonTokens(it.name).join(" ") }; });
+  CAT_M=null; S.index = S.items.map(it => { const toks=[...phonTokens(it.name),...phonTokens(it.nameHi),...phonTokens(it.aliases),...phonTokens(it.cat)]; /* other names and group are searchable too */ return { it, toks, key: phonTokens(it.name).join(" ") }; });
 }
 function runSearch(q){
   const qt=phonTokens(q);
@@ -1928,32 +1940,99 @@ function akaHTML(it,q){ if(!q || !it.aliases) return ""; const raw=q.trim().toLo
   return hit.length ? `<div class="aka">${esc(t("akaL"))} ${hit.slice(0,2).map(a=>highlight(a,q)).join(", ")}</div>` : ""; }
 const aliasList = s => String(s||"").split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
 /** Groups in use, most items first. */
-/* Group suggestions from the item name (packaging shop words). Only a suggestion: shown greyed, saved only if kept. */
-const CAT_RULES=[
-  ["Bags",/\b(bags?|thail[ia]|thaili|carry|pouch(es)?|zip ?lock|ziplock|garbage|dustbin|d-?cut|w-?cut|polythene|panni|bori|sack|liner)\b/i],
-  ["Cups & glasses",/\b(cups?|glass(es)?|tumblers?|kulhad|gilas)\b/i],
-  ["Plates & bowls",/\b(plates?|thali|bowls?|dona|donna|katori|pattal)\b/i],
-  ["Containers & boxes",/\b(containers?|box(es)?|dabba|tub|jar|lunch ?box|meal ?tray|tray)\b/i],
-  ["Foil",/\b(foil|silver|alumin(i)?um)\b/i],
-  ["Film & wrap",/\b(film|stretch|cling|wrap|shrink|bubble)\b/i],
-  ["Tape",/\b(tapes?|cello)\b/i],
-  ["Spoons & straws",/\b(spoons?|forks?|straws?|stirrers?|chammach)\b/i],
-  ["Tissue & napkins",/\b(tissues?|napkins?)\b/i],
-  ["Bottles",/\b(bottles?)\b/i],
-  ["Rubber bands",/\b(rubber|band)\b/i],
-];
-function guessCat(name){ const n=String(name||""); for(const [c,re] of CAT_RULES) if(re.test(n)) return c; return ""; }
+/* ---------------- Item groups ----------------
+ * Group names and the words that suggest them depend on the type of business (Settings → Item groups → Type of business,
+ * Config "bizType"). A new item's group is guessed from (1) items already in a group with a similar name (learned from this
+ * shop), then (2) the business type's word list. The guess is filled in automatically; it can be changed or cleared. */
+const BIZ={
+  plastics:{ groups:["Bags","Cups & glasses","Plates & bowls","Containers & boxes","Foil","Film & wrap","Tape","Spoons & straws","Tissue & napkins","Cleaning & housekeeping","Bottles","Rubber bands"],
+    rules:[["Bags",/\b(bags?|thail[ia]|carry|pouch(es)?|zip ?lock|ziplock|garbage|d-?cut|w-?cut|polythene|panni|bori|sack|liner)\b/i],
+      ["Cups & glasses",/\b(cups?|glass(es)?|tumblers?|kulhad|gilas)\b/i],["Plates & bowls",/\b(plates?|thali|bowls?|dona|donna|katori|pattal)\b/i],
+      ["Containers & boxes",/\b(containers?|box(es)?|dabba|tub|jar|lunch ?box|meal ?tray|tray)\b/i],["Foil",/\b(foil|silver|alumin(i)?um)\b/i],
+      ["Film & wrap",/\b(film|stretch|cling|wrap|shrink|bubble)\b/i],["Tape",/\b(tapes?|cello)\b/i],["Spoons & straws",/\b(spoons?|forks?|straws?|stirrers?|chammach)\b/i],
+      ["Tissue & napkins",/\b(tissues?|napkins?)\b/i],["Cleaning & housekeeping",/\b(phenyl|mop|pocha|broom|jhadu|jharu|wiper|duster|scrubber|scrub|cleaner|harpic|lizol|naphthalene|bucket|dustbin|toilet|brush|gloves?|sponge|odonil)\b/i],
+      ["Bottles",/\b(bottles?)\b/i],["Rubber bands",/\b(rubber ?bands?)\b/i]] },
+  kirana:{ groups:["Atta & flour","Rice & grains","Dal & pulses","Oil & ghee","Spices & masala","Sugar, salt & jaggery","Tea & coffee","Dry fruits","Snacks & biscuits","Dairy","Packaged food","Beverages","Soap & detergent","Personal care","Cleaning"],
+    rules:[["Atta & flour",/\b(atta|aata|maida|besan|suji|sooji|rava|flour)\b/i],["Rice & grains",/\b(rice|chawal|basmati|poha|dalia|jowar|bajra|ragi|millet|sabudana)\b/i],
+      ["Dal & pulses",/\b(dal|daal|moong|masoor|chana|rajma|urad|toor|tuar|arhar|lobia|matar|kabuli)\b/i],["Oil & ghee",/\b(oil|tel|ghee|sarso|sarson|mustard|refined|vanaspati|dalda)\b/i],
+      ["Spices & masala",/\b(masala|haldi|turmeric|mirch|chilli|chili|dhaniya|coriander|jeera|cumin|hing|elaichi|laung|clove|pepper|kali ?mirch|ajwain|methi|rai|spices?)\b/i],
+      ["Sugar, salt & jaggery",/\b(sugar|cheeni|chini|shakkar|gud|jaggery|salt|namak|mishri)\b/i],["Tea & coffee",/\b(tea|chai|patti|coffee)\b/i],
+      ["Dry fruits",/\b(kaju|badam|kishmish|almonds?|cashews?|raisins?|akhrot|walnuts?|pista|dates|khajur|makhana)\b/i],
+      ["Snacks & biscuits",/\b(biscuits?|namkeen|chips|kurkure|bhujia|cookies|rusk|toast|wafers?|mixture)\b/i],["Dairy",/\b(milk|doodh|paneer|curd|dahi|butter|cheese|makhan)\b/i],
+      ["Packaged food",/\b(noodles|maggi|pasta|sauce|ketchup|jam|cornflakes|oats|vermicelli|seviyan|papad|pickle|achar)\b/i],["Beverages",/\b(cold ?drink|juice|pepsi|coke|cola|sprite|frooti|maaza|water|bisleri|soda)\b/i],
+      ["Soap & detergent",/\b(soap|sabun|detergent|surf|washing|rin|tide|ariel|vim|nirma|wheel)\b/i],["Personal care",/\b(shampoo|toothpaste|tooth ?brush|paste|cream|lotion|deo|talc|powder|razor|hair ?oil|face ?wash|sanitary|pads?)\b/i],
+      ["Cleaning",/\b(phenyl|harpic|lizol|broom|jhadu|mop|pocha|cleaner|colin|naphthalene|agarbatti|matchbox)\b/i]] },
+  stationery:{ groups:["Notebooks & registers","Pens & pencils","Art & colours","Files & folders","Paper & charts","Office supplies","School & geometry","Gifts & cards"],
+    rules:[["Notebooks & registers",/\b(note ?books?|copy|copies|registers?|diary|diaries|note ?pad|drawing ?book|long ?book)\b/i],
+      ["Pens & pencils",/\b(pens?|pencils?|refills?|markers?|highlighters?|gel|ball ?pen|sketch ?pens?|fountain)\b/i],
+      ["Art & colours",/\b(colou?rs?|crayons?|paints?|brush(es)?|canvas|wax|poster|water ?colou?r|oil ?pastel|glitter)\b/i],
+      ["Files & folders",/\b(files?|folders?|envelopes?|clip ?board|binder|sleeve)\b/i],["Paper & charts",/\b(paper|a4|a3|charts?|sheets?|ream|bond|card ?sheet|photo ?paper)\b/i],
+      ["Office supplies",/\b(stapler|staples?|pins?|clips?|glue|fevicol|fevi ?stick|tape|scissors?|cutter|punch|calculator|stamp|ink|pad)\b/i],
+      ["School & geometry",/\b(geometry|scale|ruler|eraser|rubber|sharpener|compass|protractor|school ?bag|tiffin|bottle|lab ?coat)\b/i],
+      ["Gifts & cards",/\b(gift|greeting|cards?|wrapping|ribbon|toys?)\b/i]] },
+  hardware:{ groups:["Pipes & fittings","Tools","Electrical","Paints","Fasteners","Sanitary","Locks & handles","Adhesives & sealants"],
+    rules:[["Pipes & fittings",/\b(pipes?|elbow|tee|socket|coupler|valve|pvc|cpvc|gi|bend|reducer)\b/i],["Tools",/\b(hammer|spanner|screw ?driver|plier|drill|saw|chisel|wrench|tools?|measuring ?tape)\b/i],
+      ["Electrical",/\b(wire|cable|switch|bulb|led|mcb|holder|plug|socket|tube ?light|fan|extension)\b/i],["Paints",/\b(paints?|primer|putty|distemper|enamel|thinner|brush|roller)\b/i],
+      ["Fasteners",/\b(nails?|screws?|bolts?|nuts?|washers?|anchors?|rivets?|kil)\b/i],["Sanitary",/\b(tap|faucet|shower|basin|flush|commode|sink|health ?faucet)\b/i],
+      ["Locks & handles",/\b(locks?|handles?|hinges?|latch|tower ?bolt|aldrop|knob)\b/i],["Adhesives & sealants",/\b(m-?seal|araldite|fevicol|sealant|silicone|adhesive|teflon)\b/i]] },
+  other:{ groups:[], rules:[] }
+};
+const BIZ_KEYS=["plastics","kirana","stationery","hardware","other"];
+/** The shop's business type: the setting, or worked out from groups already in use (so this shop needs no setup). */
+function bizType(){ if(S.cfg.bizType && BIZ[S.cfg.bizType]) return S.cfg.bizType;
+  const have=new Set(allGroups().map(g=>g.toLowerCase())); let best="", bn=1;
+  for(const k of BIZ_KEYS){ const n=BIZ[k].groups.filter(g=>have.has(g.toLowerCase())).length; if(n>bn){ bn=n; best=k; } } if(best) return best;
+  const sn=String(S.cfg.shopName||"").toLowerCase();   // else a hint from the shop name, until the owner picks one
+  return /plastic|packag|disposable|housekeep/.test(sn)?"plastics" : /kirana|grocer|provision|general store|super ?mart|mart\b/.test(sn)?"kirana" : /stationer|book ?(depot|store|shop)|xerox/.test(sn)?"stationery" : /hardware|paint|sanitary|electric/.test(sn)?"hardware" : ""; }
+function bizRules(){ const b=bizType(); return b ? BIZ[b].rules : []; }
+/** Every group: the shop's list (Config "groups") plus any group used on an item, list order first. */
+function allGroups(){ const out=[], seen=new Set(), add=g=>{ const v=String(g||"").trim(); if(v && !seen.has(v.toLowerCase())){ seen.add(v.toLowerCase()); out.push(v); } };
+  (S.cfg.groups||[]).forEach(add); catsInUse().forEach(([c])=>add(c)); return out; }
+/* Learned from this shop: words in item names → groups. Built with the search index. */
+const CAT_STOP=new Set(["kg","gm","gms","g","ml","ltr","litre","liter","pc","pcs","piece","pieces","pkt","packet","pack","box","inch","inches","mm","cm","micron","gauge","guage","no","size","small","big","large","medium","jumbo","mini","new","best","super","premium","special","white","black","red","blue","green","yellow","pink","plain","printed","with","and","for","of","x"]);
+const CAT_UNITS=new Set(["kg","gm","gms","ml","ltr","litre","liter","pcs","pkt","inch","inches","mm","cm","micron","gauge","guage","grams","gram"]);
+/** Words that tell what an item is. Size words ("jumbo", "large") are skipped unless they're all the name has. */
+function catWords(n){ const all=String(n||"").toLowerCase().replace(/[^a-z\u0900-\u097f ]+/g," ").split(/\s+/).filter(w=>w.length>=3);
+  const main=all.filter(w=>!CAT_STOP.has(w)); return [...new Set(main.length?main:all.filter(w=>!CAT_UNITS.has(w)))]; }
+let CAT_M=null;
+function catModel(){ if(CAT_M) return CAT_M; const tok=new Map(), items=[];
+  S.items.forEach(it=>{ if(!it.cat) return; const ws=catWords(it.name); items.push({ws:new Set(ws),cat:it.cat}); ws.forEach(w=>{ const m=tok.get(w)||new Map(); m.set(it.cat,(m.get(it.cat)||0)+1); tok.set(w,m); }); });
+  return CAT_M={tok,items}; }
+/** Best group for a name, with where it came from: {cat, from:"like"|"word"|"rule"} or null. */
+function guessCatInfo(name){ const ws=catWords(name); if(!ws.length) return null; const M=catModel();
+  // 1) an item in a group with mostly the same words ("PP Bag 300 Gauge" → same group as "PP Bag 200 Gauge")
+  let best=null, bs=0; for(const x of M.items){ let c=0; ws.forEach(w=>{ if(x.ws.has(w)) c++; }); const j=c/(ws.length+x.ws.size-c); if(j>bs){ bs=j; best=x; } }
+  if(best && bs>=0.5) return {cat:best.cat, from:"like"};
+  // 2) words that, in this shop, almost always mean one group
+  const votes=new Map(); ws.forEach(w=>{ const m=M.tok.get(w); if(!m) return; let tot=0, top="", tn=0; m.forEach((n,c)=>{ tot+=n; if(n>tn){ tn=n; top=c; } }); if(tn/tot>=0.75) votes.set(top,(votes.get(top)||0)+tn/tot*Math.min(3,tot)); });
+  if(votes.size){ const [c]=[...votes.entries()].sort((a,b)=>b[1]-a[1])[0]; return {cat:c, from:"word"}; }
+  // 3) the business type's word list
+  for(const [c,re] of bizRules()) if(re.test(name)){ const have=allGroups().find(g=>g.toLowerCase()===c.toLowerCase()); return {cat:have||c, from:"rule"}; }
+  return null; }
+function guessCat(name){ const g=guessCatInfo(name); return g?g.cat:""; }
+/** Save the shop's group list (all phones get it with the next sync). */
+function saveGroups(list){ const clean=[]; list.forEach(g=>{ const v=String(g||"").trim(); if(v && !clean.some(x=>x.toLowerCase()===v.toLowerCase())) clean.push(v); });
+  const old=S.cfg.groups; S.cfg.groups=clean; saveCache(); if(!can("manager")) return Promise.resolve();
+  return write({action:"setGroups",groups:clean}).then(j=>{ if(j&&j.config&&Array.isArray(j.config.groups)) S.cfg.groups=j.config.groups; saveCache(); }).catch(()=>{ S.cfg.groups=old; }); }
+function addGroup(g){ if(allGroups().some(x=>x.toLowerCase()===g.toLowerCase()) && (S.cfg.groups||[]).some(x=>x.toLowerCase()===g.toLowerCase())) return Promise.resolve(); return saveGroups([...allGroups(),g]); }
+/** Rename or remove a group: re-save its items, then the list. */
+async function renameGroup(from,to){ const items=S.items.filter(it=>it.cat===from).map(it=>({id:it.id, base:it.updatedAt, cat:to||""}));
+  for(let i=0;i<items.length;i+=100){ const j=await write({action:"upsert",items:items.slice(i,i+100)}); mergeSaved(j.items); }
+  await saveGroups(allGroups().map(g=>g===from?to:g).filter(Boolean)); afterLocal(); }
+/** New items saved without a group get the guess (bulk add, plain-language add). */
+const withCat = rec => rec.cat ? rec : (()=>{ const c=guessCat(rec.name); return c?{...rec,cat:c}:rec; })();
 /** "bags " / "BAGS" → the spelling already in use ("Bags"), else first letter capital. */
-function normCat(v){ const x=String(v||"").replace(/\s+/g," ").trim().slice(0,40); if(!x) return ""; const have=catsInUse().find(([c])=>c.toLowerCase()===x.toLowerCase()); return have?have[0]:x.charAt(0).toUpperCase()+x.slice(1); }
+function normCat(v){ const x=String(v||"").replace(/\s+/g," ").trim().slice(0,40); if(!x) return ""; const have=allGroups().find(c=>c.toLowerCase()===x.toLowerCase()); return have||x.charAt(0).toUpperCase()+x.slice(1); }
 /** Tools → Groups & other names: every item in one list, groups pre-suggested from the name, saved in batches. */
 function openGroups(){
   let onlyEmpty=false; const ed={};   // id → {cat, aliases}
   const rows=()=>S.items.filter(it=>!onlyEmpty || !it.cat).slice().sort((a,b)=>(a.cat||guessCat(a.name)||"~").localeCompare(b.cat||guessCat(b.name)||"~")||a.name.localeCompare(b.name));
   const val=(it,k)=> ed[it.id]&&ed[it.id][k]!==undefined ? ed[it.id][k] : k==="cat" ? (it.cat||guessCat(it.name)) : (it.aliases||"");
   const changed=()=>S.items.filter(it=>{ const c=normCat(val(it,"cat")), a=aliasList(val(it,"aliases")).join(", "); return c!==(it.cat||"") || a!==(it.aliases||""); });
-  const body=`<p class="note" style="margin:0 0 8px">${esc(t("grpHelp"))}</p>
+  const body=`<div class="grp-man" id="gr-man"></div>
+    <p class="note" style="margin:0 0 8px">${esc(t("grpHelp"))}</p>
     <label class="note" style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" id="gr-only"> ${esc(t("grpOnlyEmpty"))}</label>
-    <datalist id="gr-cats">${[...new Set([...catsInUse().map(x=>x[0]),...CAT_RULES.map(x=>x[0])])].map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+    <datalist id="gr-cats">${allGroups().map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
     <div class="grp-head"><span>${esc(t("catField"))}</span><span>${esc(t("akaField"))}</span></div><div class="grp-list" id="gr-body"></div>
     <p class="note" id="gr-prog"></p>`;
   openSheet(t("grpT"), body, `<button class="btn ghost" id="gr-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="gr-save"></button>`, {full:true});
@@ -1963,6 +2042,23 @@ function openGroups(){
       return `<div class="grp-row"><b>${esc(it.name)}</b>
       <input data-gid="${esc(it.id)}" data-k="cat" list="gr-cats" maxlength="40" value="${esc(val(it,"cat"))}" class="${sug?"sugg":""}" placeholder="—" aria-label="${esc(t("catField"))}: ${esc(it.name)}">
       <input data-gid="${esc(it.id)}" data-k="aliases" maxlength="300" value="${esc(val(it,"aliases"))}" placeholder="${esc(t("akaPhShort"))}" aria-label="${esc(t("akaField"))}: ${esc(it.name)}"></div>`; }).join("") || `<p class="note">${esc(t("grpAllDone"))}</p>`; upd(); };
+  /* Top: type of business (owner), the group list (+ add, tap to rename/remove), suggested groups for the business type. */
+  let editing=null;
+  const drawMan=()=>{ const m=$("#gr-man"); if(!m) return; const b=bizType(), sug=b?BIZ[b].groups.filter(g=>!allGroups().some(x=>x.toLowerCase()===g.toLowerCase())):[];
+    m.innerHTML=`<div class="field"><label for="gr-biz">${esc(t("bizL"))}</label><select id="gr-biz" ${can("owner")?"":"disabled"}><option value="">${esc(t("bizPick"))}</option>${BIZ_KEYS.map(k=>`<option value="${k}" ${b===k?"selected":""}>${esc(t("biz_"+k))}</option>`).join("")}</select></div>
+      <div class="catpick" id="gr-chips">${allGroups().map(g=>`<button type="button" data-gedit="${esc(g)}" aria-pressed="${editing===g}">${esc(g)}<span class="n">${S.items.filter(it=>it.cat===g).length}</span></button>`).join("")}<button type="button" class="cat-add" data-gnew>+ ${esc(t("catNew"))}</button></div>
+      <div class="catnew" id="gr-new" hidden><input id="gr-new-in" maxlength="40" autocomplete="off" placeholder="${esc(t("catNewPh"))}"><button type="button" class="btn primary" id="gr-new-ok">${esc(t("add"))}</button></div>
+      ${editing?`<div class="catnew"><input id="gr-ren" maxlength="40" value="${esc(editing)}" aria-label="${esc(t("catRename"))}"><button type="button" class="btn primary" id="gr-ren-ok">${esc(t("catRename"))}</button><button type="button" class="btn ghost" id="gr-del">${esc(t("catRemove"))}</button></div><p class="note" style="margin:0">${esc(t("catRemoveD"))}</p>`:""}
+      ${sug.length?`<button type="button" class="btn ghost" id="gr-sug">${esc(t("bizAddSug",sug.length))}</button><p class="note" style="margin:0">${esc(sug.join(" · "))}</p>`:""}`;
+    $("#gr-biz").onchange=async e=>{ const v=e.target.value; try{ await write({action:"setConfig",config:{bizType:v}}); }catch{} S.cfg.bizType=v; saveCache(); drawMan(); draw(); };
+    $("#gr-chips").onclick=e=>{ if(e.target.closest("[data-gnew]")){ $("#gr-new").hidden=false; $("#gr-new-in").focus(); return; } const c=e.target.closest("[data-gedit]"); if(c){ editing = editing===c.dataset.gedit?null:c.dataset.gedit; drawMan(); } };
+    const addN=async()=>{ const v=normCat($("#gr-new-in").value); if(!v) return; await addGroup(v); drawMan(); };
+    $("#gr-new-ok").onclick=addN; $("#gr-new-in").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addN(); } });
+    if(editing){ $("#gr-ren-ok").onclick=async()=>{ const to=$("#gr-ren").value.replace(/\s+/g," ").trim(); if(!to||to===editing) return; btnBusy($("#gr-ren-ok"),true); try{ await renameGroup(editing,to); toast(t("catRenamed")); }catch{} editing=null; drawMan(); draw(); };
+      $("#gr-del").onclick=async()=>{ btnBusy($("#gr-del"),true); try{ await renameGroup(editing,""); toast(t("catRemoved")); }catch{} editing=null; drawMan(); draw(); }; }
+    const sb=$("#gr-sug"); if(sb) sb.onclick=async()=>{ btnBusy(sb,true); await saveGroups([...allGroups(),...sug]); drawMan(); };
+  };
+  drawMan();
   tb.addEventListener("input",e=>{ const id=e.target.dataset.gid; if(!id) return; (ed[id]=ed[id]||{})[e.target.dataset.k]=e.target.value; e.target.classList.remove("sugg"); upd(); });
   $("#gr-only").onchange=e=>{ onlyEmpty=e.target.checked; draw(); };
   $("#gr-cancel").onclick=closeSheet;
@@ -3544,8 +3640,9 @@ function openEdit(id,prefill=""){
     </details>
     <div class="field"><label for="ef-hi">${esc(t("hiName"))}</label><input id="ef-hi" value="${esc(it?.nameHi||"")}" autocomplete="off" lang="hi"></div>
     <div class="field"><label for="ef-aka">${esc(t("akaField"))}</label><input id="ef-aka" value="${esc(it?.aliases||"")}" autocomplete="off" placeholder="${esc(t("akaPh"))}"><p class="note" style="margin:0">${esc(t("akaD"))}</p></div>
-    <div class="field"><label for="ef-cat">${esc(t("catField"))}</label><input id="ef-cat" value="${esc(it?.cat||"")}" autocomplete="off" maxlength="40" placeholder="${esc(guessCat(it?.name||prefill)||t("catPh"))}">
-      <div class="catpick" id="ef-catpick">${[...new Set([guessCat(it?.name||prefill),...catsInUse().slice(0,12).map(x=>x[0])].filter(Boolean))].map(c=>`<button type="button" data-cpick="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
+    <div class="field"><label>${esc(t("catField"))} <span class="autotag" id="ef-cauto" hidden>${esc(t("catAuto"))}</span></label><input type="hidden" id="ef-cat" value="${esc(it?.cat||"")}">
+      <div class="catpick" id="ef-catpick"></div>
+      <div class="catnew" id="ef-catnew" hidden><input id="ef-catnew-in" maxlength="40" autocomplete="off" placeholder="${esc(t("catNewPh"))}"><button type="button" class="btn primary" id="ef-catnew-ok">${esc(t("add"))}</button></div></div>
     <div class="field"><label id="ef-phl">${esc(t("photosL"))}</label>
       <div class="ph-strip" id="ef-ph"></div>
       <p class="note" id="ef-phn" style="margin:0"></p>
@@ -3595,8 +3692,18 @@ function openEdit(id,prefill=""){
     for(const f of files){ try{ const r=await processImage(f); if(photos.length<MAX_PHOTOS){ photos.push({isNew:true,thumb:r.thumb,full:r.full,src:r.thumb}); photosChanged=true; renderPhotos(); } } catch{ toast(t("imgFail")); } }
     busy.hidden=true; };
   $("#ef-cam").addEventListener("change",onPhoto); $("#ef-gal").addEventListener("change",onPhoto);
-  $("#ef-catpick").onclick=e=>{ const b=e.target.closest("[data-cpick]"); if(b){ $("#ef-cat").value=b.dataset.cpick; } };
-  $("#ef-name").addEventListener("input",e=>{ $("#ef-cat").placeholder=guessCat(e.target.value)||t("catPh"); });
+  /* Group: chips for every group + "New group". A new item (or one without a group) gets the guess automatically until a chip is tapped. */
+  let catTouched=!!(it&&it.cat), catAuto=false;
+  const drawCats=()=>{ const cur=$("#ef-cat").value, list=allGroups(); if(cur && !list.some(g=>g.toLowerCase()===cur.toLowerCase())) list.unshift(cur);
+    $("#ef-catpick").innerHTML=list.map(c=>`<button type="button" data-cpick="${esc(c)}" aria-pressed="${c===cur}">${esc(c)}</button>`).join("")+`<button type="button" class="cat-add" data-cnew aria-label="${esc(t("catNew"))}">+ ${esc(t("catNew"))}</button>`;
+    $("#ef-cauto").hidden=!(catAuto && cur); };
+  const autoCat=()=>{ if(catTouched) return; const g=guessCat($("#ef-name").value); $("#ef-cat").value=g; catAuto=!!g; drawCats(); };
+  $("#ef-catpick").onclick=e=>{ const n=e.target.closest("[data-cnew]"); if(n){ $("#ef-catnew").hidden=false; $("#ef-catnew-in").focus(); return; }
+    const b=e.target.closest("[data-cpick]"); if(!b) return; catTouched=true; catAuto=false; $("#ef-cat").value = $("#ef-cat").value===b.dataset.cpick ? "" : b.dataset.cpick; drawCats(); };
+  const addNew=()=>{ const v=normCat($("#ef-catnew-in").value); if(!v) return; catTouched=true; catAuto=false; $("#ef-cat").value=v; $("#ef-catnew-in").value=""; $("#ef-catnew").hidden=true; addGroup(v); drawCats(); };
+  $("#ef-catnew-ok").onclick=addNew; $("#ef-catnew-in").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addNew(); } });
+  $("#ef-name").addEventListener("input",autoCat);
+  if(!catTouched) autoCat(); else drawCats();
   $("#ef-cancel").onclick=closeSheet;
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };
   ["ef-name","ef-buy"].forEach((k,i)=>$("#"+k).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $(i?"#ef-sell":"#ef-buy").focus(); } }));
@@ -3690,7 +3797,7 @@ function openBulkAdd(){
       const dup=findDup(r.name); const buy=r.buy===""?(dup?+dup.buy:0):toNum(r.buy);
       const hsn=String(r.hsn||"").replace(/\s/g,"");
       if(dup) return { id:dup.id, buy, sell:toNum(r.sell), unit:r.unit||dup.unit, ...(r.hi.trim()?{nameHi:r.hi.trim()}:(dup.nameHi?{}:{nameHi:toHindi(dup.name)})), ...(hsn?{hsn}:{}) };
-      return { tmp:tmpId(), name:r.name.trim(), nameHi:r.hi.trim()||toHindi(r.name.trim()), unit:r.unit||S.cfg.defaultUnit, buy, sell:toNum(r.sell), hsn:hsn||S.cfg.defaultHsn||"3923", gst:+S.cfg.defaultGst };
+      return withCat({ tmp:tmpId(), name:r.name.trim(), nameHi:r.hi.trim()||toHindi(r.name.trim()), unit:r.unit||S.cfg.defaultUnit, buy, sell:toNum(r.sell), hsn:hsn||S.cfg.defaultHsn||"3923", gst:+S.cfg.defaultGst });
     });
     try{
       for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#ba-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
@@ -3750,6 +3857,7 @@ function openSettings(){
       <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px" id="cf-pr"></div>
+    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
     <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
       <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
@@ -3783,7 +3891,7 @@ function openSettings(){
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
-  renderPrCfg();
+  renderPrCfg(); $("#cf-groups").onclick=()=>openGroups();
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
   if(!w) return;
@@ -3923,7 +4031,7 @@ async function applyActions(actions){
   for(const a of todo){
     if(a.op==="delete"){ dels.push(a.id); continue; }
     if(a.op==="update"){ const it=S.byId.get(a.id); const ch={id:a.id}; if(a.buy!=null&&a.buy!==it.buy) ch.buy=a.buy; if(a.sell!=null&&a.sell!==it.sell) ch.sell=a.sell; if(a.unit&&a.unit!==it.unit) ch.unit=a.unit; if(Object.keys(ch).length>1) ups.push(ch); continue; }
-    ups.push({ tmp:tmpId(), name:a.name.trim(), nameHi:a.nameHi||toHindi(a.name.trim()), unit:a.unit||S.cfg.defaultUnit, buy:a.buy==null?0:a.buy, sell:a.sell });
+    ups.push(withCat({ tmp:tmpId(), name:a.name.trim(), nameHi:a.nameHi||toHindi(a.name.trim()), unit:a.unit||S.cfg.defaultUnit, buy:a.buy==null?0:a.buy, sell:a.sell }));
   }
   try{
     if(ups.length){ const j=await write({action:"upsert",items:ups}); mergeSaved(j.items); }
@@ -4428,7 +4536,7 @@ function applyConfig(x){
   x=x||{}; if(x.raw) x={...x, ...x.raw};   // saved copy on this phone keeps both sets of bill numbers in raw
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
   S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1), showProfit: x.showProfit===true || String(x.showProfit).toLowerCase()==="true",
-    shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923") };
+    shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923"), groups:Array.isArray(x.groups)?x.groups.map(String).filter(Boolean):[], bizType:String(x.bizType||"") };
   S.cfg.mode = x.mode==="live" ? "live" : "test";
   S.cfg.raw = { nextBill:S.cfg.nextBill, nextGstBill:S.cfg.nextGstBill, testNextBill:Math.max(1,Math.floor(+x.testNextBill)||1), testNextGstBill:Math.max(1,Math.floor(+x.testNextGstBill)||1) };
   if(S.cfg.mode==="test"){ S.cfg.nextBill=S.cfg.raw.testNextBill; S.cfg.nextGstBill=S.cfg.raw.testNextGstBill; }

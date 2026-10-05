@@ -1303,10 +1303,10 @@ Object.assign(STR.hi,{notAllowed:"आपकी भूमिका में य�
   renumT:"बिल नंबर बदला",renumD:(a,b)=>`बिल ${a} दूसरे फ़ोन पर पहले से बन चुका था, इसलिए इसे बिल ${b} के रूप में सेव किया गया। अगर WhatsApp पर भेजा था, तो पुराने बिलों में खोलकर फिर से भेजें।`,renumOpen:"पुराने बिल खोलें",
   manualWarn:"शायद पहले से इस्तेमाल हुआ",conflictItem:by=>`${by||"किसी"} ने अभी यह सामान बदला। नया दिखा रहे हैं; अपना बदलाव फिर से करें।`,billChanged:"आपके खोलने के बाद किसी और ने यह बिल सेव किया। पुराने बिलों से फिर से खोलें।",
   sentQ:"क्या बिल WhatsApp पर गया?",sentQD:"हाँ दबाएँ तो बिल सेव होगा और नया बिल शुरू होगा। नहीं दबाएँ तो यही बिल रहेगा।",sentYes:"हाँ, भेज दिया",sentNo:"नहीं, यही बिल रखें"});
-Object.assign(STR.en,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",posPick:"Customer's state (place of supply)",shopStateL:"Shop's state (for GST bills)",fyResetL:"Start GST invoice numbers from 1 every April",fyResetD:"Financial-year numbering (like 26-27/1), as GST rules expect. Normal bills keep counting.",
+Object.assign(STR.en,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",posPick:"Customer's state (place of supply)",shopStateL:"Shop's state (for GST bills)",fyResetL:"Start GST invoice numbers from 1 every April",fyResetD:"Each financial year (April–March) starts again from 1. Numbers show without a year prefix. Normal bills keep counting.",
   cancelBill:"Cancel bill",cancelQ:"Why is this bill being cancelled?",cancelR1:"Customer returned goods",cancelR2:"Wrong bill",cancelR3:"Duplicate bill",cancelReasonPh:"Reason",cancelYes:"Cancel this bill",cancelDone:n=>`Bill ${n} cancelled.`,needReason:"Enter a reason.",
   cancelledPill:"Cancelled",cancelledInfo:(d,by,r)=>`Cancelled on ${d}${by?` by ${by}`:""}: ${r}`,restoreBill:"Restore bill",restoreDone:n=>`Bill ${n} restored.`,cancelledText:"*CANCELLED*"});
-Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",posPick:"ग्राहक का राज्य (place of supply)",shopStateL:"दुकान का राज्य (GST बिलों के लिए)",fyResetL:"हर अप्रैल से GST इनवॉइस नंबर 1 से शुरू करें",fyResetD:"वित्त-वर्ष के हिसाब से नंबर (जैसे 26-27/1), GST नियमों के मुताबिक़। सामान्य बिल गिनती जारी रखेंगे।",
+Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",posPick:"ग्राहक का राज्य (place of supply)",shopStateL:"दुकान का राज्य (GST बिलों के लिए)",fyResetL:"हर अप्रैल से GST इनवॉइस नंबर 1 से शुरू करें",fyResetD:"हर वित्त-वर्ष (अप्रैल–मार्च) में नंबर फिर 1 से शुरू होंगे, बिना साल के। सामान्य बिल गिनती जारी रखेंगे।",
   cancelBill:"बिल रद्द करें",cancelQ:"यह बिल क्यों रद्द हो रहा है?",cancelR1:"ग्राहक ने सामान लौटाया",cancelR2:"गलत बिल",cancelR3:"दो बार बना बिल",cancelReasonPh:"कारण",cancelYes:"यह बिल रद्द करें",cancelDone:n=>`बिल ${n} रद्द हुआ।`,needReason:"कारण लिखें।",
   cancelledPill:"रद्द",cancelledInfo:(d,by,r)=>`${d} को रद्द${by?` (${by})`:""}: ${r}`,restoreBill:"बिल वापस चालू करें",restoreDone:n=>`बिल ${n} वापस चालू।`,cancelledText:"*CANCELLED*"});
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
@@ -1410,7 +1410,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=15;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=16;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1880,8 +1880,8 @@ const fyShort=fy=>String(fy||"").replace(/^20(\d\d)-(\d\d)$/,"$1-$2");
 const fyOn=()=>S.cfg.fyReset!==false;
 function seriesNext(gst){ const raw=Math.max(1, Math.floor(+(gst?S.cfg.nextGstBill:S.cfg.nextBill))||1);
   if(gst && fyOn()){ const k=S.cfg.mode==="test"?S.cfg.testGstFy:S.cfg.gstFy; if(k && k!==curFY()) return 1; } return raw; }
-/** How a bill number is shown: GST invoices as 26-27/7 when financial-year numbering is on. */
-function dispNo(n,gst,fy){ return gst && fyOn() ? `${fyShort(fy||curFY())}/${n}` : String(n); }
+/** How a bill number is shown: always the plain number (the shop doesn't use a year prefix like 26-27/7). */
+function dispNo(n,gst,fy){ return String(n); }
 function curBillDisp(){ return dispNo(curBillNo(), S.gst, S.editing&&S.editing.fy ? S.editing.fy : curFY(S.editing&&S.editing.date ? S.editing.date : undefined)); }
 const STATES=[["01","Jammu & Kashmir"],["02","Himachal Pradesh"],["03","Punjab"],["04","Chandigarh"],["05","Uttarakhand"],["06","Haryana"],["07","Delhi"],["08","Rajasthan"],["09","Uttar Pradesh"],["10","Bihar"],["11","Sikkim"],["12","Arunachal Pradesh"],["13","Nagaland"],["14","Manipur"],["15","Mizoram"],["16","Tripura"],["17","Meghalaya"],["18","Assam"],["19","West Bengal"],["20","Jharkhand"],["21","Odisha"],["22","Chhattisgarh"],["23","Madhya Pradesh"],["24","Gujarat"],["26","Dadra & Nagar Haveli and Daman & Diu"],["27","Maharashtra"],["29","Karnataka"],["30","Goa"],["31","Lakshadweep"],["32","Kerala"],["33","Tamil Nadu"],["34","Puducherry"],["35","Andaman & Nicobar Islands"],["36","Telangana"],["37","Andhra Pradesh"],["38","Ladakh"],["97","Other Territory"]];
 const stateName=c=>(STATES.find(x=>x[0]===c)||[])[1]||"";
@@ -2505,7 +2505,7 @@ function exportCsv(kind){
   const R=RP.data; if(!R) return;
   const q=v=>{ const x=String(v==null?"":v); return /[",\n]/.test(x)?`"${x.replace(/"/g,'""')}"`:x; };
   let rows, name;
-  if(kind==="reg"){ name="invoice-register"; rows=[["Date","Invoice No","Customer","GSTIN","Place of supply","Taxable value","CGST","SGST","IGST","Invoice total","Status"]].concat(R.register.map(r=>[r.date,(fyOn()&&r.fy?fyShort(r.fy)+"/":"")+r.no,r.customer,r.gstin,r.pos,r.taxable,r.cgst,r.sgst,r.igst,r.total,r.status])); }
+  if(kind==="reg"){ name="invoice-register"; rows=[["Date","Invoice No","Customer","GSTIN","Place of supply","Taxable value","CGST","SGST","IGST","Invoice total","Status"]].concat(R.register.map(r=>[r.date,r.no,r.customer,r.gstin,r.pos,r.taxable,r.cgst,r.sgst,r.igst,r.total,r.status])); }
   else if(kind==="hsn"){ name="hsn-summary"; rows=[["HSN","GST rate %","Quantity","Taxable value","Total tax"]].concat(R.gst.hsn.map(h=>[h.hsn,h.rate,h.qty,h.taxable,h.tax])); }
   else { name="item-sales"; const pf=!!S.cfg.showProfit && !hideBuy(); const r2=v=>Math.round(v*100)/100;
     rows=[["Item","Unit","Quantity","Amount","Bills","Avg selling price"].concat(pf?["Avg buy price","Profit"]:[])].concat(R.items.map(i=>[i.name,i.unit,i.qty,i.amount,i.bills==null?"":i.bills,i.qty?r2(i.amount/i.qty):""].concat(pf?[i.costQty?r2(i.cost/i.costQty):"",i.profit==null?"":i.profit]:[]))); }

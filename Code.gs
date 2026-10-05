@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 15;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 16;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -129,7 +129,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'rev': return out_({ ok: true, rev: getRev_() });
-      case 'list': { ensureEnv_(); dedupeOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
+      case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'image': return out_(image_(String(p.id || '')));
       case 'images': return out_(images_(String(p.id || '')));
@@ -212,6 +212,34 @@ function curBuyMap_() {
   for (let i = 0; i < n; i++) { const v = { buy: num_(a[i][C.buy]), altQty: num_(q[i][0]) };
     if (a[i][C.id]) out.byId[String(a[i][C.id])] = v; const nm = String(a[i][C.name] || '').trim().toLowerCase(); if (nm && !out.byName[nm]) out.byName[nm] = v; }
   return out;
+}
+
+/**
+ * Once: take the financial-year prefix out of saved GST bill texts ("Invoice No: 26-27/7" -> "Invoice No: 7"), both modes.
+ * Only touches GST bills, and only the NN-NN/number pattern where the second year follows the first (a financial year).
+ */
+function stripFyPrefixOnce_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('FYPFX_OFF') === '1') return;
+  const keep = ENV_, B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {}); let changed = 0;
+  try {
+    ['live', 'test'].forEach(env => {
+      ENV_ = env;
+      const s = ss_().getSheetByName(tab_('Bills')); if (!s) return;
+      const n = s.getLastRow() - 1; if (n < 1) return;
+      const g = s.getRange(2, B.gstBill + 1, n, 1).getValues(), rg = s.getRange(2, B.text + 1, n, 1), tx = rg.getValues();
+      let any = false;
+      for (let i = 0; i < n; i++) {
+        if (g[i][0] !== 'Yes') continue;
+        const t0 = String(tx[i][0] || '');
+        const t1 = t0.replace(/\b(\d{2})-(\d{2})\/(\d+)\b/g, (m0, a, b, no) => ((Number(a) + 1) % 100 === Number(b) ? no : m0));
+        if (t1 !== t0) { tx[i][0] = t1; any = true; changed++; }
+      }
+      if (any) rg.setValues(tx);
+    });
+    props.setProperty('FYPFX_OFF', '1');
+    if (changed) bumpB_(true);
+  } catch (err) {} finally { ENV_ = keep; }
 }
 
 function popReset_() { try { const b = ss_().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }

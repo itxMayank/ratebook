@@ -242,6 +242,11 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
   `report_()` in Code.gs now returns per item: `bills, cost, costQty, costAmt, gstQty, min, max, rates[], profit`. Profit uses only lines that saved a buy price. `SCRIPT_VERSION` 8 / `NEED_SV` 8. The Item sales CSV gained Bills, Avg selling price, and (with profit on) Avg buy price and Profit.
 - **Notifications (toast) top-right**: `#toast` slides in from the right edge at the top (springy ease), stays about 2.8 s, then slides back out to the right. It briefly covers the wand and EN/हि buttons, but taps pass through (`pointer-events:none`). On desktop it sits at the right edge of the middle column, left of the bill panel. The CSS override is at the end of the `<style>`.
+- **No financial-year prefix on GST bill numbers** (the shop doesn't use one):
+  - `dispNo()` always returns the plain number, everywhere: bill screen, WhatsApp text, PDF, Past bills and the invoice-register CSV.
+  - `stripFyPrefixOnce_()` (run once from `list`, flag `FYPFX_OFF`) removes the prefix from saved GST bill texts in both modes. It only touches GST rows, and only an `NN-NN/number` pattern where the second year is the first + 1. BillHistory is left as it was.
+  - The "Start GST invoice numbers from 1 every April" setting (`fyReset`) still controls the yearly restart, and bills still store `fy`.
+  - `SCRIPT_VERSION` 16 / `NEED_SV` 16.
 - **Customer suggestions on the bill (name, mobile, GSTIN)**:
   - A typeahead under the name/mobile row (`#sug-cust`) and under GSTIN (`#sug-gstin`). Nothing opens on tap; it opens only when typing matches: name 1+ letters (start of name, then start of a word, then anywhere), mobile 3+ digits, GSTIN 2+ characters. Up to 5 rows show name, mobile, GSTIN, bills and due.
   - Tap (or ↑/↓ + Enter on a laptop) fills name, mobile and GSTIN, shows the returning-customer hint at once, then `findCustomer` refreshes it.
@@ -322,7 +327,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 **GST**
 - **Financial year:**
   - Bills store `fy` ('2026-27'). Config `fyReset` (default on) restarts the GST series each April (`gstFy`/`testGstFy` track the year; the first run only records it).
-  - GST numbers are shown as `26-27/7` (`dispNo()`), and the WhatsApp text says "Invoice No: …".
+  - GST numbers are shown as plain numbers (`dispNo()`, no year prefix), and the WhatsApp text says "Invoice No: …".
   - Normal bills keep counting.
 - **Place of supply** (`posCode()`/`posLabel()`):
   - Taken from the customer's GSTIN state, else the state picked for IGST (`#pos-sel`), else the shop state (Settings → Shop's state, or the first 2 digits of the shop GSTIN).

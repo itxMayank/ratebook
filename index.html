@@ -337,6 +337,9 @@ body.typing{padding-bottom:0}
 #tot-extra{display:grid;gap:10px}
 #tot-extra .acts{display:flex;gap:8px}
 #tot-extra .acts>*{flex:1}
+#tot-extra>.acts{flex-wrap:nowrap}
+#tot-extra>.acts>.btn{min-width:0;padding-left:6px;padding-right:6px}
+#cf-prpaper{display:grid;grid-template-columns:repeat(4,1fr)}
 .ro.lockline{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px}
 .ro.lockline span{flex:1;min-width:0}
 .ro.lockline .btn{padding:6px 12px;font-size:14px}
@@ -454,6 +457,11 @@ label.thumb{cursor:pointer}
 .bl-clear{width:36px;height:36px;border-radius:50%;border:0;background:var(--surface-2);color:var(--muted);font-size:14px;flex:none}
 .bl-sync{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;color:var(--muted);white-space:nowrap;flex:none}
 .bl-sync[hidden]{display:none}
+.pr-vias{display:grid;gap:6px}
+.pr-via{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer}
+.pr-via:has(input:checked){border-color:var(--ink)}
+.pr-via input{margin-top:3px;accent-color:var(--ink)}
+#cf-prpaper button{padding-left:6px;padding-right:6px}
 .qpick{position:fixed;z-index:60;display:flex;align-items:center;gap:3px;padding:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.18);max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none;animation:qpin .14s ease-out}
 .qpick[hidden]{display:none}
 .qpick::-webkit-scrollbar{display:none}
@@ -520,8 +528,9 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .billno span{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .billno b{font:700 26px/1 var(--f-display);color:var(--accent)}
 .billno small{color:var(--muted);font-size:13px}
-.lastbill{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;color:var(--muted);padding:8px 2px 0}
+.lastbill{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;font-size:14px;color:var(--muted);padding:8px 2px 0}
 .lastbill a,.lastbill button{color:var(--accent);font-weight:600;background:none;border:0;padding:2px 4px;text-decoration:none}
+.lastbill .lb-print{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border-radius:50%;background:var(--surface-2)}
 .field .err{font-size:13px}
 /* v3 standalone */
 .banner{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin:4px 0 10px}
@@ -1037,6 +1046,47 @@ html.fz-big .bill-line .step input{width:40px}
 .toast.on,body[data-tab] .toast.on{transform:none;opacity:1;transition:transform .42s cubic-bezier(.2,1.25,.4,1),opacity .2s}
 @media (min-width:1024px){ .toast,body[data-tab] .toast{right:calc(var(--billw) + 16px);left:auto;max-width:420px} }
 @media (prefers-reduced-motion:reduce){ .toast,.toast.on,body[data-tab] .toast,body[data-tab] .toast.on{transition:opacity .2s} }
+/* ---- Printouts (#printroot is filled by prSystem; only it shows when printing) ---- */
+#printroot{display:none;color:#000;background:#fff;font-family:Arial,Helvetica,sans-serif}
+#printroot .pi{font-size:11px;line-height:1.4}
+#printroot.pp-a5 .pi{font-size:9.5px}
+#printroot .pi h1{font-size:18px;margin:0 0 2px}
+#printroot .pi h2{font-size:14px;margin:0 0 4px;letter-spacing:.04em}
+#printroot .pi-top{display:flex;justify-content:space-between;gap:16px;padding-bottom:8px;border-bottom:1.5px solid #000}
+#printroot .r{text-align:right}
+#printroot .pi-flag{text-align:center;font-weight:700;margin:6px 0}
+#printroot .pi-flag.cx{font-size:16px;letter-spacing:.2em}
+#printroot .pi-to{margin:8px 0}
+#printroot table{width:100%;border-collapse:collapse}
+#printroot .pi-items th{background:#eee;border-bottom:1px solid #000;text-align:left;padding:4px 5px;font-size:.95em}
+#printroot th.r{text-align:right!important}
+#printroot .pi-items td{border-bottom:1px solid #ddd;padding:4px 5px;vertical-align:top}
+#printroot .pi-sum{width:50%;margin:8px 0 0 auto}
+#printroot .pi-sum td{padding:2px 5px}
+#printroot .pi-sum .tot td{font-weight:700;border-top:1px solid #000}
+#printroot .pi-words{font-style:italic;margin:8px 0}
+#printroot .pi-hsn{margin-top:6px;font-size:.92em}
+#printroot .pi-hsn th{border-bottom:1px solid #000;text-align:left;padding:3px 5px}
+#printroot .pi-hsn td{padding:3px 5px;border-bottom:1px solid #eee}
+#printroot .pi-foot{margin-top:14px;color:#444;font-size:.9em}
+#printroot .pr{font-family:"Courier New",Courier,monospace;font-size:12px;line-height:1.3;padding:2mm 3mm}
+#printroot.pp-80 .pr{width:72mm}
+#printroot.pp-58 .pr{width:48mm;font-size:10.5px;padding:1.5mm 2mm}
+#printroot .pr hr{border:0;border-top:1px dashed #000;margin:3px 0}
+#printroot .pr-c{text-align:center}
+#printroot .pr-b{font-weight:700}
+#printroot .pr-shop{font-weight:700;font-size:1.35em}
+#printroot .pr-lr{display:flex;justify-content:space-between;gap:6px}
+#printroot .pr-lr span:last-child{text-align:right;white-space:nowrap}
+#printroot .pr-tot{font-weight:700;font-size:1.2em}
+#printroot .pr-sm{font-size:.88em}
+@media print{
+  body.printing>*:not(#printroot){display:none!important}
+  body.printing{background:#fff!important;padding:0!important;margin:0!important;zoom:1!important}
+  body.printing #printroot{display:block!important}
+  html:has(body.printing){background:#fff!important}
+  #printroot *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -1139,6 +1189,7 @@ html.fz-big .bill-line .step input{width:40px}
         <div class="acts">
           <button class="btn ghost" id="bill-copy" data-t="copy">Copy</button>
           <button class="btn ghost" id="bill-pdf" data-t="pdfBtn">PDF</button>
+          <button class="btn ghost" id="bill-print" data-t="printBtn">Print</button>
           <button class="btn ghost" id="bill-clear" data-t="clear">Clear</button>
         </div>
       <div class="confirm" id="bill-clear-confirm" hidden>
@@ -1332,7 +1383,12 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", qpType:"Type quantity", qpHint:x=>`${x}?`,sugBills:n=>`${n} bill${n===1?"":"s"}`,sugNoName:"No name",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", printBtn:"Print", prNothing:"Nothing to print yet", prT:"Printer (this phone / laptop)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
+  prPageD:"Office printer: a full invoice on A4 or A5 paper, through this device's print screen.", prRollD:"Receipt printer: a narrow bill sized to the paper roll. Choose how this device reaches the printer:",
+  prViaSys:"Print screen (USB or Wi-Fi)", prViaSysD:"Printer installed on this laptop/phone. Pick it in the print screen; set paper to the roll width.",
+  prViaRaw:"RawBT app (Android, Bluetooth)", prViaRawD:"Install the free RawBT app from Play Store and pair the printer in it once. Bills go straight to the printer.",
+  prViaImg:"Share as image (iPhone, printer's app)", prViaImgD:"Shares a receipt picture; choose the printer maker's app to print it.",
+  prAuto:"Print automatically after Done", prAutoD:"Each bill prints when you tap Done.", prTest:"Print a test bill", qpType:"Type quantity", qpHint:x=>`${x}?`,sugBills:n=>`${n} bill${n===1?"":"s"}`,sugNoName:"No name",fileDl:"Download",fileShare:"Share",fileSaved:n=>`Saved to Downloads: ${n}`,rpPSale:"Sales with a buy price",rpPCost:"Buy cost",rpPOver:"Profit over cost",rpPOfSale:"Profit as % of those sales",
   rpPNoBuy:a=>`${a} of items had no buy price on the bill, so they are left out of profit.`,rpPGst:(a,b)=>`Total sales ${a} includes GST and bill round-off; items add up to ${b} before GST.`,
   riBills:n=>`On ${n} bill${n===1?"":"s"}`,riSold:"Sold",riSales:"Sales",riAvgSell:"Avg selling price",riAvgBuy:"Avg buy price",riProfit:"Profit",riMargin:"Margin",riPer:u=>`per ${u}`,
   riRange:(a,b)=>`Prices from ${a} to ${b}`,riRates:"Prices charged",riRateRow:(q,u,n)=>`${q} ${u} · ${n} bill${n===1?"":"s"}`,
@@ -1345,7 +1401,12 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", qpType:"मात्रा लिखें", qpHint:x=>`${x}?`,sugBills:n=>`${n} बिल`,sugNoName:"नाम नहीं",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", printBtn:"प्रिंट", prNothing:"अभी प्रिंट करने को कुछ नहीं", prT:"प्रिंटर (यह फ़ोन / लैपटॉप)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
+  prPageD:"ऑफ़िस प्रिंटर: A4 या A5 कागज़ पर पूरा बिल, इस डिवाइस की प्रिंट स्क्रीन से।", prRollD:"रसीद प्रिंटर: रोल की चौड़ाई जितना छोटा बिल। प्रिंटर से कैसे जुड़ा है, चुनें:",
+  prViaSys:"प्रिंट स्क्रीन (USB या Wi-Fi)", prViaSysD:"इस लैपटॉप/फ़ोन पर लगा प्रिंटर। प्रिंट स्क्रीन में चुनें; कागज़ रोल की चौड़ाई पर रखें।",
+  prViaRaw:"RawBT ऐप (Android, ब्लूटूथ)", prViaRawD:"Play Store से मुफ़्त RawBT ऐप डालें और उसमें प्रिंटर एक बार जोड़ें। बिल सीधे प्रिंटर पर जाएगा।",
+  prViaImg:"फ़ोटो की तरह भेजें (iPhone, प्रिंटर का ऐप)", prViaImgD:"रसीद की फ़ोटो भेजता है; प्रिंट के लिए प्रिंटर कंपनी का ऐप चुनें।",
+  prAuto:"Done पर अपने आप प्रिंट", prAutoD:"Done दबाते ही हर बिल प्रिंट होगा।", prTest:"टेस्ट बिल प्रिंट करें", qpType:"मात्रा लिखें", qpHint:x=>`${x}?`,sugBills:n=>`${n} बिल`,sugNoName:"नाम नहीं",fileDl:"डाउनलोड",fileShare:"भेजें",fileSaved:n=>`डाउनलोड में सेव हुआ: ${n}`,rpPSale:"खरीद रेट वाली बिक्री",rpPCost:"खरीद लागत",rpPOver:"लागत पर मुनाफ़ा",rpPOfSale:"उस बिक्री का % मुनाफ़ा",
   rpPNoBuy:a=>`${a} के सामान में खरीद रेट नहीं था, इसलिए मुनाफ़े में नहीं गिना।`,rpPGst:(a,b)=>`कुल बिक्री ${a} में GST और राउंड-ऑफ़ शामिल है; सामान GST से पहले ${b} का है।`,
   riBills:n=>`${n} बिल में`,riSold:"बिका",riSales:"बिक्री",riAvgSell:"औसत बिक्री रेट",riAvgBuy:"औसत खरीद रेट",riProfit:"मुनाफ़ा",riMargin:"मार्जिन",riPer:u=>`प्रति ${u}`,
   riRange:(a,b)=>`रेट ${a} से ${b} तक`,riRates:"लगाए गए रेट",riRateRow:(q,u,n)=>`${q} ${u} · ${n} बिल`,
@@ -2058,7 +2119,7 @@ function renderLastBill(){
   const el=$("#lastbill"), lb=(S.editing && S.lastBill && S.editing.fresh) ? null : S.lastBill;   // the saved bill is already on screen
   if(!lb){ el.hidden=true; return; }
   el.hidden=false;
-  el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a><button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
+  el.innerHTML=`<span>${esc(t("lastBill",lb.n))}${lb.customer?` · ${esc(lb.customer)}`:""} · ${esc(rs(lb.total))}</span><a href="${esc(lb.link)}" target="_blank" rel="noopener">${esc(t("shareAgain"))}</a>${ls.get("rb_lastinv",null)?`<button type="button" class="lb-print" data-act="printlast" aria-label="${esc(t("printBtn"))}" title="${esc(t("printBtn"))}"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></button>`:""}<button type="button" data-act="bills">${esc(t("allBills"))}</button>`;
 }
 /** Bill shared or marked done: remember it, move the number on (shared with every phone), start a fresh bill. */
 /* ---------------- Test / real mode ---------------- */
@@ -2242,6 +2303,7 @@ function finishBill(opts){
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
+  const lastInv=invFromCurrent(); ls.set("rb_lastinv",lastInv);
   blcAdd(rec);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
   if(opts.keep){
@@ -2262,6 +2324,7 @@ function finishBill(opts){
   S.pay="paid"; S.recv=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
   S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
+  if(prGet().auto) setTimeout(()=>printInv(lastInv),250);   // "Print automatically after Done" (this phone / laptop)
 }
 /* Cash given -> how much to give back. Only on this phone; never saved with the bill. */
 function cashDue(){ const tot=billTotal(); if(S.pay==="paid") return tot; if(S.pay==="part"){ const r=parseFloat(S.recv); return r>0?r:0; } return 0; }
@@ -2312,7 +2375,8 @@ async function flushBills(){
       const j=await r.json();
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
       S.needCode=false;
-      if(j.renumbered){ if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); } showRenumbered(j.renumbered); }
+      if(j.renumbered){ { const li=ls.get("rb_lastinv",null); if(li && String(li.no)===String(j.renumbered.from) && S.lastBill && S.lastBill.n===rec.n){ li.no=String(j.renumbered.to); ls.set("rb_lastinv",li); } }
+        if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); } showRenumbered(j.renumbered); }
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }
@@ -2414,6 +2478,158 @@ function shareFile(blob,name,text){
     el.querySelector("#fa-sh").onclick=async()=>{ try{ await navigator.share({files:[file],title:name,text:text||""}); close("shared"); }catch(e){ if(e&&e.name==="AbortError") close("cancelled"); else { downloadBlob(blob,name); toast(t("fileSaved",name)); close("downloaded"); } } };
   });
 }
+/* ---------------- Printing (normal and GST bills) ----------------
+ * Per phone / laptop (rb_print): paper a4 | a5 | 80 | 58 (mm roll), how a roll printer is reached (via):
+ *   system — the phone/laptop print screen (office printers, USB/Wi-Fi receipt printers with a driver)
+ *   rawbt  — Android + Bluetooth receipt printer through the free RawBT app (ESC/POS sent straight to it)
+ *   image  — share a receipt picture to the printer maker's app (iPhone Bluetooth printers)
+ * and auto (print after Done). A4/A5 print a full invoice; 58/80 mm print a narrow receipt. All from one model (inv). */
+const PR_PAPERS=["a4","a5","80","58"];
+function prGet(){ const d={paper:"a4",via:"system",auto:false}; const v=ls.get("rb_print",null); return v&&typeof v==="object"?{...d,...v}:d; }
+function prSet(v){ ls.set("rb_print",v); }
+const prRoll=p=>p==="80"||p==="58";
+const prCols=p=>p==="58"?32:48;
+const prMoney=n=>Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+/** Every number a printout needs, worked out once (same sums as the bill screen and the PDF). */
+function prCalc(inv){
+  const g=inv.gst ? gstCalcFor(inv.lines, inv.igst) : null;
+  const total=g ? g.total : r2(inv.lines.reduce((a,l)=>a+l.qty*l.rate,0));
+  const taxes=g ? g.rows.map(r=>({label:r.kind==="I"?`IGST ${fmtN(r.rate)}%`:`${r.kind==="C"?"CGST":"SGST"} ${fmtN(r.rate/2)}%`, v:r.v})) : [];
+  return {g,total,taxes,due:inv.pay&&inv.pay.mode!=="paid"};
+}
+const prDate=d=>{ const x=d?new Date(d):new Date(); return x.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
+const prAsc=v=>String(v||"").replace(/₹/g,"Rs.").replace(/[–—]/g,"-").replace(/×/g,"x").replace(/[^\x20-\x7E]/g,"");
+
+/* ---- text receipt (RawBT and the shared picture): fixed columns ---- */
+function prWrap(s,w){ const out=[]; let line=""; String(s||"").split(/\s+/).forEach(word=>{ while(word.length>w){ if(line){ out.push(line); line=""; } out.push(word.slice(0,w)); word=word.slice(w); } if(!word) return; if(!line) line=word; else if(line.length+1+word.length<=w) line+=" "+word; else { out.push(line); line=word; } }); if(line) out.push(line); return out.length?out:[""]; }
+const prLR=(l,r,w)=>{ l=String(l); r=String(r); if(l.length+r.length+1>w) l=l.slice(0,Math.max(0,w-r.length-1)); return l+" ".repeat(Math.max(1,w-l.length-r.length))+r; };
+const prC=(s,w)=>{ s=String(s).slice(0,w); const p=Math.floor((w-s.length)/2); return " ".repeat(p)+s; };
+/** Lines of {t, b (bold), c (centre), big} for a w-character roll. */
+function receiptLines(inv,w){
+  const c=prCalc(inv), L=[], hr={t:"-".repeat(w)}, push=(t,o)=>L.push({t,...(o||{})});
+  prWrap(prAsc(S.cfg.shopName)||"Rate Book",Math.floor(w/2)).forEach(x=>push(x,{c:1,b:1,big:1}));   // double size: half as many characters fit
+  if(S.cfg.shopAddress) prWrap(prAsc(S.cfg.shopAddress),w).forEach(x=>push(x,{c:1}));
+  if(inv.gst && S.cfg.shopGstin) push("GSTIN: "+S.cfg.shopGstin,{c:1});
+  L.push(hr);
+  push(inv.gst?"TAX INVOICE":"BILL",{c:1,b:1});
+  if(S.cfg.mode==="test") push("TEST BILL - not a real invoice",{c:1});
+  if(inv.cancelled) push("*** CANCELLED ***",{c:1,b:1});
+  push((inv.gst?"Invoice":"Bill")+" No: "+inv.no,{b:1}); push("Date: "+prDate(inv.date));
+  if(inv.cust.name) push("To: "+prAsc(inv.cust.name)); if(inv.cust.mobile) push("Mobile: "+inv.cust.mobile);
+  if(inv.gst && inv.cust.gstin) push("GSTIN: "+inv.cust.gstin); if(inv.gst && inv.pos) push("Place of supply: "+prAsc(inv.pos));
+  L.push(hr); push(prLR("Item","Amount",w),{b:1}); L.push(hr);
+  inv.lines.forEach((l,i)=>{ prWrap(`${i+1}. ${prAsc(l.name)}`,w).forEach(x=>push(x));
+    const q=prAsc(`${qtyText(l.qty,l.unit,true)} x ${prMoney(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+l.unit:""}`);
+    push(prLR("   "+q, prMoney(r2(l.qty*l.rate)), w));
+    if(inv.gst) push(`   HSN ${l.hsn||"-"}  GST ${fmtN(l.gst)}%`); });
+  L.push(hr);
+  if(c.g){ push(prLR("Taxable value",prMoney(c.g.taxable),w)); c.taxes.forEach(x=>push(prLR(x.label,prMoney(x.v),w))); if(c.g.roundOff) push(prLR("Round off",(c.g.roundOff>0?"+":"-")+prMoney(Math.abs(c.g.roundOff)),w)); }
+  if(w>=40) push(prLR("TOTAL","Rs."+prMoney(c.total),Math.floor(w/2)),{b:1,big:1}); else push(prLR("TOTAL","Rs. "+prMoney(c.total),w),{b:1});
+  if(c.due){ push(prLR("Paid",prMoney(inv.pay.recv),w)); push(prLR("Balance due",prMoney(inv.pay.due),w),{b:1}); }
+  if(inv.gst) prWrap(prAsc(inWords(c.total)),w).forEach(x=>push(x));
+  L.push(hr);
+  if(S.cfg.billFooter) prWrap(prAsc(S.cfg.billFooter),w).forEach(x=>push(x,{c:1}));
+  push("Thank you!",{c:1});
+  return L.map(x=>({...x, t: x.c ? prC(x.t, x.big?Math.floor(w/2):w) : x.t}));
+}
+/** ESC/POS bytes for RawBT: init, centre/bold/double size where marked, feed and cut. */
+function escpos(lines){
+  const b=[0x1B,0x40]; const txt=s=>{ for(const ch of s) b.push(ch.charCodeAt(0)&0x7F); b.push(0x0A); };
+  lines.forEach(x=>{ b.push(0x1B,0x61,x.c?1:0); b.push(0x1B,0x45,x.b?1:0); b.push(0x1D,0x21,x.big?0x11:0x00); txt(x.c?x.t.trim():x.t); });
+  b.push(0x1B,0x61,0,0x1B,0x45,0,0x1D,0x21,0); b.push(0x1B,0x64,4); b.push(0x1D,0x56,0x41,0x03);
+  return new Uint8Array(b);
+}
+function prRawbt(inv,paper){
+  const bytes=escpos(receiptLines(inv,prCols(paper))); let s=""; bytes.forEach(x=>s+=String.fromCharCode(x));
+  const b64=btoa(s);
+  location.href=`intent:base64,${b64}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;   // opens RawBT (or its Play Store page if not installed)
+}
+/** Receipt as a picture (384 px wide for 58 mm, 576 px for 80 mm — the printers' dot widths), for printer apps. */
+function receiptPng(inv,paper){
+  const w=prCols(paper), W=paper==="58"?384:576, cw=W/w, fs=Math.floor(cw/0.6), lh=Math.round(fs*1.35), lines=receiptLines(inv,w);
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=lines.reduce((a,x)=>a+lh*(x.big?2:1),0)+lh*3;
+  const g=cv.getContext("2d"); g.fillStyle="#fff"; g.fillRect(0,0,cv.width,cv.height); g.fillStyle="#000"; g.textBaseline="top";
+  let y=lh;
+  lines.forEach(x=>{ const sz=x.big?fs*2:fs; g.font=`${x.b?"bold ":""}${sz}px "Courier New",Courier,monospace`;
+    g.fillText(x.t, 0, y); y+=lh*(x.big?2:1); });
+  return new Promise(res=>cv.toBlob(res,"image/png"));
+}
+
+/* ---- HTML printouts for the print screen ---- */
+function prHtmlInvoice(inv){
+  const c=prCalc(inv), R=n=>"₹"+prMoney(n), e=esc;
+  const head=`<div class="pi-top"><div><h1>${e(S.cfg.shopName||"Rate Book")}</h1>${S.cfg.shopAddress?`<div>${e(S.cfg.shopAddress)}</div>`:""}${inv.gst&&S.cfg.shopGstin?`<div>GSTIN: ${e(S.cfg.shopGstin)}</div>`:""}${inv.gst&&shopStateCode()?`<div>State: ${e(stateName(shopStateCode()))} (${e(shopStateCode())})</div>`:""}</div>
+    <div class="r"><h2>${inv.gst?"TAX INVOICE":"BILL"}</h2><div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>${inv.gst&&inv.pos?`<div>Place of supply: ${e(inv.pos)}</div>`:""}</div></div>`;
+  const flags=(S.cfg.mode==="test"?`<div class="pi-flag test">TEST BILL - practice only, not a valid invoice</div>`:"")+(inv.cancelled?`<div class="pi-flag cx">CANCELLED</div>`:"");
+  const to=`<div class="pi-to"><b>Bill to</b><div>${e(inv.cust.name||"Cash customer")}</div>${inv.cust.mobile?`<div>Mobile: ${e(inv.cust.mobile)}</div>`:""}${inv.gst&&inv.cust.gstin?`<div>GSTIN: ${e(inv.cust.gstin)}</div>`:""}</div>`;
+  const rows=inv.lines.map((l,i)=>{ const a=r2(l.qty*l.rate), rate=R(l.rate)+(isPart(l.qty,l.unit)?"/"+e(l.unit):"");
+    return inv.gst ? `<tr><td>${i+1}</td><td>${e(l.name)}</td><td>${e(l.hsn||"")}</td><td class="r">${e(qtyText(l.qty,l.unit,true))}</td><td class="r">${rate}</td><td class="r">${R(a)}</td><td class="r">${fmtN(l.gst)}%</td><td class="r">${R(r2(a*l.gst/100))}</td><td class="r">${R(r2(a*(1+l.gst/100)))}</td></tr>`
+                   : `<tr><td>${i+1}</td><td>${e(l.name)}</td><td class="r">${e(qtyText(l.qty,l.unit,true))}</td><td class="r">${rate}</td><td class="r">${R(a)}</td></tr>`; }).join("");
+  const th=inv.gst?`<tr><th>#</th><th>Item</th><th>HSN</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Taxable</th><th class="r">GST</th><th class="r">Tax</th><th class="r">Amount</th></tr>`:`<tr><th>#</th><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr>`;
+  let sum=""; if(c.g){ sum+=`<tr><td>Taxable value</td><td class="r">${R(c.g.taxable)}</td></tr>`+c.taxes.map(x=>`<tr><td>${e(x.label)}</td><td class="r">${R(x.v)}</td></tr>`).join(""); if(c.g.roundOff) sum+=`<tr><td>Round off</td><td class="r">${c.g.roundOff>0?"+":"−"}${R(Math.abs(c.g.roundOff))}</td></tr>`; }
+  sum+=`<tr class="tot"><td>${inv.gst?"Total (incl. GST)":"Total"}</td><td class="r">${R(c.total)}</td></tr>`;
+  if(c.due) sum+=`<tr><td>Paid</td><td class="r">${R(inv.pay.recv)}</td></tr><tr class="tot"><td>Balance due</td><td class="r">${R(inv.pay.due)}</td></tr>`;
+  let hsn=""; if(c.g){ const hs={}; inv.lines.forEach(l=>{ const k=(l.hsn||"-")+"|"+l.gst; hs[k]=hs[k]||{hsn:l.hsn||"-",rate:l.gst,tx:0}; hs[k].tx=r2(hs[k].tx+r2(l.qty*l.rate)); });
+    hsn=`<table class="pi-hsn"><tr><th>HSN</th><th class="r">Taxable</th><th class="r">Rate</th>${inv.igst?`<th class="r">IGST</th>`:`<th class="r">CGST</th><th class="r">SGST</th>`}<th class="r">Total tax</th></tr>${Object.values(hs).map(h=>{ const tax=r2(h.tx*h.rate/100); return `<tr><td>${e(h.hsn)}</td><td class="r">${R(h.tx)}</td><td class="r">${fmtN(h.rate)}%</td>${inv.igst?`<td class="r">${R(tax)}</td>`:`<td class="r">${R(r2(tax/2))}</td><td class="r">${R(r2(tax/2))}</td>`}<td class="r">${R(tax)}</td></tr>`; }).join("")}</table>`; }
+  return `<div class="pi">${head}${flags}${to}<table class="pi-items">${th}${rows}</table><table class="pi-sum">${sum}</table><div class="pi-words">Amount in words: ${e(inWords(c.total))}</div>${hsn}
+    <div class="pi-foot">${S.cfg.billFooter?`<div>${e(S.cfg.billFooter)}</div>`:""}<div>This is a computer-generated ${inv.gst?"invoice":"bill"}.</div></div></div>`;
+}
+function prHtmlReceipt(inv){
+  const c=prCalc(inv), m=prMoney, e=esc, row=(l,r,cls)=>`<div class="pr-lr${cls?" "+cls:""}"><span>${l}</span><span>${r}</span></div>`;
+  let h=`<div class="pr-c pr-shop">${e(S.cfg.shopName||"Rate Book")}</div>`;
+  if(S.cfg.shopAddress) h+=`<div class="pr-c">${e(S.cfg.shopAddress)}</div>`; if(inv.gst&&S.cfg.shopGstin) h+=`<div class="pr-c">GSTIN: ${e(S.cfg.shopGstin)}</div>`;
+  h+=`<hr><div class="pr-c pr-b">${inv.gst?"TAX INVOICE":"BILL"}</div>`;
+  if(S.cfg.mode==="test") h+=`<div class="pr-c">TEST BILL - not a real invoice</div>`; if(inv.cancelled) h+=`<div class="pr-c pr-b">*** CANCELLED ***</div>`;
+  h+=`<div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>`;
+  if(inv.cust.name) h+=`<div>To: ${e(inv.cust.name)}</div>`; if(inv.cust.mobile) h+=`<div>Mobile: ${e(inv.cust.mobile)}</div>`;
+  if(inv.gst&&inv.cust.gstin) h+=`<div>GSTIN: ${e(inv.cust.gstin)}</div>`; if(inv.gst&&inv.pos) h+=`<div>Place of supply: ${e(inv.pos)}</div>`;
+  h+=`<hr>`+row("<b>Item</b>","<b>Amount</b>")+`<hr>`;
+  inv.lines.forEach((l,i)=>{ h+=`<div class="pr-it">${i+1}. ${e(l.name)}</div>`+row(`&nbsp;&nbsp;${e(qtyText(l.qty,l.unit,true))} × ${m(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+e(l.unit):""}`, m(r2(l.qty*l.rate)));
+    if(inv.gst) h+=`<div class="pr-sm">&nbsp;&nbsp;HSN ${e(l.hsn||"-")} · GST ${fmtN(l.gst)}%</div>`; });
+  h+=`<hr>`;
+  if(c.g){ h+=row("Taxable value",m(c.g.taxable)); c.taxes.forEach(x=>h+=row(e(x.label),m(x.v))); if(c.g.roundOff) h+=row("Round off",(c.g.roundOff>0?"+":"−")+m(Math.abs(c.g.roundOff))); }
+  h+=row("TOTAL","₹"+m(c.total),"pr-tot");
+  if(c.due){ h+=row("Paid",m(inv.pay.recv)); h+=row("<b>Balance due</b>","<b>"+m(inv.pay.due)+"</b>"); }
+  if(inv.gst) h+=`<div class="pr-sm">${e(inWords(c.total))}</div>`;
+  h+=`<hr>`+(S.cfg.billFooter?`<div class="pr-c">${e(S.cfg.billFooter)}</div>`:"")+`<div class="pr-c">Thank you!</div>`;
+  return `<div class="pr">${h}</div>`;
+}
+/** Print through the phone/laptop print screen: the printout goes into #printroot, everything else is hidden for print. */
+function prSystem(inv,paper){
+  let root=$("#printroot"); if(!root){ root=document.createElement("div"); root.id="printroot"; document.body.appendChild(root); }
+  let st=$("#printpage"); if(!st){ st=document.createElement("style"); st.id="printpage"; document.head.appendChild(st); }
+  root.className="pp-"+paper; root.innerHTML=prRoll(paper)?prHtmlReceipt(inv):prHtmlInvoice(inv);
+  if(prRoll(paper)){ root.style.cssText="position:fixed;left:-9999px;top:0;display:block;visibility:hidden"; const mm=Math.ceil(root.offsetHeight/3.78)+8; root.style.cssText="";
+    st.textContent=`@page{size:${paper}mm ${Math.max(60,mm)}mm;margin:0}`; }
+  else st.textContent=`@page{size:${paper.toUpperCase()};margin:12mm}`;
+  document.body.classList.add("printing");
+  const done=()=>{ document.body.classList.remove("printing"); window.removeEventListener("afterprint",done); };
+  window.addEventListener("afterprint",done);
+  setTimeout(()=>{ try{ window.print(); }catch{} },60);   // .printing only matters inside @media print, so it can safely stay until afterprint
+}
+async function printInv(inv,btn){
+  if(!inv || !inv.lines || !inv.lines.length){ toast(t("prNothing")); return; }
+  const P=prGet();
+  if(prRoll(P.paper) && P.via==="rawbt"){ prRawbt(inv,P.paper); return; }
+  if(prRoll(P.paper) && P.via==="image"){ if(btn) btnBusy(btn,true); try{ const b=await receiptPng(inv,P.paper); await shareFile(b,`Bill-${String(inv.no).replace(/[^\w-]/g,"")}.png`); }catch{} finally{ if(btn) btnBusy(btn,false); } return; }
+  prSystem(inv,P.paper);
+}
+/** Settings → Printer (this phone / laptop). */
+function renderPrCfg(){ const box=$("#cf-pr"); if(!box) return; const P=prGet(), roll=prRoll(P.paper);
+  const vias=[["system","prViaSys","prViaSysD"],["rawbt","prViaRaw","prViaRawD"],["image","prViaImg","prViaImgD"]];
+  box.innerHTML=`<h3 style="margin:0">${esc(t("prT"))}</h3>
+    <div class="seg" id="cf-prpaper">${PR_PAPERS.map(k=>`<button type="button" data-pp="${k}" aria-pressed="${P.paper===k}">${esc(t("prP"+k))}</button>`).join("")}</div>
+    <p class="note" style="margin:0">${esc(t(roll?"prRollD":"prPageD"))}</p>
+    ${roll?`<div class="pr-vias" id="cf-prvia">${vias.map(([k,a,d])=>`<label class="pr-via"><input type="radio" name="prvia" value="${k}" ${P.via===k?"checked":""}><span><b>${esc(t(a))}</b><br><span class="note">${esc(t(d))}</span></span></label>`).join("")}</div>`:""}
+    <label class="switch"><span><b>${esc(t("prAuto"))}</b><br><span class="note">${esc(t("prAutoD"))}</span></span><input type="checkbox" id="cf-prauto" ${P.auto?"checked":""}></label>
+    <button type="button" class="btn ghost" id="cf-prtest">${esc(t("prTest"))}</button>`;
+  $("#cf-prpaper").onclick=e=>{ const b=e.target.closest("[data-pp]"); if(!b) return; prSet({...prGet(),paper:b.dataset.pp}); renderPrCfg(); };
+  const v=$("#cf-prvia"); if(v) v.onchange=e=>{ prSet({...prGet(),via:e.target.value}); };
+  $("#cf-prauto").onchange=e=>{ prSet({...prGet(),auto:e.target.checked}); };
+  $("#cf-prtest").onclick=()=>printInv(prSample(), $("#cf-prtest"));
+}
+function prSample(){ return { gst:false, igst:false, no:"TEST", date:new Date().toISOString(), cust:{name:"Test customer",mobile:"",gstin:""}, pos:"", cancelled:false, pay:{mode:"paid",recv:0,due:0},
+  lines:[{name:"Sample item",hsn:"",qty:0.25,unit:"kg",rate:220,gst:0},{name:"Another item",hsn:"",qty:2,unit:"pc",rate:8,gst:0}] }; }
 async function pdfFor(inv,btn){
   if(!inv.lines.length) return;
   btnBusy(btn,true);
@@ -2831,7 +3047,7 @@ document.addEventListener("click",e=>{
   const pick=e.target.closest("[data-pick]"); if(pick){ $("#q").value=pick.dataset.pick; onQuery(pick.dataset.pick); return; }
   const act=e.target.closest("[data-act]"); if(act){ const k=act.dataset.act;
     if(k==="more"){ S.limit+=40; renderList(); } else if(k==="add") openEdit(null); else if(k==="addq") openEdit(null,S.q.trim());
-    else if(k==="bulkadd") openBulkAdd(); else if(k==="bills") openBills(); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
+    else if(k==="bulkadd") openBulkAdd(); else if(k==="bills") openBills(); else if(k==="printlast") printInv(ls.get("rb_lastinv",null)); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
   const inc=e.target.closest("[data-inc]"), dec=e.target.closest("[data-dec]"), rm=e.target.closest("[data-rm]");
   if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,!!inc); if(l.qty===0) S.bill.splice(i,1); qpClose(); saveBill(); renderBill(); return; }
   if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); return; }
@@ -3425,6 +3641,7 @@ function openSettings(){
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
       <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>
+    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-pr"></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
     <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
       <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
@@ -3458,6 +3675,7 @@ function openSettings(){
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
+  renderPrCfg();
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
   if(!w) return;
@@ -3870,7 +4088,7 @@ async function showBill(b){
     <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
-    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
+    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button><button type="button" class="btn ghost" id="bd-print">${esc(t("printBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
     ${(b.lines&&b.lines.length)?"":`<p class="note" style="margin:0">${esc(t("oldNoEdit"))}</p>`}
     ${can("manager")?(b.cancelled?`<div><button type="button" class="btn ghost" id="bd-restore">${esc(t("restoreBill"))}</button></div>`:`<div><button type="button" class="btn danger" id="bd-cancel">${esc(t("cancelBill"))}</button></div>
       <div class="confirm" id="bd-cq" hidden><b>${esc(t("cancelQ"))}</b><div class="chips" id="bd-cr"><button type="button">${esc(t("cancelR1"))}</button><button type="button">${esc(t("cancelR2"))}</button><button type="button">${esc(t("cancelR3"))}</button></div>
@@ -3884,6 +4102,7 @@ async function showBill(b){
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
   $("#bd-back").onclick=()=>billBack();
   $("#bd-pdf").onclick=()=>pdfFor(invFromBill(b), $("#bd-pdf"));
+  $("#bd-print").onclick=()=>printInv(invFromBill(b), $("#bd-print"));
   if(b.cancelled){ ["#bd-edit"].forEach(k=>{ const el=$(k); if(el) el.remove(); }); }
   if($("#bd-cancel")){ $("#bd-cancel").onclick=()=>{ $("#bd-cq").hidden=false; $("#bd-cancel").hidden=true; setTimeout(()=>$("#bd-cq").scrollIntoView({block:"center",behavior:"smooth"}),30); };
     $("#bd-cn").onclick=()=>{ $("#bd-cq").hidden=true; $("#bd-cancel").hidden=false; };
@@ -3911,6 +4130,7 @@ $("#t-bills").onclick=()=>{ billBackFn=openBills; openBills(); };
 $("#t-dues").onclick=()=>openDues();
 $("#t-reports").onclick=()=>openReports();
 $("#bill-pdf").onclick=()=>pdfFor(invFromCurrent(), $("#bill-pdf"));
+$("#bill-print").onclick=()=>printInv(invFromCurrent(), $("#bill-print"));
 
 /* ---------------- Credit (udhaar) ---------------- */
 let billBackFn=null, duesCache=null, duesDirty=false, duesQ="";

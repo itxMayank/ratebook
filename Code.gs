@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 17;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 18;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -31,7 +31,7 @@ const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by
 
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due'];
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
-const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs'];
+const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs', 'aliases', 'cat'];
 const MAX_PHOTOS = 5;   // photos per item; each is its own cell in the Images tab (under 48,000 characters, below Google's 50,000 per cell)
 const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed per phone …
@@ -171,7 +171,8 @@ function list_() {
       updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
       hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
       altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]),
-      imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0
+      imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0,
+      aliases: str_(r[C.aliases], 300), cat: str_(r[C.cat], 40)
     });
   });
   if (fixed) bump_();
@@ -563,6 +564,8 @@ function upsert_(items, by) {
       if (it.altUnit !== undefined) r[C.altUnit] = str_(it.altUnit, 30);
       if (it.altQty !== undefined) r[C.altQty] = num_(it.altQty) || '';
       if (it.altSell !== undefined) r[C.altSell] = (it.altSell === null || it.altSell === '') ? '' : num_(it.altSell);
+      if (it.aliases !== undefined) r[C.aliases] = str_(it.aliases, 300);
+      if (it.cat !== undefined) r[C.cat] = str_(it.cat, 40).trim();
       r[C.updatedAt] = now; r[C.updatedBy] = by;
       s.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([r]);
       saved.push(pub_(r, it.tmp));
@@ -576,6 +579,7 @@ function upsert_(items, by) {
       r[C.gst] = (it.gst === undefined || it.gst === null || it.gst === '') ? '' : num_(it.gst);
       r[C.altUnit] = str_(it.altUnit || '', 30); r[C.altQty] = num_(it.altQty) || '';
       r[C.altSell] = (it.altSell === undefined || it.altSell === null || it.altSell === '') ? '' : num_(it.altSell);
+      r[C.aliases] = str_(it.aliases || '', 300); r[C.cat] = str_(it.cat || '', 40).trim();
       r[C.updatedAt] = now; r[C.updatedBy] = by;
       appended.push(r); saved.push(pub_(r, it.tmp));
     }
@@ -589,7 +593,8 @@ function pub_(r, tmp) {
     buy: num_(r[C.buy]), sell: num_(r[C.sell]), imgV: r[C.thumb] ? (num_(r[C.imgV]) || 1) : 0, updatedAt: num_(r[C.updatedAt]), updatedBy: str_(r[C.updatedBy], 60),
     hsn: hsn_(r[C.hsn]), gst: gstOut_(r[C.gst]),
     altUnit: str_(r[C.altUnit], 30), altQty: num_(r[C.altQty]) || 0, altSell: gstOut_(r[C.altSell]),
-    imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0 };
+    imgs: num_(r[C.imgV]) ? (num_(r[C.imgs]) || 1) : 0,
+    aliases: str_(r[C.aliases], 300), cat: str_(r[C.cat], 40) };
 }
 
 function delete_(ids) {

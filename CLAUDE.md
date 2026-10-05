@@ -284,6 +284,14 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Editing a past bill still uses `rb_stash`; holding an editing bill carries its `editing` object and stash with it, so cancelling the edit later still restores the draft.
   - Prices tab shows "Adding to: X · +N open" (`#addto`, phones only) while any bill is held. It has `overflow:hidden; min-width:0`, because without them its no-wrap text widened the grid and the whole page scrolled sideways.
   - Max 8 open bills (`HELD_MAX`). A held bill from an earlier day gets an "old" tag.
+- **Groups, other names and photo grid** (`SCRIPT_VERSION` 18 / `NEED_SV` 18):
+  - `Items` gains `aliases` (comma-separated names customers use, up to 300 chars) and `cat` (group, up to 40). `list`, `pub_` and `upsert` carry both.
+  - **Search:** `buildIndex()` adds aliases and group to each item's tokens, so "thaili", "थैली" or "glass" find the item (same fuzzy/Hindi matching as names). When the hit came from another name, the card shows "Also: thaili" (`akaHTML`).
+  - **Group chips:** in the existing filter row (`renderFilters`): All · groups (most items first, with counts) · then In bill / Changed this week / With photo. Same single scrolling row, so no extra height. `S.filter` is `c:<group>` for a group.
+  - **Edit item:** "Other names" and "Group" fields; group chips under it (existing groups plus a suggestion from the name, `guessCat`). `normCat()` reuses an existing group's spelling.
+  - **Tools → Groups & other names** (`openGroups`, manager+): every item as a row with Group and Other names boxes. Empty groups are pre-filled from `CAT_RULES` (packaging words: bags, cups, plates, containers, foil, film, tape, spoons/straws, tissue, bottles, rubber bands), shown grey italic. Saves only changed rows, in batches of 100. "Only items without a group" filter.
+  - **Photo grid** (per phone, `rb_layout`): a button next to Most sold | A–Z switches the list to 3-column tiles (`#list.gridv`, CSS only, same card markup).
+  - Visual (camera) search was discussed and parked: few items have photos and most products are plain/loose, so image matching and text reading wouldn't be reliable yet.
 - **Printing** (`index.html` only; per phone/laptop setting `rb_print` = `{paper, via, auto}`):
   - **Where:** Print in the bill's ⌄ menu (Copy · PDF · Print · Clear, one row), a printer icon in the "Last bill" row after Done (uses `rb_lastinv`, saved by `finishBill`; its number follows a server renumber), and Print next to PDF on a past bill. Settings → **Printer (this phone / laptop)**: paper A4 / A5 / 80 mm / 58 mm, connection for roll paper, "Print automatically after Done" (off by default; only the Done path of a new bill, not Share), and "Print a test bill".
   - **One model:** everything prints from the same `inv` object as the PDF (`invFromCurrent()` / `invFromBill()`); sums come from `prCalc()` (`gstCalcFor`, so totals match the screen).

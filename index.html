@@ -600,6 +600,32 @@ body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
 .fchip{flex:none;border:0;background:var(--surface);color:var(--fg);border-radius:999px;padding:9px 16px;font:600 14px var(--f-body);box-shadow:var(--shadow);transition:background .15s,color .15s}
 .fchip[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
 .fchip .n{margin-left:6px;opacity:.6;font-weight:700}
+.fsep{flex:none;width:1.5px;align-self:stretch;margin:6px 2px;background:var(--line);border-radius:2px}
+.layoutbtn{display:inline-grid;place-items:center;width:30px;height:30px;margin-left:6px;border:1.5px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);vertical-align:middle;cursor:pointer}
+.card .aka{font-size:12.5px;color:var(--muted);margin-top:1px}
+.catpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.catpick:empty{display:none}
+.catpick button{border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 11px;font:600 13px var(--f-body)}
+.grp-head{display:grid;grid-template-columns:1fr 1fr;gap:8px;font:700 11px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 2px 4px}
+.grp-list{display:grid;gap:8px}
+.grp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;padding:10px;border:1.5px solid var(--line);border-radius:14px}
+.grp-row b{grid-column:1/-1;font-size:14.5px}
+.grp-row input{min-width:0;text-align:left!important;border:1.5px solid var(--line);background:var(--surface-2);border-radius:10px;padding:9px 10px;font:500 14px var(--f-body);color:var(--fg)}
+.grp-row input.sugg{color:var(--muted);font-style:italic}
+/* photo grid */
+#list.gridv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#list.gridv .card{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:6px 6px 8px}
+#list.gridv .card .thumb{width:100%;height:auto;aspect-ratio:1;border-radius:12px;font-size:30px}
+#list.gridv .card .thumb img{width:100%;height:100%;object-fit:cover}
+#list.gridv .card .info{min-width:0;padding:0 2px}
+#list.gridv .card .name{font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#list.gridv .card .sub,#list.gridv .card .rates,#list.gridv .card .aka{display:none}
+#list.gridv .card .price{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;text-align:left}
+#list.gridv .card .price .per{display:none}
+#list.gridv .card .price .sell{font-size:15px}
+#list.gridv .card .addbtn{padding:5px 9px;font-size:12px;margin:0}
+#list.gridv .card .mstep{margin:0;transform:scale(.9);transform-origin:right center}
+@media (min-width:1024px){ #list.gridv{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))} }
 .meta{padding:10px 4px 6px;font-size:13px}
 /* cards */
 .list{gap:10px}
@@ -1209,6 +1235,7 @@ html.fz-big .bill-line .step input{width:40px}
       <button id="t-bulkedit" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13 7 4 4"/></svg><div><b data-t="bulkEdit">Bulk edit prices</b><span data-t="bulkEditD">Change many rates at once, or raise by %</span></div></button>
       <button id="t-unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b id="t-unlock-t"></b><span id="t-unlock-d"></span></div></button>
       <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
+      <button id="t-groups" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/></svg><div><b data-t="grpT">Groups &amp; other names</b><span data-t="grpToolD">Sort items into groups, add names customers use</span></div></button>
       <button id="t-hindi" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3.5 7.5-7 10"/><path d="m13 21 4-9 4 9M14.5 18h5"/></svg><div><b data-t="toHindiT">Convert names to Hindi</b><span data-t="toHindiD">Write every item name in Hindi letters</span></div></button>
       <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
       <button id="t-reports" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><div><b data-t="repT">Reports</b><span data-t="repD">Sales, top items, GST summary and files for your CA</span></div></button>
@@ -1383,7 +1410,9 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", printBtn:"Print", prNothing:"Nothing to print yet", prT:"Printer (this phone / laptop)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", akaL:"Also:", akaField:"Other names", akaPh:"e.g. thaili, panni, carry bag", akaPhShort:"+ add", akaD:"Names customers use. Search finds the item by these too. Separate with commas.", catField:"Group", catPh:"e.g. Bags",
+  layGrid:"Photo grid", layList:"List", grpT:"Groups & other names", grpToolD:"Sort items into groups, add names customers use", grpHelp:"Groups show as chips above the price list. Grey groups are suggestions from the name: keep, change or clear them. Other names (comma separated) are found by search.",
+  grpOnlyEmpty:"Only items without a group", grpSaveN:n=>`Save ${n} change${n===1?"":"s"}`, grpNone:"No changes", grpAllDone:"Every item has a group.", printBtn:"Print", prNothing:"Nothing to print yet", prT:"Printer (this phone / laptop)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
   prPageD:"Office printer: a full invoice on A4 or A5 paper, through this device's print screen.", prRollD:"Receipt printer: a narrow bill sized to the paper roll. Choose how this device reaches the printer:",
   prViaSys:"Print screen (USB or Wi-Fi)", prViaSysD:"Printer installed on this laptop/phone. Pick it in the print screen; set paper to the roll width.",
   prViaRaw:"RawBT app (Android, Bluetooth)", prViaRawD:"Install the free RawBT app from Play Store and pair the printer in it once. Bills go straight to the printer.",
@@ -1401,7 +1430,9 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", printBtn:"प्रिंट", prNothing:"अभी प्रिंट करने को कुछ नहीं", prT:"प्रिंटर (यह फ़ोन / लैपटॉप)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", akaL:"और नाम:", akaField:"दूसरे नाम", akaPh:"जैसे थैली, पन्नी, कैरी बैग", akaPhShort:"+ जोड़ें", akaD:"ग्राहक जो नाम बोलते हैं। सर्च इनसे भी आइटम ढूँढेगा। कॉमा से अलग करें।", catField:"ग्रुप", catPh:"जैसे Bags",
+  layGrid:"फ़ोटो ग्रिड", layList:"लिस्ट", grpT:"ग्रुप और दूसरे नाम", grpToolD:"आइटम ग्रुप में बाँटें, ग्राहकों वाले नाम जोड़ें", grpHelp:"ग्रुप रेट लिस्ट के ऊपर चिप्स में दिखते हैं। धूसर ग्रुप नाम से सुझाए गए हैं: रखें, बदलें या हटा दें। दूसरे नाम (कॉमा से अलग) सर्च में मिलते हैं।",
+  grpOnlyEmpty:"सिर्फ़ बिना ग्रुप वाले आइटम", grpSaveN:n=>`${n} बदलाव सेव करें`, grpNone:"कोई बदलाव नहीं", grpAllDone:"हर आइटम का ग्रुप है।", printBtn:"प्रिंट", prNothing:"अभी प्रिंट करने को कुछ नहीं", prT:"प्रिंटर (यह फ़ोन / लैपटॉप)", prPa4:"A4", prPa5:"A5", prP80:"80 mm", prP58:"58 mm",
   prPageD:"ऑफ़िस प्रिंटर: A4 या A5 कागज़ पर पूरा बिल, इस डिवाइस की प्रिंट स्क्रीन से।", prRollD:"रसीद प्रिंटर: रोल की चौड़ाई जितना छोटा बिल। प्रिंटर से कैसे जुड़ा है, चुनें:",
   prViaSys:"प्रिंट स्क्रीन (USB या Wi-Fi)", prViaSysD:"इस लैपटॉप/फ़ोन पर लगा प्रिंटर। प्रिंट स्क्रीन में चुनें; कागज़ रोल की चौड़ाई पर रखें।",
   prViaRaw:"RawBT ऐप (Android, ब्लूटूथ)", prViaRawD:"Play Store से मुफ़्त RawBT ऐप डालें और उसमें प्रिंटर एक बार जोड़ें। बिल सीधे प्रिंटर पर जाएगा।",
@@ -1491,7 +1522,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=16;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=18;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -1602,7 +1633,7 @@ const nameCmp=(a,b)=>a.name.localeCompare(b.name,"en",{sensitivity:"base"});
 function sortItems(arr){ if(S.sortBy==="az" || !S.pop) arr.sort(nameCmp); else arr.sort((a,b)=>popN(b.id)-popN(a.id) || nameCmp(a,b)); return arr; }
 function setSort(m){ S.sortBy=m; ls.set("rb_sort",m); sortItems(S.items); buildIndex(); S.limit=40; renderList(); window.scrollTo({top:0}); }
 function buildIndex(){
-  S.index = S.items.map(it => { const toks=[...phonTokens(it.name),...phonTokens(it.nameHi)]; return { it, toks, key: phonTokens(it.name).join(" ") }; });
+  S.index = S.items.map(it => { const toks=[...phonTokens(it.name),...phonTokens(it.nameHi),...phonTokens(it.aliases),...phonTokens(it.cat)]; /* other names and group are searchable too */ return { it, toks, key: phonTokens(it.name).join(" ") }; });
 }
 function runSearch(q){
   const qt=phonTokens(q);
@@ -1884,13 +1915,68 @@ function cardHTML(it,q){
   return `<div class="card${it.pending?" pending":""}" data-id="${esc(it.id)}">
     ${thumbHTML(it)}
     <div class="info"><div class="name">${highlight(it.name,q)}</div>
-      ${it.nameHi?`<div class="sub" lang="hi">${highlight(it.nameHi,q)}</div>`:""}${rates}
+      ${it.nameHi?`<div class="sub" lang="hi">${highlight(it.nameHi,q)}</div>`:""}${akaHTML(it,q)}${rates}
     </div>
     <div class="price"><div class="sell num">${rs(it.sell)}</div><div class="per">/ ${esc(unitL(it.unit))}</div>${hasAlt(it)?`<div class="per num">${rs(altPrice(it))} / ${esc(unitL(it.altUnit))}</div>`:""}
       ${inB?`<div class="mstep"><button type="button" data-decid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><span class="num">${esc(qtyShort(inB,it.unit))}</span><button type="button" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></div>`
         :`<button class="addbtn" data-add="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+ ${esc(t("tabBill"))}</button>`}</div>
   </div>`;
 }
+/** Searching by another name ("thaili") shows that name under the item, so it's clear why it matched. */
+function akaHTML(it,q){ if(!q || !it.aliases) return ""; const raw=q.trim().toLowerCase(); if(it.name.toLowerCase().includes(raw) || (it.nameHi||"").includes(q.trim())) return "";
+  const qt=phonTokens(q), hit=aliasList(it.aliases).filter(a=>{ const at=phonTokens(a); return qt.every(x=>at.some(y=>y.startsWith(x)||x.startsWith(y))); });
+  return hit.length ? `<div class="aka">${esc(t("akaL"))} ${hit.slice(0,2).map(a=>highlight(a,q)).join(", ")}</div>` : ""; }
+const aliasList = s => String(s||"").split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+/** Groups in use, most items first. */
+/* Group suggestions from the item name (packaging shop words). Only a suggestion: shown greyed, saved only if kept. */
+const CAT_RULES=[
+  ["Bags",/\b(bags?|thail[ia]|thaili|carry|pouch(es)?|zip ?lock|ziplock|garbage|dustbin|d-?cut|w-?cut|polythene|panni|bori|sack|liner)\b/i],
+  ["Cups & glasses",/\b(cups?|glass(es)?|tumblers?|kulhad|gilas)\b/i],
+  ["Plates & bowls",/\b(plates?|thali|bowls?|dona|donna|katori|pattal)\b/i],
+  ["Containers & boxes",/\b(containers?|box(es)?|dabba|tub|jar|lunch ?box|meal ?tray|tray)\b/i],
+  ["Foil",/\b(foil|silver|alumin(i)?um)\b/i],
+  ["Film & wrap",/\b(film|stretch|cling|wrap|shrink|bubble)\b/i],
+  ["Tape",/\b(tapes?|cello)\b/i],
+  ["Spoons & straws",/\b(spoons?|forks?|straws?|stirrers?|chammach)\b/i],
+  ["Tissue & napkins",/\b(tissues?|napkins?)\b/i],
+  ["Bottles",/\b(bottles?)\b/i],
+  ["Rubber bands",/\b(rubber|band)\b/i],
+];
+function guessCat(name){ const n=String(name||""); for(const [c,re] of CAT_RULES) if(re.test(n)) return c; return ""; }
+/** "bags " / "BAGS" → the spelling already in use ("Bags"), else first letter capital. */
+function normCat(v){ const x=String(v||"").replace(/\s+/g," ").trim().slice(0,40); if(!x) return ""; const have=catsInUse().find(([c])=>c.toLowerCase()===x.toLowerCase()); return have?have[0]:x.charAt(0).toUpperCase()+x.slice(1); }
+/** Tools → Groups & other names: every item in one list, groups pre-suggested from the name, saved in batches. */
+function openGroups(){
+  let onlyEmpty=false; const ed={};   // id → {cat, aliases}
+  const rows=()=>S.items.filter(it=>!onlyEmpty || !it.cat).slice().sort((a,b)=>(a.cat||guessCat(a.name)||"~").localeCompare(b.cat||guessCat(b.name)||"~")||a.name.localeCompare(b.name));
+  const val=(it,k)=> ed[it.id]&&ed[it.id][k]!==undefined ? ed[it.id][k] : k==="cat" ? (it.cat||guessCat(it.name)) : (it.aliases||"");
+  const changed=()=>S.items.filter(it=>{ const c=normCat(val(it,"cat")), a=aliasList(val(it,"aliases")).join(", "); return c!==(it.cat||"") || a!==(it.aliases||""); });
+  const body=`<p class="note" style="margin:0 0 8px">${esc(t("grpHelp"))}</p>
+    <label class="note" style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" id="gr-only"> ${esc(t("grpOnlyEmpty"))}</label>
+    <datalist id="gr-cats">${[...new Set([...catsInUse().map(x=>x[0]),...CAT_RULES.map(x=>x[0])])].map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+    <div class="grp-head"><span>${esc(t("catField"))}</span><span>${esc(t("akaField"))}</span></div><div class="grp-list" id="gr-body"></div>
+    <p class="note" id="gr-prog"></p>`;
+  openSheet(t("grpT"), body, `<button class="btn ghost" id="gr-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="gr-save"></button>`, {full:true});
+  const tb=$("#gr-body");
+  const upd=()=>{ const n=changed().length, b=$("#gr-save"); b.textContent=n?t("grpSaveN",n):t("grpNone"); b.disabled=!n; };
+  const draw=()=>{ tb.innerHTML=rows().map(it=>{ const sug=!it.cat && !(ed[it.id]&&ed[it.id].cat!==undefined) && guessCat(it.name);
+      return `<div class="grp-row"><b>${esc(it.name)}</b>
+      <input data-gid="${esc(it.id)}" data-k="cat" list="gr-cats" maxlength="40" value="${esc(val(it,"cat"))}" class="${sug?"sugg":""}" placeholder="—" aria-label="${esc(t("catField"))}: ${esc(it.name)}">
+      <input data-gid="${esc(it.id)}" data-k="aliases" maxlength="300" value="${esc(val(it,"aliases"))}" placeholder="${esc(t("akaPhShort"))}" aria-label="${esc(t("akaField"))}: ${esc(it.name)}"></div>`; }).join("") || `<p class="note">${esc(t("grpAllDone"))}</p>`; upd(); };
+  tb.addEventListener("input",e=>{ const id=e.target.dataset.gid; if(!id) return; (ed[id]=ed[id]||{})[e.target.dataset.k]=e.target.value; e.target.classList.remove("sugg"); upd(); });
+  $("#gr-only").onchange=e=>{ onlyEmpty=e.target.checked; draw(); };
+  $("#gr-cancel").onclick=closeSheet;
+  $("#gr-save").onclick=async()=>{ if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
+    const recs=changed().map(it=>({id:it.id, base:it.updatedAt, cat:normCat(val(it,"cat")), aliases:aliasList(val(it,"aliases")).join(", ")}));
+    if(!recs.length) return; $("#gr-save").disabled=true;
+    try{ for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#gr-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
+      closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
+    catch{ const b=$("#gr-save"); if(b) b.disabled=false; } };
+  draw();
+}
+/** Photo grid (per phone): big tiles to look through by eye. */
+const gridOn = () => ls.get("rb_layout","list")==="grid";
+function catsInUse(){ const m=new Map(); S.items.forEach(it=>{ if(it.cat) m.set(it.cat,(m.get(it.cat)||0)+1); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); }
 function renderHeader(){
   $("#shopname").textContent = S.cfg.shopName || (S.lang==="hi"?"रेट बुक":"Rate Book");
   $("#count").textContent = S.loaded && S.items.length ? " · "+t("items",S.items.length) : "";
@@ -1915,9 +2001,12 @@ function renderList(){
   if(S.filter==="bill") res=res.filter(r=>billQty(r.e.it.id)>0);
   else if(S.filter==="recent") res=res.filter(r=>Date.now()-(+r.e.it.updatedAt||0)<7*864e5);
   else if(S.filter==="photo") res=res.filter(r=>r.e.it.imgV);
+  else if(String(S.filter).startsWith("c:")){ const c=S.filter.slice(2); res=res.filter(r=>r.e.it.cat===c); }
   $("#meta-l").textContent = q ? t("results", exact?res.length:0) : t("items",res.length);
   { const mr=$("#meta-r"); const hasPop=!!S.pop && Object.keys(S.pop).length>0;
-    mr.innerHTML = hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : ""; }
+    mr.innerHTML = (hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : "")
+      + `<button type="button" class="layoutbtn" data-layout aria-label="${esc(t(gridOn()?"layList":"layGrid"))}" title="${esc(t(gridOn()?"layList":"layGrid"))}">${gridOn()?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`}</button>`; }
+  list.classList.toggle("gridv", gridOn());
   if(q && !exact && !hint.innerHTML){
     sug.innerHTML=`<div class="suggest"><p>${esc(t("noMatch",q))} ${suggest.length?esc(t("didYouMean")):""}</p>
       ${suggest.length?`<div class="chips">${suggest.map(it=>`<button class="chip" data-pick="${esc(it.name)}">${esc(itemTitle(it))}</button>`).join("")}</div>`:""}
@@ -1932,9 +2021,16 @@ function renderFilters(){
   const inBill=S.bill.length, recent=S.items.filter(it=>Date.now()-(+it.updatedAt||0)<7*864e5).length, photo=S.items.filter(it=>it.imgV).length;
   const opts=[["all",t("fAll"),0],["bill",t("fInBill"),inBill],["recent",t("fRecent"),recent],["photo",t("fPhoto"),photo]].filter(o=>o[0]==="all"||o[2]>0||S.filter===o[0]);
   const hasPop=!!S.pop && Object.keys(S.pop).length>0;
-  box.hidden = opts.length<2;
-  box.innerHTML=opts.map(([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`).join("")
-    ;
+  const cats=catsInUse();
+  if(String(S.filter).startsWith("c:") && !cats.some(([c])=>"c:"+c===S.filter)) S.filter="all";
+  box.hidden = opts.length<2 && !cats.length;
+  /* All · groups (the main way to browse) · then In bill / Changed this week / With photo — one scrolling row, no extra height */
+  const chip=([k,l,n])=>`<button type="button" class="fchip" data-filter="${k}" aria-pressed="${S.filter===k}">${esc(l)}${k!=="all"?`<span class="n">${n}</span>`:""}</button>`;
+  const rest=opts.filter(o=>o[0]!=="all");
+  box.innerHTML=chip(opts[0])
+    + cats.map(([c,n])=>`<button type="button" class="fchip cat" data-filter="c:${esc(c)}" aria-pressed="${S.filter==="c:"+c}">${esc(c)}<span class="n">${n}</span></button>`).join("")
+    + (rest.length?(cats.length?`<span class="fsep" aria-hidden="true"></span>`:"")+rest.map(chip).join(""):"");
+  const on=box.querySelector('[aria-pressed="true"]'); if(on && on.offsetLeft>box.clientWidth-40) box.scrollLeft=on.offsetLeft-60;   // keep the picked chip in view
 }
 function renderBadge(){ const n=S.bill.length; const b=$("#bill-badge"); b.hidden=!n; b.textContent=n; }
 function billText(){
@@ -3043,6 +3139,7 @@ function flyToBill(a){
 }
 document.addEventListener("pointerdown",e=>{ const a=e.target.closest&&e.target.closest("[data-add]"); if(a) window.__addSrc=a; },true);
 document.addEventListener("click",e=>{
+  { const ly=e.target.closest("[data-layout]"); if(ly){ ls.set("rb_layout",gridOn()?"list":"grid"); renderList(); return; } }
   { const so=e.target.closest("[data-sort]"); if(so){ if(so.dataset.sort!==S.sortBy) setSort(so.dataset.sort); return; } }
   const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }
@@ -3446,6 +3543,9 @@ function openEdit(id,prefill=""){
       </div>
     </details>
     <div class="field"><label for="ef-hi">${esc(t("hiName"))}</label><input id="ef-hi" value="${esc(it?.nameHi||"")}" autocomplete="off" lang="hi"></div>
+    <div class="field"><label for="ef-aka">${esc(t("akaField"))}</label><input id="ef-aka" value="${esc(it?.aliases||"")}" autocomplete="off" placeholder="${esc(t("akaPh"))}"><p class="note" style="margin:0">${esc(t("akaD"))}</p></div>
+    <div class="field"><label for="ef-cat">${esc(t("catField"))}</label><input id="ef-cat" value="${esc(it?.cat||"")}" autocomplete="off" maxlength="40" placeholder="${esc(guessCat(it?.name||prefill)||t("catPh"))}">
+      <div class="catpick" id="ef-catpick">${[...new Set([guessCat(it?.name||prefill),...catsInUse().slice(0,12).map(x=>x[0])].filter(Boolean))].map(c=>`<button type="button" data-cpick="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
     <div class="field"><label id="ef-phl">${esc(t("photosL"))}</label>
       <div class="ph-strip" id="ef-ph"></div>
       <p class="note" id="ef-phn" style="margin:0"></p>
@@ -3495,6 +3595,8 @@ function openEdit(id,prefill=""){
     for(const f of files){ try{ const r=await processImage(f); if(photos.length<MAX_PHOTOS){ photos.push({isNew:true,thumb:r.thumb,full:r.full,src:r.thumb}); photosChanged=true; renderPhotos(); } } catch{ toast(t("imgFail")); } }
     busy.hidden=true; };
   $("#ef-cam").addEventListener("change",onPhoto); $("#ef-gal").addEventListener("change",onPhoto);
+  $("#ef-catpick").onclick=e=>{ const b=e.target.closest("[data-cpick]"); if(b){ $("#ef-cat").value=b.dataset.cpick; } };
+  $("#ef-name").addEventListener("input",e=>{ $("#ef-cat").placeholder=guessCat(e.target.value)||t("catPh"); });
   $("#ef-cancel").onclick=closeSheet;
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };
   ["ef-name","ef-buy"].forEach((k,i)=>$("#"+k).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $(i?"#ef-sell":"#ef-buy").focus(); } }));
@@ -3519,11 +3621,12 @@ function openEdit(id,prefill=""){
     if(asS!=="" && (isNaN(aSell)||aSell<0)){ err.textContent=t("needRate"); $("#ef-alt").open=true; return; }
     const altUnit = aq>0 ? $("#ef-aunit").dataset.unit : "", altQty = aq>0 ? aq : 0, altSell = (aq>0 && asS!=="") ? aSell : null;
     const hiFinal = nameHi || toHindi(name);
-    const rec={ base: it?it.updatedAt:undefined, id: id||undefined, tmp: id?undefined:key, name, nameHi:hiFinal, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell };
+    const aliases=aliasList($("#ef-aka").value).join(", "), cat=normCat($("#ef-cat").value);
+    const rec={ base: it?it.updatedAt:undefined, id: id||undefined, tmp: id?undefined:key, name, nameHi:hiFinal, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, aliases, cat };
     const imgChange=photosChanged ? photos.slice() : null;
     closeSheet(); toast(t("saving"));
     write({action:"upsert",items:[rec]},()=>{
-      upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, imgV: imgChange ? (imgChange.length?Date.now():0) : (it?it.imgV:0), imgs: imgChange ? imgChange.length : (it?it.imgs||0:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
+      upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, aliases, cat, imgV: imgChange ? (imgChange.length?Date.now():0) : (it?it.imgV:0), imgs: imgChange ? imgChange.length : (it?it.imgs||0:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
       if(imgChange && imgChange.length) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange[0].thumb||imgChange[0].src||""};
       const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.nameHi=hiFinal; bl.unit=unit; saveBill(); }
     }).then(async j=>{
@@ -4254,6 +4357,7 @@ function openRecordPay(c){
     }catch(e){ btnBusy(btn,false); $("#rp-err").textContent=e&&e.code==="bad_pin"?t("wrongPin"):t("payFail"); } };
 }
 $("#t-hindi").onclick=()=>openToHindi();
+$("#t-groups").onclick=()=>openGroups();
 function openToHindi(){
   let onlyMissing=false;
   const rows=()=>S.items.filter(it=>!onlyMissing || !it.nameHi).map(it=>({it, hi:toHindi(it.name)}));
@@ -4333,7 +4437,7 @@ function applyConfig(x){
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
-    altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell }); }
+    altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell, aliases:String(x.aliases||""), cat:String(x.cat||"").trim() }); }
   sortItems(arr);
   S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true;
 }

@@ -1513,8 +1513,19 @@ function vPubPrev_(t) { const set = vPubFiles_(t); if (!set) return { ok: false,
 function vPubFile_(t, f) { const set = vPubFiles_(t); if (!set || !set[String(f)]) return { ok: false, error: 'link_off' }; return Object.assign({ ok: true }, vFile_(f)); }
 /** Run once from the Apps Script editor (choose it → Run → allow) so the script may save bill photos in Drive. */
 function setupVendorDocs() { ['live', 'test'].forEach(en => { ENV_ = en; vFolder_(); }); ENV_ = 'live';
-  try { UrlFetchApp.fetch('https://generativelanguage.googleapis.com/', { muteHttpExceptions: true }); } catch (e) {}   /* asks once for "connect to an external service" (bill reading) */
-  Logger.log('Vendor bill photos folder is ready in your Google Drive: ' + VD_FOLDER_NAME); }
+  Logger.log('Vendor bill photos folder is ready in your Google Drive: ' + VD_FOLDER_NAME);
+  try { UrlFetchApp.fetch('https://generativelanguage.googleapis.com/', { muteHttpExceptions: true }); Logger.log('Connect to Google AI: OK'); }   /* asks once for "connect to an external service" (bill reading) */
+  catch (e) { Logger.log('Connect to Google AI: NOT ALLOWED. ' + e.message); } }
+/** Run in the editor (choose checkBillReading → Run) when the app says bill reading can't be set up. Every line goes to the Execution log. */
+function checkBillReading() {
+  Logger.log('1. Running as: ' + Session.getEffectiveUser().getEmail());
+  let url = ''; try { url = ScriptApp.getService().getUrl() || '(not deployed as a web app)'; } catch (e) { url = '(could not read: ' + e.message + ')'; }
+  Logger.log('2. This project\'s web app link: ' + url + '  ← must match API_URL in index.html');
+  try { const r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models', { muteHttpExceptions: true }); Logger.log('3. Connect to Google AI: OK (reply ' + r.getResponseCode() + ')'); }
+  catch (e) { Logger.log('3. Connect to Google AI: NOT ALLOWED. ' + e.message); return; }
+  const key = aiKey_(); if (!key) { Logger.log('4. No Gemini key saved yet (Project Settings → Script properties → GEMINI_KEY).'); return; }
+  try { aiCall_([{ text: 'This is a connection test, not a bill. Return readable false and confidence 0.' }]); Logger.log('4. Gemini key works. Bill reading is ready.'); }
+  catch (e) { Logger.log('4. Gemini said: ' + e.message); } }
 
 /* ======================= Bill reading + calculation check (Google Gemini) =======================
  * Owner pastes a Gemini API key (Settings → Bill reading; kept in script property GEMINI_KEY, never sent to phones).

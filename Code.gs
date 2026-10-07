@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 22;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 23;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1466,7 +1466,7 @@ function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
     ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f)).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
     alloc: type === 'bill' ? '' : JSON.stringify(vAllocClean_(x.alloc, billIds, amount)) };
   if (type === 'bill') {   // bill check: from what the phone already read, else the stored reading (re-done with the new amount), cleared when photos change
-    const exIn = x.ex && typeof x.ex === 'object' ? vExClean_(Object.assign({}, x.ex, { sellerName: x.ex.seller, subtotal: x.ex.sub, discount: x.ex.disc, roundOff: x.ex.ro, lines: (x.ex.lines || []).map(l => ({ desc: l.d, qty: l.q, rate: l.r, amount: l.a })), taxes: (x.ex.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) })) : null;
+    const exIn = vExSafe_(x.ex);
     const photosSame = r && String(r.photos) === fields.photos, oldEx = r && photosSame ? vjson_(r.ex, null) : null, ex = exIn || oldEx, oldChk = r ? vjson_(r.check, null) : null;
     fields.ex = ex ? JSON.stringify(ex).slice(0, 45000) : '';
     fields.check = ex ? JSON.stringify(Object.assign(vCheckCalc_(ex, amount), { at: Date.now(), by: by }, oldChk && oldChk.ack && photosSame && !exIn ? { ack: oldChk.ack } : {})) : (photosSame && oldChk && oldChk.st === 'error' ? r.check : ''); }
@@ -1525,29 +1525,34 @@ const AI_MODEL_DEFAULT = 'gemini-2.5-flash';
 function aiKey_() { return PropertiesService.getScriptProperties().getProperty('GEMINI_KEY') || ''; }
 const AI_SCHEMA = { type: 'OBJECT', properties: {
   readable: { type: 'BOOLEAN' }, confidence: { type: 'NUMBER' }, billNo: { type: 'STRING' }, date: { type: 'STRING' }, sellerName: { type: 'STRING' },
-  lines: { type: 'ARRAY', items: { type: 'OBJECT', properties: { desc: { type: 'STRING' }, qty: { type: 'NUMBER' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
-  subtotal: { type: 'NUMBER' }, discount: { type: 'NUMBER' }, taxes: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
-  roundOff: { type: 'NUMBER' }, total: { type: 'NUMBER' } }, required: ['readable', 'confidence'] };
-const AI_PROMPT = 'You read Indian purchase bills / tax invoices. They may be printed, thermal, PDF or handwritten, in English, Hindi or a mix. ' +
-  'Copy exactly what is WRITTEN on the bill. Do NOT fix, recompute or guess any arithmetic: if a line says 25 x 185 = 4652, report amount 4652. ' +
-  'Numbers as plain numbers (no commas, no currency). qty = quantity, rate = price per unit, amount = the line amount written. Leave a field out if it is not written. ' +
-  'subtotal = total before tax as written; discount as a positive number; taxes = each tax line written (CGST, SGST, IGST, GST) with its rate in percent and amount; ' +
-  'roundOff = round off as written (negative if subtracted); total = grand total payable as written. date as YYYY-MM-DD. ' +
-  'readable = false if this is not a bill or you cannot read the amounts reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
+  lines: { type: 'ARRAY', items: { type: 'OBJECT', properties: { desc: { type: 'STRING' }, qty: { type: 'NUMBER' }, unit: { type: 'STRING' }, rate: { type: 'NUMBER' }, per: { type: 'NUMBER' },
+    discPct: { type: 'NUMBER' }, discAmt: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, unclear: { type: 'BOOLEAN' } } } },
+  subtotal: { type: 'NUMBER' }, discount: { type: 'NUMBER' }, charges: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, amount: { type: 'NUMBER' } } } },
+  taxes: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
+  tcs: { type: 'NUMBER' }, roundOff: { type: 'NUMBER' }, total: { type: 'NUMBER' }, previousBalance: { type: 'NUMBER' }, netPayable: { type: 'NUMBER' } }, required: ['readable', 'confidence'] };
+const AI_PROMPT = 'You read Indian purchase bills / tax invoices / kacha bills / estimates. They may be printed, thermal, PDF or handwritten, in English, Hindi or a mix, in any layout. ' +
+  'Copy exactly what is WRITTEN. Never fix, recompute or guess any arithmetic: if a line says 25 x 185 = 4652, report amount 4652. Numbers as plain numbers (no commas, no currency). Leave out anything not written. ' +
+  'lines: one per item row. qty = quantity, unit = its unit (kg, pcs, bag, box, dozen…), rate = the price written, per = how many units that rate is for when the bill says so (e.g. 100 for "per 100 pcs" or "/100"), otherwise leave per out. ' +
+  'discPct / discAmt = a discount written on that line. amount = the line amount written. unclear = true if any number on that line is hard to read. Weights like "25 kg" are the qty. ' +
+  'subtotal = total of the items before bill discount, charges and tax, if written. discount = bill-level discount (positive). charges = extra lines like freight, cartage, packing, loading, labour, hamali, transport. ' +
+  'taxes = each tax line (CGST, SGST, IGST, GST, cess) with its rate in percent and amount. tcs = TCS amount. roundOff = round off written (negative if subtracted). ' +
+  'total = the grand total of THIS bill. previousBalance = old balance / previous dues written on the bill, if any. netPayable = the final amount payable if the bill adds previous balance or subtracts amount paid. date as YYYY-MM-DD. ' +
+  'readable = false if this is not a bill or the amounts cannot be read reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
 function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_off');
-  const models = [PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || AI_MODEL_DEFAULT, 'gemini-flash-latest'];
+  const pref = PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL');
+  const models = (pref ? [pref] : []).concat(['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']).filter((m, i, a) => a.indexOf(m) === i);
   let last = '';
-  for (const m of models) {
+  for (const m of models) {   /* each model has its own free quota: if one is used up or not offered to this key, try the next */
     const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: AI_SCHEMA } }) });
     const code = res.getResponseCode(), body = res.getContentText();
-    if (code === 404) { last = 'ai_model'; continue; }
-    if (code === 400 && /API key/i.test(body)) throw new Error('ai_key');
+    if (code === 400 && /API key not valid|API_KEY_INVALID/i.test(body)) throw new Error('ai_key');
+    if (code === 404 || (code === 403 && !/API key/i.test(body))) { last = last || 'ai_model'; continue; }
     if (code === 403) throw new Error('ai_key');
-    if (code === 429) throw new Error('ai_limit');
-    if (code !== 200) { last = 'ai_http_' + code; break; }
+    if (code === 429) { last = 'ai_limit'; continue; }
+    if (code !== 200) { last = 'ai_http_' + code; continue; }
     const j = JSON.parse(body); const txt = (((j.candidates || [])[0] || {}).content || {}).parts; const s = txt && txt[0] && txt[0].text;
-    if (!s) throw new Error('ai_empty'); return JSON.parse(s); }
+    if (!s) { last = 'ai_empty'; continue; } return JSON.parse(s); }
   throw new Error(last || 'ai_fail'); }
 /** Read the bill files (Drive ids) → normalised extraction. */
 function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts = [{ text: AI_PROMPT }];
@@ -1557,23 +1562,50 @@ function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts
   return vExClean_(aiCall_(parts)); }
 function vExClean_(x) { const n = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Math.round(Number(v) * 1000) / 1000;
   x = x || {}; return { readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',
-    seller: str_(x.sellerName || '', 80), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 80).map(l => ({ d: str_(l.desc || '', 60), q: n(l.qty), r: n(l.rate), a: n(l.amount) })),
-    sub: n(x.subtotal), disc: n(x.discount), taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 8).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), ro: n(x.roundOff), total: n(x.total) }; }
-/** The arithmetic. Same rules as vCheckJS in index.html. */
-function vCheckCalc_(ex, entered) { if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
-  const r2 = v => Math.round(v * 100) / 100, near = (a, b, tol) => Math.abs(a - b) <= tol, issues = [];
-  let sumLines = 0, linesOk = true;
-  ex.lines.forEach((l, i) => { if (l.a == null) { linesOk = false; return; } sumLines += l.a;
-    if (l.q != null && l.r != null) { const e = r2(l.q * l.r); if (!near(e, l.a, Math.max(1, Math.abs(l.a) * 0.002))) issues.push({ t: 'line', i: i + 1, d: l.d, q: l.q, r: l.r, a: l.a, e: e }); } });
-  sumLines = r2(sumLines);
-  const base = ex.sub != null ? ex.sub : (ex.lines.length && linesOk ? sumLines : null);
-  if (ex.sub != null && ex.lines.length && linesOk && !near(sumLines, ex.sub, 1)) issues.push({ t: 'sum', s: sumLines, sub: ex.sub });
-  const taxable = base != null ? r2(base - (ex.disc || 0)) : null; let taxSum = 0;
-  ex.taxes.forEach(tx => { if (tx.a == null) return; taxSum += tx.a; if (taxable != null && tx.r != null && tx.r > 0) { const e = r2(taxable * tx.r / 100); if (!near(e, tx.a, Math.max(1, e * 0.002))) issues.push({ t: 'tax', n: tx.n, r: tx.r, b: taxable, a: tx.a, e: e }); } });
-  const c = ex.taxes.find(x => /cgst/i.test(x.n)), s = ex.taxes.find(x => /sgst|utgst/i.test(x.n)); if (c && s && c.a != null && s.a != null && !near(c.a, s.a, 1)) issues.push({ t: 'cs', c: c.a, s: s.a });
-  if (taxable != null) { const e = r2(taxable + taxSum + (ex.ro || 0)); if (!near(e, ex.total, 1.01)) issues.push({ t: 'total', e: e, tot: ex.total }); }
-  if (entered != null && !near(Number(entered), ex.total, 1)) issues.push({ t: 'entry', ent: Number(entered), tot: ex.total });
-  return { st: issues.length ? 'issues' : 'ok', issues: issues, total: ex.total, tax: r2(taxSum) || null }; }
+    seller: str_(x.sellerName || '', 80), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 120).map(l => ({ d: str_(l.desc || '', 60), q: n(l.qty), un: str_(l.unit || '', 12), r: n(l.rate), per: n(l.per), dp: n(l.discPct), da: n(l.discAmt), a: n(l.amount), u: !!l.unclear })),
+    sub: n(x.subtotal), disc: n(x.discount), charges: (Array.isArray(x.charges) ? x.charges : []).slice(0, 10).map(c => ({ n: str_(c.name || '', 30), a: n(c.amount) })),
+    taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 10).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), tcs: n(x.tcs), ro: n(x.roundOff), total: n(x.total), prev: n(x.previousBalance), net: n(x.netPayable) }; }
+/** The same reading sent back by the phone (already in the short form): re-check every field. */
+function vExSafe_(e) { if (!e || typeof e !== 'object') return null;
+  return vExClean_({ readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
+    lines: (e.lines || []).map(l => ({ desc: l.d, qty: l.q, unit: l.un, rate: l.r, per: l.per, discPct: l.dp, discAmt: l.da, amount: l.a, unclear: l.u })), charges: (e.charges || []).map(c => ({ name: c.n, amount: c.a })), taxes: (e.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) }); }
+/** The arithmetic (the AI only reads). Identical to vCheckJS in index.html; keep them the same. */
+function vCheckCalc_(ex, entered) {
+  if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
+  const r2 = v => Math.round(v * 100) / 100, near = (a, b, t) => Math.abs(a - b) <= t, tol = v => Math.max(1, Math.abs(v) * 0.002);
+  const issues = [], done = [], all = ex.lines || [], lines = all.filter(l => !l.u);
+  let nLine = 0;
+  lines.forEach(l => { if (l.a == null || l.q == null || l.r == null) return; const per = l.per > 0 ? l.per : 1;
+    let e = l.q * l.r / per; if (l.dp) e *= 1 - l.dp / 100; if (l.da) e -= l.da; e = r2(e); nLine++;
+    if (near(e, l.a, tol(l.a))) return;
+    /* other usual ways a line is written: rate per 10/100/1000/dozen, rate with GST included, amount before GST */
+    const alts = [10, 100, 1000, 12].map(p => l.q * l.r / p).concat([5, 12, 18, 28].map(g => e * (1 + g / 100)), [5, 12, 18, 28].map(g => e / (1 + g / 100)));
+    if (alts.some(x => near(r2(x), l.a, tol(l.a)))) return;
+    issues.push({ t: 'line', i: all.indexOf(l) + 1, d: l.d, q: l.q, r: l.r, a: l.a, e: e }); });
+  if (nLine) done.push('lines');
+  const complete = all.length > 0 && all.every(l => l.a != null && !l.u);
+  const sum = r2(all.reduce((s, l) => s + (l.a || 0), 0));
+  if (complete && ex.sub != null) { done.push('sum'); if (!near(sum, ex.sub, 1)) issues.push({ t: 'sum', s: sum, sub: ex.sub }); }
+  const base = ex.sub != null ? ex.sub : (complete ? sum : null);
+  const disc = ex.disc || 0, chg = r2((ex.charges || []).reduce((s, c) => s + (c.a || 0), 0));
+  const taxes = (ex.taxes || []).filter(x => x.a != null), T = r2(taxes.reduce((s, x) => s + x.a, 0)), tcs = ex.tcs || 0, ro = ex.ro || 0;
+  if (base != null && taxes.length) {
+    const rates = {}; taxes.forEach(x => { const k = /igst/i.test(x.n) ? 'i' : 'cs'; (rates[k] = rates[k] || new Set()).add(x.r); });
+    const mixed = Object.values(rates).some(s => s.size > 1);   /* several GST rates on one bill: the split per rate isn't known, so only the totals are checked */
+    if (!mixed) { const bases = [r2(base - disc), r2(base - disc + chg)];
+      taxes.forEach(x => { if (!(x.r > 0)) return; const es = bases.map(b => r2(b * x.r / 100)); if (!es.some(e => near(e, x.a, tol(e)))) issues.push({ t: 'tax', n: x.n, r: x.r, b: bases[0], a: x.a, e: es[0] }); });
+      done.push('tax'); } }
+  const c = taxes.filter(x => /cgst/i.test(x.n)).reduce((s, x) => s + x.a, 0), sg = taxes.filter(x => /sgst|utgst/i.test(x.n)).reduce((s, x) => s + x.a, 0);
+  if (c && sg) { if (!near(c, sg, 1)) issues.push({ t: 'cs', c: r2(c), s: r2(sg) }); if (done.indexOf('tax') < 0) done.push('tax'); }
+  if (base != null) { done.push('total'); const b = base - disc;
+    const ways = [b + chg + T + tcs + ro, b + T + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + T + tcs, b + chg + T + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
+    if (!ways.some(w => near(w, ex.total, 1.01))) issues.push({ t: 'total', e: ways[0], tot: ex.total }); }
+  if (entered != null && !isNaN(entered)) { done.push('entry'); const en = Number(entered);
+    if (!near(en, ex.total, 1)) { if (ex.prev && near(en, r2(ex.total + ex.prev), 1)) issues.push({ t: 'prev', ent: en, tot: ex.total, prev: ex.prev });
+      else if (!(ex.net != null && near(en, ex.net, 1))) issues.push({ t: 'entry', ent: en, tot: ex.total }); } }
+  const deep = done.some(d => d === 'lines' || d === 'sum' || d === 'total');
+  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, total: ex.total, tax: T || null, lines: nLine };
+}
 /** Read an entry's photos and store the check on it (outside the lock while Gemini works). */
 function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id === String(id)); if (!e) throw new Error('no_entry');
   const files = (e.photos || []).map(p => p.f); let ex = null, err = '';

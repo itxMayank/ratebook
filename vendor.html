@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Account statement</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap">
+<style>
+/* Read-only account page for one vendor, opened from the private link the shop shares (vendor.html?t=…). */
+:root{--bg:#f4f5f7;--surface:#fff;--surface-2:#eef0f3;--fg:#141518;--muted:#62666e;--line:#e3e5e9;--ink:#16171a;--ink-fg:#fff;--accent:#8a1c2b;--ok:#17703f;--f:"Plus Jakarta Sans",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1012;--surface:#18191c;--surface-2:#222328;--fg:#eceef2;--muted:#9a9ea7;--line:#2b2d33;--ink:#eceef2;--ink-fg:#111;--accent:#ff8a96;--ok:#7fe0a8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--f);-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px calc(32px + env(safe-area-inset-bottom))}
+.shop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:6px 2px 14px}
+.shop h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.shop p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.tag{font-size:11px;font-weight:800;background:#f5d68a;color:#5b4100;border-radius:999px;padding:2px 8px;vertical-align:3px;margin-left:6px}
+.card{background:var(--ink);color:var(--ink-fg);border-radius:20px;padding:18px}
+.card small{opacity:.75;font-weight:600;font-size:13px}
+.card b{display:block;font-size:32px;font-weight:800;letter-spacing:-.02em;margin:2px 0}
+.card span{font-size:13px;opacity:.85}
+.card.ok b{color:#8ff0b5}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--muted);font-size:13px;margin:10px 2px 0}
+.tabs{display:flex;gap:4px;background:var(--surface-2);border-radius:999px;padding:4px;margin:16px 0 10px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:999px;font:700 14px var(--f);color:var(--muted);cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.list{display:grid;gap:8px}
+.row{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:12px}
+.ic{flex:none;width:34px;height:34px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;font-weight:800;color:var(--muted)}
+.row.pay .ic{background:#dcf3e5;color:#17703f}.row.adj .ic{background:#fff1d6;color:#8a5a00}
+.mid{flex:1;min-width:0}.mid b{display:block;font-size:15px}.mid small{color:var(--muted);font-size:12.5px;display:block}
+.note{font-style:italic;color:var(--muted);font-size:13px;margin-top:2px}
+.amt{text-align:right;flex:none}.amt b{display:block;font-weight:800}.amt small{color:var(--muted);font-size:12px}
+.minus{color:var(--ok)}
+.pill{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 8px;margin-top:4px}
+.p-paid{background:#dcf3e5;color:#17703f}.p-part{background:#fff1d6;color:#8a5a00}.p-open{background:var(--surface-2);color:var(--muted)}.p-due{background:#fde3df;color:#b3261e}
+.ph{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ph button{width:64px;height:80px;border-radius:10px;border:1.5px solid var(--line);background:center/cover no-repeat var(--surface-2);cursor:pointer;font:800 12px var(--f);color:#b3261e}
+.btns{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.btn{border:0;border-radius:999px;padding:11px 18px;font:700 14px var(--f);background:var(--surface-2);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--ink-fg)}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:22px}
+.center{text-align:center;padding:60px 16px;color:var(--muted)}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--fg);animation:s .8s linear infinite;margin:0 auto 12px}@keyframes s{to{transform:rotate(360deg)}}
+.view{position:fixed;inset:0;background:#0b0b0c;z-index:10;display:flex;flex-direction:column}
+.view .top{display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff}.view .top span{flex:1;font-weight:700}
+.view .top button{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:18px}
+.view .stage{flex:1;overflow:auto;display:grid;place-items:center;touch-action:pinch-zoom pan-x pan-y}
+.view img{max-width:100%;height:auto}
+.view .ld{color:#fff;text-align:center;padding:20px}
+/* printed statement */
+.print{display:none}
+@media print{
+  body{background:#fff;color:#000} .wrap>*:not(.print){display:none!important} .print{display:block}
+  .print h2{margin:0 0 2px;font-size:18px}.print p{margin:0;font-size:11px}
+  .print table{width:100%;border-collapse:collapse;margin-top:12px;font-size:11px}
+  .print th{background:#eee;text-align:left;padding:5px;border-bottom:1px solid #000}.print td{padding:5px;border-bottom:1px solid #ddd;vertical-align:top}
+  .print .r{text-align:right}.print .tot td{font-weight:700;border-top:1.5px solid #000}
+  @page{size:A4;margin:12mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="center"><div class="spin"></div>Loading…</div></div>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec";   // keep the same as in index.html
+const tok=new URLSearchParams(location.search).get("t")||"";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rs=n=>"₹"+Number(Math.round((+n||0)*100)/100).toLocaleString("en-IN",{maximumFractionDigits:2});
+const dd=d=>d?new Date(d+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"";
+const api=q=>fetch(API_URL+"?"+new URLSearchParams({...q,t:tok,_:Date.now()}),{cache:"no-store"}).then(r=>r.json());
+let D=null, tab="ledger", prev={};
+const mode=m=>({Cash:"Cash",UPI:"UPI",Bank:"Bank",Cheque:"Cheque"}[m]||m||"");
+function title(e){ return e.type==="bill"?"Bill"+(e.billNo?" "+e.billNo:""):e.type==="pay"?"Paid"+(e.mode?" · "+mode(e.mode):""):"Return / discount"; }
+function pill(b){ if(!b) return ""; if(b.status==="paid") return `<span class="pill p-paid">Paid</span>`; return `<span class="pill ${b.status==="part"?"p-part":"p-open"}">${b.status==="part"?"Part-paid":"Open"}</span>${b.overdue?` <span class="pill p-due">Overdue</span>`:""}`; }
+function photosHTML(e){ return e.photos&&e.photos.length?`<div class="ph">${e.photos.map((p,i)=>`<button type="button" data-f="${esc(p.f)}" data-m="${esc(p.m)}" data-lab="${esc(title(e)+" · "+dd(e.date))}" ${prev[p.f]?`style="background-image:url('${prev[p.f]}')"`:""}>${p.m==="application/pdf"?"PDF":""}</button>`).join("")}</div>`:""; }
+function render(){
+  const c=D.calc, v=D.vendor, bills={}; c.bills.forEach(b=>bills[b.id]=b);
+  const bal=c.balance, lab=bal>0?"Balance due to you":bal<0?"Advance paid to you":"All settled";
+  let run=0; const rows=[]; if(v.opening){ run=v.opening; rows.push({op:true,date:v.openingDate,amount:v.opening,bal:run}); }
+  D.entries.forEach(e=>{ run=Math.round((run+(e.type==="bill"?e.amount:-e.amount))*100)/100; rows.push({e,bal:run}); }); rows.reverse();
+  const led=rows.map(r=>{ if(r.op) return `<div class="row"><span class="ic">⊙</span><div class="mid"><b>Opening balance</b><small>${dd(r.date)}</small></div><div class="amt"><b>${rs(r.amount)}</b><small>Bal ${rs(r.bal)}</small></div></div>`;
+    const e=r.e, b=bills[e.id]; return `<div class="row ${e.type}"><span class="ic">${e.type==="bill"?"🧾":e.type==="pay"?"₹":"↩"}</span><div class="mid"><b>${esc(title(e))}</b><small>${dd(e.date)}${e.ref?" · "+esc(e.ref):""}${e.gst?" · GST "+rs(e.gst):""}</small>${b?pill(b)+(b.due>0&&b.status==="part"?` <small style="display:inline">Due ${rs(b.due)}</small>`:""):""}${e.noteV?`<div class="note">${esc(e.noteV)}</div>`:""}${photosHTML(e)}</div><div class="amt"><b class="${e.type==="bill"?"":"minus"}">${e.type==="bill"?"+":"−"}${rs(e.amount)}</b><small>Bal ${rs(r.bal)}</small></div></div>`; }).join("");
+  const bl=c.bills.slice().reverse().map(b=>{ const e=D.entries.find(x=>x.id===b.id)||{}; return `<div class="row"><span class="ic">${b.opening?"⊙":"🧾"}</span><div class="mid"><b>${b.opening?"Opening balance":"Bill"+(b.billNo?" "+esc(b.billNo):"")}</b><small>${dd(b.date)}${b.dueDate&&b.due>0?" · due "+dd(b.dueDate):""}</small>${pill(b)}${photosHTML(e)}</div><div class="amt"><b>${rs(b.amount)}</b>${b.due>0&&b.due<b.amount?`<small>Due ${rs(b.due)}</small>`:""}</div></div>`; }).join("");
+  $("#app").innerHTML=`<div class="shop"><div><h1>${esc(D.shop.name||"Account")}${D.test?`<span class="tag">TEST</span>`:""}</h1>${D.shop.address?`<p>${esc(D.shop.address)}</p>`:""}${D.shop.gstin?`<p>GSTIN ${esc(D.shop.gstin)}</p>`:""}</div></div>
+    <div class="card ${bal>0?"":"ok"}"><small>${esc(v.name)} · ${lab}</small><b>${bal===0?"✓":rs(Math.abs(bal))}</b><span>${c.openBills?`${c.openBills} open bill${c.openBills===1?"":"s"}`:"No open bills"}${c.overdue?` · ${c.overdue} overdue`:""}</span></div>
+    <div class="meta"><span>Total bills ${rs(c.billTotal)}</span><span>Total paid ${rs(c.paidTotal)}</span>${v.creditDays?`<span>Credit ${v.creditDays} days</span>`:""}</div>
+    <div class="tabs"><button type="button" data-tab="ledger" aria-pressed="${tab==="ledger"}">Ledger</button><button type="button" data-tab="bills" aria-pressed="${tab==="bills"}">Bills</button></div>
+    <div class="list">${(tab==="ledger"?led:bl)||`<p class="center" style="padding:30px">Nothing yet.</p>`}</div>
+    <div class="btns"><button type="button" class="btn primary" id="print">Download / print statement</button><button type="button" class="btn" id="reload">Refresh</button></div>
+    <p class="foot">Updated ${new Date(D.at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"numeric",minute:"2-digit"})} · read-only page shared by ${esc(D.shop.name||"the shop")}</p>
+    <div class="print">${printHTML(rows)}</div>`;
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ tab=b.dataset.tab; render(); });
+  document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>view(b.dataset.f,b.dataset.m,b.dataset.lab));
+  $("#print").onclick=()=>window.print(); $("#reload").onclick=load;
+}
+function printHTML(rows){ const v=D.vendor; const asc=rows.slice().reverse();
+  return `<h2>${esc(D.shop.name||"")} — Account statement</h2><p>${esc(D.shop.address||"")}${D.shop.gstin?" · GSTIN "+esc(D.shop.gstin):""}</p><p>Vendor: <b>${esc(v.name)}</b>${v.gstin?" · GSTIN "+esc(v.gstin):""} · Date: ${dd(new Date().toISOString().slice(0,10))}</p>
+  <table><tr><th>Date</th><th>Particulars</th><th class="r">Bill</th><th class="r">Paid / return</th><th class="r">Balance</th></tr>${asc.map(r=>r.op?`<tr><td>${dd(r.date)}</td><td>Opening balance</td><td class="r">${r.amount>0?rs(r.amount):""}</td><td class="r">${r.amount<0?rs(-r.amount):""}</td><td class="r">${rs(r.bal)}</td></tr>`:`<tr><td>${dd(r.e.date)}</td><td>${esc(title(r.e))}${r.e.ref?" · "+esc(r.e.ref):""}${r.e.noteV?" — "+esc(r.e.noteV):""}</td><td class="r">${r.e.type==="bill"?rs(r.e.amount):""}</td><td class="r">${r.e.type!=="bill"?rs(r.e.amount):""}</td><td class="r">${rs(r.bal)}</td></tr>`).join("")}
+  <tr class="tot"><td colspan="4">${D.calc.balance>=0?"Balance payable to vendor":"Advance with vendor"}</td><td class="r">${rs(Math.abs(D.calc.balance))}</td></tr></table>`; }
+function view(f,m,lab){ const ov=document.createElement("div"); ov.className="view"; ov.innerHTML=`<div class="top"><span>${esc(lab)}</span><button type="button" aria-label="Close">✕</button></div><div class="stage"><div class="ld"><div class="spin"></div>Loading bill…</div></div>`;
+  document.body.appendChild(ov); history.pushState({v:1},""); const close=()=>{ ov.remove(); window.removeEventListener("popstate",close); };
+  window.addEventListener("popstate",close); ov.querySelector("button").onclick=()=>history.back();
+  api({action:"vpubfile",f}).then(j=>{ if(!j.ok) throw 0; const st=ov.querySelector(".stage");
+    if(j.mime==="application/pdf"){ const bin=atob(j.data), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); const url=URL.createObjectURL(new Blob([u],{type:j.mime}));
+      st.innerHTML=`<div class="ld"><p>PDF bill</p><a class="btn primary" href="${url}" target="_blank" rel="noopener" download="bill.pdf">Open PDF</a></div>`; }
+    else st.innerHTML=`<img alt="Bill" src="data:${j.mime};base64,${j.data}">`; }).catch(()=>{ ov.querySelector(".stage").innerHTML=`<div class="ld">Couldn't load this bill.</div>`; }); }
+async function load(){
+  if(!tok){ $("#app").innerHTML=`<div class="center">This link is not complete. Please ask the shop for the link again.</div>`; return; }
+  try{ const j=await api({action:"vpub"}); if(!j.ok){ $("#app").innerHTML=`<div class="center">This link is no longer active. Please ask the shop for a new link.</div>`; return; }
+    D=j; document.title=(j.shop.name?j.shop.name+" · ":"")+"Account statement"; render();
+    api({action:"vpubprev"}).then(p=>{ if(p.ok){ prev=p.previews||{}; render(); } }).catch(()=>{}); }
+  catch{ if(!D) $("#app").innerHTML=`<div class="center">Couldn't load. Check your internet and <a href="" onclick="location.reload();return false">try again</a>.</div>`; }
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && D) load(); });
+load();
+</script>
+</body>
+</html>

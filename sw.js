@@ -1,5 +1,5 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-3';
+const VERSION = 'rb-shell-4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png'];
 
 self.addEventListener('install', e => {
@@ -16,8 +16,10 @@ self.addEventListener('fetch', e => {
     const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
     if (isPage) {
       // Network first so updates arrive; fall back to the saved copy when offline.
-      e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put('./index.html', copy)); return res; })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./'))));
+      // Only the app itself is saved as the offline copy; other pages (vendor.html, the vendor's statement link) are kept under their own address.
+      const isApp = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+      e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(isApp ? './index.html' : req, copy)); return res; })
+        .catch(() => isApp ? caches.match('./index.html').then(r => r || caches.match('./')) : caches.match(req)));
     } else {
       e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })));
     }

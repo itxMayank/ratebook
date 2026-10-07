@@ -327,6 +327,35 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   3. else switch to Prices;
   4. else show "Press back again to exit", and a second press within 2 s leaves the app.
 
+## Vendor khata (added 7 Oct 2026, `SCRIPT_VERSION` 20 / `NEED_SV` 20)
+
+What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server `NEEDS` = manager). Test mode keeps its own data.
+
+- **Sheet tabs** (via `tab_()`, so `Test …` in test mode):
+  - `Vendors`: `id | name | mobile | gstin | address | creditDays | opening | openingDate | token | linkOn | note | createdAt | updatedAt | by | removed`
+  - `VendorLedger`: `id | vendorId | type (bill/pay/adj) | date | amount | gst | billNo | mode | ref | noteV | noteP | photos (JSON [{f,m}]) | alloc (JSON {billId: amount}) | by | at | editedAt | editedBy | removed | history (JSON)`
+  - `VendorDocs`: `fileId | vendorId | preview (small JPEG data URL) | mime | at`
+  - Dates, bill numbers, refs, mobile, GSTIN and token are written as text (`VTXT_`, leading `'`), so Sheets doesn't turn them into dates or numbers.
+- **Bill photos / PDFs:** full quality (up to 1600 px, JPEG ~0.85, under ~650 KB) saved as files in the Drive folder "Rate Book vendor bills" (test: "… (test)"; ids in script properties `VD_FOLDER_live` / `VD_FOLDER_test`). Needs Drive permission: run **`setupVendorDocs`** once in the Apps Script editor. Without it uploads fail with `drive_auth` and the app says how to fix it. The phone caches previews (`vprev:<fileId>`) and full files (`vfull:<fileId>`) in IndexedDB.
+  - Before saving: rotate per photo, and "Make text clearer" (a contrast stretch to near black-and-white, for faded thermal bills). PDFs up to 10 MB are kept as they are.
+- **Money logic (`vCalc_`):** balance = opening + bills − payments − returns. The opening balance counts as a bill (`open:<vendorId>`).
+  - Payments/returns store which bills they cover (`alloc`); paid amounts per bill are capped at each bill's amount, so editing or removing a bill turns its paid part back into advance. Advance = payments not allocated.
+  - Bill status: open / part / paid. Due date = date + vendor credit days; overdue when past it.
+- **Payment form (`vForm` + `vAlloc`):**
+  - Tick bills (optional). Ticking with an empty amount fills in their total. With an amount typed, it fills ticked bills in tick order.
+  - Nothing ticked = oldest first. An amount over the ticked bills asks: keep as advance, or put on the oldest other bills (required choice).
+  - A live line shows exactly what each bill gets. A bill's screen has **Pay this bill** (pre-ticked).
+  - "Use ₹X advance" on a new bill (checkbox) or on an open bill (`vUseAdvance`).
+- **Entries:** two notes, `noteV` (vendor sees it in the PDF and on the link) and `noteP` (private, marked 🔒). Edit keeps a `history`; Remove is a soft delete (`removed`). Both show a 5-second **Undo** bar (`vSnack`) instead of a confirm dialog.
+- **Viewer (`vViewer`):** full screen, pinch-zoom, double-tap zoom, swipe between pages, rotate, save/share. The preview shows first, then the full file. The phone's Back closes it (`#vview` checked first in `popstate`).
+- **Offline:** a new entry made with no signal (photos too) is stored in `rb_vq_<mode>` plus IndexedDB `vqf:<key>`, and sent by `vqFlush()` when online or when Vendors opens. Edits and removals need a connection.
+- **Statement PDF (`vStatementPdf`):** period All / This FY / Dates. It has the opening for the period, every entry with a running balance, totals, the open bills with due dates, and optional pages with each bill photo (PDF attachments are listed). Plus a WhatsApp line with the balance.
+- **Vendor's link:** `vendor.html?t=<token>` (a separate page next to `index.html`; keep its `API_URL` the same).
+  - The token is `t`/`l` + 22 hex characters (it carries the mode). `GET ?action=vpub|vpubprev|vpubfile&t=` needs no PIN and returns only that vendor's non-removed entries, without private notes or history. `vpubfile` only serves files attached to that vendor.
+  - The link can be turned off (`linkOn`) or replaced (`vLink` with `regen`). The page has Ledger/Bills tabs, photos, and Download/print statement.
+- **sw.js** (`rb-shell-4`): only `/` and `index.html` are saved as the offline app. Before, any page (e.g. `vendor.html`) overwrote the saved `index.html`.
+- Not done yet: purchase bills updating stock or item buy prices; vendor "✓ balance confirmed" button.
+
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 
 **Security**

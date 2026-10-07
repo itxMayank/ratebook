@@ -1160,6 +1160,9 @@ html.fz-big .bill-line .step input{width:40px}
 .vc-amt b{font:800 16px var(--f-display)}
 .vc-amt.owe b{color:var(--accent)} .vc-amt.adv b,.vc-amt.ok b{color:#1d8a4e}
 .pill.due{background:#fde3df;color:#b3261e} .pill.paid{background:#dcf3e5;color:#17703f} .pill.part{background:#fff1d6;color:#8a5a00} .pill.open{background:var(--surface-2);color:var(--muted)}
+.vq-note[hidden]{display:none}
+.vq-note.err{background:#fde3df;color:#b3261e}
+.vpend{color:var(--accent);font-weight:700}
 .vq-note{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--surface-2);border-radius:12px;padding:8px 12px;margin-bottom:8px}
 .vd-card{position:relative;background:var(--ink);color:var(--ink-fg);border-radius:20px;padding:16px 18px 14px}
 .vd-card small{opacity:.75;font-weight:600;font-size:12.5px}
@@ -1232,7 +1235,8 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .vv-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;background:rgba(255,255,255,.1);color:#fff;font-size:30px;border-radius:12px}
 .vv-nav.prev{left:8px} .vv-nav.next{right:8px} .vv-nav[hidden]{display:none}
 .snack{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,140%);z-index:150;display:flex;align-items:center;gap:16px;background:#1b1c1f;color:#fff;border-radius:14px;padding:12px 14px 12px 18px;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:transform .25s cubic-bezier(.2,.9,.3,1.2);max-width:calc(100vw - 32px);font-size:14px}
-.snack.on{transform:translate(-50%,0)}
+.snack{opacity:0;pointer-events:none;visibility:hidden;transition:transform .25s cubic-bezier(.2,.9,.3,1.2),opacity .2s,visibility 0s .25s}
+.snack.on{transform:translate(-50%,0);opacity:1;pointer-events:auto;visibility:visible;transition:transform .25s cubic-bezier(.2,.9,.3,1.2),opacity .2s}
 .snack button{border:0;background:none;color:#8ab4ff;font-weight:800;font-size:14px;padding:6px 8px}
 </style>
 </head>
@@ -1532,7 +1536,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", close:"Close", optional:"optional", undo:"Undo",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, vSending:"sending…", vWaitSync:"The vendor is still being saved. Try again in a moment.", close:"Close", optional:"optional", undo:"Undo",
   vTitle:"Vendors", vToolD:"Bills from suppliers, payments, what you owe", vNoAccess:"Only the owner or a manager can open vendors.", vDup:"A vendor with this name already exists.",
   vDriveAuth:"Bill photos can't be saved yet. In Apps Script, run setupVendorDocs once (choose it → Run → allow), then try again.",
   vTotalOwe:"You owe vendors", vVendorsN:n=>`${n} vendor${n===1?"":"s"}`, vOverdueN:n=>`${n} overdue`, vBill:"Bill", vPayment:"Payment", vVendor:"Vendor", vSearchPh:"Search vendor",
@@ -1577,7 +1581,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vSaving:n=>`${n} बदलाव सेव हो रहे…`, vSending:"भेज रहे…", vWaitSync:"वेंडर अभी सेव हो रहा है। थोड़ी देर में दोबारा करें।", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
   vTitle:"वेंडर", vToolD:"सप्लायर के बिल, भुगतान, कितना देना है", vNoAccess:"वेंडर सिर्फ़ मालिक या मैनेजर खोल सकते हैं।", vDup:"इस नाम का वेंडर पहले से है।",
   vDriveAuth:"बिल की फ़ोटो अभी सेव नहीं हो सकती। Apps Script में setupVendorDocs एक बार चलाएँ (चुनें → Run → allow), फिर दोबारा कोशिश करें।",
   vTotalOwe:"वेंडरों को देना है", vVendorsN:n=>`${n} वेंडर`, vOverdueN:n=>`${n} समय से ऊपर`, vBill:"बिल", vPayment:"भुगतान", vVendor:"वेंडर", vSearchPh:"वेंडर खोजें",
@@ -1694,7 +1698,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=20;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=21;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -4546,28 +4550,88 @@ const vMoney=n=>rs(Math.round((+n||0)*100)/100);
 const VMODES=["Cash","UPI","Bank","Cheque"];
 function vErr(e){ const c=e&&e.code; if(c==="drive_auth") return t("vDriveAuth"); if(c==="dup_vendor") return t("vDup"); if(c==="not_allowed") return t("vNoAccess"); return errMsg(e); }
 async function vCall(body){ try{ return await apiPost(body); }catch(e){ toast(vErr(e)); throw e; } }
-/* ---- offline queue: new entries (with their photos) made without signal are sent later ---- */
+/* ---- local copy + outbox (makes Vendors instant) ----
+ * VDB.srv = the sheet's vendor data as last synced ({vrev, vendors, entries}, IndexedDB "v:<mode>:all").
+ * The outbox (rb_vq_<mode>) holds changes not yet sent. What you see = srv with the outbox applied on top (vRebuild →
+ * VD.list / VD.det, balances worked out on the phone by vCalcJS). So opening a vendor and saving take no waiting: the
+ * outbox is sent in the background one change at a time, then vSync asks the sheet "anything new?" (tiny reply if not). */
+const VDB={mode:null, loaded:false, srv:{vrev:"",vendors:[],entries:[]}};
 const vqKey=()=>"rb_vq_"+S.cfg.mode;
 const vqGet=()=>{ const a=ls.get(vqKey(),[]); return Array.isArray(a)?a:[]; };
-let vqBusy=false;
-async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite || !can("manager")) return; const q=vqGet(); if(!q.length) return; vqBusy=true;
-  try{ while(vqGet().length){ const job=vqGet()[0], photos=[];
-      for(const f of job.files||[]){ const d=await idb.get("images","vqf:"+f.k); if(!d) continue; const r=await apiPost0({action:"vUpload",vendorId:job.entry.vendorId,data:d.data,mime:d.mime,preview:d.preview||""}); photos.push({f:r.f,m:r.m}); if(d.preview) idb.set("images","vprev:"+r.f,d.preview); idb.del("images","vqf:"+f.k); }
-      const r=await apiPost0({action:"vSave",entry:{...job.entry,photos:[...(job.entry.photos||[]),...photos]}});
-      ls.set(vqKey(),vqGet().slice(1)); vStore(r); }
-    toast(t("vQueueSent")); vRefreshOpen(); }
-  catch{} finally{ vqBusy=false; } }
+const vqSet=a=>ls.set(vqKey(),a);
+async function vdbInit(){ if(VDB.loaded && VDB.mode===S.cfg.mode) return; VDB.mode=S.cfg.mode; VD.det={}; VD.list=null;
+  const c=await idb.get("images",vKey("all")); VDB.srv=c&&Array.isArray(c.vendors)?c:{vrev:"",vendors:[],entries:[]}; VDB.loaded=true; vRebuild(); }
+function vdbSave(){ idb.set("images",vKey("all"),VDB.srv); }
+const vSynced=()=>!!VDB.srv.vrev;
+/** Same sums as vCalc_ in Code.gs. */
+function vCalcJS(v,entries){ const r2v=x=>Math.round(x*100)/100, today=vToday(), cd=+v.creditDays||0;
+  const add=(d,n)=>{ const x=new Date(d+"T00:00:00Z"); x.setUTCDate(x.getUTCDate()+n); return x.toISOString().slice(0,10); };
+  const live=entries.filter(e=>!e.removed).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||0)-(b.at||0));
+  const bills=[]; if(v.opening>0) bills.push({id:"open:"+v.id,date:v.openingDate,amount:+v.opening,billNo:"Opening balance",opening:true,at:0});
+  live.filter(e=>e.type==="bill").forEach(e=>bills.push({id:e.id,date:e.date,amount:+e.amount,billNo:e.billNo,at:e.at}));
+  const byId={}; bills.forEach(b=>{ b.paid=0; b.by=[]; byId[b.id]=b; });
+  let paid=0, alloc=0, billTotal=v.opening>0?+v.opening:0, opNeg=v.opening<0?-v.opening:0;
+  live.forEach(e=>{ if(e.type==="bill"){ billTotal+=+e.amount; return; } paid+=+e.amount; let left=+e.amount;
+    Object.keys(e.alloc||{}).forEach(id=>{ const b=byId[id]; if(!b) return; const a=Math.min(+e.alloc[id]||0,left,Math.max(0,b.amount-b.paid)); if(a<=0) return; b.paid=r2v(b.paid+a); left-=a; alloc+=a; b.by.push({id:e.id,a:r2v(a)}); }); });
+  bills.forEach(b=>{ b.due=Math.max(0,r2v(b.amount-b.paid)); b.status=b.due<=0?"paid":b.paid>0?"part":"open"; b.dueDate=cd?add(b.date,cd):""; b.overdue=!!(b.due>0&&b.dueDate&&b.dueDate<today); });
+  const open=bills.filter(b=>b.due>0);
+  return { bills, balance:r2v(billTotal-paid-opNeg), advance:Math.max(0,r2v(paid+opNeg-alloc)), openBills:open.length, overdue:open.filter(b=>b.overdue).length, oldest:open.length?open[0].date:"",
+    billTotal:r2v(billTotal), paidTotal:r2v(paid), lastAt:live.reduce((m,e)=>Math.max(m,e.at||0),+v.updatedAt||0) }; }
+function vApplyJob(vs,es,j){
+  if(j.k==="vendor"){ const i=vs.findIndex(v=>v.id===j.v.id); const base=i>=0?vs[i]:{createdAt:j.at,linkOn:false,token:""}; const nv={...base,...j.v,updatedAt:j.at,pending:true}; if(i>=0) vs[i]=nv; else vs.push(nv); }
+  else if(j.k==="save"){ const i=es.findIndex(e=>e.id===j.e.id); const nv={...(i>=0?es[i]:{at:j.at,by:byName(),history:[]}),...j.e,alloc:{...(j.e.alloc||{})},pending:true}; if(i>=0) es[i]=nv; else es.push(nv);
+    if(j.isNew && j.e.type==="bill" && j.e.useAdvance) vApplyJob(vs,es,{k:"adv",vendorId:j.e.vendorId,billId:j.e.id}); }
+  else if(j.k==="rm"){ const e=es.find(x=>x.id===j.id); if(e){ e.removed=!!j.on; e.pending=true; } }
+  else if(j.k==="adv"){ const v=vs.find(x=>x.id===j.vendorId); if(!v) return; const en=es.filter(e=>e.vendorId===v.id); const c=vCalcJS(v,en); const b=c.bills.find(x=>x.id===j.billId); if(!b||b.due<=0) return; let need=b.due;
+    en.filter(e=>!e.removed&&e.type!=="bill").sort((a,b2)=>a.date<b2.date?-1:a.date>b2.date?1:(a.at||0)-(b2.at||0)).forEach(e=>{ if(need<=0) return; const used=Object.values(e.alloc||{}).reduce((s,a)=>s+(+a||0),0), free=Math.round((e.amount-used)*100)/100; if(free<=0) return;
+      const a=Math.min(free,need); e.alloc={...(e.alloc||{})}; e.alloc[j.billId]=Math.round(((+e.alloc[j.billId]||0)+a)*100)/100; e.pending=true; need-=a; }); } }
+function vRebuild(){ const vs=VDB.srv.vendors.map(v=>({...v})), es=VDB.srv.entries.map(e=>({...e,alloc:{...(e.alloc||{})}}));
+  vqGet().forEach(j=>vApplyJob(vs,es,j));
+  const det={}, list=[]; vs.filter(v=>!v.removed).forEach(v=>{ const en=es.filter(e=>e.vendorId===v.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||0)-(b.at||0)); const calc=vCalcJS(v,en); det[v.id]={vendor:v,entries:en,calc}; const s={...v,...calc}; delete s.bills; delete s.token; list.push(s); });
+  VD.det=det; VD.list={vendors:list, owe:Math.round(list.reduce((a,v)=>a+Math.max(0,v.balance),0)*100)/100}; }
+/** Add a change: shown at once, sent in the background. Returns the job id (for Undo). */
+function vqAdd(job){ job.jid=vId("j"); job.at=Date.now(); vqSet([...vqGet(),job]); vRebuild(); vRefreshOpen(); setTimeout(vqFlush,30); return job.jid; }
+/** Undo: drop the change if it hasn't been sent yet, else send the opposite change. */
+function vUndo(jid,inverse){ const q=vqGet(); if(q.some(j=>j.jid===jid) && !(vqBusy && q[0].jid===jid)){ vqSet(q.filter(j=>j.jid!==jid)); vRebuild(); vRefreshOpen(); } else if(inverse) vqAdd(inverse); toast(t("vUndone")); }
+let vqBusy=false, vqErr=null, vqTimer=0;
+function vMerge(r){ if(!r || !r.vendor) return; const s=VDB.srv; const i=s.vendors.findIndex(v=>v.id===r.vendor.id); if(i>=0) s.vendors[i]=r.vendor; else s.vendors.push(r.vendor);
+  s.entries=s.entries.filter(e=>e.vendorId!==r.vendor.id).concat(r.entries||[]); vdbSave(); }
+const vNetErr=e=>!e || e.code==="offline" || e.code==="http" || e instanceof TypeError || e.name==="TypeError";
+async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite || !can("manager") || !vqGet().length) return; vqBusy=true; vqErr=null; vNoteUpd();
+  try{ while(vqGet().length){ const job=vqGet()[0];
+      try{ let r;
+        if(job.k==="vendor") r=await apiPost0({action:"vSaveVendor",vendor:job.v});
+        else if(job.k==="save"){
+          for(const k of [...(job.files||[])]){ const d=await idb.get("images","vqf:"+k); if(d){ const u=await apiPost0({action:"vUpload",vendorId:job.e.vendorId,data:d.data,mime:d.mime,preview:d.preview||"",name:d.name||""});
+              if(d.preview) idb.set("images","vprev:"+u.f,d.preview); idb.set("images","vfull:"+u.f,{data:d.data,mime:d.mime});
+              job.e.photos=(job.e.photos||[]).map(p=>p.f==="local:"+k?{f:u.f,m:u.m}:p); idb.del("images","vqf:"+k); }
+            job.files=job.files.filter(x=>x!==k); const q=vqGet(); if(q[0]&&q[0].jid===job.jid){ q[0]=job; vqSet(q); } }
+          r=await apiPost0({action:"vSave",entry:{...job.e,photos:(job.e.photos||[]).filter(p=>!String(p.f).startsWith("local:")),isNew:!!job.isNew}}); }
+        else if(job.k==="rm") r=await apiPost0({action:"vRemove",id:job.id,on:!!job.on});
+        else if(job.k==="adv") r=await apiPost0({action:"vUseAdvance",vendorId:job.vendorId,billId:job.billId});
+        vMerge(r); }
+      catch(e){ if(vNetErr(e)) throw e; if(e.code==="drive_auth" || e.code==="bad_pin" || e.code==="locked"){ vqErr=e.code; throw e; } toast(vErr(e)); }   // other server refusals: drop this change
+      vqSet(vqGet().filter(j=>j.jid!==job.jid)); vRebuild(); vRefreshOpen(); }
+    vqBusy=false; vNoteUpd(); vSync(true); }
+  catch(e){ clearTimeout(vqTimer); vqTimer=setTimeout(vqFlush,20000); }
+  finally{ vqBusy=false; vNoteUpd(); } }
 window.addEventListener("online",()=>setTimeout(vqFlush,800));
-/* ---- data ---- */
-function vStore(r){ if(r && r.vendor){ VD.det[r.vendor.id]=r; idb.set("images",vKey("d:"+r.vendor.id),r); if(VD.list){ const i=VD.list.vendors.findIndex(v=>v.id===r.vendor.id); const s={...r.vendor,...r.calc}; delete s.bills; delete s.token; if(i>=0) VD.list.vendors[i]=s; else VD.list.vendors.unshift(s); VD.list.owe=VD.list.vendors.reduce((a,v)=>a+Math.max(0,v.balance),0); idb.set("images",vKey("list"),VD.list); } } }
-async function vLoadList(){ if(!VD.list){ const c=await idb.get("images",vKey("list")); if(c && c.vendors) VD.list=c; }
-  const r=await vCall({action:"vList"}); VD.list={vendors:r.vendors||[], owe:r.owe||0}; idb.set("images",vKey("list"),VD.list); return VD.list; }
-async function vLoad(id){ const r=await vCall({action:"vGet",id}); vStore(r); return r; }
-function vRefreshOpen(){ const s=$("#sheet-body"); if(!s || $("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vLoad(VD.cur).then(()=>{ if($("#vd-page")) vRenderVendor(VD.cur,true); }).catch(()=>{}); }
+let vSyncing=null, vSyncAt=0;
+/** Ask the sheet for changes (from other phones). Shows the local copy meanwhile. At most every 8 s unless forced. */
+function vSync(force){ if(vSyncing) return vSyncing; if(!force && Date.now()-vSyncAt<8000 && vSynced()) return Promise.resolve(); vSyncAt=Date.now(); vSyncing=(async()=>{ await vdbInit(); if(!S.canWrite||!can("manager")) return;
+    if(vqGet().length && !force){ vqFlush(); return; }
+    try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.vrev||""}); if(!r.same){ VDB.srv={vrev:r.vrev,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
+    catch(e){ if(e&&e.code==="bad_action"){ /* old script: fall back to the per-vendor calls */ } } })().finally(()=>{ vSyncing=null; }); return vSyncing; }
+function vRefreshOpen(){ if($("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vRenderVendor(VD.cur,true); vNoteUpd(); }
+/** The small "Saving… / waiting to send / photo problem" line. */
+function vNoteUpd(){ const el=$("#vq-note"); if(!el) return; const n=vqGet().filter(j=>!VD.cur||!$("#vd-page")||j.k==="vendor"&&j.v.id===VD.cur||(j.e&&j.e.vendorId===VD.cur)||j.vendorId===VD.cur||(j.k==="rm")).length;
+  if(!n){ el.hidden=true; return; } el.hidden=false; el.classList.toggle("err",!!vqErr);
+  el.innerHTML = vqErr==="drive_auth" ? esc(t("vDriveAuth")) : navigator.onLine===false ? esc(t("vQueueN",n)) : LD("sm")+" "+esc(t("vSaving",n)); }
+setTimeout(()=>{ if(S.canWrite && can("manager")) vSync(); },5000);   // warm the copy so Vendors opens instantly
 /* ---- photos: previews (small, in the sheet) and full files (Drive), cached on the phone ---- */
-async function vPreviews(fids){ const out={}, need=[]; for(const f of fids){ const c=await idb.get("images","vprev:"+f); if(c) out[f]=c; else need.push(f); }
+async function vPreviews(fids){ const out={}, need=[]; for(const f of fids){ if(String(f).startsWith("local:")){ const d=await idb.get("images","vqf:"+f.slice(6)); if(d&&d.preview) out[f]=d.preview; continue; } const c=await idb.get("images","vprev:"+f); if(c) out[f]=c; else need.push(f); }
   if(need.length){ try{ const r=await apiPost0({action:"vPreviews",ids:need}); Object.entries(r.previews||{}).forEach(([f,d])=>{ out[f]=d; idb.set("images","vprev:"+f,d); }); }catch{} } return out; }
-async function vFull(f){ const c=await idb.get("images","vfull:"+f); if(c) return c; const r=await apiPost0({action:"vFile",f}); const d={data:r.data,mime:r.mime}; idb.set("images","vfull:"+f,d); return d; }
+async function vFull(f){ if(String(f).startsWith("local:")){ const d=await idb.get("images","vqf:"+f.slice(6)); if(d) return {data:d.data,mime:d.mime}; } const c=await idb.get("images","vfull:"+f); if(c) return c; const r=await apiPost0({action:"vFile",f}); const d={data:r.data,mime:r.mime}; idb.set("images","vfull:"+f,d); return d; }
 function vFillThumbs(root){ const els=[...(root||document).querySelectorAll("[data-vthumb]")]; if(!els.length) return; vPreviews([...new Set(els.map(e=>e.dataset.vthumb))]).then(m=>{ els.forEach(e=>{ const d=m[e.dataset.vthumb]; if(d && e.isConnected) e.style.backgroundImage=`url("${d}")`; }); }); }
 /** Bill photo: up to 1600 px, good JPEG quality, optional rotate and "make text clearer". PDFs are kept as they are. */
 async function vProcess(file,rot,clear){
@@ -4628,18 +4692,16 @@ function openVendors(){
   if(!can("manager")){ toast(t("vNoAccess")); return; }
   billBackFn=null;
   openSheet(t("vTitle"), `<div id="vl-list"><div class="vl-top skel" style="height:96px"></div>${skelCards(4,true)}</div>`, "", {full:true});
-  if(VD.list) vRenderList();
-  vLoadList().then(()=>{ if($("#vl-list")) vRenderList(); }).catch(()=>{ if($("#vl-list") && !VD.list) $("#vl-list").innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; });
-  vqFlush();
+  vdbInit().then(()=>{ if(vSynced() || vqGet().length) vRenderList();
+    vSync().then(()=>{ const b=$("#vl-list"); if(!b) return; if(vSynced() || vqGet().length) vRenderList(); else b.innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; }); });
 }
 function vRenderList(){
   const box=$("#vl-list"); if(!box || !VD.list) return; const all=VD.list.vendors.slice().sort((a,b)=>(b.lastAt||0)-(a.lastAt||0));
   const cnt={all:all.length, owe:all.filter(v=>v.balance>0).length, overdue:all.filter(v=>v.overdue>0).length, settled:all.filter(v=>v.balance<=0).length};
   const q=VD.q.trim().toLowerCase(), list=all.filter(v=>(VD.chip==="all"||(VD.chip==="owe"&&v.balance>0)||(VD.chip==="overdue"&&v.overdue>0)||(VD.chip==="settled"&&v.balance<=0)) && (!q||v.name.toLowerCase().includes(q)||String(v.mobile).includes(q)));
-  const pend=vqGet().length;
   box.innerHTML=`<div class="vl-top"><div><small>${esc(t("vTotalOwe"))}</small><b class="num">${vMoney(VD.list.owe)}</b><span>${esc(t("vVendorsN",all.length))}${cnt.overdue?` · <em>${esc(t("vOverdueN",cnt.overdue))}</em>`:""}</span></div></div>
     <div class="vl-acts"><button type="button" class="btn primary" id="vl-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vl-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vl-new">+ ${esc(t("vVendor"))}</button></div>
-    ${pend?`<div class="vq-note">${LD("sm")} ${esc(t("vQueueN",pend))}</div>`:""}
+    <div class="vq-note" id="vq-note" hidden></div>
     ${all.length>4||q?`<input type="search" id="vl-q" placeholder="${esc(t("vSearchPh"))}" value="${esc(VD.q)}" autocomplete="off">`:""}
     ${all.length?`<div class="fchips vl-chips">${["all","owe","overdue","settled"].filter(k=>k==="all"||cnt[k]).map(k=>`<button type="button" class="fchip" data-vchip="${k}" aria-pressed="${VD.chip===k}">${esc(t("vc_"+k))}${k!=="all"?`<span class="n">${cnt[k]}</span>`:""}</button>`).join("")}</div>`:""}
     <div class="vl-cards">${list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
@@ -4647,16 +4709,13 @@ function vRenderList(){
   $("#vl-bill").onclick=()=>vForm("bill",null); $("#vl-pay").onclick=()=>vForm("pay",null); $("#vl-new").onclick=()=>vVendorForm(null);
   const qi=$("#vl-q"); if(qi) qi.oninput=e=>{ VD.q=e.target.value; const pos=e.target.selectionStart; vRenderList(); const n=$("#vl-q"); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } };
   box.querySelectorAll("[data-vchip]").forEach(b=>b.onclick=()=>{ VD.chip=b.dataset.vchip; vRenderList(); });
-  box.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>openVendor(b.dataset.vid));
+  box.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>openVendor(b.dataset.vid)); vNoteUpd();
 }
 function openVendor(id){ VD.cur=id; VD.tab=VD.tab||"ledger";
   const name=(VD.det[id]&&VD.det[id].vendor.name) || ((VD.list&&VD.list.vendors.find(v=>v.id===id))||{}).name || "";
   openSheet(name||t("vTitle"), `<div id="vd-page"><button type="button" class="btn ghost bl-back" id="vd-back">← ${esc(t("vTitle"))}</button><div id="vd-body">${VD.det[id]?"":`<div class="vl-top skel" style="height:140px"></div>${skelCards(4,true)}`}</div></div>`, "", {full:true});
   $("#vd-back").onclick=()=>openVendors();
-  if(VD.det[id]) vRenderVendor(id);
-  idb.get("images",vKey("d:"+id)).then(c=>{ if(c && !VD.det[id] && $("#vd-page")){ VD.det[id]=c; vRenderVendor(id); } });
-  vLoad(id).then(()=>{ if($("#vd-page") && VD.cur===id) vRenderVendor(id,true); }).catch(()=>{});
-  vqFlush();
+  vdbInit().then(()=>{ if(VD.det[id]) vRenderVendor(id); vSync(); });
 }
 /** Ledger rows with the running balance (oldest → newest), shown newest first. */
 function vLedger(D){ let bal=0; const rows=[]; const v=D.vendor;
@@ -4668,12 +4727,11 @@ function vStatusPill(b){ if(!b) return ""; if(b.status==="paid") return `<span c
   return `<span class="pill ${b.status==="part"?"part":"open"}">${esc(t(b.status==="part"?"vsPart":"vsOpen"))}</span>${o}`; }
 function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); if(!D||!body) return; const v=D.vendor, c=D.calc, sc=$("#sheet-body"), st=sc?sc.scrollTop:0;
   $("#sheet-title").textContent=v.name; const b=vBalLabel({balance:c.balance,advance:c.advance});
-  const pend=vqGet().filter(j=>j.entry.vendorId===id);
   const billMap={}; c.bills.forEach(x=>billMap[x.id]=x);
   const led=vLedger(D);
   const ledHTML=led.map(r=>{ if(r.opening) return `<div class="vrow op"><span class="vr-ic">⊙</span><span class="vr-mid"><b>${esc(t("vOpening"))}</b><small>${esc(vDate(r.date))}</small></span><span class="vr-amt"><b class="num ${r.amount>0?"plus":"minus"}">${r.amount>0?"+":"−"}${vMoney(Math.abs(r.amount))}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></div>`;
       const e=r.e, bl=billMap[e.id];
-      return `<button type="button" class="vrow ${e.type}" data-eid="${esc(e.id)}"><span class="vr-ic">${e.type==="bill"?"🧾":e.type==="pay"?"₹":"↩"}</span><span class="vr-mid"><b>${esc(vEntryTitle(e))}</b><small>${esc(vDate(e.date))}${e.ref?` · ${esc(e.ref)}`:""}${e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}${e.noteP?" · 🔒":""}</small>${bl?`<span class="vr-st">${vStatusPill(bl)}${bl.status!=="paid"&&bl.status!=="open"?` <small>${esc(t("vDueAmt",vMoney(bl.due)))}</small>`:""}</span>`:""}${e.noteV?`<small class="vr-note">${esc(e.noteV)}</small>`:""}</span><span class="vr-amt"><b class="num ${e.type==="bill"?"plus":"minus"}">${e.type==="bill"?"+":"−"}${vMoney(e.amount)}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></button>`; }).join("");
+      return `<button type="button" class="vrow ${e.type}" data-eid="${esc(e.id)}"><span class="vr-ic">${e.type==="bill"?"🧾":e.type==="pay"?"₹":"↩"}</span><span class="vr-mid"><b>${esc(vEntryTitle(e))}</b><small>${esc(vDate(e.date))}${e.ref?` · ${esc(e.ref)}`:""}${e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}${e.noteP?" · 🔒":""}${e.pending?` · <span class="vpend">${esc(t("vSending"))}</span>`:""}</small>${bl?`<span class="vr-st">${vStatusPill(bl)}${bl.status!=="paid"&&bl.status!=="open"?` <small>${esc(t("vDueAmt",vMoney(bl.due)))}</small>`:""}</span>`:""}${e.noteV?`<small class="vr-note">${esc(e.noteV)}</small>`:""}</span><span class="vr-amt"><b class="num ${e.type==="bill"?"plus":"minus"}">${e.type==="bill"?"+":"−"}${vMoney(e.amount)}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></button>`; }).join("");
   const bills=c.bills.slice().reverse().filter(x=>VD.bf==="all"||(VD.bf==="open"&&x.due>0)||(VD.bf==="paid"&&x.due<=0));
   const billsHTML=bills.map(x=>{ const e=D.entries.find(y=>y.id===x.id);
     return `<button type="button" class="vrow bill" ${x.opening?"data-opening":`data-eid="${esc(x.id)}"`}><span class="vr-ic">${x.opening?"⊙":"🧾"}</span><span class="vr-mid"><b>${esc(x.opening?t("vOpening"):(t("vBill")+(x.billNo?" "+x.billNo:"")))}</b><small>${esc(vDate(x.date))}${x.dueDate&&x.due>0?` · ${esc(x.overdue?t("vOverdueBy",vDays(x.dueDate)):t("vDueOn",vDate(x.dueDate)))}`:""}${e&&e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}</small><span class="vr-st">${vStatusPill(x)}</span></span><span class="vr-amt"><b class="num">${vMoney(x.amount)}</b>${x.due>0&&x.due<x.amount?`<small class="num">${esc(t("vDueAmt",vMoney(x.due)))}</small>`:""}</span></button>`; }).join("");
@@ -4684,7 +4742,7 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
         <button type="button" class="iconbtn" id="vd-share" aria-label="${esc(t("vShare"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         <button type="button" class="iconbtn" id="vd-edit" aria-label="${esc(t("vEditVendor"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button></span></div>
     <div class="vd-acts"><button type="button" class="btn primary" id="vd-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vd-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vd-adj">${esc(t("vReturnShort"))}</button></div>
-    ${pend.length?`<div class="vq-note">${LD("sm")} ${esc(t("vQueueN",pend.length))}</div>`:""}
+    <div class="vq-note" id="vq-note" hidden></div>
     <div class="seg vd-tabs" role="tablist"><button type="button" data-vtab="ledger" aria-pressed="${VD.tab!=="bills"}">${esc(t("vLedger"))}</button><button type="button" data-vtab="bills" aria-pressed="${VD.tab==="bills"}">${esc(t("vBills"))}${openN?` · ${openN} ${esc(t("vsOpen").toLowerCase())}`:""}</button></div>
     ${VD.tab==="bills"?`<div class="fchips vd-bf">${["open","paid","all"].map(k=>`<button type="button" class="fchip" data-vbf="${k}" aria-pressed="${VD.bf===k}">${esc(t("vbf_"+k))}</button>`).join("")}</div><div class="vrows">${billsHTML||`<p class="note">${esc(t("vNoBills"))}</p>`}</div>`
       :`<div class="vrows">${ledHTML||`<div class="empty" style="padding:20px 8px"><p>${esc(t("vLedgerEmpty"))}</p></div>`}</div>`}`;
@@ -4694,7 +4752,7 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
   body.querySelectorAll("[data-vbf]").forEach(x=>x.onclick=()=>{ VD.bf=x.dataset.vbf; vRenderVendor(id,true); });
   body.querySelectorAll("[data-eid]").forEach(x=>x.onclick=()=>vEntry(id,x.dataset.eid));
   body.querySelectorAll("[data-opening]").forEach(x=>x.onclick=()=>vEntry(id,"open:"+id));
-  if(keepScroll && sc) sc.scrollTop=st;
+  if(keepScroll && sc) sc.scrollTop=st; vNoteUpd();
 }
 /* ---- vendor add / edit ---- */
 function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"",mobile:"",gstin:"",address:"",creditDays:"",opening:"",openingDate:vToday(),note:""};
@@ -4712,10 +4770,10 @@ function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"
   $("#vf-back").onclick=back; $("#vf-cancel").onclick=back; if(!id) setTimeout(()=>$("#vf-name")&&$("#vf-name").focus(),250);
   $("#vf-save").onclick=async()=>{ const name=$("#vf-name").value.trim(); if(!name){ $("#vf-err").textContent=t("needName"); return; }
     const op=toNum($("#vf-op").value||"0"); if(isNaN(op)){ $("#vf-err").textContent=t("needRate"); return; }
-    btnBusy($("#vf-save"),true);
-    try{ const r=await vCall({action:"vSaveVendor",vendor:{id:id||undefined,name,mobile:$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim(),creditDays:$("#vf-cd").value,opening:op,openingDate:$("#vf-opd").value,address:$("#vf-addr").value.trim()}});
-      vStore(r); toast(t("saved")); if(after) after(r.vendor.id); else openVendor(r.vendor.id); }
-    catch(e){ btnBusy($("#vf-save"),false); if(e&&e.code==="dup_vendor") $("#vf-err").textContent=t("vDup"); } };
+    if((VD.list?VD.list.vendors:[]).some(x=>x.id!==id && x.name.toLowerCase()===name.toLowerCase())){ $("#vf-err").textContent=t("vDup"); return; }
+    const vid=id||vId("v"), cd=Math.max(0,Math.min(365,Math.floor(toNum($("#vf-cd").value||"0"))||0));
+    vqAdd({k:"vendor", v:{id:vid,name,mobile:$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim().toUpperCase(),creditDays:cd,opening:op||0,openingDate:$("#vf-opd").value||vToday(),address:$("#vf-addr").value.trim()}});
+    toast(t("saved")); if(after) after(vid); else openVendor(vid); };
 }
 /* ---- + Bill / + Payment / Return ---- */
 function vVendorPick(sel,onPick){ // typeahead over vendors, recent first; "Add new" inline
@@ -4725,11 +4783,11 @@ function vVendorPick(sel,onPick){ // typeahead over vendors, recent first; "Add 
   sel.innerHTML=`<label for="vp-q">${esc(t("vVendor"))}</label><input id="vp-q" type="search" autocomplete="off" placeholder="${esc(t("vPickPh"))}"><div class="vp-list" id="vp-list"></div>`;
   draw(""); $("#vp-q").oninput=e=>draw(e.target.value);
   $("#vp-list").onclick=e=>{ const p=e.target.closest("[data-pv]"); if(p){ onPick(p.dataset.pv); return; } if(e.target.closest("[data-pnew]")){ const name=$("#vp-q").value.trim();
-      vCall({action:"vSaveVendor",vendor:{name}}).then(r=>{ vStore(r); onPick(r.vendor.id); }).catch(()=>{}); } };
+      const vid=vId("v"); vqAdd({k:"vendor", v:{id:vid,name,mobile:"",gstin:"",creditDays:0,opening:0,openingDate:vToday(),address:""}}); onPick(vid); } };
 }
 function vForm(type,vendorId,edit,opts){ opts=opts||{};
   const D=vendorId?VD.det[vendorId]:null;
-  if(vendorId && !D){ vLoad(vendorId).then(()=>vForm(type,vendorId,edit,opts)).catch(()=>{}); return; }
+  if(vendorId && !D){ if(!VDB.loaded) vdbInit().then(()=>{ if(VD.det[vendorId]) vForm(type,vendorId,edit,opts); }); return; }
   const back=()=>{ if(edit) vEntry(vendorId,edit.id); else if(vendorId) openVendor(vendorId); else openVendors(); };
   const title=t(edit?(type==="bill"?"vEditBill":type==="pay"?"vEditPay":"vEditReturn"):(type==="bill"?"vNewBill":type==="pay"?"vNewPay":"vNewReturn"));
   const e=edit||{};
@@ -4756,8 +4814,8 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
   openSheet(title, body, `<button class="btn ghost" id="vff-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="vff-save">${esc(t("save"))}</button>`, {full:true});
   $("#vff-back").onclick=back; $("#vff-cancel").onclick=back;
   let V=vendorId;
-  if(!vendorId){ if(!VD.list) vLoadList().then(()=>{ if($("#vff-pick")) vVendorPick($("#vff-pick"),pick); }).catch(()=>{}); vVendorPick($("#vff-pick"),pick); }
-  function pick(id){ const go=()=>vForm(type,id,null,opts); if(VD.det[id]) go(); else { $("#vff-pick").innerHTML=LD(); vLoad(id).then(go).catch(()=>{}); } }
+  if(!vendorId){ vdbInit().then(()=>{ if($("#vff-pick")) vVendorPick($("#vff-pick"),pick); }); }
+  function pick(id){ vForm(type,id,null,opts); }
   if(!vendorId) return;
   const amtI=$("#vff-amt");
   // ---- photos (bill)
@@ -4816,24 +4874,12 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     const entry={ id:edit?edit.id:vId("e"), vendorId, type, date:$("#vff-date").value||vToday(), amount, gst:isNaN(gst)?"":gst, billNo:type==="bill"?$("#vff-no").value.trim():"",
       mode:type==="pay"?vForm._mode():"", ref:type==="pay"?$("#vff-ref").value.trim():"", noteV:$("#vff-nv").value.trim(), noteP:$("#vff-np").value.trim(), alloc,
       photos:photos.filter(p=>p.f).map(p=>({f:p.f,m:p.m})), useAdvance:!!($("#vff-useadv")&&$("#vff-useadv").checked) };
-    const fresh=photos.filter(p=>p.proc && !p.f);
-    const btn=$("#vff-save"); btnBusy(btn,true);
-    const queue=async()=>{ const files=[]; for(const p of fresh){ const k=vId("f"); await idb.set("images","vqf:"+k,{data:p.proc.data,mime:p.proc.mime,preview:p.proc.preview}); files.push({k}); }
-      ls.set(vqKey(),[...vqGet(),{entry,files}]); toast(t("vQueued")); openVendor(vendorId); };
-    if(navigator.onLine===false){ if(edit){ btnBusy(btn,false); err.textContent=t("offlineWrite"); return; } await queue(); return; }
-    try{
-      for(let k=0;k<fresh.length;k++){ const p=fresh[k]; btn.innerHTML=LD("sm on-dark")+esc(t("vUploading",k+1,fresh.length));
-        const r=await apiPost0({action:"vUpload",vendorId,data:p.proc.data,mime:p.proc.mime,preview:p.proc.preview,name:p.proc.name}); p.f=r.f; p.m=r.m; entry.photos.push({f:r.f,m:r.m});
-        if(p.proc.preview) idb.set("images","vprev:"+r.f,p.proc.preview); idb.set("images","vfull:"+r.f,{data:p.proc.data,mime:p.proc.mime}); }
-      const r=await apiPost0({action:"vSave",entry}); vStore(r);
-      const before=edit?{...edit}:null;
-      openVendor(vendorId);
-      vSnack(t(edit?"vSavedEdit":type==="bill"?"vSavedBill":type==="pay"?"vSavedPay":"vSavedRet"), async()=>{
-        const u=before ? await vCall({action:"vSave",entry:{...before,vendorId}}) : await vCall({action:"vRemove",id:entry.id}); vStore(u); if(VD.cur===vendorId && $("#vd-page")) vRenderVendor(vendorId,true); toast(t("vUndone")); });
-    }catch(ex){ btnBusy(btn,false);
-      if(ex&&ex.code==="drive_auth"){ err.textContent=t("vDriveAuth"); return; }
-      if(!edit && (ex&&(ex.code==="offline"||ex.code==="http"||ex instanceof TypeError))){ await queue(); return; }
-      err.textContent=vErr(ex); }
+    const fresh=photos.filter(p=>p.proc && !p.f), files=[];
+    for(const p of fresh){ const k=vId("f"); await idb.set("images","vqf:"+k,{data:p.proc.data,mime:p.proc.mime,preview:p.proc.preview,name:p.proc.name}); files.push(k); entry.photos.push({f:"local:"+k,m:p.proc.mime}); }
+    const before=edit?{...edit}:null; delete entry.pending; if(before){ delete before.pending; }
+    const jid=vqAdd({k:"save", e:entry, files, isNew:!edit});
+    openVendor(vendorId);
+    vSnack(t(edit?"vSavedEdit":type==="bill"?"vSavedBill":type==="pay"?"vSavedPay":"vSavedRet"), ()=>vUndo(jid, before?{k:"save",e:{...before,vendorId},files:[]}:{k:"rm",id:entry.id,on:true}));
   };
 }
 /** Split a payment: ticked bills first (in tick order); nothing ticked = oldest first; extra over the ticked bills → ask
@@ -4870,13 +4916,13 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
   vFillThumbs($("#sheet-body"));
   $("#sheet-body").querySelectorAll("[data-vv]").forEach(b=>b.onclick=()=>vViewer(photos.map(p=>({f:p.f,m:p.m,label:name})),+b.dataset.vv));
   if($("#ve-pay")) $("#ve-pay").onclick=()=>vForm("pay",vendorId,null,{bill:eid});
-  if($("#ve-adv")) $("#ve-adv").onclick=async()=>{ btnBusy($("#ve-adv"),true); try{ const r=await vCall({action:"vUseAdvance",vendorId,billId:eid}); vStore(r); vEntry(vendorId,eid); toast(t("saved")); }catch{ btnBusy($("#ve-adv"),false); } };
+  if($("#ve-adv")) $("#ve-adv").onclick=()=>{ vqAdd({k:"adv",vendorId,billId:eid}); vEntry(vendorId,eid); toast(t("saved")); };
   if($("#ve-editv")) $("#ve-editv").onclick=()=>vVendorForm(vendorId);
   if($("#ve-edit")) $("#ve-edit").onclick=()=>vForm(e.type,vendorId,e);
-  if($("#ve-del")) $("#ve-del").onclick=async()=>{ btnBusy($("#ve-del"),true); try{ const r=await vCall({action:"vRemove",id:e.id}); vStore(r); openVendor(vendorId);
-      vSnack(t("vRemoved"), async()=>{ const u=await vCall({action:"vRemove",id:e.id,on:false}); vStore(u); if($("#vd-page")) vRenderVendor(vendorId,true); toast(t("vUndone")); }); }catch{ btnBusy($("#ve-del"),false); } };
+  if($("#ve-del")) $("#ve-del").onclick=()=>{ const jid=vqAdd({k:"rm",id:e.id,on:true}); openVendor(vendorId); vSnack(t("vRemoved"), ()=>vUndo(jid,{k:"rm",id:e.id,on:false})); };
 }
 /* ---- share: statement PDF / vendor link / WhatsApp ---- */
+function vLinkSet(id,r){ const sv=VDB.srv.vendors.find(v=>v.id===id); if(sv){ sv.token=r.token; sv.linkOn=r.linkOn; vdbSave(); } vRebuild(); }
 function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok); }
 function vShareSheet(id){ const D=VD.det[id]; if(!D) return; const v=D.vendor, c=D.calc;
   const fy=curFY(), fyStart=`20${fy.slice(2,4)}-04-01`;
@@ -4895,11 +4941,11 @@ function vShareSheet(id){ const D=VD.det[id]; if(!D) return; const v=D.vendor, c
   $("#vs-pdf").onclick=()=>vStatementPdf(id,{...range(),photos:$("#vs-ph").checked},$("#vs-pdf"));
   if($("#vs-wa")) $("#vs-wa").onclick=()=>{ const txt=`${S.cfg.shopName?`*${S.cfg.shopName}*\n`:""}${t("vWaLine",v.name,vDate(vToday()),c.balance>0?vMoney(c.balance):c.balance<0?t("vAdvance")+" "+vMoney(-c.balance):t("vSettled"))}${v.linkOn&&v.token?`\n${t("vWaLink")} ${vLinkUrl(v.token)}`:""}`;
     window.open(`https://wa.me/${normMobile(v.mobile)?"91"+normMobile(v.mobile):""}?text=${encodeURIComponent(txt)}`,"_blank"); };
-  const drawLink=()=>{ const box=$("#vs-link"), vv=VD.det[id].vendor; if(!vv.linkOn||!vv.token){ box.innerHTML=""; return; } const url=vLinkUrl(vv.token);
+  const drawLink=()=>{ const box=$("#vs-link"), vv=VD.det[id].vendor; if(vv.linkOn && !vv.token){ box.innerHTML=`<p class="note" style="margin:0">${esc(t("vWaitSync"))}</p>`; return; } if(!vv.linkOn||!vv.token){ box.innerHTML=""; return; } const url=vLinkUrl(vv.token);
     box.innerHTML=`<div class="vs-url"><span>${esc(url)}</span></div><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="vs-copy">${esc(t("copy"))}</button>${vv.mobile?`<a class="btn ghost" target="_blank" rel="noopener" href="https://wa.me/${normMobile(vv.mobile)?"91"+normMobile(vv.mobile):""}?text=${encodeURIComponent(t("vWaLinkMsg",S.cfg.shopName||"")+" "+url)}">${esc(t("vSendLink"))}</a>`:""}<button type="button" class="btn ghost" id="vs-new">${esc(t("vNewLink"))}</button></div>`;
     $("#vs-copy").onclick=()=>{ try{ navigator.clipboard.writeText(url); toast(t("copied")); }catch{} };
-    $("#vs-new").onclick=async()=>{ btnBusy($("#vs-new"),true); try{ const r=await vCall({action:"vLink",id,on:true,regen:true}); VD.det[id].vendor.token=r.token; VD.det[id].vendor.linkOn=true; toast(t("vNewLinkDone")); drawLink(); }catch{ btnBusy($("#vs-new"),false); } }; };
-  $("#vs-on").onchange=async e=>{ const on=e.target.checked; try{ const r=await vCall({action:"vLink",id,on}); VD.det[id].vendor.linkOn=r.linkOn; VD.det[id].vendor.token=r.token; drawLink(); }catch{ e.target.checked=!on; } };
+    $("#vs-new").onclick=async()=>{ btnBusy($("#vs-new"),true); try{ const r=await vCall({action:"vLink",id,on:true,regen:true}); vLinkSet(id,r); toast(t("vNewLinkDone")); drawLink(); }catch{ btnBusy($("#vs-new"),false); } }; };
+  $("#vs-on").onchange=async e=>{ const on=e.target.checked; if(vqGet().some(j=>j.k==="vendor"&&j.v.id===id)){ e.target.checked=!on; toast(t("vWaitSync")); return; } try{ const r=await vCall({action:"vLink",id,on}); vLinkSet(id,r); drawLink(); }catch{ e.target.checked=!on; } };
   drawLink();
 }
 async function vStatementPdf(id,o,btn){ const D=VD.det[id]; if(!D) return; btnBusy(btn,true);

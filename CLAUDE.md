@@ -354,6 +354,13 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - The token is `t`/`l` + 22 hex characters (it carries the mode). `GET ?action=vpub|vpubprev|vpubfile&t=` needs no PIN and returns only that vendor's non-removed entries, without private notes or history. `vpubfile` only serves files attached to that vendor.
   - The link can be turned off (`linkOn`) or replaced (`vLink` with `regen`). The page has Ledger/Bills tabs, photos, and Download/print statement.
 - **sw.js** (`rb-shell-4`): only `/` and `index.html` are saved as the offline app. Before, any page (e.g. `vendor.html`) overwrote the saved `index.html`.
+- **Speed: local copy + outbox** (`SCRIPT_VERSION` 21 / `NEED_SV` 21). Everything shows from the phone, nothing waits on the sheet:
+  - `VDB.srv` = the sheet's vendors and entries as last synced (IndexedDB `v:<mode>:all`). `vSync` (POST, manager) sends the phone's `vrev`. The script keeps `vrev_<mode>` (property + cache, bumped by every vendor write) and replies `{same:true}` without reading any tab when nothing changed, else the full set. Phones sync when Vendors or a vendor opens (at most every 8 s) and once ~5 s after the app starts, so the first open is instant too.
+  - Every change goes into the outbox `rb_vq_<mode>` (`vqAdd`): new or edited vendor, entry save, remove/restore, use advance. It's shown at once: `vRebuild` applies the outbox on top of `srv` and works out balances on the phone (`vCalcJS`, same sums as `vCalc_`). `vqFlush` sends one change at a time in the background: photo uploads first (kept in IndexedDB `vqf:<key>`, shown from there meanwhile as `local:<key>`), then the save. Each reply carries that vendor's fresh data (`vMerge`); then one `vSync`.
+  - Rows still being sent show "sending…", and a line on top shows "Saving N changes…". With no signal, they wait and go when online (retry every 20 s). Server refusals drop that change with a message; `drive_auth` keeps it and shows the setup hint.
+  - Undo drops the change if it hasn't gone yet, else sends the opposite change.
+  - Script side: each request reads the two tabs once (`vAll_`, passed around). New entries carry `isNew`, so a resent one isn't saved twice.
+  - New vendors get their id on the phone (`vId("v")`), so bills can be added straight after; the link toggle waits until the vendor is saved.
 - Not done yet: purchase bills updating stock or item buy prices; vendor "✓ balance confirmed" button.
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 20;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 21;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -445,6 +445,7 @@ function doPost(e) {
       case 'setAccess': res = setAccess_(!!body.on, !!body.regen); break;
       case 'setBackupEmail': res = setBackupEmail_(String(body.email || '')); break;
       case 'vList': res = vList_(); break;
+      case 'vSync': res = vSync_(String(body.vrev || '')); break;
       case 'vGet': res = vGet_(str_(body.id, 40)); break;
       case 'vSaveVendor': res = vSaveVendor_(body.vendor || {}, by); break;
       case 'vLink': res = vLink_(str_(body.id, 40), !!body.on, !!body.regen); break;
@@ -456,7 +457,7 @@ function doPost(e) {
       case 'vFile': res = vFile_(str_(body.f, 80)); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -475,7 +476,7 @@ const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
-  vList: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager',
+  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager',
   listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
@@ -1417,52 +1418,63 @@ function vCalc_(v, entries) {
   return { bills, balance, advance, openBills: open.length, overdue: open.filter(b => b.overdue).length, oldest: open.length ? open[0].date : '', billTotal: Math.round(billTotal * 100) / 100, paidTotal: Math.round(paidTotal * 100) / 100,
     lastAt: live.reduce((m, e) => Math.max(m, e.at || 0), num_(v.updatedAt) || 0) };
 }
-function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedger', VLED_COLS); return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => Object.assign(vEntryOut_(r), { _r: r._r })) }; }
+/* Each request reads the two tabs once (vAll_) and passes that around; writes reply with just that vendor's data, and
+   every change bumps a vendors version (vrev_<mode>) so phones can ask "anything new?" (vSync) without reading tabs. */
+function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedger', VLED_COLS);
+  return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => vEntryOut_(r)) }; }
+function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); try { CacheService.getScriptCache().put('vrev_' + ENV_, v, 21600); } catch (e) {} return v; }
+function vrev_() { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + ENV_); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + ENV_) || '0'; c.put('vrev_' + ENV_, v, 21600); } return v; }
+/** Everything for this mode, or {same:true} when the phone's copy is current (no sheet read at all). */
+function vSync_(have) { const v = vrev_(); if (have && String(have) === v) return { same: true, vrev: v };
+  const A = vAll_(); return { vrev: v, vendors: A.vendors.map(vVendorOut_), entries: A.entries }; }
+function vOne_(A, id) { const r = A.vendors.find(x => String(x.id) === String(id)); if (!r) throw new Error('no_vendor');
+  const v = vVendorOut_(r), entries = A.entries.filter(e => e.vendorId === v.id).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.at - b.at);
+  return { vendor: v, entries: entries, calc: vCalc_(v, entries) }; }
 function vList_() { const A = vAll_(); const by = {}; A.entries.forEach(e => (by[e.vendorId] = by[e.vendorId] || []).push(e));
   const list = A.vendors.map(r => { const v = vVendorOut_(r); delete v.token; const c = vCalc_(v, by[v.id] || []); delete c.bills; return Object.assign(v, c); });
   return { vendors: list, owe: Math.round(list.reduce((s, v) => s + Math.max(0, v.balance), 0) * 100) / 100 }; }
-function vGet_(id) { const A = vAll_(); const r = A.vendors.find(x => String(x.id) === String(id)); if (!r) throw new Error('no_vendor');
-  const v = vVendorOut_(r), entries = A.entries.filter(e => e.vendorId === v.id); entries.forEach(e => delete e._r);
-  return { vendor: v, entries: entries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.at - b.at), calc: vCalc_(v, entries) }; }
+function vGet_(id) { return vOne_(vAll_(), id); }
 function vToken_() { return (ENV_ === 'test' ? 't' : 'l') + Utilities.getUuid().replace(/-/g, '').slice(0, 22); }
-function vSaveVendor_(x, by) { const V = vtab_('Vendors', VEND_COLS); const now = Date.now();
+function vSaveVendor_(x, by) { const A = vAll_(), V = A.V, now = Date.now();
   const name = str_(x.name, 80).trim(); if (!name) throw new Error('need_name');
   let r = x.id ? V.rows.find(o => String(o.id) === String(x.id)) : null;
   if (!r) { if (V.rows.some(o => String(o.removed) !== '1' && String(o.name).toLowerCase() === name.toLowerCase())) throw new Error('dup_vendor');
-    r = { id: str_(x.id, 40) || ('v' + Utilities.getUuid().replace(/-/g, '').slice(0, 12)), createdAt: now, token: vToken_(), linkOn: '1' }; }
+    r = { id: str_(x.id, 40) || ('v' + Utilities.getUuid().replace(/-/g, '').slice(0, 12)), createdAt: now, token: vToken_(), linkOn: '1' }; A.vendors.push(r); }
   r.name = name; r.mobile = str_(x.mobile, 20); r.gstin = str_(x.gstin, 15).toUpperCase(); r.address = str_(x.address, 200); r.creditDays = Math.max(0, Math.min(365, Math.floor(num_(x.creditDays)) || 0));
   r.opening = num_(x.opening) || 0; r.openingDate = vday_(x.openingDate) || r.openingDate || vday_(new Date()); r.note = str_(x.note, 300); r.updatedAt = now; r.by = by; if (x.removed !== undefined) r.removed = x.removed ? '1' : '';
-  vwrite_(V.s, VEND_COLS, r); return vGet_(r.id); }
+  vwrite_(V.s, VEND_COLS, r); vbump_(); return vOne_(A, r.id); }
 function vLink_(id, on, regen) { const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_vendor');
-  if (regen || !r.token) r.token = vToken_(); r.linkOn = on ? '1' : ''; r.updatedAt = Date.now(); vwrite_(V.s, VEND_COLS, r); return { token: String(r.token), linkOn: !!on }; }
+  if (regen || !r.token) r.token = vToken_(); r.linkOn = on ? '1' : ''; r.updatedAt = Date.now(); vwrite_(V.s, VEND_COLS, r); vbump_(); return { token: String(r.token), linkOn: !!on }; }
 function vAllocClean_(alloc, billIds, amount) { const out = {}; let left = num_(amount);
   Object.keys(alloc || {}).forEach(k => { if (!billIds[k]) return; const a = Math.max(0, Math.min(num_(alloc[k]), left)); if (a > 0) { out[k] = Math.round(a * 100) / 100; left -= a; } }); return out; }
-function vSave_(x, by) { const L = vtab_('VendorLedger', VLED_COLS), now = Date.now();
-  const G = vGet_(x.vendorId); const type = ['bill', 'pay', 'adj'].indexOf(x.type) >= 0 ? x.type : null; if (!type) throw new Error('bad_type');
+function vSet_(A, row) { const i = A.entries.findIndex(e => e.id === String(row.id)), o = vEntryOut_(row); if (i >= 0) A.entries[i] = o; else A.entries.push(o); }
+function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
+  const G = vOne_(A, x.vendorId); const type = ['bill', 'pay', 'adj'].indexOf(x.type) >= 0 ? x.type : null; if (!type) throw new Error('bad_type');
   const amount = Math.round(num_(x.amount) * 100) / 100; if (!(amount > 0)) throw new Error('need_amount');
   let r = x.id ? L.rows.find(o => String(o.id) === String(x.id)) : null;
-  const billIds = {}; G.calc.bills.forEach(b => billIds[b.id] = 1);
+  const billIds = {}; G.calc.bills.forEach(b => billIds[b.id] = 1); if (type !== 'bill' && x.id) Object.keys(x.alloc || {}).forEach(k => { if (A.entries.some(e => e.id === k && e.vendorId === G.vendor.id && e.type === 'bill')) billIds[k] = 1; });
   const fields = { vendorId: G.vendor.id, type: type, date: vday_(x.date) || vday_(new Date()), amount: amount, gst: (x.gst === '' || x.gst == null) ? '' : Math.max(0, num_(x.gst)), billNo: str_(x.billNo, 40), mode: str_(x.mode, 20),
-    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
+    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f)).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
     alloc: type === 'bill' ? '' : JSON.stringify(vAllocClean_(x.alloc, billIds, amount)) };
   if (r) { if (String(r.vendorId) !== G.vendor.id) throw new Error('bad_vendor');
+    if (x.isNew) return vOne_(A, G.vendor.id);   // a new entry that was already saved (queue resent it): keep it as it is
     const old = {}; ['date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'alloc', 'photos'].forEach(k => { if (String(r[k]) !== String(fields[k])) old[k] = r[k]; });
     if (Object.keys(old).length) { const h = vjson_(r.history, []); h.push({ at: now, by: by, act: 'edit', old: old }); r.history = JSON.stringify(h.slice(-20)).slice(0, 40000); }
     Object.assign(r, fields); r.editedAt = now; r.editedBy = by; }
-  else { if (x.id && L.rows.some(o => String(o.id) === String(x.id))) return vGet_(G.vendor.id);   // already saved (queue sent twice)
-    r = Object.assign({ id: str_(x.id, 40) || ('e' + Utilities.getUuid().replace(/-/g, '').slice(0, 14)), by: by, at: now, history: '[]' }, fields); }
-  vwrite_(L.s, VLED_COLS, r);
-  if (type === 'bill' && x.useAdvance) vUseAdvance_(G.vendor.id, String(r.id));
-  return vGet_(G.vendor.id); }
-function vRemove_(id, on, by) { const L = vtab_('VendorLedger', VLED_COLS); const r = L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
-  r.removed = on ? '1' : ''; const h = vjson_(r.history, []); h.push({ at: Date.now(), by: by, act: on ? 'remove' : 'restore' }); r.history = JSON.stringify(h.slice(-20)); vwrite_(L.s, VLED_COLS, r); return vGet_(r.vendorId); }
+  else { r = Object.assign({ id: str_(x.id, 40) || ('e' + Utilities.getUuid().replace(/-/g, '').slice(0, 14)), by: by, at: now, history: '[]' }, fields); }
+  vwrite_(L.s, VLED_COLS, r); if (!r._r) r._r = L.s.getLastRow(); vSet_(A, r);
+  if (type === 'bill' && x.useAdvance) vUseAdv_(A, G.vendor.id, String(r.id));
+  vbump_(); return vOne_(A, G.vendor.id); }
+function vRemove_(id, on, by) { const A = vAll_(), L = A.L; const r = L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
+  r.removed = on ? '1' : ''; const h = vjson_(r.history, []); h.push({ at: Date.now(), by: by, act: on ? 'remove' : 'restore' }); r.history = JSON.stringify(h.slice(-20)); vwrite_(L.s, VLED_COLS, r); vSet_(A, r);
+  vbump_(); return vOne_(A, r.vendorId); }
 /** Use the vendor's advance (unallocated payments, oldest first) against one bill. */
-function vUseAdvance_(vendorId, billId) { const G = vGet_(vendorId); const b = G.calc.bills.find(x => x.id === billId); if (!b || b.due <= 0) return G;
-  const L = vtab_('VendorLedger', VLED_COLS); let need = b.due;
+function vUseAdv_(A, vendorId, billId) { const G = vOne_(A, vendorId); const b = G.calc.bills.find(x => x.id === billId); if (!b || b.due <= 0) return;
+  let need = b.due;
   G.entries.filter(e => !e.removed && e.type !== 'bill').forEach(e => { if (need <= 0) return;
     const used = Object.keys(e.alloc).reduce((s, k) => s + num_(e.alloc[k]), 0), free = Math.round((e.amount - used) * 100) / 100; if (free <= 0) return;
-    const a = Math.min(free, need); const r = L.rows.find(o => String(o.id) === e.id); const al = vjson_(r.alloc, {}); al[billId] = Math.round(((num_(al[billId]) || 0) + a) * 100) / 100; r.alloc = JSON.stringify(al); vwrite_(L.s, VLED_COLS, r); need -= a; });
-  return vGet_(vendorId); }
+    const a = Math.min(free, need); const r = A.L.rows.find(o => String(o.id) === e.id); const al = vjson_(r.alloc, {}); al[billId] = Math.round(((num_(al[billId]) || 0) + a) * 100) / 100; r.alloc = JSON.stringify(al); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); need -= a; }); }
+function vUseAdvance_(vendorId, billId) { const A = vAll_(); vUseAdv_(A, vendorId, billId); vbump_(); return vOne_(A, vendorId); }
 function vFolder_() { const key = 'VD_FOLDER_' + ENV_, p = PropertiesService.getScriptProperties(), id = p.getProperty(key);
   if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (err) {} }
   const name = VD_FOLDER_NAME + (ENV_ === 'test' ? ' (test)' : ''), it = DriveApp.getFoldersByName(name); const f = it.hasNext() ? it.next() : DriveApp.createFolder(name); p.setProperty(key, f.getId()); return f; }

@@ -1585,7 +1585,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
   aiT:"Bill reading", aiOnL:"On", aiOffL:"Off", aiD:"Reads uploaded vendor bills (photos, handwritten, PDF) with Google Gemini, checks the calculations and fills the amount, bill no., date and GST. Bill photos are sent to Google to be read.",
   aiStep1:'Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> with your Google account.', aiStep2:"Tap Create API key and copy it (free).", aiStep3:"Paste it below and tap Save.",
   aiKeyPh:"Paste the API key", aiKeyPhOn:"Paste a new key to replace it", aiSave:"Save", aiRemove:"Turn off bill reading", aiSaved:"Bill reading is on", aiRemoved:"Bill reading is off",
-  aiBadKey:"That key didn't work. Copy it again from AI Studio.", aiNeedAuth:"In Apps Script, run setupVendorDocs once (Run → allow), then try again.", aiFail:"Couldn't reach Google. Try again.", vStatementD:"Every bill and payment with the running balance. Saves as a PDF you can send.", vSendBal:"Send balance on WhatsApp", vSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, vSending:"sending…", vWaitSync:"The vendor is still being saved. Try again in a moment.", close:"Close", optional:"optional", undo:"Undo",
+  aiBadKey:"That key didn't work. Copy it again from AI Studio.", aiNeedAuth:"Apps Script isn't allowed to connect to Google AI yet. In the editor pick setupVendorDocs → Run → Review permissions → Advanced → Go to (unsafe) → Allow. Then Deploy → Manage deployments → Edit → New version, and try again.", aiFail:"Couldn't reach Google. Try again.", aiLimitNow:"Google's free limit is used up for now. Try again after 1:30 pm.", aiSavedLimit:"Key saved. Today's free limit is used up, so reading starts after it resets (about 1:30 pm).", aiOldScript:"The sheet script is older than the app. In Apps Script: Deploy → Manage deployments → Edit → New version.", aiGoogleSaid:(c,m)=>`Google refused the key${c?" ("+c+")":""}: ${m||"no reason given"}. In Apps Script you can run testBillReading to see more.`, vStatementD:"Every bill and payment with the running balance. Saves as a PDF you can send.", vSendBal:"Send balance on WhatsApp", vSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, vSending:"sending…", vWaitSync:"The vendor is still being saved. Try again in a moment.", close:"Close", optional:"optional", undo:"Undo",
   vTitle:"Vendors", vToolD:"Bills from suppliers, payments, what you owe", vNoAccess:"Only the owner or a manager can open vendors.", vDup:"A vendor with this name already exists.",
   vDriveAuth:"Bill photos can't be saved yet. In Apps Script, run setupVendorDocs once (choose it → Run → allow), then try again.",
   vTotalOwe:"You owe vendors", vVendorsN:n=>`${n} vendor${n===1?"":"s"}`, vOverdueN:n=>`${n} overdue`, vBill:"Bill", vPayment:"Payment", vVendor:"Vendor", vSearchPh:"Search vendor",
@@ -1639,7 +1639,7 @@ Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pd
   aiT:"बिल पढ़ना", aiOnL:"चालू", aiOffL:"बंद", aiD:"वेंडर के बिल (फ़ोटो, हाथ से लिखे, PDF) Google Gemini से पढ़कर हिसाब जाँचता है और रकम, बिल नं., तारीख, GST भरता है। बिल की फ़ोटो पढ़ने के लिए Google को जाती है।",
   aiStep1:'अपने Google खाते से <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> खोलें।', aiStep2:"Create API key दबाकर कॉपी करें (मुफ़्त)।", aiStep3:"नीचे पेस्ट करके Save दबाएँ।",
   aiKeyPh:"API key पेस्ट करें", aiKeyPhOn:"बदलने के लिए नई key पेस्ट करें", aiSave:"सेव", aiRemove:"बिल पढ़ना बंद करें", aiSaved:"बिल पढ़ना चालू", aiRemoved:"बिल पढ़ना बंद",
-  aiBadKey:"यह key नहीं चली। AI Studio से दोबारा कॉपी करें।", aiNeedAuth:"Apps Script में setupVendorDocs एक बार चलाएँ (Run → allow), फिर दोबारा करें।", aiFail:"Google तक नहीं पहुँचे। दोबारा करें।", vStatementD:"हर बिल और भुगतान, चलते बाकी के साथ। PDF बनकर भेज सकते हैं।", vSendBal:"WhatsApp पर बाकी भेजें", vSaving:n=>`${n} बदलाव सेव हो रहे…`, vSending:"भेज रहे…", vWaitSync:"वेंडर अभी सेव हो रहा है। थोड़ी देर में दोबारा करें।", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
+  aiBadKey:"यह key नहीं चली। AI Studio से दोबारा कॉपी करें।", aiNeedAuth:"Apps Script को अभी Google AI से जुड़ने की अनुमति नहीं है। Editor में setupVendorDocs चुनें → Run → Review permissions → Advanced → Go to (unsafe) → Allow। फिर Deploy → Manage deployments → Edit → New version, और दोबारा करें।", aiFail:"Google तक नहीं पहुँचे। दोबारा करें।", aiLimitNow:"Google की मुफ़्त सीमा अभी खत्म है। दोपहर 1:30 के बाद दोबारा करें।", aiSavedLimit:"Key सेव हो गई। आज की मुफ़्त सीमा खत्म है, बिल पढ़ना दोपहर ~1:30 के बाद शुरू होगा।", aiOldScript:"Sheet script पुरानी है। Apps Script में: Deploy → Manage deployments → Edit → New version।", aiGoogleSaid:(c,m)=>`Google ने key मना की${c?" ("+c+")":""}: ${m||"कारण नहीं बताया"}। Apps Script में testBillReading चलाकर और देख सकते हैं।`, vStatementD:"हर बिल और भुगतान, चलते बाकी के साथ। PDF बनकर भेज सकते हैं।", vSendBal:"WhatsApp पर बाकी भेजें", vSaving:n=>`${n} बदलाव सेव हो रहे…`, vSending:"भेज रहे…", vWaitSync:"वेंडर अभी सेव हो रहा है। थोड़ी देर में दोबारा करें।", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
   vTitle:"वेंडर", vToolD:"सप्लायर के बिल, भुगतान, कितना देना है", vNoAccess:"वेंडर सिर्फ़ मालिक या मैनेजर खोल सकते हैं।", vDup:"इस नाम का वेंडर पहले से है।",
   vDriveAuth:"बिल की फ़ोटो अभी सेव नहीं हो सकती। Apps Script में setupVendorDocs एक बार चलाएँ (चुनें → Run → allow), फिर दोबारा कोशिश करें।",
   vTotalOwe:"वेंडरों को देना है", vVendorsN:n=>`${n} वेंडर`, vOverdueN:n=>`${n} समय से ऊपर`, vBill:"बिल", vPayment:"भुगतान", vVendor:"वेंडर", vSearchPh:"वेंडर खोजें",
@@ -1756,7 +1756,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=23;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=24;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -3033,6 +3033,9 @@ async function printInv(inv,btn){
   if(prRoll(P.paper) && P.via==="image"){ if(btn) btnBusy(btn,true); try{ const b=await receiptPng(inv,P.paper); await shareFile(b,`Bill-${String(inv.no).replace(/[^\w-]/g,"")}.png`); }catch{} finally{ if(btn) btnBusy(btn,false); } return; }
   prSystem(inv,P.paper);
 }
+/** Why a Gemini key couldn't be saved: our own message, plus Google's exact words when there are any. */
+function aiErrText(e){ const c=String(e&&e.code||""); if(c==="ai_key") return t("aiBadKey"); if(c==="ai_auth") return t("aiNeedAuth"); if(c==="ai_limit") return t("aiLimitNow");
+  if(c==="bad_action") return t("aiOldScript"); const p=c.split("|"); if(p[0]==="ai_http") return t("aiGoogleSaid",p[1]&&p[1]!=="0"?p[1]:"",p.slice(2).join("|").replace(/[.\s]+$/,"")); return c&&c!=="offline"?t("aiFail")+" ("+c+")":t("aiFail"); }
 /** Settings → Bill reading (Google Gemini key; owner only). */
 function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg.aiOn, w=can("owner");
   box.innerHTML=`<h3 style="margin:0">${esc(t("aiT"))} <span class="pill ${on?"paid":"open"}">${esc(t(on?"aiOnL":"aiOffL"))}</span></h3><p class="note" style="margin:0">${esc(t("aiD"))}</p>
@@ -3041,8 +3044,8 @@ function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg
     ${on?`<button type="button" class="btn ghost" id="cf-aioff" style="justify-self:start">${esc(t("aiRemove"))}</button>`:""}<p class="err" id="cf-aierr" style="margin:0"></p>`:""}`;
   if(!w) return;
   const go=async key=>{ const b=key?$("#cf-aisave"):$("#cf-aioff"); btnBusy(b,true); $("#cf-aierr").textContent="";
-    try{ const r=await apiPost0({action:"aiSetKey",key}); S.cfg.aiOn=!!r.aiOn; saveCache(); toast(t(r.aiOn?"aiSaved":"aiRemoved")); renderAiCfg(); }
-    catch(e){ btnBusy(b,false); $("#cf-aierr").textContent=t(e&&e.code==="ai_key"?"aiBadKey":e&&e.code==="ai_auth"?"aiNeedAuth":"aiFail"); } };
+    try{ const r=await apiPost0({action:"aiSetKey",key}); S.cfg.aiOn=!!r.aiOn; saveCache(); toast(t(r.warn==="ai_limit"?"aiSavedLimit":r.aiOn?"aiSaved":"aiRemoved")); renderAiCfg(); }
+    catch(e){ btnBusy(b,false); $("#cf-aierr").textContent=aiErrText(e); } };
   $("#cf-aisave").onclick=()=>{ const k=$("#cf-aikey").value.trim(); if(k) go(k); };
   if($("#cf-aioff")) $("#cf-aioff").onclick=()=>go("");
 }

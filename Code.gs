@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 23;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 24;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1541,18 +1541,20 @@ const AI_PROMPT = 'You read Indian purchase bills / tax invoices / kacha bills /
 function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_off');
   const pref = PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL');
   const models = (pref ? [pref] : []).concat(['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']).filter((m, i, a) => a.indexOf(m) === i);
-  let last = '';
+  let last = '', why = '';
+  const gmsg = body => { try { const e = JSON.parse(body).error || {}; return String((e.status ? e.status + ': ' : '') + (e.message || '')).slice(0, 220); } catch (x) { return String(body || '').slice(0, 160); } };
   for (const m of models) {   /* each model has its own free quota: if one is used up or not offered to this key, try the next */
     const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: AI_SCHEMA } }) });
     const code = res.getResponseCode(), body = res.getContentText();
     if (code === 400 && /API key not valid|API_KEY_INVALID/i.test(body)) throw new Error('ai_key');
-    if (code === 404 || (code === 403 && !/API key/i.test(body))) { last = last || 'ai_model'; continue; }
-    if (code === 403) throw new Error('ai_key');
+    if (code === 403 && /API key|API_KEY|has not been used|is disabled|SERVICE_DISABLED|blocked/i.test(body)) throw new Error('ai_http|403|' + gmsg(body));
+    if (code === 404 || code === 403) { last = last || 'ai_model'; why = why || code + ' ' + gmsg(body); continue; }
     if (code === 429) { last = 'ai_limit'; continue; }
-    if (code !== 200) { last = 'ai_http_' + code; continue; }
+    if (code !== 200) { last = 'ai_http|' + code + '|' + gmsg(body); continue; }
     const j = JSON.parse(body); const txt = (((j.candidates || [])[0] || {}).content || {}).parts; const s = txt && txt[0] && txt[0].text;
     if (!s) { last = 'ai_empty'; continue; } return JSON.parse(s); }
+  if (last === 'ai_model') last = 'ai_http|' + why.replace(' ', '|');
   throw new Error(last || 'ai_fail'); }
 /** Read the bill files (Drive ids) → normalised extraction. */
 function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts = [{ text: AI_PROMPT }];
@@ -1619,7 +1621,18 @@ function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => Str
   const c = vjson_(r.check, {}); if (on) c.ack = { by: by, at: Date.now() }; else delete c.ack; r.check = JSON.stringify(c); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
 function aiSetKey_(key) { key = String(key || '').trim(); const p = PropertiesService.getScriptProperties();
   if (!key) { p.deleteProperty('GEMINI_KEY'); bump_(); return { aiOn: false }; }
-  p.setProperty('GEMINI_KEY', key);
+  const had = p.getProperty('GEMINI_KEY'); p.setProperty('GEMINI_KEY', key);
   try { aiCall_([{ text: 'This is a connection test, not a bill. Return readable false and confidence 0.' }]); }
-  catch (e) { const m = String(e && e.message || e); if (m === 'ai_key') { p.deleteProperty('GEMINI_KEY'); throw new Error('ai_key'); } if (/permission|authori/i.test(m)) throw new Error('ai_auth'); if (m !== 'ai_limit') throw e; }
+  catch (e) { const m = String(e && e.message || e);
+    if (m === 'ai_limit') { bump_(); return { aiOn: true, warn: 'ai_limit' }; }   /* key is fine, today's free quota is used up */
+    if (had) p.setProperty('GEMINI_KEY', had); else p.deleteProperty('GEMINI_KEY');   /* don't keep a key that didn't work */
+    /* Only Apps Script's own "no permission for UrlFetchApp" error means setupVendorDocs is needed; anything else goes back as it is. */
+    if (/UrlFetchApp|script\.external_request|Required permissions/i.test(m)) throw new Error('ai_auth');
+    throw new Error(/^ai_/.test(m) ? m : 'ai_http|0|' + m.slice(0, 220)); }
   bump_(); return { aiOn: true }; }
+/** Run this in the Apps Script editor (choose testBillReading → Run) to see exactly what Google says about the saved key. */
+function testBillReading() { const key = aiKey_(); if (!key) { Logger.log('No key saved yet. Paste it in the app: Settings → Bill reading.'); return; }
+  ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'].forEach(m => {
+    const r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }] }) });
+    Logger.log(m + ' → ' + r.getResponseCode() + ' ' + r.getContentText().slice(0, 400)); }); }

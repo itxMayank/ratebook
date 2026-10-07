@@ -1161,6 +1161,16 @@ html.fz-big .bill-line .step input{width:40px}
 .vc-amt.owe b{color:var(--accent)} .vc-amt.adv b,.vc-amt.ok b{color:#1d8a4e}
 .pill.due{background:#fde3df;color:#b3261e} .pill.paid{background:#dcf3e5;color:#17703f} .pill.part{background:#fff1d6;color:#8a5a00} .pill.open{background:var(--surface-2);color:var(--muted)}
 .vq-note[hidden]{display:none}
+.vread{display:grid;gap:4px;border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:13.5px;margin-top:8px}
+.vread[hidden]{display:none}
+.vread.ok{background:#dcf3e5;color:#17703f} .vread.bad{background:#fff1d6;color:#7a4b00} .vread.muted{color:var(--muted)}
+.vread ul{margin:2px 0 0;padding-left:18px;display:grid;gap:3px;color:var(--fg)} .vread small{opacity:.8}
+.vread:first-child{margin-top:0}
+.vread-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pill.chk{margin-left:4px} .pill.chk.ok{background:#dcf3e5;color:#17703f} .pill.chk.bad{background:#fff1d6;color:#8a5a00} .pill.chk.wait{background:var(--surface-2);color:var(--muted)}
+input.autofill{box-shadow:inset 0 0 0 2px #1fa855}
+.vflagbar{width:100%;text-align:left;border:0;background:#fff1d6;color:#7a4b00;font-weight:700;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:14px}
+.ai-steps{margin:0;padding-left:20px;font-size:13.5px;display:grid;gap:4px;color:var(--muted)} .ai-steps a{color:var(--accent);font-weight:700}
 .vq-note.err{background:#fde3df;color:#b3261e}
 .vpend{color:var(--accent);font-weight:700}
 .vq-note{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--surface-2);border-radius:12px;padding:8px 12px;margin-bottom:8px}
@@ -1565,7 +1575,15 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vStatementD:"Every bill and payment with the running balance. Saves as a PDF you can send.", vSendBal:"Send balance on WhatsApp", vSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, vSending:"sending…", vWaitSync:"The vendor is still being saved. Try again in a moment.", close:"Close", optional:"optional", undo:"Undo",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_line:(n,d,q,r,e,a)=>`Line ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, bill says ${a}`, vi_sum:(s,b)=>`Lines add up to ${s}, bill says ${b}`, vi_tax:(n,r,b,e,a)=>`${n} ${r}% of ${b} = ${e}, bill says ${a}`, vi_cs:(c,s)=>`CGST ${c} and SGST ${s} don't match`, vi_total:(e,b)=>`Should total ${e}, bill says ${b}`, vi_entry:(m,b)=>`You entered ${m}, bill total is ${b}`,
+  vChecking:"Checking…", vChecked:"Checked", vMarkedOk:"Marked OK", vIssuesN:n=>`${n} issue${n===1?"":"s"}`, vReading:"Reading the bill…", vReadLater:"Will be checked after saving.", vUnread:"Couldn't read this bill clearly. Fill it in yourself; nothing is flagged.",
+  vAddsUp:"Bill calculation adds up", vFilledFrom:"Empty fields filled from the bill (green). Check them once.", vbf_flag:"Flagged", vFlagBar:n=>`${n} bill${n===1?" has":"s have"} calculation issues. Tap to see.`,
+  vNotChecked:"Not checked yet.", vAiOff:"Bill checking is off. The owner can turn it on in Settings.", vBillTotalRead:a=>`Bill total read: ${a}`, vAckBy:(b,d)=>`Marked OK by ${b} on ${d}`, vUnreadShort:"Couldn't read this bill clearly, so nothing was checked.",
+  vAiBusy:"Bill reading was busy. Tap Check again.", vCheckFail:"Couldn't check this bill. Tap Check again.", vRecheck:"Check again", vAck:"Mark as OK", vUnack:"Undo OK", vCheckT:"Bill check",
+  aiT:"Bill reading", aiOnL:"On", aiOffL:"Off", aiD:"Reads uploaded vendor bills (photos, handwritten, PDF) with Google Gemini, checks the calculations and fills the amount, bill no., date and GST. Bill photos are sent to Google to be read.",
+  aiStep1:'Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> with your Google account.', aiStep2:"Tap Create API key and copy it (free).", aiStep3:"Paste it below and tap Save.",
+  aiKeyPh:"Paste the API key", aiKeyPhOn:"Paste a new key to replace it", aiSave:"Save", aiRemove:"Turn off bill reading", aiSaved:"Bill reading is on", aiRemoved:"Bill reading is off",
+  aiBadKey:"That key didn't work. Copy it again from AI Studio.", aiNeedAuth:"In Apps Script, run setupVendorDocs once (Run → allow), then try again.", aiFail:"Couldn't reach Google. Try again.", vStatementD:"Every bill and payment with the running balance. Saves as a PDF you can send.", vSendBal:"Send balance on WhatsApp", vSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, vSending:"sending…", vWaitSync:"The vendor is still being saved. Try again in a moment.", close:"Close", optional:"optional", undo:"Undo",
   vTitle:"Vendors", vToolD:"Bills from suppliers, payments, what you owe", vNoAccess:"Only the owner or a manager can open vendors.", vDup:"A vendor with this name already exists.",
   vDriveAuth:"Bill photos can't be saved yet. In Apps Script, run setupVendorDocs once (choose it → Run → allow), then try again.",
   vTotalOwe:"You owe vendors", vVendorsN:n=>`${n} vendor${n===1?"":"s"}`, vOverdueN:n=>`${n} overdue`, vBill:"Bill", vPayment:"Payment", vVendor:"Vendor", vSearchPh:"Search vendor",
@@ -1610,7 +1628,15 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vStatementD:"हर बिल और भुगतान, चलते बाकी के साथ। PDF बनकर भेज सकते हैं।", vSendBal:"WhatsApp पर बाकी भेजें", vSaving:n=>`${n} बदलाव सेव हो रहे…`, vSending:"भेज रहे…", vWaitSync:"वेंडर अभी सेव हो रहा है। थोड़ी देर में दोबारा करें।", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_line:(n,d,q,r,e,a)=>`लाइन ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, बिल में ${a}`, vi_sum:(s,b)=>`लाइनों का जोड़ ${s}, बिल में ${b}`, vi_tax:(n,r,b,e,a)=>`${b} का ${n} ${r}% = ${e}, बिल में ${a}`, vi_cs:(c,s)=>`CGST ${c} और SGST ${s} बराबर नहीं`, vi_total:(e,b)=>`कुल ${e} होना चाहिए, बिल में ${b}`, vi_entry:(m,b)=>`आपने ${m} लिखा, बिल का कुल ${b}`,
+  vChecking:"जाँच रहे…", vChecked:"जाँचा", vMarkedOk:"ठीक माना", vIssuesN:n=>`${n} गड़बड़`, vReading:"बिल पढ़ रहे…", vReadLater:"सेव के बाद जाँचा जाएगा।", vUnread:"बिल साफ़ नहीं पढ़ा गया। खुद भरें; कुछ फ़्लैग नहीं होगा।",
+  vAddsUp:"बिल का हिसाब सही है", vFilledFrom:"खाली जगहें बिल से भरीं (हरी)। एक बार देख लें।", vbf_flag:"गड़बड़", vFlagBar:n=>`${n} बिल में हिसाब की गड़बड़। देखने के लिए दबाएँ।`,
+  vNotChecked:"अभी जाँचा नहीं।", vAiOff:"बिल जाँच बंद है। मालिक सेटिंग में चालू कर सकते हैं।", vBillTotalRead:a=>`बिल का कुल पढ़ा: ${a}`, vAckBy:(b,d)=>`${b} ने ${d} को ठीक माना`, vUnreadShort:"बिल साफ़ नहीं पढ़ा गया, इसलिए जाँच नहीं हुई।",
+  vAiBusy:"बिल पढ़ना व्यस्त था। दोबारा जाँचें दबाएँ।", vCheckFail:"बिल जाँच नहीं हो पाई। दोबारा जाँचें दबाएँ।", vRecheck:"दोबारा जाँचें", vAck:"ठीक मानें", vUnack:"ठीक हटाएँ", vCheckT:"बिल जाँच",
+  aiT:"बिल पढ़ना", aiOnL:"चालू", aiOffL:"बंद", aiD:"वेंडर के बिल (फ़ोटो, हाथ से लिखे, PDF) Google Gemini से पढ़कर हिसाब जाँचता है और रकम, बिल नं., तारीख, GST भरता है। बिल की फ़ोटो पढ़ने के लिए Google को जाती है।",
+  aiStep1:'अपने Google खाते से <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> खोलें।', aiStep2:"Create API key दबाकर कॉपी करें (मुफ़्त)।", aiStep3:"नीचे पेस्ट करके Save दबाएँ।",
+  aiKeyPh:"API key पेस्ट करें", aiKeyPhOn:"बदलने के लिए नई key पेस्ट करें", aiSave:"सेव", aiRemove:"बिल पढ़ना बंद करें", aiSaved:"बिल पढ़ना चालू", aiRemoved:"बिल पढ़ना बंद",
+  aiBadKey:"यह key नहीं चली। AI Studio से दोबारा कॉपी करें।", aiNeedAuth:"Apps Script में setupVendorDocs एक बार चलाएँ (Run → allow), फिर दोबारा करें।", aiFail:"Google तक नहीं पहुँचे। दोबारा करें।", vStatementD:"हर बिल और भुगतान, चलते बाकी के साथ। PDF बनकर भेज सकते हैं।", vSendBal:"WhatsApp पर बाकी भेजें", vSaving:n=>`${n} बदलाव सेव हो रहे…`, vSending:"भेज रहे…", vWaitSync:"वेंडर अभी सेव हो रहा है। थोड़ी देर में दोबारा करें।", close:"बंद करें", optional:"वैकल्पिक", undo:"वापस लें",
   vTitle:"वेंडर", vToolD:"सप्लायर के बिल, भुगतान, कितना देना है", vNoAccess:"वेंडर सिर्फ़ मालिक या मैनेजर खोल सकते हैं।", vDup:"इस नाम का वेंडर पहले से है।",
   vDriveAuth:"बिल की फ़ोटो अभी सेव नहीं हो सकती। Apps Script में setupVendorDocs एक बार चलाएँ (चुनें → Run → allow), फिर दोबारा कोशिश करें।",
   vTotalOwe:"वेंडरों को देना है", vVendorsN:n=>`${n} वेंडर`, vOverdueN:n=>`${n} समय से ऊपर`, vBill:"बिल", vPayment:"भुगतान", vVendor:"वेंडर", vSearchPh:"वेंडर खोजें",
@@ -1727,7 +1753,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=21;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=22;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -3004,6 +3030,19 @@ async function printInv(inv,btn){
   if(prRoll(P.paper) && P.via==="image"){ if(btn) btnBusy(btn,true); try{ const b=await receiptPng(inv,P.paper); await shareFile(b,`Bill-${String(inv.no).replace(/[^\w-]/g,"")}.png`); }catch{} finally{ if(btn) btnBusy(btn,false); } return; }
   prSystem(inv,P.paper);
 }
+/** Settings → Bill reading (Google Gemini key; owner only). */
+function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg.aiOn, w=can("owner");
+  box.innerHTML=`<h3 style="margin:0">${esc(t("aiT"))} <span class="pill ${on?"paid":"open"}">${esc(t(on?"aiOnL":"aiOffL"))}</span></h3><p class="note" style="margin:0">${esc(t("aiD"))}</p>
+    ${w?`<ol class="ai-steps"><li>${t("aiStep1")}</li><li>${esc(t("aiStep2"))}</li><li>${esc(t("aiStep3"))}</li></ol>
+    <div class="catnew"><input id="cf-aikey" type="password" autocomplete="off" placeholder="${esc(t(on?"aiKeyPhOn":"aiKeyPh"))}"><button type="button" class="btn primary" id="cf-aisave">${esc(t("aiSave"))}</button></div>
+    ${on?`<button type="button" class="btn ghost" id="cf-aioff" style="justify-self:start">${esc(t("aiRemove"))}</button>`:""}<p class="err" id="cf-aierr" style="margin:0"></p>`:""}`;
+  if(!w) return;
+  const go=async key=>{ const b=key?$("#cf-aisave"):$("#cf-aioff"); btnBusy(b,true); $("#cf-aierr").textContent="";
+    try{ const r=await apiPost0({action:"aiSetKey",key}); S.cfg.aiOn=!!r.aiOn; saveCache(); toast(t(r.aiOn?"aiSaved":"aiRemoved")); renderAiCfg(); }
+    catch(e){ btnBusy(b,false); $("#cf-aierr").textContent=t(e&&e.code==="ai_key"?"aiBadKey":e&&e.code==="ai_auth"?"aiNeedAuth":"aiFail"); } };
+  $("#cf-aisave").onclick=()=>{ const k=$("#cf-aikey").value.trim(); if(k) go(k); };
+  if($("#cf-aioff")) $("#cf-aioff").onclick=()=>go("");
+}
 /** Settings → Printer (this phone / laptop). */
 function renderPrCfg(){ const box=$("#cf-pr"); if(!box) return; const P=prGet(), roll=prRoll(P.paper);
   const vias=[["system","prViaSys","prViaSysD"],["rawbt","prViaRaw","prViaRawD"],["image","prViaImg","prViaImgD"]];
@@ -4064,6 +4103,7 @@ function openSettings(){
       <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px" id="cf-pr"></div>
+    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-ai"></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
     <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
@@ -4098,7 +4138,7 @@ function openSettings(){
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
-  renderPrCfg(); $("#cf-groups").onclick=()=>openGroups();
+  renderPrCfg(); renderAiCfg(); $("#cf-groups").onclick=()=>openGroups();
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
   if(!w) return;
@@ -4608,15 +4648,19 @@ function vCalcJS(v,entries){ const r2v=x=>Math.round(x*100)/100, today=vToday(),
     billTotal:r2v(billTotal), paidTotal:r2v(paid), lastAt:live.reduce((m,e)=>Math.max(m,e.at||0),+v.updatedAt||0) }; }
 function vApplyJob(vs,es,j){
   if(j.k==="vendor"){ const i=vs.findIndex(v=>v.id===j.v.id); const base=i>=0?vs[i]:{createdAt:j.at,linkOn:false,token:""}; const nv={...base,...j.v,updatedAt:j.at,pending:true}; if(i>=0) vs[i]=nv; else vs.push(nv); }
-  else if(j.k==="save"){ const i=es.findIndex(e=>e.id===j.e.id); const nv={...(i>=0?es[i]:{at:j.at,by:byName(),history:[]}),...j.e,alloc:{...(j.e.alloc||{})},pending:true}; if(i>=0) es[i]=nv; else es.push(nv);
+  else if(j.k==="save"){ const i=es.findIndex(e=>e.id===j.e.id); const nv={...(i>=0?es[i]:{at:j.at,by:byName(),history:[]}),...j.e,alloc:{...(j.e.alloc||{})},pending:true};
+    if(nv.type==="bill" && j.e.ex) nv.check=vCheckJS(j.e.ex,nv.amount); else if(nv.type==="bill" && i>=0 && JSON.stringify((es[i].photos||[]).map(p=>p.f))!==JSON.stringify((nv.photos||[]).map(p=>p.f))) nv.check=null;
+    delete nv.ex; if(i>=0) es[i]=nv; else es.push(nv);
     if(j.isNew && j.e.type==="bill" && j.e.useAdvance) vApplyJob(vs,es,{k:"adv",vendorId:j.e.vendorId,billId:j.e.id}); }
   else if(j.k==="rm"){ const e=es.find(x=>x.id===j.id); if(e){ e.removed=!!j.on; e.pending=true; } }
+  else if(j.k==="check"){ const e=es.find(x=>x.id===j.id); if(e) e.checking=true; }
+  else if(j.k==="ack"){ const e=es.find(x=>x.id===j.id); if(e&&e.check){ e.check={...e.check}; if(j.on) e.check.ack={by:byName(),at:j.at}; else delete e.check.ack; } }
   else if(j.k==="adv"){ const v=vs.find(x=>x.id===j.vendorId); if(!v) return; const en=es.filter(e=>e.vendorId===v.id); const c=vCalcJS(v,en); const b=c.bills.find(x=>x.id===j.billId); if(!b||b.due<=0) return; let need=b.due;
     en.filter(e=>!e.removed&&e.type!=="bill").sort((a,b2)=>a.date<b2.date?-1:a.date>b2.date?1:(a.at||0)-(b2.at||0)).forEach(e=>{ if(need<=0) return; const used=Object.values(e.alloc||{}).reduce((s,a)=>s+(+a||0),0), free=Math.round((e.amount-used)*100)/100; if(free<=0) return;
       const a=Math.min(free,need); e.alloc={...(e.alloc||{})}; e.alloc[j.billId]=Math.round(((+e.alloc[j.billId]||0)+a)*100)/100; e.pending=true; need-=a; }); } }
 function vRebuild(){ const vs=VDB.srv.vendors.map(v=>({...v})), es=VDB.srv.entries.map(e=>({...e,alloc:{...(e.alloc||{})}}));
   vqGet().forEach(j=>vApplyJob(vs,es,j));
-  const det={}, list=[]; vs.filter(v=>!v.removed).forEach(v=>{ const en=es.filter(e=>e.vendorId===v.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||0)-(b.at||0)); const calc=vCalcJS(v,en); det[v.id]={vendor:v,entries:en,calc}; const s={...v,...calc}; delete s.bills; delete s.token; list.push(s); });
+  const det={}, list=[]; vs.filter(v=>!v.removed).forEach(v=>{ const en=es.filter(e=>e.vendorId===v.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||0)-(b.at||0)); const calc=vCalcJS(v,en); calc.flagged=en.filter(vFlagged).length; det[v.id]={vendor:v,entries:en,calc}; const s={...v,...calc}; delete s.bills; delete s.token; list.push(s); });
   VD.det=det; VD.list={vendors:list, owe:Math.round(list.reduce((a,v)=>a+Math.max(0,v.balance),0)*100)/100}; }
 /** Add a change: shown at once, sent in the background. Returns the job id (for Undo). */
 function vqAdd(job){ job.jid=vId("j"); job.at=Date.now(); vqSet([...vqGet(),job]); vRebuild(); vRefreshOpen(); setTimeout(vqFlush,30); return job.jid; }
@@ -4638,6 +4682,8 @@ async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite |
           r=await apiPost0({action:"vSave",entry:{...job.e,photos:(job.e.photos||[]).filter(p=>!String(p.f).startsWith("local:")),isNew:!!job.isNew}}); }
         else if(job.k==="rm") r=await apiPost0({action:"vRemove",id:job.id,on:!!job.on});
         else if(job.k==="adv") r=await apiPost0({action:"vUseAdvance",vendorId:job.vendorId,billId:job.billId});
+        else if(job.k==="check"){ try{ r=await apiPost0({action:"vCheck",id:job.id}); }catch(e){ if(e&&(e.code==="ai_off"||e.code==="no_entry"||e.code==="bad_action")) r=null; else throw e; } }
+        else if(job.k==="ack") r=await apiPost0({action:"vAck",id:job.id,on:!!job.on});
         vMerge(r); }
       catch(e){ if(vNetErr(e)) throw e; if(e.code==="drive_auth" || e.code==="bad_pin" || e.code==="locked"){ vqErr=e.code; throw e; } toast(vErr(e)); }   // other server refusals: drop this change
       vqSet(vqGet().filter(j=>j.jid!==job.jid)); vRebuild(); vRefreshOpen(); }
@@ -4657,6 +4703,25 @@ function vNoteUpd(){ const el=$("#vq-note"); if(!el) return; const n=vqGet().fil
   if(!n){ el.hidden=true; return; } el.hidden=false; el.classList.toggle("err",!!vqErr);
   el.innerHTML = vqErr==="drive_auth" ? esc(t("vDriveAuth")) : navigator.onLine===false ? esc(t("vQueueN",n)) : LD("sm")+" "+esc(t("vSaving",n)); }
 setTimeout(()=>{ if(S.canWrite && can("manager")) vSync(); },5000);   // warm the copy so Vendors opens instantly
+/* ---- bill check (numbers read by Gemini on the script; the sums are done here and in vCheckCalc_ the same way) ---- */
+function vCheckJS(ex,entered){ if(!ex||!ex.readable||ex.confidence<0.6||ex.total==null) return {st:"unread"};
+  const r2v=v=>Math.round(v*100)/100, near=(a,b,tol)=>Math.abs(a-b)<=tol, issues=[]; let sum=0, linesOk=true;
+  (ex.lines||[]).forEach((l,i)=>{ if(l.a==null){ linesOk=false; return; } sum+=l.a; if(l.q!=null&&l.r!=null){ const e=r2v(l.q*l.r); if(!near(e,l.a,Math.max(1,Math.abs(l.a)*0.002))) issues.push({t:"line",i:i+1,d:l.d,q:l.q,r:l.r,a:l.a,e}); } });
+  sum=r2v(sum); const base=ex.sub!=null?ex.sub:((ex.lines||[]).length&&linesOk?sum:null);
+  if(ex.sub!=null&&(ex.lines||[]).length&&linesOk&&!near(sum,ex.sub,1)) issues.push({t:"sum",s:sum,sub:ex.sub});
+  const taxable=base!=null?r2v(base-(ex.disc||0)):null; let tax=0;
+  (ex.taxes||[]).forEach(x=>{ if(x.a==null) return; tax+=x.a; if(taxable!=null&&x.r!=null&&x.r>0){ const e=r2v(taxable*x.r/100); if(!near(e,x.a,Math.max(1,e*0.002))) issues.push({t:"tax",n:x.n,r:x.r,b:taxable,a:x.a,e}); } });
+  const c=(ex.taxes||[]).find(x=>/cgst/i.test(x.n)), sg=(ex.taxes||[]).find(x=>/sgst|utgst/i.test(x.n)); if(c&&sg&&c.a!=null&&sg.a!=null&&!near(c.a,sg.a,1)) issues.push({t:"cs",c:c.a,s:sg.a});
+  if(taxable!=null){ const e=r2v(taxable+tax+(ex.ro||0)); if(!near(e,ex.total,1.01)) issues.push({t:"total",e,tot:ex.total}); }
+  if(entered!=null && !isNaN(entered) && !near(+entered,ex.total,1)) issues.push({t:"entry",ent:+entered,tot:ex.total});
+  return {st:issues.length?"issues":"ok",issues,total:ex.total,tax:r2v(tax)||null}; }
+function vIssueText(i){ const m=v=>vMoney(v), n=v=>fmtN(v);
+  switch(i.t){ case "line": return t("vi_line",i.i,i.d||"",n(i.q),m(i.r),m(i.e),m(i.a)); case "sum": return t("vi_sum",m(i.s),m(i.sub)); case "tax": return t("vi_tax",i.n||"GST",n(i.r),m(i.b),m(i.e),m(i.a));
+    case "cs": return t("vi_cs",m(i.c),m(i.s)); case "total": return t("vi_total",m(i.e),m(i.tot)); case "entry": return t("vi_entry",m(i.ent),m(i.tot)); default: return ""; } }
+const vFlagged=e=>!!(e&&e.type==="bill"&&!e.removed&&e.check&&e.check.st==="issues"&&!e.check.ack);
+function vCheckPill(e){ if(!e||e.type!=="bill") return ""; if(e.checking) return `<span class="pill chk wait">${esc(t("vChecking"))}</span>`; const c=e.check; if(!c) return "";
+  if(c.st==="issues") return c.ack?`<span class="pill chk ok">✓ ${esc(t("vMarkedOk"))}</span>`:`<span class="pill chk bad">⚠ ${esc(t("vIssuesN",c.issues.length))}</span>`;
+  if(c.st==="ok") return `<span class="pill chk ok">✓ ${esc(t("vChecked"))}</span>`; return ""; }
 /* ---- photos: previews (small, in the sheet) and full files (Drive), cached on the phone ---- */
 async function vPreviews(fids){ const out={}, need=[]; for(const f of fids){ if(String(f).startsWith("local:")){ const d=await idb.get("images","vqf:"+f.slice(6)); if(d&&d.preview) out[f]=d.preview; continue; } const c=await idb.get("images","vprev:"+f); if(c) out[f]=c; else need.push(f); }
   if(need.length){ try{ const r=await apiPost0({action:"vPreviews",ids:need}); Object.entries(r.previews||{}).forEach(([f,d])=>{ out[f]=d; idb.set("images","vprev:"+f,d); }); }catch{} } return out; }
@@ -4735,7 +4800,7 @@ function vRenderList(){
     <div class="vq-note" id="vq-note" hidden></div>
     ${all.length>4||q?`<input type="search" id="vl-q" placeholder="${esc(t("vSearchPh"))}" value="${esc(VD.q)}" autocomplete="off">`:""}
     ${all.length?`<div class="fchips vl-chips">${["all","owe","overdue","settled"].filter(k=>k==="all"||cnt[k]).map(k=>`<button type="button" class="fchip" data-vchip="${k}" aria-pressed="${VD.chip===k}">${esc(t("vc_"+k))}${k!=="all"?`<span class="n">${cnt[k]}</span>`:""}</button>`).join("")}</div>`:""}
-    <div class="vl-cards">${list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
+    <div class="vl-cards">${list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}${v.flagged?` <span class="pill chk bad">⚠ ${v.flagged}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
       || `<div class="empty" style="padding:24px 8px"><h2>${esc(t(all.length?"vNoMatch":"vEmptyT"))}</h2>${all.length?"":`<p>${esc(t("vEmptyD"))}</p>`}</div>`}</div>`;
   $("#vl-bill").onclick=()=>vForm("bill",null); $("#vl-pay").onclick=()=>vForm("pay",null); $("#vl-new").onclick=()=>vVendorForm(null);
   const qi=$("#vl-q"); if(qi) qi.oninput=e=>{ VD.q=e.target.value; const pos=e.target.selectionStart; vRenderList(); const n=$("#vl-q"); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } };
@@ -4762,10 +4827,11 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
   const led=vLedger(D);
   const ledHTML=led.map(r=>{ if(r.opening) return `<div class="vrow op"><span class="vr-ic">⊙</span><span class="vr-mid"><b>${esc(t("vOpening"))}</b><small>${esc(vDate(r.date))}</small></span><span class="vr-amt"><b class="num ${r.amount>0?"plus":"minus"}">${r.amount>0?"+":"−"}${vMoney(Math.abs(r.amount))}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></div>`;
       const e=r.e, bl=billMap[e.id];
-      return `<button type="button" class="vrow ${e.type}" data-eid="${esc(e.id)}"><span class="vr-ic">${e.type==="bill"?"🧾":e.type==="pay"?"₹":"↩"}</span><span class="vr-mid"><b>${esc(vEntryTitle(e))}</b><small>${esc(vDate(e.date))}${e.ref?` · ${esc(e.ref)}`:""}${e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}${e.noteP?" · 🔒":""}${e.pending?` · <span class="vpend">${esc(t("vSending"))}</span>`:""}</small>${bl?`<span class="vr-st">${vStatusPill(bl)}${bl.status!=="paid"&&bl.status!=="open"?` <small>${esc(t("vDueAmt",vMoney(bl.due)))}</small>`:""}</span>`:""}${e.noteV?`<small class="vr-note">${esc(e.noteV)}</small>`:""}</span><span class="vr-amt"><b class="num ${e.type==="bill"?"plus":"minus"}">${e.type==="bill"?"+":"−"}${vMoney(e.amount)}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></button>`; }).join("");
-  const bills=c.bills.slice().reverse().filter(x=>VD.bf==="all"||(VD.bf==="open"&&x.due>0)||(VD.bf==="paid"&&x.due<=0));
+      return `<button type="button" class="vrow ${e.type}" data-eid="${esc(e.id)}"><span class="vr-ic">${e.type==="bill"?"🧾":e.type==="pay"?"₹":"↩"}</span><span class="vr-mid"><b>${esc(vEntryTitle(e))}</b><small>${esc(vDate(e.date))}${e.ref?` · ${esc(e.ref)}`:""}${e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}${e.noteP?" · 🔒":""}${e.pending?` · <span class="vpend">${esc(t("vSending"))}</span>`:""}</small>${bl?`<span class="vr-st">${vStatusPill(bl)}${vCheckPill(e)}${bl.status!=="paid"&&bl.status!=="open"?` <small>${esc(t("vDueAmt",vMoney(bl.due)))}</small>`:""}</span>`:""}${e.noteV?`<small class="vr-note">${esc(e.noteV)}</small>`:""}</span><span class="vr-amt"><b class="num ${e.type==="bill"?"plus":"minus"}">${e.type==="bill"?"+":"−"}${vMoney(e.amount)}</b><small class="num">${esc(t("vBal"))} ${vMoney(r.bal)}</small></span></button>`; }).join("");
+  const flagN=D.entries.filter(vFlagged).length; if(VD.bf==="flag" && !flagN) VD.bf="open";
+  const bills=c.bills.slice().reverse().filter(x=>VD.bf==="all"||(VD.bf==="open"&&x.due>0)||(VD.bf==="paid"&&x.due<=0)||(VD.bf==="flag"&&vFlagged(D.entries.find(y=>y.id===x.id))));
   const billsHTML=bills.map(x=>{ const e=D.entries.find(y=>y.id===x.id);
-    return `<button type="button" class="vrow bill" ${x.opening?"data-opening":`data-eid="${esc(x.id)}"`}><span class="vr-ic">${x.opening?"⊙":"🧾"}</span><span class="vr-mid"><b>${esc(x.opening?t("vOpening"):(t("vBill")+(x.billNo?" "+x.billNo:"")))}</b><small>${esc(vDate(x.date))}${x.dueDate&&x.due>0?` · ${esc(x.overdue?t("vOverdueBy",vDays(x.dueDate)):t("vDueOn",vDate(x.dueDate)))}`:""}${e&&e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}</small><span class="vr-st">${vStatusPill(x)}</span></span><span class="vr-amt"><b class="num">${vMoney(x.amount)}</b>${x.due>0&&x.due<x.amount?`<small class="num">${esc(t("vDueAmt",vMoney(x.due)))}</small>`:""}</span></button>`; }).join("");
+    return `<button type="button" class="vrow bill" ${x.opening?"data-opening":`data-eid="${esc(x.id)}"`}><span class="vr-ic">${x.opening?"⊙":"🧾"}</span><span class="vr-mid"><b>${esc(x.opening?t("vOpening"):(t("vBill")+(x.billNo?" "+x.billNo:"")))}</b><small>${esc(vDate(x.date))}${x.dueDate&&x.due>0?` · ${esc(x.overdue?t("vOverdueBy",vDays(x.dueDate)):t("vDueOn",vDate(x.dueDate)))}`:""}${e&&e.photos&&e.photos.length?` · 📎${e.photos.length}`:""}</small><span class="vr-st">${vStatusPill(x)}${vCheckPill(e)}</span></span><span class="vr-amt"><b class="num">${vMoney(x.amount)}</b>${x.due>0&&x.due<x.amount?`<small class="num">${esc(t("vDueAmt",vMoney(x.due)))}</small>`:""}</span></button>`; }).join("");
   const openN=c.bills.filter(x=>x.due>0).length;
   body.innerHTML=`<div class="vd-card ${vAmtCls({balance:c.balance,advance:c.advance})}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b>
       <span class="vd-sub">${c.advance>0&&c.balance>0?`${esc(t("vAdvanceAvail",vMoney(c.advance)))} · `:""}${v.creditDays?esc(t("vCreditDays",v.creditDays)):""}${c.overdue?` · <em>${esc(t("vOverdueN",c.overdue))}</em>`:""}</span>
@@ -4774,11 +4840,13 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
         <button type="button" class="iconbtn" id="vd-edit" aria-label="${esc(t("vEditVendor"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button></span></div>
     <div class="vd-acts"><button type="button" class="btn primary" id="vd-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vd-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vd-adj">${esc(t("vReturnShort"))}</button></div>
     <div class="vq-note" id="vq-note" hidden></div>
+    ${flagN&&VD.tab!=="bills"?`<button type="button" class="vflagbar" id="vd-flags">⚠ ${esc(t("vFlagBar",flagN))}</button>`:""}
     <div class="seg vd-tabs" role="tablist"><button type="button" data-vtab="ledger" aria-pressed="${VD.tab!=="bills"}">${esc(t("vLedger"))}</button><button type="button" data-vtab="bills" aria-pressed="${VD.tab==="bills"}">${esc(t("vBills"))}${openN?` · ${openN} ${esc(t("vsOpen").toLowerCase())}`:""}</button></div>
-    ${VD.tab==="bills"?`<div class="fchips vd-bf">${["open","paid","all"].map(k=>`<button type="button" class="fchip" data-vbf="${k}" aria-pressed="${VD.bf===k}">${esc(t("vbf_"+k))}</button>`).join("")}</div><div class="vrows">${billsHTML||`<p class="note">${esc(t("vNoBills"))}</p>`}</div>`
+    ${VD.tab==="bills"?`<div class="fchips vd-bf">${["open","paid","all",...(flagN?["flag"]:[])].map(k=>`<button type="button" class="fchip" data-vbf="${k}" aria-pressed="${VD.bf===k}">${k==="flag"?"⚠ ":""}${esc(t("vbf_"+k))}${k==="flag"?`<span class="n">${flagN}</span>`:""}</button>`).join("")}</div><div class="vrows">${billsHTML||`<p class="note">${esc(t("vNoBills"))}</p>`}</div>`
       :`<div class="vrows">${ledHTML||`<div class="empty" style="padding:20px 8px"><p>${esc(t("vLedgerEmpty"))}</p></div>`}</div>`}`;
   $("#vd-bill").onclick=()=>vForm("bill",id); $("#vd-pay").onclick=()=>vForm("pay",id); $("#vd-adj").onclick=()=>vForm("adj",id);
   $("#vd-edit").onclick=()=>vVendorForm(id); $("#vd-share").onclick=()=>vShareSheet(id);
+  if($("#vd-flags")) $("#vd-flags").onclick=()=>{ VD.tab="bills"; VD.bf="flag"; vRenderVendor(id); };
   body.querySelectorAll("[data-vtab]").forEach(x=>x.onclick=()=>{ VD.tab=x.dataset.vtab; vRenderVendor(id); });
   body.querySelectorAll("[data-vbf]").forEach(x=>x.onclick=()=>{ VD.bf=x.dataset.vbf; vRenderVendor(id,true); });
   body.querySelectorAll("[data-eid]").forEach(x=>x.onclick=()=>vEntry(id,x.dataset.eid));
@@ -4829,6 +4897,7 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     <div id="vff-main" ${vendorId?"":"hidden"}>
     ${type==="bill"?`<div class="field"><label>${esc(t("vPhotos"))}</label><div class="vph" id="vff-ph"></div>
         <div class="row-btns" style="justify-content:flex-start" id="vff-phb"><label class="btn ghost" for="vff-cam">📷 ${esc(t("takePhoto"))}</label><label class="btn ghost" for="vff-gal">${esc(t("vGalleryPdf"))}</label></div>
+        <div class="vread" id="vff-read" hidden></div>
         <label class="switch sm" id="vff-clrw" hidden><span>${esc(t("vClearText"))}</span><input type="checkbox" id="vff-clr"></label>
         <input type="file" id="vff-cam" class="vh" accept="image/*" capture="environment" tabindex="-1"><input type="file" id="vff-gal" class="vh" accept="image/*,application/pdf" multiple tabindex="-1"></div>`:""}
     <div class="field"><label for="vff-amt">${esc(t(type==="bill"?"vBillAmt":type==="pay"?"vPayAmt":"vRetAmt"))}</label><input id="vff-amt" class="num big" inputmode="decimal" value="${e.amount!=null?esc(e.amount):""}" placeholder="₹ 0" autocomplete="off"></div>
@@ -4854,12 +4923,32 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     box.innerHTML=photos.map((p,i)=>`<div class="vph-t" data-pi="${i}">${p.m==="application/pdf"||(p.file&&/pdf/.test(p.file.type))?`<span class="vph-pdf">PDF</span>`:p.preview?`<img src="${esc(p.preview)}" alt="">`:p.f?`<span class="vph-img" data-vthumb="${esc(p.f)}"></span>`:`<span class="ld sm"></span>`}
       <button type="button" class="vph-x" data-px="${i}" aria-label="${esc(t("removePhoto"))}">✕</button>${p.file&&!/pdf/.test(p.file.type)?`<button type="button" class="vph-r" data-pr="${i}" aria-label="${esc(t("vRotate"))}">⟳</button>`:""}</div>`).join("");
     vFillThumbs(box); $("#vff-phb").hidden=photos.length>=6; $("#vff-clrw").hidden=!photos.some(p=>p.file&&!/pdf/.test(p.file.type)); };
-  const proc=async p=>{ p.proc=null; p.preview=null; drawPh(); try{ p.proc=await vProcess(p.file,p.rot,clear); p.preview=p.proc.preview; }catch(err){ toast(err&&err.code==="too_big"?t("vTooBig"):t("imgFail")); photos=photos.filter(x=>x!==p); } drawPh(); };
+  const proc=async p=>{ p.proc=null; p.preview=null; if(p.file) p.f=null; drawPh(); try{ p.proc=await vProcess(p.file,p.rot,clear); p.preview=p.proc.preview; }catch(err){ toast(err&&err.code==="too_big"?t("vTooBig"):t("imgFail")); photos=photos.filter(x=>x!==p); } drawPh(); readSoon(); };
+  /* ---- read the bill (Gemini, on the script) as soon as photos are ready: fill empty fields, show the check ---- */
+  let ex=null, readSeq=0, readState="", readTimer=0; const touched=new Set(); const filled=new Set();
+  const panel=()=>{ const el=$("#vff-read"); if(!el) return; if(!readState){ el.hidden=true; return; } el.hidden=false;
+    if(readState==="reading"){ el.className="vread"; el.innerHTML=`${LD("sm")} <span>${esc(t("vReading"))}</span>`; return; }
+    if(readState==="later"){ el.className="vread"; el.innerHTML=`<span>${esc(t("vReadLater"))}</span>`; return; }
+    if(readState==="unread"){ el.className="vread muted"; el.innerHTML=`<span>${esc(t("vUnread"))}</span>`; return; }
+    const c=vCheckJS(ex,toNum(amtI.value)); el.className="vread "+(c.st==="ok"?"ok":c.st==="issues"?"bad":"muted");
+    el.innerHTML = c.st==="ok" ? `<b>✓ ${esc(t("vAddsUp"))}</b>${filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:""}`
+      : c.st==="issues" ? `<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:""}` : `<span>${esc(t("vUnread"))}</span>`; };
+  const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; el.value=String(val); el.classList.add("autofill"); filled.add(id); };
+    set("#vff-amt",ex.total); set("#vff-no",ex.billNo); if(ex.date && ex.date<=vToday()) set("#vff-date",ex.date); const tx=(ex.taxes||[]).reduce((a,x)=>a+(+x.a||0),0); if(tx>0) set("#vff-gst",Math.round(tx*100)/100); };
+  const readNow=async()=>{ const my=++readSeq; const ready=photos.filter(p=>p.f||p.proc); if(!ready.length||photos.some(p=>p.file&&!p.proc)){ if(!photos.length){ ex=null; readState=""; panel(); } return; }
+    if(!S.cfg.aiOn || navigator.onLine===false){ readState=S.cfg.aiOn?"later":""; panel(); return; }
+    readState="reading"; panel();
+    try{ for(const p of photos){ if(!p.f && p.proc){ const u=await apiPost0({action:"vUpload",vendorId,data:p.proc.data,mime:p.proc.mime,preview:p.proc.preview,name:p.proc.name}); p.f=u.f; p.m=u.m; if(p.proc.preview) idb.set("images","vprev:"+u.f,p.proc.preview); idb.set("images","vfull:"+u.f,{data:p.proc.data,mime:p.proc.mime}); } if(my!==readSeq) return; }
+      const r=await apiPost0({action:"vRead",files:photos.filter(p=>p.f).map(p=>p.f)}); if(my!==readSeq||!$("#vff-read")) return;
+      ex=r.ex; if(!ex||!ex.readable||ex.confidence<0.6){ readState="unread"; ex=ex&&ex.readable?ex:null; } else { readState="done"; fill(); } panel(); }
+    catch(e){ if(my!==readSeq) return; ex=null; readState=e&&e.code==="ai_off"?"":"later"; panel(); } };
+  const readSoon=()=>{ clearTimeout(readTimer); readTimer=setTimeout(readNow,400); };
   if(type==="bill"){
     drawPh();
     const onFiles=e=>{ const fs=[...(e.target.files||[])].slice(0,6-photos.length); e.target.value=""; fs.forEach(f=>{ const p={file:f,rot:0}; photos.push(p); proc(p); }); };
     $("#vff-cam").onchange=onFiles; $("#vff-gal").onchange=onFiles;
-    $("#vff-ph").onclick=ev=>{ const x=ev.target.closest("[data-px]"); if(x){ photos.splice(+x.dataset.px,1); drawPh(); return; }
+    ["#vff-amt","#vff-no","#vff-date","#vff-gst"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("input",()=>{ touched.add(id); el.classList.remove("autofill"); if(id==="#vff-amt") panel(); }); });
+    $("#vff-ph").onclick=ev=>{ const x=ev.target.closest("[data-px]"); if(x){ photos.splice(+x.dataset.px,1); drawPh(); ex=null; readSoon(); return; }
       const r=ev.target.closest("[data-pr]"); if(r){ const p=photos[+r.dataset.pr]; p.rot=(p.rot+90)%360; proc(p); return; }
       const tile=ev.target.closest("[data-pi]"); if(tile){ const p=photos[+tile.dataset.pi]; if(p.f) vViewer(photos.filter(q=>q.f).map(q=>({f:q.f,m:q.m,label:title})), photos.filter(q=>q.f).indexOf(p)); else if(p.proc) vViewer([{f:"local",m:p.proc.mime,label:title,get:()=>Promise.resolve({data:p.proc.data,mime:p.proc.mime})}],0); } };
     $("#vff-clr").onchange=ev=>{ clear=ev.target.checked; photos.filter(p=>p.file&&!/pdf/.test(p.file.type)).forEach(proc); };
@@ -4908,7 +4997,10 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     const fresh=photos.filter(p=>p.proc && !p.f), files=[];
     for(const p of fresh){ const k=vId("f"); await idb.set("images","vqf:"+k,{data:p.proc.data,mime:p.proc.mime,preview:p.proc.preview,name:p.proc.name}); files.push(k); entry.photos.push({f:"local:"+k,m:p.proc.mime}); }
     const before=edit?{...edit}:null; delete entry.pending; if(before){ delete before.pending; }
+    if(type==="bill" && ex && readState==="done"){ entry.ex=ex; }
     const jid=vqAdd({k:"save", e:entry, files, isNew:!edit});
+    const photosChanged = type==="bill" && JSON.stringify((edit&&edit.photos||[]).map(p=>p.f))!==JSON.stringify(entry.photos.map(p=>p.f));
+    if(type==="bill" && S.cfg.aiOn && entry.photos.length && !entry.ex && (photosChanged||!edit||!edit.check)) vqAdd({k:"check",id:entry.id});
     openVendor(vendorId);
     vSnack(t(edit?"vSavedEdit":type==="bill"?"vSavedBill":type==="pay"?"vSavedPay":"vSavedRet"), ()=>vUndo(jid, before?{k:"save",e:{...before,vendorId},files:[]}:{k:"rm",id:entry.id,on:true}));
   };
@@ -4934,6 +5026,7 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
   openSheet(name, `<div class="vent"><button type="button" class="btn ghost bl-back" id="ve-back">← ${esc(D.vendor.name)}</button>
     <div class="vent-head"><b class="num ${!e||e.type==="bill"?"plus":"minus"}">${vMoney(isOpen?D.vendor.opening:e.amount)}</b><span>${esc(vDate(isOpen?D.vendor.openingDate:e.date))}${e&&e.billNo?` · ${esc(t("vBillNo"))} ${esc(e.billNo)}`:""}</span>${bill?`<span class="vr-st">${vStatusPill(bill)}${bill.due>0?` <b class="num">${esc(t("vDueAmt",vMoney(bill.due)))}</b>`:""}${bill.dueDate&&bill.due>0?` · ${esc(bill.overdue?t("vOverdueBy",vDays(bill.dueDate)):t("vDueOn",vDate(bill.dueDate)))}`:""}</span>`:""}</div>
     ${photos.length?`<div class="vent-ph">${photos.map((p,i)=>`<button type="button" class="vph-t big" data-vv="${i}">${p.m==="application/pdf"?`<span class="vph-pdf">PDF</span>`:`<span class="vph-img" data-vthumb="${esc(p.f)}"></span>`}</button>`).join("")}</div>`:""}
+    ${e&&e.type==="bill"&&(e.photos||[]).length?vCheckBox(e):""}
     ${e&&e.gst!=null&&e.gst!==""?`<div class="vkv"><span>${esc(t("vGstPart"))}</span><b class="num">${vMoney(e.gst)}</b></div>`:""}
     ${e&&e.type==="pay"?`<div class="vkv"><span>${esc(t("vHowPaid"))}</span><b>${esc(t("vm_"+(e.mode||"cash").toLowerCase()))}${e.ref?` · ${esc(e.ref)}`:""}</b></div>`:""}
     ${payBy?`<h4>${esc(t("vPaidBy"))}</h4>${payBy}`:""}
@@ -4949,9 +5042,21 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
   if($("#ve-pay")) $("#ve-pay").onclick=()=>vForm("pay",vendorId,null,{bill:eid});
   if($("#ve-adv")) $("#ve-adv").onclick=()=>{ vqAdd({k:"adv",vendorId,billId:eid}); vEntry(vendorId,eid); toast(t("saved")); };
   if($("#ve-editv")) $("#ve-editv").onclick=()=>vVendorForm(vendorId);
+  if($("#ve-recheck")) $("#ve-recheck").onclick=()=>{ vqAdd({k:"check",id:e.id}); vEntry(vendorId,eid); };
+  if($("#ve-ack")) $("#ve-ack").onclick=()=>{ vqAdd({k:"ack",id:e.id,on:!(e.check&&e.check.ack)}); vEntry(vendorId,eid); };
   if($("#ve-edit")) $("#ve-edit").onclick=()=>vForm(e.type,vendorId,e);
   if($("#ve-del")) $("#ve-del").onclick=()=>{ const jid=vqAdd({k:"rm",id:e.id,on:true}); openVendor(vendorId); vSnack(t("vRemoved"), ()=>vUndo(jid,{k:"rm",id:e.id,on:false})); };
 }
+/** "Bill check" box on a bill's screen. */
+function vCheckBox(e){ const c=e.check; let h="", cls="muted";
+  if(e.checking) h=`${LD("sm")} <span>${esc(t("vChecking"))}</span>`;
+  else if(!c) h=S.cfg.aiOn?`<span>${esc(t("vNotChecked"))}</span>`:`<span>${esc(t("vAiOff"))}</span>`;
+  else if(c.st==="ok"){ cls="ok"; h=`<b>✓ ${esc(t("vAddsUp"))}</b>${c.total!=null?`<small>${esc(t("vBillTotalRead",vMoney(c.total)))}</small>`:""}`; }
+  else if(c.st==="issues"){ cls=c.ack?"muted":"bad"; h=`<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${c.ack?`<small>✓ ${esc(t("vAckBy",c.ack.by||"",fmtDate(c.ack.at)))}</small>`:""}`; }
+  else if(c.st==="unread") h=`<span>${esc(t("vUnreadShort"))}</span>`;
+  else h=`<span>${esc(t(c.err==="ai_limit"?"vAiBusy":"vCheckFail"))}</span>`;
+  const btns=S.cfg.aiOn&&!e.checking?`<div class="vread-acts"><button type="button" class="btn ghost" id="ve-recheck">${esc(t("vRecheck"))}</button>${c&&c.st==="issues"?`<button type="button" class="btn ghost" id="ve-ack">${esc(t(c.ack?"vUnack":"vAck"))}</button>`:""}</div>`:"";
+  return `<h4>${esc(t("vCheckT"))}</h4><div class="vread ${cls}">${h}</div>${btns}`; }
 /* ---- share: statement PDF / vendor link / WhatsApp ---- */
 function vLinkSet(id,r){ const sv=VDB.srv.vendors.find(v=>v.id===id); if(sv){ sv.token=r.token; sv.linkOn=r.linkOn; vdbSave(); } vRebuild(); }
 function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok); }
@@ -5211,7 +5316,7 @@ function applyConfig(x){
   x=x||{}; if(x.raw) x={...x, ...x.raw};   // saved copy on this phone keeps both sets of bill numbers in raw
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
   S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1), showProfit: x.showProfit===true || String(x.showProfit).toLowerCase()==="true",
-    shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923"), groups:Array.isArray(x.groups)?x.groups.map(String).filter(Boolean):[], bizType:String(x.bizType||"") };
+    shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923"), groups:Array.isArray(x.groups)?x.groups.map(String).filter(Boolean):[], bizType:String(x.bizType||""), aiOn:!!x.aiOn };
   S.cfg.mode = x.mode==="live" ? "live" : "test";
   S.cfg.raw = { nextBill:S.cfg.nextBill, nextGstBill:S.cfg.nextGstBill, testNextBill:Math.max(1,Math.floor(+x.testNextBill)||1), testNextGstBill:Math.max(1,Math.floor(+x.testNextGstBill)||1) };
   if(S.cfg.mode==="test"){ S.cfg.nextBill=S.cfg.raw.testNextBill; S.cfg.nextGstBill=S.cfg.raw.testNextGstBill; }

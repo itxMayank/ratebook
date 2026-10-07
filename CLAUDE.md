@@ -363,6 +363,28 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - Undo drops the change if it hasn't gone yet, else sends the opposite change.
   - Script side: each request reads the two tabs once (`vAll_`, passed around). New entries carry `isNew`, so a resent one isn't saved twice.
   - New vendors get their id on the phone (`vId("v")`), so bills can be added straight after; the link toggle waits until the vendor is saved.
+- **Bill reading + calculation check (Google Gemini)** (`SCRIPT_VERSION` 22 / `NEED_SV` 22):
+  - Owner pastes a free Gemini API key (aistudio.google.com/apikey) in Settings → **Bill reading**. `aiSetKey` (owner) stores it in script property `GEMINI_KEY` (never sent to phones) after a test call; Config returns only `aiOn`. Model: property `GEMINI_MODEL` or `gemini-2.5-flash`, falling back to `gemini-flash-latest` on 404. Needs the "connect to an external service" permission: run `setupVendorDocs` once more after updating.
+  - `vRead {files}` sends the Drive files (photos/PDFs) to Gemini with a strict JSON schema, asking it to copy what's written and never fix arithmetic. The reply is normalised by `vExClean_` into `ex = {readable, confidence, billNo, date, lines[{d,q,r,a}], sub, disc, taxes[{n,r,a}], ro, total}`.
+  - `vCheck {id}` reads an entry's photos and stores `ex` + `check` on it. Both run **outside the script lock** (Gemini takes seconds); only the final write locks.
+  - **The arithmetic is ours, not the AI's:** `vCheckCalc_` (server) = `vCheckJS` (app) checks:
+    - each line qty × rate vs amount (±₹1 or 0.2%);
+    - sum of lines vs subtotal;
+    - each tax % × (subtotal − discount);
+    - CGST = SGST;
+    - subtotal − discount + taxes + round-off vs total (±₹1);
+    - the amount entered vs the bill total.
+
+    Unreadable, confidence < 0.6 or no total → `st:"unread"`, never flagged. Issue types: `line`, `sum`, `tax`, `cs`, `total`, `entry` (texts `vi_*`).
+  - **Bill form:** as soon as photos are ready (and online), they're uploaded and read. Empty fields (amount, bill no., date, GST) are filled and outlined green; anything typed is never overwritten. A panel shows ✓ adds up / ⚠ issues live, and it updates as the amount is changed. The reading goes with the save (`entry.ex`) so the script stores the check without reading again. With no reading (offline, busy, saved too fast), a `check` job is queued after the save.
+  - `VendorLedger` gains `ex` and `check` columns. Editing the amount re-checks from the stored reading; changing photos clears it. `vSync` sends `check`, not `ex`.
+  - **Shown:**
+    - on bill rows: "✓ Checked" / "⚠ N issues" / "Checking…";
+    - an amber bar on the vendor page and a **Flagged** chip on its Bills tab;
+    - "⚠ N" on the vendor card;
+    - a "Bill check" box on the bill (Check again, Mark as OK = `vAck`, which keeps the issues but stops flagging).
+    - The vendor's link shows "✓ Calculation checked" or "⚠ Calculation issue" with the lines; marked-OK, unreadable and error checks are not shown there.
+  - Errors: `ai_limit` (free quota) and others are stored as `st:"error"` and shown as "Tap Check again"; `ai_off` is ignored.
 - Not done yet: purchase bills updating stock or item buy prices; vendor "✓ balance confirmed" button.
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)

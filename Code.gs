@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 21;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 22;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -390,6 +390,7 @@ function readConfig_() {
   cfg.shopState = String(cfg.shopState || '');
   cfg.showProfit = cfg.showProfit === true || String(cfg.showProfit).toLowerCase() === 'true';
   cfg.defaultGst = (cfg.defaultGst === undefined || cfg.defaultGst === '') ? 18 : num_(cfg.defaultGst);
+  cfg.aiOn = !!PropertiesService.getScriptProperties().getProperty('GEMINI_KEY');
   cfg.defaultHsn = (cfg.defaultHsn === undefined || cfg.defaultHsn === '') ? '3923' : hsn_(cfg.defaultHsn);
   return cfg;
 }
@@ -410,6 +411,11 @@ function doPost(e) {
   if (who.error) return out_({ ok: false, error: who.error });
   if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
   if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
+  if (body.action === 'vRead' || body.action === 'vCheck') {      // Gemini takes seconds: don't hold the script lock while it reads
+    try { const by0 = who.name || str_(body.by, 60);
+      if (body.action === 'vRead') return out_({ ok: true, ex: vRead_(body.files) });
+      return out_(Object.assign({ ok: true }, vCheck_(str_(body.id, 40), by0))); }
+    catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
@@ -455,9 +461,11 @@ function doPost(e) {
       case 'vUpload': res = vUpload_(body); break;
       case 'vPreviews': res = vPreviews_(body.ids); break;
       case 'vFile': res = vFile_(str_(body.f, 80)); break;
+      case 'vAck': res = vAck_(str_(body.id, 40), body.on !== false, by); break;
+      case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'aiSetKey'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -476,7 +484,7 @@ const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
-  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager',
+  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', aiSetKey: 'owner',
   listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
@@ -1384,7 +1392,7 @@ function report_(body) {
  * what isn't allocated is an advance, which can later be used against a bill (vUseAdvance).
  * A vendor's private read-only link (token) is served by doGet vpub / vpubprev / vpubfile. Owner + manager only otherwise. */
 const VEND_COLS = ['id', 'name', 'mobile', 'gstin', 'address', 'creditDays', 'opening', 'openingDate', 'token', 'linkOn', 'note', 'createdAt', 'updatedAt', 'by', 'removed'];
-const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history'];
+const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history', 'ex', 'check'];
 const VDOC_COLS = ['fileId', 'vendorId', 'preview', 'mime', 'at'];
 const VD_FOLDER_NAME = 'Rate Book vendor bills';
 function vjson_(v, d) { try { const x = JSON.parse(v || ''); return x == null ? d : x; } catch (e) { return d; } }
@@ -1398,7 +1406,8 @@ function vVendorOut_(v) { return { id: String(v.id), name: String(v.name), mobil
   createdAt: num_(v.createdAt), updatedAt: num_(v.updatedAt) }; }
 function vEntryOut_(e, pub) { const o = { id: String(e.id), vendorId: String(e.vendorId), type: String(e.type), date: vday_(e.date), amount: num_(e.amount), gst: e.gst === '' ? null : num_(e.gst),
   billNo: String(e.billNo || ''), mode: String(e.mode || ''), ref: String(e.ref || ''), noteV: String(e.noteV || ''), photos: vjson_(e.photos, []), alloc: vjson_(e.alloc, {}), at: num_(e.at),
-  removed: String(e.removed) === '1' };
+  removed: String(e.removed) === '1', check: vjson_(e.check, null) };
+  if (o.check && pub) { delete o.check.by; delete o.check.err; }
   if (!pub) { o.noteP = String(e.noteP || ''); o.by = String(e.by || ''); o.editedAt = num_(e.editedAt); o.editedBy = String(e.editedBy || ''); o.history = vjson_(e.history, []); }
   return o; }
 /** Work out bills (with paid/due/status), advance and balance for one vendor from its (non-removed) entries. */
@@ -1456,6 +1465,11 @@ function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
   const fields = { vendorId: G.vendor.id, type: type, date: vday_(x.date) || vday_(new Date()), amount: amount, gst: (x.gst === '' || x.gst == null) ? '' : Math.max(0, num_(x.gst)), billNo: str_(x.billNo, 40), mode: str_(x.mode, 20),
     ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f)).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
     alloc: type === 'bill' ? '' : JSON.stringify(vAllocClean_(x.alloc, billIds, amount)) };
+  if (type === 'bill') {   // bill check: from what the phone already read, else the stored reading (re-done with the new amount), cleared when photos change
+    const exIn = x.ex && typeof x.ex === 'object' ? vExClean_(Object.assign({}, x.ex, { sellerName: x.ex.seller, subtotal: x.ex.sub, discount: x.ex.disc, roundOff: x.ex.ro, lines: (x.ex.lines || []).map(l => ({ desc: l.d, qty: l.q, rate: l.r, amount: l.a })), taxes: (x.ex.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) })) : null;
+    const photosSame = r && String(r.photos) === fields.photos, oldEx = r && photosSame ? vjson_(r.ex, null) : null, ex = exIn || oldEx, oldChk = r ? vjson_(r.check, null) : null;
+    fields.ex = ex ? JSON.stringify(ex).slice(0, 45000) : '';
+    fields.check = ex ? JSON.stringify(Object.assign(vCheckCalc_(ex, amount), { at: Date.now(), by: by }, oldChk && oldChk.ack && photosSame && !exIn ? { ack: oldChk.ack } : {})) : (photosSame && oldChk && oldChk.st === 'error' ? r.check : ''); }
   if (r) { if (String(r.vendorId) !== G.vendor.id) throw new Error('bad_vendor');
     if (x.isNew) return vOne_(A, G.vendor.id);   // a new entry that was already saved (queue resent it): keep it as it is
     const old = {}; ['date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'alloc', 'photos'].forEach(k => { if (String(r[k]) !== String(fields[k])) old[k] = r[k]; });
@@ -1491,11 +1505,89 @@ function vFile_(f) { const file = DriveApp.getFileById(String(f)); const b = fil
 function vPubFind_(t) { t = String(t || ''); if (!/^[tl][0-9a-f]{22}$/.test(t)) return null; ENV_ = t[0] === 't' ? 'test' : 'live';
   const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.token) === t && String(o.linkOn) === '1' && String(o.removed) !== '1'); return r || null; }
 function vPub_(t) { const r = vPubFind_(t); if (!r) return { ok: false, error: 'link_off' }; const G = vGet_(r.id), cfg = readConfig_();
-  const entries = G.entries.filter(e => !e.removed).map(e => { const o = vEntryOut_(Object.assign({}, e, { photos: JSON.stringify(e.photos), alloc: JSON.stringify(e.alloc) }), true); delete o.removed; return o; });
+  const entries = G.entries.filter(e => !e.removed).map(e => { const o = vEntryOut_(Object.assign({}, e, { photos: JSON.stringify(e.photos), alloc: JSON.stringify(e.alloc), check: e.check ? JSON.stringify(e.check) : '' }), true); delete o.removed; return o; });
   return { ok: true, test: ENV_ === 'test', shop: { name: cfg.shopName || '', address: cfg.shopAddress || '', gstin: cfg.shopGstin || '' },
     vendor: { name: G.vendor.name, gstin: G.vendor.gstin, creditDays: G.vendor.creditDays, opening: G.vendor.opening, openingDate: G.vendor.openingDate }, entries, calc: G.calc, at: Date.now() }; }
 function vPubFiles_(t) { const r = vPubFind_(t); if (!r) return null; const G = vGet_(r.id); const set = {}; G.entries.filter(e => !e.removed).forEach(e => e.photos.forEach(p => set[p.f] = 1)); return set; }
 function vPubPrev_(t) { const set = vPubFiles_(t); if (!set) return { ok: false, error: 'link_off' }; return Object.assign({ ok: true }, vPreviews_(Object.keys(set))); }
 function vPubFile_(t, f) { const set = vPubFiles_(t); if (!set || !set[String(f)]) return { ok: false, error: 'link_off' }; return Object.assign({ ok: true }, vFile_(f)); }
 /** Run once from the Apps Script editor (choose it → Run → allow) so the script may save bill photos in Drive. */
-function setupVendorDocs() { ['live', 'test'].forEach(en => { ENV_ = en; vFolder_(); }); ENV_ = 'live'; Logger.log('Vendor bill photos folder is ready in your Google Drive: ' + VD_FOLDER_NAME); }
+function setupVendorDocs() { ['live', 'test'].forEach(en => { ENV_ = en; vFolder_(); }); ENV_ = 'live';
+  try { UrlFetchApp.fetch('https://generativelanguage.googleapis.com/', { muteHttpExceptions: true }); } catch (e) {}   /* asks once for "connect to an external service" (bill reading) */
+  Logger.log('Vendor bill photos folder is ready in your Google Drive: ' + VD_FOLDER_NAME); }
+
+/* ======================= Bill reading + calculation check (Google Gemini) =======================
+ * Owner pastes a Gemini API key (Settings → Bill reading; kept in script property GEMINI_KEY, never sent to phones).
+ * vRead: read bill photos/PDFs (already in Drive) → extracted numbers (ex). vCheck: read + store on the entry.
+ * vCheckCalc_ does the arithmetic (line qty × rate, sum, GST, total, entered amount) — the AI only reads, never judges.
+ * These run outside the script lock (Gemini takes seconds); only the final write takes the lock. */
+const AI_MODEL_DEFAULT = 'gemini-2.5-flash';
+function aiKey_() { return PropertiesService.getScriptProperties().getProperty('GEMINI_KEY') || ''; }
+const AI_SCHEMA = { type: 'OBJECT', properties: {
+  readable: { type: 'BOOLEAN' }, confidence: { type: 'NUMBER' }, billNo: { type: 'STRING' }, date: { type: 'STRING' }, sellerName: { type: 'STRING' },
+  lines: { type: 'ARRAY', items: { type: 'OBJECT', properties: { desc: { type: 'STRING' }, qty: { type: 'NUMBER' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
+  subtotal: { type: 'NUMBER' }, discount: { type: 'NUMBER' }, taxes: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
+  roundOff: { type: 'NUMBER' }, total: { type: 'NUMBER' } }, required: ['readable', 'confidence'] };
+const AI_PROMPT = 'You read Indian purchase bills / tax invoices. They may be printed, thermal, PDF or handwritten, in English, Hindi or a mix. ' +
+  'Copy exactly what is WRITTEN on the bill. Do NOT fix, recompute or guess any arithmetic: if a line says 25 x 185 = 4652, report amount 4652. ' +
+  'Numbers as plain numbers (no commas, no currency). qty = quantity, rate = price per unit, amount = the line amount written. Leave a field out if it is not written. ' +
+  'subtotal = total before tax as written; discount as a positive number; taxes = each tax line written (CGST, SGST, IGST, GST) with its rate in percent and amount; ' +
+  'roundOff = round off as written (negative if subtracted); total = grand total payable as written. date as YYYY-MM-DD. ' +
+  'readable = false if this is not a bill or you cannot read the amounts reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
+function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_off');
+  const models = [PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || AI_MODEL_DEFAULT, 'gemini-flash-latest'];
+  let last = '';
+  for (const m of models) {
+    const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: AI_SCHEMA } }) });
+    const code = res.getResponseCode(), body = res.getContentText();
+    if (code === 404) { last = 'ai_model'; continue; }
+    if (code === 400 && /API key/i.test(body)) throw new Error('ai_key');
+    if (code === 403) throw new Error('ai_key');
+    if (code === 429) throw new Error('ai_limit');
+    if (code !== 200) { last = 'ai_http_' + code; break; }
+    const j = JSON.parse(body); const txt = (((j.candidates || [])[0] || {}).content || {}).parts; const s = txt && txt[0] && txt[0].text;
+    if (!s) throw new Error('ai_empty'); return JSON.parse(s); }
+  throw new Error(last || 'ai_fail'); }
+/** Read the bill files (Drive ids) → normalised extraction. */
+function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts = [{ text: AI_PROMPT }];
+  (fileIds || []).slice(0, 6).forEach(f => { const b = DriveApp.getFileById(String(f)).getBlob(); const mime = b.getContentType();
+    if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return; parts.push({ inline_data: { mime_type: mime, data: Utilities.base64Encode(b.getBytes()) } }); });
+  if (parts.length < 2) return { readable: false, confidence: 0 };
+  return vExClean_(aiCall_(parts)); }
+function vExClean_(x) { const n = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Math.round(Number(v) * 1000) / 1000;
+  x = x || {}; return { readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',
+    seller: str_(x.sellerName || '', 80), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 80).map(l => ({ d: str_(l.desc || '', 60), q: n(l.qty), r: n(l.rate), a: n(l.amount) })),
+    sub: n(x.subtotal), disc: n(x.discount), taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 8).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), ro: n(x.roundOff), total: n(x.total) }; }
+/** The arithmetic. Same rules as vCheckJS in index.html. */
+function vCheckCalc_(ex, entered) { if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
+  const r2 = v => Math.round(v * 100) / 100, near = (a, b, tol) => Math.abs(a - b) <= tol, issues = [];
+  let sumLines = 0, linesOk = true;
+  ex.lines.forEach((l, i) => { if (l.a == null) { linesOk = false; return; } sumLines += l.a;
+    if (l.q != null && l.r != null) { const e = r2(l.q * l.r); if (!near(e, l.a, Math.max(1, Math.abs(l.a) * 0.002))) issues.push({ t: 'line', i: i + 1, d: l.d, q: l.q, r: l.r, a: l.a, e: e }); } });
+  sumLines = r2(sumLines);
+  const base = ex.sub != null ? ex.sub : (ex.lines.length && linesOk ? sumLines : null);
+  if (ex.sub != null && ex.lines.length && linesOk && !near(sumLines, ex.sub, 1)) issues.push({ t: 'sum', s: sumLines, sub: ex.sub });
+  const taxable = base != null ? r2(base - (ex.disc || 0)) : null; let taxSum = 0;
+  ex.taxes.forEach(tx => { if (tx.a == null) return; taxSum += tx.a; if (taxable != null && tx.r != null && tx.r > 0) { const e = r2(taxable * tx.r / 100); if (!near(e, tx.a, Math.max(1, e * 0.002))) issues.push({ t: 'tax', n: tx.n, r: tx.r, b: taxable, a: tx.a, e: e }); } });
+  const c = ex.taxes.find(x => /cgst/i.test(x.n)), s = ex.taxes.find(x => /sgst|utgst/i.test(x.n)); if (c && s && c.a != null && s.a != null && !near(c.a, s.a, 1)) issues.push({ t: 'cs', c: c.a, s: s.a });
+  if (taxable != null) { const e = r2(taxable + taxSum + (ex.ro || 0)); if (!near(e, ex.total, 1.01)) issues.push({ t: 'total', e: e, tot: ex.total }); }
+  if (entered != null && !near(Number(entered), ex.total, 1)) issues.push({ t: 'entry', ent: Number(entered), tot: ex.total });
+  return { st: issues.length ? 'issues' : 'ok', issues: issues, total: ex.total, tax: r2(taxSum) || null }; }
+/** Read an entry's photos and store the check on it (outside the lock while Gemini works). */
+function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id === String(id)); if (!e) throw new Error('no_entry');
+  const files = (e.photos || []).map(p => p.f); let ex = null, err = '';
+  try { ex = files.length ? vRead_(files) : null; } catch (er) { err = String(er && er.message || er); if (err === 'ai_off') throw er; }
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
+    const chk = err ? { st: 'error', err: err } : vCheckCalc_(ex, num_(r.amount)); chk.at = Date.now(); chk.by = by;
+    r.ex = ex ? JSON.stringify(ex).slice(0, 45000) : ''; r.check = JSON.stringify(chk); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+  finally { lock.releaseLock(); } }
+function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
+  const c = vjson_(r.check, {}); if (on) c.ack = { by: by, at: Date.now() }; else delete c.ack; r.check = JSON.stringify(c); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+function aiSetKey_(key) { key = String(key || '').trim(); const p = PropertiesService.getScriptProperties();
+  if (!key) { p.deleteProperty('GEMINI_KEY'); bump_(); return { aiOn: false }; }
+  p.setProperty('GEMINI_KEY', key);
+  try { aiCall_([{ text: 'This is a connection test, not a bill. Return readable false and confidence 0.' }]); }
+  catch (e) { const m = String(e && e.message || e); if (m === 'ai_key') { p.deleteProperty('GEMINI_KEY'); throw new Error('ai_key'); } if (/permission|authori/i.test(m)) throw new Error('ai_auth'); if (m !== 'ai_limit') throw e; }
+  bump_(); return { aiOn: true }; }

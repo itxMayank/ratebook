@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 2 October 2026 (GST billing added).
+Last updated: 7 October 2026 (bill check handles more bill formats).
 
 ## Where everything lives
 
@@ -364,18 +364,21 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - Script side: each request reads the two tabs once (`vAll_`, passed around). New entries carry `isNew`, so a resent one isn't saved twice.
   - New vendors get their id on the phone (`vId("v")`), so bills can be added straight after; the link toggle waits until the vendor is saved.
 - **Bill reading + calculation check (Google Gemini)** (`SCRIPT_VERSION` 22 / `NEED_SV` 22):
-  - Owner pastes a free Gemini API key (aistudio.google.com/apikey) in Settings → **Bill reading**. `aiSetKey` (owner) stores it in script property `GEMINI_KEY` (never sent to phones) after a test call; Config returns only `aiOn`. Model: property `GEMINI_MODEL` or `gemini-2.5-flash`, falling back to `gemini-flash-latest` on 404. Needs the "connect to an external service" permission: run `setupVendorDocs` once more after updating.
-  - `vRead {files}` sends the Drive files (photos/PDFs) to Gemini with a strict JSON schema, asking it to copy what's written and never fix arithmetic. The reply is normalised by `vExClean_` into `ex = {readable, confidence, billNo, date, lines[{d,q,r,a}], sub, disc, taxes[{n,r,a}], ro, total}`.
+  - Owner pastes a free Gemini API key (aistudio.google.com/apikey) in Settings → **Bill reading**. `aiSetKey` (owner) stores it in script property `GEMINI_KEY` (never sent to phones) after a test call; Config returns only `aiOn`. Needs the "connect to an external service" permission: run `setupVendorDocs` once more after updating.
+  - `vRead {files}` sends the Drive files (photos/PDFs) to Gemini with a strict JSON schema, asking it to copy what's written and never fix arithmetic. The reply is normalised by `vExClean_` into `ex = {readable, confidence, billNo, date, seller, lines[{d,q,un,r,per,dp,da,a,u}], sub, disc, charges[{n,a}], taxes[{n,r,a}], tcs, ro, total, prev, net}`. `vExSafe_` re-cleans an `ex` sent back by the phone.
   - `vCheck {id}` reads an entry's photos and stores `ex` + `check` on it. Both run **outside the script lock** (Gemini takes seconds); only the final write locks.
-  - **The arithmetic is ours, not the AI's:** `vCheckCalc_` (server) = `vCheckJS` (app) checks:
-    - each line qty × rate vs amount (±₹1 or 0.2%);
-    - sum of lines vs subtotal;
-    - each tax % × (subtotal − discount);
-    - CGST = SGST;
-    - subtotal − discount + taxes + round-off vs total (±₹1);
-    - the amount entered vs the bill total.
-
-    Unreadable, confidence < 0.6 or no total → `st:"unread"`, never flagged. Issue types: `line`, `sum`, `tax`, `cs`, `total`, `entry` (texts `vi_*`).
+  - **The arithmetic is ours, not the AI's:** `vCheckCalc_` (server) = `vCheckJS` (app), identical code. Statuses: `unread` (unreadable, confidence < 0.6 or no total; never flagged), `basic` (only the total could be checked, e.g. a kacha bill with just a total), `ok`, `issues`. It also returns `done[]` (what was verified: lines / sum / tax / total / entry), shown as "Checked: 4 lines · total · your amount".
+  - **Format-tolerant (`SCRIPT_VERSION` 23 / `NEED_SV` 23).** Real bills are often not "item, qty × rate = amount", so the reading keeps what's written and the check accepts any reasonable way a bill can add up before flagging:
+    - Line fields: `d, q, un (unit), r, per (rate per 10/100/1000/dozen), dp (disc %), da (disc ₹), a, u (unclear)`. Lines marked unclear, or without qty/rate/amount, are skipped, not flagged. The sum check only runs when every line has a readable amount.
+    - A line passes if qty × rate ÷ per (− discounts) matches, or the same with per 10/100/1000/12 not marked, or the amount is GST-inclusive/exclusive at 5/12/18/28%.
+    - Bill fields: `sub, disc, charges[{n,a}]` (freight, packing, loading), `taxes[{n,r,a}]`, `tcs, ro, total, prev` (previous balance), `net` (net payable), plus `seller`.
+    - Mixed GST rates on one bill skip the per-rate % check (each rate's base isn't known); CGST = SGST is still checked.
+    - Total passes if any of: base − disc + charges + tax + TCS ± round-off, or without charges/tax (when they're already inside the subtotal).
+    - Entered amount passes if it equals the total or the net payable; if it equals total + previous balance, it shows the `prev` message ("includes ₹X old balance") instead of a mismatch.
+    - Issue types: `line`, `sum`, `tax`, `cs`, `total`, `entry`, `prev` (texts `vi_*`).
+    - Test cases: `/tmp/claude-0/s/coretest.js` in the build session (17 formats: per-100 rates, GST-inclusive lines, line discounts, freight + IGST, mixed rates, kacha totals, previous balance, net payable, unclear lines…).
+  - **Models:** `aiCall_` tries the `GEMINI_MODEL` property, then `gemini-flash-latest`, `gemini-2.5-flash`, `gemini-flash-lite-latest`. A 429 (quota) or 404/403 (model not available to this project) moves to the next; a bad key returns `ai_key`; all exhausted returns `ai_limit`. `gemini-flash-latest` keeps working as Google retires older models.
+  - **Undo a wrong reading (bill form):** filled values keep their originals (`orig`). **↶ Undo filled values** (`#vff-undofill`) puts every auto-filled field back (empty amount/bill no., today's date) and drops the reading, so nothing is saved from it; typed fields and notes are untouched. **Read again** (`#vff-reread`) re-reads the photos (fills only fields still empty). After saving, the bill's "Bill check" box has Check again and Mark as OK, and the bill can be edited or removed (5-second Undo).
   - **Bill form:** as soon as photos are ready (and online), they're uploaded and read. Empty fields (amount, bill no., date, GST) are filled and outlined green; anything typed is never overwritten. A panel shows ✓ adds up / ⚠ issues live, and it updates as the amount is changed. The reading goes with the save (`entry.ex`) so the script stores the check without reading again. With no reading (offline, busy, saved too fast), a `check` job is queued after the save.
   - `VendorLedger` gains `ex` and `check` columns. Editing the amount re-checks from the stored reading; changing photos clears it. `vSync` sends `check`, not `ex`.
   - **Shown:**

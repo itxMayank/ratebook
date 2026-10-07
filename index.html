@@ -1167,6 +1167,7 @@ html.fz-big .bill-line .step input{width:40px}
 .vread ul{margin:2px 0 0;padding-left:18px;display:grid;gap:3px;color:var(--fg)} .vread small{opacity:.8}
 .vread:first-child{margin-top:0}
 .vread-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.vread-acts.sm{margin-top:4px} .vread-acts.sm .btn{min-height:36px;padding:6px 12px;font-size:13px;background:rgba(255,255,255,.7)}
 .pill.chk{margin-left:4px} .pill.chk.ok{background:#dcf3e5;color:#17703f} .pill.chk.bad{background:#fff1d6;color:#8a5a00} .pill.chk.wait{background:var(--surface-2);color:var(--muted)}
 input.autofill{box-shadow:inset 0 0 0 2px #1fa855}
 .vflagbar{width:100%;text-align:left;border:0;background:#fff1d6;color:#7a4b00;font-weight:700;border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:14px}
@@ -1575,7 +1576,8 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_line:(n,d,q,r,e,a)=>`Line ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, bill says ${a}`, vi_sum:(s,b)=>`Lines add up to ${s}, bill says ${b}`, vi_tax:(n,r,b,e,a)=>`${n} ${r}% of ${b} = ${e}, bill says ${a}`, vi_cs:(c,s)=>`CGST ${c} and SGST ${s} don't match`, vi_total:(e,b)=>`Should total ${e}, bill says ${b}`, vi_entry:(m,b)=>`You entered ${m}, bill total is ${b}`,
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vDoneL:"Checked:", vd_lines:n=>`${n} line${n===1?"":"s"}`, vd_sum:"items total", vd_tax:"GST", vd_total:"grand total", vd_entry:"your amount",
+  vTotalOk:"Total OK", vBasicOk:"Only the total could be read. It matches your amount.", vUndoFill:"Undo filled values", vReadAgain:"Read again", vUndoneFill:"Filled values removed", vi_line:(n,d,q,r,e,a)=>`Line ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, bill says ${a}`, vi_sum:(s,b)=>`Lines add up to ${s}, bill says ${b}`, vi_tax:(n,r,b,e,a)=>`${n} ${r}% of ${b} = ${e}, bill says ${a}`, vi_cs:(c,s)=>`CGST ${c} and SGST ${s} don't match`, vi_total:(e,b)=>`Should total ${e}, bill says ${b}`, vi_entry:(m,b)=>`You entered ${m}, bill total is ${b}`,
   vChecking:"Checking…", vChecked:"Checked", vMarkedOk:"Marked OK", vIssuesN:n=>`${n} issue${n===1?"":"s"}`, vReading:"Reading the bill…", vReadLater:"Will be checked after saving.", vUnread:"Couldn't read this bill clearly. Fill it in yourself; nothing is flagged.",
   vAddsUp:"Bill calculation adds up", vFilledFrom:"Empty fields filled from the bill (green). Check them once.", vbf_flag:"Flagged", vFlagBar:n=>`${n} bill${n===1?" has":"s have"} calculation issues. Tap to see.`,
   vNotChecked:"Not checked yet.", vAiOff:"Bill checking is off. The owner can turn it on in Settings.", vBillTotalRead:a=>`Bill total read: ${a}`, vAckBy:(b,d)=>`Marked OK by ${b} on ${d}`, vUnreadShort:"Couldn't read this bill clearly, so nothing was checked.",
@@ -1628,7 +1630,8 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_line:(n,d,q,r,e,a)=>`लाइन ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, बिल में ${a}`, vi_sum:(s,b)=>`लाइनों का जोड़ ${s}, बिल में ${b}`, vi_tax:(n,r,b,e,a)=>`${b} का ${n} ${r}% = ${e}, बिल में ${a}`, vi_cs:(c,s)=>`CGST ${c} और SGST ${s} बराबर नहीं`, vi_total:(e,b)=>`कुल ${e} होना चाहिए, बिल में ${b}`, vi_entry:(m,b)=>`आपने ${m} लिखा, बिल का कुल ${b}`,
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vDoneL:"जाँचा:", vd_lines:n=>`${n} लाइन`, vd_sum:"सामान का जोड़", vd_tax:"GST", vd_total:"कुल", vd_entry:"आपकी रकम",
+  vTotalOk:"कुल सही", vBasicOk:"सिर्फ़ कुल पढ़ा गया। यह आपकी रकम से मिलता है।", vUndoFill:"भरी रकम हटाएँ", vReadAgain:"दोबारा पढ़ें", vUndoneFill:"भरी हुई जानकारी हटाई", vi_line:(n,d,q,r,e,a)=>`लाइन ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, बिल में ${a}`, vi_sum:(s,b)=>`लाइनों का जोड़ ${s}, बिल में ${b}`, vi_tax:(n,r,b,e,a)=>`${b} का ${n} ${r}% = ${e}, बिल में ${a}`, vi_cs:(c,s)=>`CGST ${c} और SGST ${s} बराबर नहीं`, vi_total:(e,b)=>`कुल ${e} होना चाहिए, बिल में ${b}`, vi_entry:(m,b)=>`आपने ${m} लिखा, बिल का कुल ${b}`,
   vChecking:"जाँच रहे…", vChecked:"जाँचा", vMarkedOk:"ठीक माना", vIssuesN:n=>`${n} गड़बड़`, vReading:"बिल पढ़ रहे…", vReadLater:"सेव के बाद जाँचा जाएगा।", vUnread:"बिल साफ़ नहीं पढ़ा गया। खुद भरें; कुछ फ़्लैग नहीं होगा।",
   vAddsUp:"बिल का हिसाब सही है", vFilledFrom:"खाली जगहें बिल से भरीं (हरी)। एक बार देख लें।", vbf_flag:"गड़बड़", vFlagBar:n=>`${n} बिल में हिसाब की गड़बड़। देखने के लिए दबाएँ।`,
   vNotChecked:"अभी जाँचा नहीं।", vAiOff:"बिल जाँच बंद है। मालिक सेटिंग में चालू कर सकते हैं।", vBillTotalRead:a=>`बिल का कुल पढ़ा: ${a}`, vAckBy:(b,d)=>`${b} ने ${d} को ठीक माना`, vUnreadShort:"बिल साफ़ नहीं पढ़ा गया, इसलिए जाँच नहीं हुई।",
@@ -1753,7 +1756,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=22;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=23;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -4704,24 +4707,52 @@ function vNoteUpd(){ const el=$("#vq-note"); if(!el) return; const n=vqGet().fil
   el.innerHTML = vqErr==="drive_auth" ? esc(t("vDriveAuth")) : navigator.onLine===false ? esc(t("vQueueN",n)) : LD("sm")+" "+esc(t("vSaving",n)); }
 setTimeout(()=>{ if(S.canWrite && can("manager")) vSync(); },5000);   // warm the copy so Vendors opens instantly
 /* ---- bill check (numbers read by Gemini on the script; the sums are done here and in vCheckCalc_ the same way) ---- */
-function vCheckJS(ex,entered){ if(!ex||!ex.readable||ex.confidence<0.6||ex.total==null) return {st:"unread"};
-  const r2v=v=>Math.round(v*100)/100, near=(a,b,tol)=>Math.abs(a-b)<=tol, issues=[]; let sum=0, linesOk=true;
-  (ex.lines||[]).forEach((l,i)=>{ if(l.a==null){ linesOk=false; return; } sum+=l.a; if(l.q!=null&&l.r!=null){ const e=r2v(l.q*l.r); if(!near(e,l.a,Math.max(1,Math.abs(l.a)*0.002))) issues.push({t:"line",i:i+1,d:l.d,q:l.q,r:l.r,a:l.a,e}); } });
-  sum=r2v(sum); const base=ex.sub!=null?ex.sub:((ex.lines||[]).length&&linesOk?sum:null);
-  if(ex.sub!=null&&(ex.lines||[]).length&&linesOk&&!near(sum,ex.sub,1)) issues.push({t:"sum",s:sum,sub:ex.sub});
-  const taxable=base!=null?r2v(base-(ex.disc||0)):null; let tax=0;
-  (ex.taxes||[]).forEach(x=>{ if(x.a==null) return; tax+=x.a; if(taxable!=null&&x.r!=null&&x.r>0){ const e=r2v(taxable*x.r/100); if(!near(e,x.a,Math.max(1,e*0.002))) issues.push({t:"tax",n:x.n,r:x.r,b:taxable,a:x.a,e}); } });
-  const c=(ex.taxes||[]).find(x=>/cgst/i.test(x.n)), sg=(ex.taxes||[]).find(x=>/sgst|utgst/i.test(x.n)); if(c&&sg&&c.a!=null&&sg.a!=null&&!near(c.a,sg.a,1)) issues.push({t:"cs",c:c.a,s:sg.a});
-  if(taxable!=null){ const e=r2v(taxable+tax+(ex.ro||0)); if(!near(e,ex.total,1.01)) issues.push({t:"total",e,tot:ex.total}); }
-  if(entered!=null && !isNaN(entered) && !near(+entered,ex.total,1)) issues.push({t:"entry",ent:+entered,tot:ex.total});
-  return {st:issues.length?"issues":"ok",issues,total:ex.total,tax:r2v(tax)||null}; }
+/* Identical to vCheckCalc_ in Code.gs (the sums for the bill check); keep them the same. */
+function vCheckJS(ex, entered) {
+  if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
+  const r2 = v => Math.round(v * 100) / 100, near = (a, b, t) => Math.abs(a - b) <= t, tol = v => Math.max(1, Math.abs(v) * 0.002);
+  const issues = [], done = [], all = ex.lines || [], lines = all.filter(l => !l.u);
+  let nLine = 0;
+  lines.forEach(l => { if (l.a == null || l.q == null || l.r == null) return; const per = l.per > 0 ? l.per : 1;
+    let e = l.q * l.r / per; if (l.dp) e *= 1 - l.dp / 100; if (l.da) e -= l.da; e = r2(e); nLine++;
+    if (near(e, l.a, tol(l.a))) return;
+    /* other usual ways a line is written: rate per 10/100/1000/dozen, rate with GST included, amount before GST */
+    const alts = [10, 100, 1000, 12].map(p => l.q * l.r / p).concat([5, 12, 18, 28].map(g => e * (1 + g / 100)), [5, 12, 18, 28].map(g => e / (1 + g / 100)));
+    if (alts.some(x => near(r2(x), l.a, tol(l.a)))) return;
+    issues.push({ t: 'line', i: all.indexOf(l) + 1, d: l.d, q: l.q, r: l.r, a: l.a, e: e }); });
+  if (nLine) done.push('lines');
+  const complete = all.length > 0 && all.every(l => l.a != null && !l.u);
+  const sum = r2(all.reduce((s, l) => s + (l.a || 0), 0));
+  if (complete && ex.sub != null) { done.push('sum'); if (!near(sum, ex.sub, 1)) issues.push({ t: 'sum', s: sum, sub: ex.sub }); }
+  const base = ex.sub != null ? ex.sub : (complete ? sum : null);
+  const disc = ex.disc || 0, chg = r2((ex.charges || []).reduce((s, c) => s + (c.a || 0), 0));
+  const taxes = (ex.taxes || []).filter(x => x.a != null), T = r2(taxes.reduce((s, x) => s + x.a, 0)), tcs = ex.tcs || 0, ro = ex.ro || 0;
+  if (base != null && taxes.length) {
+    const rates = {}; taxes.forEach(x => { const k = /igst/i.test(x.n) ? 'i' : 'cs'; (rates[k] = rates[k] || new Set()).add(x.r); });
+    const mixed = Object.values(rates).some(s => s.size > 1);   /* several GST rates on one bill: the split per rate isn't known, so only the totals are checked */
+    if (!mixed) { const bases = [r2(base - disc), r2(base - disc + chg)];
+      taxes.forEach(x => { if (!(x.r > 0)) return; const es = bases.map(b => r2(b * x.r / 100)); if (!es.some(e => near(e, x.a, tol(e)))) issues.push({ t: 'tax', n: x.n, r: x.r, b: bases[0], a: x.a, e: es[0] }); });
+      done.push('tax'); } }
+  const c = taxes.filter(x => /cgst/i.test(x.n)).reduce((s, x) => s + x.a, 0), sg = taxes.filter(x => /sgst|utgst/i.test(x.n)).reduce((s, x) => s + x.a, 0);
+  if (c && sg) { if (!near(c, sg, 1)) issues.push({ t: 'cs', c: r2(c), s: r2(sg) }); if (done.indexOf('tax') < 0) done.push('tax'); }
+  if (base != null) { done.push('total'); const b = base - disc;
+    const ways = [b + chg + T + tcs + ro, b + T + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + T + tcs, b + chg + T + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
+    if (!ways.some(w => near(w, ex.total, 1.01))) issues.push({ t: 'total', e: ways[0], tot: ex.total }); }
+  if (entered != null && !isNaN(entered)) { done.push('entry'); const en = Number(entered);
+    if (!near(en, ex.total, 1)) { if (ex.prev && near(en, r2(ex.total + ex.prev), 1)) issues.push({ t: 'prev', ent: en, tot: ex.total, prev: ex.prev });
+      else if (!(ex.net != null && near(en, ex.net, 1))) issues.push({ t: 'entry', ent: en, tot: ex.total }); } }
+  const deep = done.some(d => d === 'lines' || d === 'sum' || d === 'total');
+  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, total: ex.total, tax: T || null, lines: nLine };
+}
 function vIssueText(i){ const m=v=>vMoney(v), n=v=>fmtN(v);
   switch(i.t){ case "line": return t("vi_line",i.i,i.d||"",n(i.q),m(i.r),m(i.e),m(i.a)); case "sum": return t("vi_sum",m(i.s),m(i.sub)); case "tax": return t("vi_tax",i.n||"GST",n(i.r),m(i.b),m(i.e),m(i.a));
-    case "cs": return t("vi_cs",m(i.c),m(i.s)); case "total": return t("vi_total",m(i.e),m(i.tot)); case "entry": return t("vi_entry",m(i.ent),m(i.tot)); default: return ""; } }
+    case "cs": return t("vi_cs",m(i.c),m(i.s)); case "total": return t("vi_total",m(i.e),m(i.tot)); case "entry": return t("vi_entry",m(i.ent),m(i.tot)); case "prev": return t("vi_prev",m(i.ent),m(i.prev),m(i.tot)); default: return ""; } }
+/** "Checked: 12 lines · total · GST · your amount" — what the check could actually verify on this bill. */
+function vDoneText(c){ if(!c||!c.done||!c.done.length) return ""; return t("vDoneL")+" "+c.done.map(d=>d==="lines"?t("vd_lines",c.lines||0):t("vd_"+d)).join(" · "); }
 const vFlagged=e=>!!(e&&e.type==="bill"&&!e.removed&&e.check&&e.check.st==="issues"&&!e.check.ack);
 function vCheckPill(e){ if(!e||e.type!=="bill") return ""; if(e.checking) return `<span class="pill chk wait">${esc(t("vChecking"))}</span>`; const c=e.check; if(!c) return "";
   if(c.st==="issues") return c.ack?`<span class="pill chk ok">✓ ${esc(t("vMarkedOk"))}</span>`:`<span class="pill chk bad">⚠ ${esc(t("vIssuesN",c.issues.length))}</span>`;
-  if(c.st==="ok") return `<span class="pill chk ok">✓ ${esc(t("vChecked"))}</span>`; return ""; }
+  if(c.st==="ok") return `<span class="pill chk ok">✓ ${esc(t("vChecked"))}</span>`; if(c.st==="basic") return `<span class="pill chk ok">✓ ${esc(t("vTotalOk"))}</span>`; return ""; }
 /* ---- photos: previews (small, in the sheet) and full files (Drive), cached on the phone ---- */
 async function vPreviews(fids){ const out={}, need=[]; for(const f of fids){ if(String(f).startsWith("local:")){ const d=await idb.get("images","vqf:"+f.slice(6)); if(d&&d.preview) out[f]=d.preview; continue; } const c=await idb.get("images","vprev:"+f); if(c) out[f]=c; else need.push(f); }
   if(need.length){ try{ const r=await apiPost0({action:"vPreviews",ids:need}); Object.entries(r.previews||{}).forEach(([f,d])=>{ out[f]=d; idb.set("images","vprev:"+f,d); }); }catch{} } return out; }
@@ -4929,11 +4960,16 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
   const panel=()=>{ const el=$("#vff-read"); if(!el) return; if(!readState){ el.hidden=true; return; } el.hidden=false;
     if(readState==="reading"){ el.className="vread"; el.innerHTML=`${LD("sm")} <span>${esc(t("vReading"))}</span>`; return; }
     if(readState==="later"){ el.className="vread"; el.innerHTML=`<span>${esc(t("vReadLater"))}</span>`; return; }
-    if(readState==="unread"){ el.className="vread muted"; el.innerHTML=`<span>${esc(t("vUnread"))}</span>`; return; }
-    const c=vCheckJS(ex,toNum(amtI.value)); el.className="vread "+(c.st==="ok"?"ok":c.st==="issues"?"bad":"muted");
-    el.innerHTML = c.st==="ok" ? `<b>✓ ${esc(t("vAddsUp"))}</b>${filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:""}`
-      : c.st==="issues" ? `<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:""}` : `<span>${esc(t("vUnread"))}</span>`; };
-  const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; el.value=String(val); el.classList.add("autofill"); filled.add(id); };
+    if(readState==="unread"){ el.className="vread muted"; el.innerHTML=`<span>${esc(t("vUnread"))}</span><div class="vread-acts sm">${filled.size?`<button type="button" class="btn ghost" id="vff-undofill">↶ ${esc(t("vUndoFill"))}</button>`:""}<button type="button" class="btn ghost" id="vff-reread">${esc(t("vReadAgain"))}</button></div>`; const u=$("#vff-undofill"); if(u) u.onclick=undoFill; $("#vff-reread").onclick=()=>{ ex=null; readNow(); }; return; }
+    const c=vCheckJS(ex,toNum(amtI.value)); el.className="vread "+(c.st==="ok"||c.st==="basic"?"ok":c.st==="issues"?"bad":"muted");
+    const acts=`<div class="vread-acts sm">${filled.size?`<button type="button" class="btn ghost" id="vff-undofill">↶ ${esc(t("vUndoFill"))}</button>`:""}<button type="button" class="btn ghost" id="vff-reread">${esc(t("vReadAgain"))}</button></div>`;
+    const done=vDoneText(c);
+    el.innerHTML = (c.st==="ok" ? `<b>✓ ${esc(t("vAddsUp"))}</b>` : c.st==="basic" ? `<b>✓ ${esc(t("vBasicOk"))}</b>` : c.st==="issues" ? `<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>` : `<span>${esc(t("vUnread"))}</span>`)
+      + (done?`<small>${esc(done)}</small>`:"") + (filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:"") + acts;
+    const u=$("#vff-undofill"); if(u) u.onclick=undoFill; $("#vff-reread").onclick=()=>{ ex=null; readNow(); }; };
+  const orig={};   // values before the bill reading filled them, so "Undo" puts them back
+  const undoFill=()=>{ filled.forEach(id=>{ const el=$(id); if(el){ el.value=orig[id]!=null?orig[id]:""; el.classList.remove("autofill"); touched.add(id); } }); filled.clear(); toast(t("vUndoneFill")); panel(); };
+  const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; if(!filled.has(id)) orig[id]=el.value; el.value=String(val); el.classList.add("autofill"); filled.add(id); };
     set("#vff-amt",ex.total); set("#vff-no",ex.billNo); if(ex.date && ex.date<=vToday()) set("#vff-date",ex.date); const tx=(ex.taxes||[]).reduce((a,x)=>a+(+x.a||0),0); if(tx>0) set("#vff-gst",Math.round(tx*100)/100); };
   const readNow=async()=>{ const my=++readSeq; const ready=photos.filter(p=>p.f||p.proc); if(!ready.length||photos.some(p=>p.file&&!p.proc)){ if(!photos.length){ ex=null; readState=""; panel(); } return; }
     if(!S.cfg.aiOn || navigator.onLine===false){ readState=S.cfg.aiOn?"later":""; panel(); return; }
@@ -5051,8 +5087,8 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
 function vCheckBox(e){ const c=e.check; let h="", cls="muted";
   if(e.checking) h=`${LD("sm")} <span>${esc(t("vChecking"))}</span>`;
   else if(!c) h=S.cfg.aiOn?`<span>${esc(t("vNotChecked"))}</span>`:`<span>${esc(t("vAiOff"))}</span>`;
-  else if(c.st==="ok"){ cls="ok"; h=`<b>✓ ${esc(t("vAddsUp"))}</b>${c.total!=null?`<small>${esc(t("vBillTotalRead",vMoney(c.total)))}</small>`:""}`; }
-  else if(c.st==="issues"){ cls=c.ack?"muted":"bad"; h=`<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${c.ack?`<small>✓ ${esc(t("vAckBy",c.ack.by||"",fmtDate(c.ack.at)))}</small>`:""}`; }
+  else if(c.st==="ok"||c.st==="basic"){ cls="ok"; h=`<b>✓ ${esc(t(c.st==="ok"?"vAddsUp":"vBasicOk"))}</b>${vDoneText(c)?`<small>${esc(vDoneText(c))}</small>`:""}${c.total!=null?`<small>${esc(t("vBillTotalRead",vMoney(c.total)))}</small>`:""}`; }
+  else if(c.st==="issues"){ cls=c.ack?"muted":"bad"; h=`<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${vDoneText(c)?`<small>${esc(vDoneText(c))}</small>`:""}${c.ack?`<small>✓ ${esc(t("vAckBy",c.ack.by||"",fmtDate(c.ack.at)))}</small>`:""}`; }
   else if(c.st==="unread") h=`<span>${esc(t("vUnreadShort"))}</span>`;
   else h=`<span>${esc(t(c.err==="ai_limit"?"vAiBusy":"vCheckFail"))}</span>`;
   const btns=S.cfg.aiOn&&!e.checking?`<div class="vread-acts"><button type="button" class="btn ghost" id="ve-recheck">${esc(t("vRecheck"))}</button>${c&&c.st==="issues"?`<button type="button" class="btn ghost" id="ve-ack">${esc(t(c.ack?"vUnack":"vAck"))}</button>`:""}</div>`:"";

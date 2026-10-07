@@ -191,6 +191,14 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);background:v
 .mini{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;width:100%;text-align:left}
 .mini .name{flex:1;min-width:0;font-size:16px}
 .mini .sell{font-size:18px}
+.mini{cursor:pointer}
+.mini.inb{border-color:var(--accent)!important}
+.mini .name .per{font-size:12.5px}
+.mini .sstep{flex:none;display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;background:var(--surface)}
+.mini .sstep button{width:32px;height:32px;border:0;background:none;color:var(--fg);font:700 18px var(--f-display);border-radius:50%;display:grid;place-items:center}
+.mini .sstep b{min-width:34px;text-align:center;font-size:14px}
+.mini.inb .sstep{border-color:var(--accent);color:var(--accent)}
+.mini .sstep.one button{background:var(--ink);color:var(--ink-fg)}
 .section-title{font:700 18px var(--f-display);margin:14px 0 6px}
 
 .toast{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);border-radius:12px;padding:12px 14px;font-weight:500;transform:translateY(20px);opacity:0;transition:.2s;pointer-events:none;max-width:520px;margin:0 auto}
@@ -447,9 +455,13 @@ label.thumb{cursor:pointer}
 .pill.edited{background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold)}
 .editnote{font-size:13px;color:var(--gold);font-weight:600}
 .bl-sum{font-size:14px;color:var(--muted);margin-top:8px}
+.bl-sum .due{color:var(--danger,#c0392b)}
 .bl-bar{position:sticky;top:-4px;z-index:3;background:var(--surface);padding:4px 0 8px;margin-top:-4px;display:grid;gap:8px}
 .bl-bar input[type=search]{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;color:var(--fg)}
-.bl-chips{display:flex;gap:8px;align-items:center}
+.bl-chips{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px}
+.bl-chips::-webkit-scrollbar{display:none}
+.bl-chips>*{flex:none}
+.bl-fsep{width:1.5px;height:22px;background:var(--line);border-radius:2px}
 .bl-chip{position:relative;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);color:var(--fg);font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer}
 .bl-chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .bl-chip select{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:inherit;font:inherit;padding:0 14px 0 0;height:100%;outline:0;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:right 4px center,right 0 center;background-size:4px 4px;background-repeat:no-repeat}
@@ -1418,7 +1430,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", catAuto:"auto", catNew:"New group", catNewPh:"New group name", catRename:"Rename", catRemove:"Remove", catRemoveD:"Removing a group keeps its items; they just have no group.", catRenamed:"Group renamed", catRemoved:"Group removed",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", blf_gst:"GST", blf_normal:"Normal", blf_due:"Credit / due", blf_cancelled:"Cancelled", blf_edited:"Edited", catAuto:"auto", catNew:"New group", catNewPh:"New group name", catRename:"Rename", catRemove:"Remove", catRemoveD:"Removing a group keeps its items; they just have no group.", catRenamed:"Group renamed", catRemoved:"Group removed",
   bizL:"Type of business", bizPick:"Pick your type of business", biz_plastics:"Plastics & housekeeping", biz_kirana:"Kirana / grocery", biz_stationery:"Stationery", biz_hardware:"Hardware & paints", biz_other:"Other (learn from my items)",
   bizAddSug:n=>`Add ${n} suggested group${n===1?"":"s"}`, grpSetT:"Item groups", grpManage:"Manage groups", grpCount:n=>`${n} group${n===1?"":"s"}`, akaL:"Also:", akaField:"Other names", akaPh:"e.g. thaili, panni, carry bag", akaPhShort:"+ add", akaD:"Names customers use. Search finds the item by these too. Separate with commas.", catField:"Group", catPh:"e.g. Bags",
   layGrid:"Photo grid", layList:"List", grpT:"Groups & other names", grpToolD:"Sort items into groups, add names customers use", grpHelp:"Groups show as chips above the price list. Grey groups are suggestions from the name: keep, change or clear them. Other names (comma separated) are found by search.",
@@ -1440,7 +1452,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", catAuto:"अपने आप", catNew:"नया ग्रुप", catNewPh:"नए ग्रुप का नाम", catRename:"नाम बदलें", catRemove:"हटाएँ", catRemoveD:"ग्रुप हटाने से आइटम नहीं हटते; बस उनका ग्रुप नहीं रहता।", catRenamed:"ग्रुप का नाम बदला", catRemoved:"ग्रुप हटाया",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", blf_gst:"GST", blf_normal:"सामान्य", blf_due:"उधार बाकी", blf_cancelled:"रद्द", blf_edited:"बदले गए", catAuto:"अपने आप", catNew:"नया ग्रुप", catNewPh:"नए ग्रुप का नाम", catRename:"नाम बदलें", catRemove:"हटाएँ", catRemoveD:"ग्रुप हटाने से आइटम नहीं हटते; बस उनका ग्रुप नहीं रहता।", catRenamed:"ग्रुप का नाम बदला", catRemoved:"ग्रुप हटाया",
   bizL:"दुकान का प्रकार", bizPick:"अपनी दुकान का प्रकार चुनें", biz_plastics:"प्लास्टिक और हाउसकीपिंग", biz_kirana:"किराना", biz_stationery:"स्टेशनरी", biz_hardware:"हार्डवेयर और पेंट", biz_other:"दूसरा (मेरे आइटम से सीखें)",
   bizAddSug:n=>`${n} सुझाए ग्रुप जोड़ें`, grpSetT:"आइटम ग्रुप", grpManage:"ग्रुप सँभालें", grpCount:n=>`${n} ग्रुप`, akaL:"और नाम:", akaField:"दूसरे नाम", akaPh:"जैसे थैली, पन्नी, कैरी बैग", akaPhShort:"+ जोड़ें", akaD:"ग्राहक जो नाम बोलते हैं। सर्च इनसे भी आइटम ढूँढेगा। कॉमा से अलग करें।", catField:"ग्रुप", catPh:"जैसे Bags",
   layGrid:"फ़ोटो ग्रिड", layList:"लिस्ट", grpT:"ग्रुप और दूसरे नाम", grpToolD:"आइटम ग्रुप में बाँटें, ग्राहकों वाले नाम जोड़ें", grpHelp:"ग्रुप रेट लिस्ट के ऊपर चिप्स में दिखते हैं। धूसर ग्रुप नाम से सुझाए गए हैं: रखें, बदलें या हटा दें। दूसरे नाम (कॉमा से अलग) सर्च में मिलते हैं।",
@@ -3044,8 +3056,21 @@ function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
   if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
   const {res}=runSearch(q);
-  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it; return `<button class="mini" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="per" lang="hi"> · ${esc(it.nameHi)}</span>`:""}<span class="per"> / ${esc(unitL(it.unit))}</span></span><span class="sell num">${rs(it.sell)}</span></button>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
+  /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,
+     and shows what's already in the bill when the same item is searched again. */
+  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it, inB=billQty(it.id); return `<div class="mini${inB?" inb":""}" role="button" tabindex="0" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="per" lang="hi"> · ${esc(it.nameHi)}</span>`:""}<span class="per"> · ${rs(it.sell)}/${esc(unitL(it.unit))}</span></span>
+    ${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
+         :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</div>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
+/** − / + inside a bill-search result: change the quantity, keep the search and keyboard open. */
+function searchStep(id,up){ const it=S.byId.get(id); if(!it) return; const i=S.bill.findIndex(x=>x.id===id);
+  if(i<0){ if(!up) return; S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty:1,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false)}); }
+  else { const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,up); if(l.qty<=0) S.bill.splice(i,1); }
+  saveBill(); renderBadge(); renderBill(); try{navigator.vibrate&&navigator.vibrate(8);}catch{} }
+{ const bsr=document.getElementById("bill-search-results");
+  bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-sstep]")) e.preventDefault(); });   // keep the keyboard up
+  bsr.addEventListener("click",e=>{ const b=e.target.closest("[data-sstep]"); if(!b) return; e.stopPropagation(); e.preventDefault(); searchStep(b.dataset.sid, b.dataset.sstep==="1"); },true);
+  bsr.addEventListener("keydown",e=>{ const m=e.target.closest(".mini[data-add]"); if(m && (e.key==="Enter"||e.key===" ") && e.target===m){ e.preventDefault(); m.click(); } }); }
 function renderAll(){
   renderEnv(); applyDesk();
   renderList(); renderBill(); renderBadge();
@@ -4074,7 +4099,11 @@ function profitBox(pf){
 function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
 let billsServer=false, billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
-const BL={q:"", year:"", date:"", col:{}};   // col: month/day groups you opened or closed            // past-bills filters, kept while you open a bill and come back
+const BL={q:"", year:"", date:"", f:"", col:{}};   // f: quick filter chip (gst | normal | due | cancelled | edited)
+const BL_F=["gst","normal","due","cancelled","edited"];
+/** Quick filter chips on Past bills. */
+function blF(b){ switch(BL.f){ case "gst": return !!b.gst; case "normal": return !b.gst; case "due": return !b.cancelled && (+b.due||0)>0;
+  case "cancelled": return !!b.cancelled; case "edited": return !!b.editedAt; default: return true; } }   // col: month/day groups you opened or closed            // past-bills filters, kept while you open a bill and come back
 const calIcon=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;
 function dayKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function dayLabel(k){
@@ -4096,18 +4125,22 @@ function openBills(){
       <div class="bl-chips">
         <label class="bl-chip${BL.year?" on":""}" id="bl-yc"><select id="bl-year" aria-label="${esc(t("blYear"))}"><option value="">${esc(t("blAllYears"))}</option>${BL.year?`<option value="${esc(BL.year)}" selected>${esc(BL.year)}</option>`:""}</select></label>
         <span class="bl-chip${BL.date?" on":""}" id="bl-dc">${calIcon}<span id="bl-dl">${esc(BL.date?dayLabel(BL.date):t("blDate"))}</span><input type="date" id="bl-date" aria-label="${esc(t("blDate"))}" value="${esc(BL.date)}"></span>
-        <button type="button" class="bl-clear" id="bl-clr" aria-label="${esc(t("blClear"))}" ${BL.year||BL.date?"":"hidden"}>✕</button>
+        <button type="button" class="bl-clear" id="bl-clr" aria-label="${esc(t("blClear"))}" ${BL.year||BL.date||BL.f?"":"hidden"}>✕</button>
+        <span class="bl-fsep" aria-hidden="true"></span>${BL_F.map(k=>`<button type="button" class="bl-chip bl-f" data-blf="${k}" aria-pressed="${BL.f===k}">${esc(t("blf_"+k))}</button>`).join("")}
         <span class="bl-sync" id="bl-sync" hidden><span class="ld"></span>${esc(t("blSyncing"))}</span>
       </div>
     </div>
     <div class="bills-list" id="bl-list">${skelCards(5,true)}</div>`;
   openSheet(t("pastBills"), body, "", {full:true});
   let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },120); });
-  const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date); };
+  const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date||BL.f);
+    document.querySelectorAll("[data-blf]").forEach(b=>{ b.setAttribute("aria-pressed",String(BL.f===b.dataset.blf)); b.classList.toggle("on",BL.f===b.dataset.blf); }); };
+  document.querySelectorAll("[data-blf]").forEach(b=>b.onclick=()=>{ BL.f = BL.f===b.dataset.blf ? "" : b.dataset.blf; sync(); loadBills(); });
+  sync();
   $("#bl-year").onchange=e=>{ BL.year=e.target.value; if(BL.date && BL.date.slice(0,4)!==BL.year){ BL.date=""; $("#bl-date").value=""; } sync(); loadBills(); };
   $("#bl-date").onchange=e=>{ BL.date=e.target.value||""; sync(); loadBills(); };
   $("#bl-dc").onclick=e=>{ const inp=$("#bl-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
-  $("#bl-clr").onclick=()=>{ BL.year=""; BL.date=""; $("#bl-year").value=""; $("#bl-date").value=""; sync(); loadBills(); };
+  $("#bl-clr").onclick=()=>{ BL.year=""; BL.date=""; BL.f=""; $("#bl-year").value=""; $("#bl-date").value=""; sync(); loadBills(); };
   $("#bl-list").addEventListener("click",e=>{ if(e.target.closest("#bl-more")){ loadBills(true); return; } if(e.target.closest("#bl-older")){ loadBillsServer(); return; }
     const g=e.target.closest("[data-tg]"); if(g){ const k=g.dataset.tg; BL.col[k]=!g.closest(".bl-grp").classList.contains("shut")?true:false; const st=$("#sheet-body").scrollTop; renderBills(); $("#sheet-body").scrollTop=st; return; } const c=e.target.closest("[data-bi]"); if(c) showBill(billsCache[+c.dataset.bi]); });
   loadBills();
@@ -4190,13 +4223,14 @@ function blcQuery(C){
   const days={}, months={}, all={count:0,total:0}, out=[];
   for(const b of src){ const k=b.day||"unknown";
     if((f.from && (k==="unknown"||k<f.from)) || (f.to && (k==="unknown"||k>f.to))) continue;
+    if(BL.f && !blF(b)) continue;
     if(needle){ const ds=k!=="unknown"?`${k.slice(8)}/${k.slice(5,7)}/${k.slice(0,4)} ${k.slice(8)}-${k.slice(5,7)}-${k.slice(0,4)}`:"";
       const hay=[b.n,dispNo(b.n,b.gst,b.fy),b.customer,b.mobile,b.custGstin,b.items,ds].join(" ").toLowerCase(), mob=String(b.mobile||"").replace(/\D/g,"");
       if(!(hay.includes(needle) || String(b.n)===needle || (digits.length>=4 && mob.includes(digits)))) continue; }
     if(!b.cancelled){ const t2=+b.total||0, mk=k.slice(0,7);
       (days[k]=days[k]||{count:0,total:0}); days[k].count++; days[k].total=r2(days[k].total+t2);
       (months[mk]=months[mk]||{count:0,total:0}); months[mk].count++; months[mk].total=r2(months[mk].total+t2);
-      all.count++; all.total=r2(all.total+t2); }
+      all.count++; all.total=r2(all.total+t2); all.due=r2((all.due||0)+(+b.due||0)); }
     out.push(b); }
   return {out,days,months,all};
 }
@@ -4231,7 +4265,7 @@ async function loadBillsServer(more){
     const req={action:"listBills",q:BL.q,limit:60,tz:new Date().getTimezoneOffset(),...billFilter()};
     if(more && billsCache.length) req.before=billsCache[billsCache.length-1].row;
     const j=await apiPost(req); if(my!==billsReq || !$("#bl-list")) return;
-    const got=j.bills||[];
+    const got=(j.bills||[]).filter(blF);
     billsCache = more ? billsCache.concat(got) : got;
     billsDays = more ? {...billsDays, ...(j.days||{})} : (j.days||{});
     billsMonths = more ? {...billsMonths, ...(j.months||{})} : (j.months||{});
@@ -4244,17 +4278,17 @@ async function loadBillsServer(more){
 }
 function renderBills(){
   const list=$("#bl-list"); if(!list) return;
-  const showP=S.cfg.showProfit, filtered=!!(BL.q.trim()||(BL.year&&!BL.date));
+  const showP=S.cfg.showProfit, filtered=!!(BL.q.trim()||(BL.year&&!BL.date)||BL.f);
   let head="";
   if(billsCache.length && filtered){
     const cnt=billsAll?billsAll.count:billsCache.length, tot=billsAll?billsAll.total:billsCache.reduce((a,b)=>a+(+b.total||0),0);
     let pSum=0, cSum=0; if(showP) billsCache.forEach(b=>{ const pf=billProfit(b); if(pf){ pSum+=pf.profit; cSum+=pf.cost; } });
-    head=`<div class="bl-sum">${esc(t("blSummary",cnt,rs(tot)))}${showP&&!billsMore?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`;
+    head=`<div class="bl-sum">${esc(t("blSummary",cnt,rs(tot)))}${BL.f==="due"&&billsAll&&billsAll.due?` · <b class="due">${esc(t("dueAmt",rs(billsAll.due)))}</b>`:""}${showP&&!billsMore?` · ${profitChip({profit:r2(pSum),pct:cSum>0?Math.round(pSum/cSum*1000)/10:null})}`:""}</div>`;
   }
   if(!billsCache.length){ list.innerHTML=`<p class="note">${esc(t("billsNone"))}</p>`; return; }
   // group: month → day → bills. Older months start closed (unless searching/filtering); tap a header to open or close it.
   const chev=`<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
-  const anyFilter=!!(BL.q.trim()||BL.year||BL.date);
+  const anyFilter=!!(BL.q.trim()||BL.year||BL.date||BL.f);
   const months=[]; const byM={};
   billsCache.forEach((b,i)=>{ const d=b.date?new Date(b.date):null, k=b.day||(d?dayKey(d):"unknown"), m=k==="unknown"?"unknown":k.slice(0,7);
     if(!byM[m]){ byM[m]={days:[],byD:{}}; months.push(m); }

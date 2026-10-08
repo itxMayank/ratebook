@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 25;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 26;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -462,10 +462,13 @@ function doPost(e) {
       case 'vPreviews': res = vPreviews_(body.ids); break;
       case 'vFile': res = vFile_(str_(body.f, 80)); break;
       case 'vAck': res = vAck_(str_(body.id, 40), body.on !== false, by); break;
+      case 'vEx': res = vEx_(str_(body.id, 40)); break;
+      case 'vApply': res = vApply_(body, by); break;
+      case 'itemBuys': res = itemBuys_(str_(body.id, 40)); break;
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'aiSetKey'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -484,7 +487,7 @@ const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
-  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', aiSetKey: 'owner',
+  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
   listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
@@ -1391,8 +1394,9 @@ function report_(body) {
  * Balance = opening + bills − payments − returns. Payments/returns store which bills they cover (alloc {billId: amount});
  * what isn't allocated is an advance, which can later be used against a bill (vUseAdvance).
  * A vendor's private read-only link (token) is served by doGet vpub / vpubprev / vpubfile. Owner + manager only otherwise. */
-const VEND_COLS = ['id', 'name', 'mobile', 'gstin', 'address', 'creditDays', 'opening', 'openingDate', 'token', 'linkOn', 'note', 'createdAt', 'updatedAt', 'by', 'removed'];
-const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history', 'ex', 'check'];
+const VEND_COLS = ['id', 'name', 'mobile', 'gstin', 'address', 'creditDays', 'opening', 'openingDate', 'token', 'linkOn', 'note', 'createdAt', 'updatedAt', 'by', 'removed', 'map'];
+const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history', 'ex', 'check', 'applied'];
+const PUR_COLS = ['entryId', 'vendorId', 'itemId', 'date', 'desc', 'qty', 'unit', 'rate', 'f', 'buy', 'at', 'by'];   // Purchases tab: one row per bill line matched to an item
 const VDOC_COLS = ['fileId', 'vendorId', 'preview', 'mime', 'at'];
 const VD_FOLDER_NAME = 'Rate Book vendor bills';
 function vjson_(v, d) { try { const x = JSON.parse(v || ''); return x == null ? d : x; } catch (e) { return d; } }
@@ -1403,12 +1407,12 @@ function vwrite_(s, cols, o) { const row = cols.map(k => { const v = o[k] === un
 const vday_ = v => { if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Kolkata', 'yyyy-MM-dd'); const x = String(v || ''); return /^\d{4}-\d{2}-\d{2}/.test(x) ? x.slice(0, 10) : ''; };
 function vVendorOut_(v) { return { id: String(v.id), name: String(v.name), mobile: String(v.mobile || ''), gstin: String(v.gstin || ''), address: String(v.address || ''), creditDays: num_(v.creditDays) || 0,
   opening: num_(v.opening) || 0, openingDate: vday_(v.openingDate) || vday_(new Date(num_(v.createdAt) || Date.now())), linkOn: String(v.linkOn) === '1' || v.linkOn === true, token: String(v.token || ''), note: String(v.note || ''),
-  createdAt: num_(v.createdAt), updatedAt: num_(v.updatedAt) }; }
+  createdAt: num_(v.createdAt), updatedAt: num_(v.updatedAt), map: vjson_(v.map, {}) }; }
 function vEntryOut_(e, pub) { const o = { id: String(e.id), vendorId: String(e.vendorId), type: String(e.type), date: vday_(e.date), amount: num_(e.amount), gst: e.gst === '' ? null : num_(e.gst),
   billNo: String(e.billNo || ''), mode: String(e.mode || ''), ref: String(e.ref || ''), noteV: String(e.noteV || ''), photos: vjson_(e.photos, []), alloc: vjson_(e.alloc, {}), at: num_(e.at),
-  removed: String(e.removed) === '1', check: vjson_(e.check, null) };
+  removed: String(e.removed) === '1', check: vjson_(e.check, null), lines: (vjson_(e.ex, {}).lines || []).length };
   if (o.check && pub) { delete o.check.by; delete o.check.err; }
-  if (!pub) { o.noteP = String(e.noteP || ''); o.by = String(e.by || ''); o.editedAt = num_(e.editedAt); o.editedBy = String(e.editedBy || ''); o.history = vjson_(e.history, []); }
+  if (!pub) { o.applied = vjson_(e.applied, null); o.noteP = String(e.noteP || ''); o.by = String(e.by || ''); o.editedAt = num_(e.editedAt); o.editedBy = String(e.editedBy || ''); o.history = vjson_(e.history, []); }
   return o; }
 /** Work out bills (with paid/due/status), advance and balance for one vendor from its (non-removed) entries. */
 function vCalc_(v, entries) {
@@ -1640,6 +1644,38 @@ function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id ===
   finally { lock.releaseLock(); } }
 function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
   const c = vjson_(r.check, {}); if (on) c.ack = { by: by, at: Date.now() }; else delete c.ack; r.check = JSON.stringify(c); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+/* ======================= Bill lines → items, buy prices, purchase history (#Bill) =======================
+ * vEx: the reading of one bill (lines etc.) for the phone to show. vApply: the owner matched the lines to items; save one
+ * Purchases row per matched line (replacing earlier rows of that bill), remember the match per vendor (map: description →
+ * item + how many bill units make one of the item's units) and update the ticked items' buy price (before GST). */
+const vKey_ = d => String(d || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/g, ' ').trim().slice(0, 80);
+function vEx_(id) { const L = vtab_('VendorLedger', VLED_COLS); const r = L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
+  return { ex: vjson_(r.ex, null), applied: vjson_(r.applied, null) }; }
+function vApply_(x, by) { const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { const A = vAll_(), e = A.L.rows.find(o => String(o.id) === String(x.entryId)); if (!e || String(e.type) !== 'bill') throw new Error('no_entry');
+    const vr = A.V.rows.find(o => String(o.id) === String(e.vendorId)); if (!vr) throw new Error('no_vendor');
+    const { s: is, values } = rows_(); const rowOf = {}; values.forEach((r, i) => { if (r[C.id]) rowOf[String(r[C.id])] = i; });
+    const now = Date.now(), map = vjson_(vr.map, {}), rows = (Array.isArray(x.rows) ? x.rows : []).slice(0, 120);
+    const P = vtab_('Purchases', PUR_COLS); for (let i = P.rows.length - 1; i >= 0; i--) if (String(P.rows[i].entryId) === String(e.id)) P.s.deleteRow(P.rows[i]._r);
+    const add = [], upd = []; let matched = 0;
+    rows.forEach(r => { const k = vKey_(r.d); if (!k) return;
+      if (r.skip) { map[k] = { skip: 1 }; return; }
+      const id = String(r.itemId || ''); if (rowOf[id] === undefined) return;
+      const f = num_(r.f) > 0 ? num_(r.f) : 1, buy = Math.round(num_(r.buy) * 1000) / 1000; if (!(buy > 0)) return;
+      map[k] = { id: id, f: f }; matched++;
+      add.push([String(e.id), String(e.vendorId), id, "'" + vday_(e.date), str_(r.d, 80), num_(r.q) || '', str_(r.un, 12), num_(r.r) || '', f, buy, now, by]);
+      if (r.upd) { const v = values[rowOf[id]]; v[C.buy] = buy; v[C.updatedAt] = now; v[C.updatedBy] = by; is.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([v]); upd.push(id); } });
+    if (add.length) P.s.getRange(P.s.getLastRow() + 1, 1, add.length, PUR_COLS.length).setValues(add);
+    const keys = Object.keys(map); if (keys.length > 400) keys.slice(0, keys.length - 400).forEach(k => delete map[k]);   // keep the map small
+    vr.map = JSON.stringify(map).slice(0, 45000); vwrite_(A.V.s, VEND_COLS, vr);
+    e.applied = JSON.stringify({ at: now, by: by, n: matched, u: upd.length }); vwrite_(A.L.s, VLED_COLS, e); vSet_(A, e);
+    vbump_(); return Object.assign(vOne_(A, String(e.vendorId)), { updated: upd, matched: matched }); }
+  finally { lock.releaseLock(); } }
+/** Last purchases of one item (both from every vendor), newest first, for the item screen. */
+function itemBuys_(id) { const P = vtab_('Purchases', PUR_COLS), V = vtab_('Vendors', VEND_COLS); const name = {}; V.rows.forEach(v => name[String(v.id)] = String(v.name));
+  const list = P.rows.filter(r => String(r.itemId) === String(id)).map(r => ({ date: vday_(r.date), vendor: name[String(r.vendorId)] || '', vendorId: String(r.vendorId), qty: num_(r.qty), unit: String(r.unit || ''), rate: num_(r.rate), f: num_(r.f) || 1, buy: num_(r.buy), at: num_(r.at) }))
+    .sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.at - a.at);
+  return { buys: list.slice(0, 8), count: list.length }; }
 function aiSetKey_(key) { key = String(key || '').trim(); const p = PropertiesService.getScriptProperties();
   if (!key) { p.deleteProperty('GEMINI_KEY'); bump_(); return { aiOn: false }; }
   const had = p.getProperty('GEMINI_KEY'); p.setProperty('GEMINI_KEY', key);

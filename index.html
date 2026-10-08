@@ -1309,6 +1309,30 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .sheet.has-sub #sheet-close svg{width:16px;height:16px}
 .sheet.has-sub #sheet-close::after{content:"All";font:700 13.5px/1 var(--f);color:var(--fg)}
 :root[lang="hi"] .sheet.has-sub #sheet-close::after{content:"सब बंद";font-family:"Mukta",var(--f);font-size:14px}
+/* #Bill: lines read, items review, purchase history */
+.vl-wrap{margin-top:4px}.vl-wrap summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);padding:4px 0}
+.vlines{display:grid;gap:4px;margin-top:4px}
+.vl{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:start;background:var(--surface);border-radius:10px;padding:7px 9px}
+.vl.bad{box-shadow:inset 0 0 0 1.5px var(--bad,#b3261e)}.vl.unclear{opacity:.6}
+.vl-n{font-size:11.5px;font-weight:800;color:var(--muted);padding-top:2px}.vl-d{min-width:0}.vl-d b{display:block;font-size:13px;overflow-wrap:anywhere}.vl-d small{display:block;color:var(--muted);font-size:12px}
+.vl-bad{color:var(--bad,#b3261e)!important;font-weight:700}
+.vl-t{display:flex;justify-content:space-between;gap:8px;padding:2px 9px;font-size:12.5px;color:var(--muted)}.vl-t.big{font-weight:800;color:var(--fg);font-size:13.5px}.vl-t.bad b{color:var(--bad,#b3261e)}
+.vi-open{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;margin-top:10px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.vi-open small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}.vi-open>span:last-child{font-size:22px;color:var(--muted)}
+.vi{border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:6px;background:var(--surface);margin-top:8px}
+.vi.bad{border-color:var(--bad,#b3261e)}.vi.skip{opacity:.65}
+.vi-h{display:flex;justify-content:space-between;gap:8px}.vi-h b:first-child{font-size:14px;overflow-wrap:anywhere;min-width:0}
+.vi-s{color:var(--muted);font-size:12.5px}
+.vi-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px}.vi-it{flex:1;min-width:0}
+.vi-f input{width:92px;padding:7px 8px;border-radius:10px;border:0;background:var(--surface-2);font:600 15px var(--f)}
+.vi-buy{cursor:pointer;align-items:flex-start}.vi-buy input{width:20px;height:20px;margin-top:1px;accent-color:var(--ink)}.vi-buy small{display:block;color:var(--muted)}
+.vi small.warn,.vi .warn{color:#8a5a00;font-weight:700}
+.vi-pick input{width:100%;padding:10px 12px;border-radius:12px;border:0;background:var(--surface-2);font:500 15px var(--f)}
+.vi-res{display:grid;gap:4px;margin-top:6px}.vi-opt{display:flex;justify-content:space-between;gap:8px;text-align:left;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}.vi-opt small{color:var(--muted)}
+.linkbtn{background:none;border:0;padding:4px 2px;color:var(--accent);font:700 13px var(--f);cursor:pointer}
+.vi-foot{position:sticky;bottom:0;padding:12px 0 4px;background:linear-gradient(transparent,var(--surface) 30%)}.vi-foot .btn{width:100%}
+.vi-done{margin:0 0 6px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--good,#17703f) 12%,var(--surface));font-size:13px}
+.d-buys{margin-top:10px}.d-buys h4{margin:0 0 4px}.d-buys .vkv small{display:block;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -1607,7 +1631,14 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vNoteGst:(a,p)=>`GST couldn't be read, but the total is ${a} (${p}%) more than the items, which looks like GST`, vDoneL:"Checked:", vd_lines:n=>`${n} line${n===1?"":"s"}`, vd_sum:"items total", vd_tax:"GST", vd_total:"grand total", vd_entry:"your amount",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vItemsT:"Items on this bill", vLoadingLines:"Getting the lines read from this bill…", vItemsBtn:n=>`Items on this bill (${n})`, vItemsSub:"Match to your items · update buy prices", vItemsDone:(n,u)=>`✓ ${n} matched · ${u} buy price${u===1?"":"s"} updated`,
+  vItemsD:"Each line is matched to an item in your price list. Buy prices are before GST and are only changed where ticked.", vAppliedOn:(n,u,d,b)=>`Saved before: ${n} matched, ${u} buy price${u===1?"":"s"} updated · ${d}${b?" · "+b:""}`,
+  vSeeLines:n=>`See the ${n} line${n===1?"":"s"} read`, vlUnclear:"unclear", vlShould:a=>`should be ${a}`, vlSub:"Items total", vlDisc:"Discount", vlCharge:"Charges", vlTax:"Total GST", vlRo:"Round off", vlTotal:"Bill total",
+  vNoLines:"No item lines were read from this bill.", vNeedNet:"Needs internet.", vPerUnit:(c,u)=>`${c} per ${u}`, vUnitWord:"unit", vSkipped:"Not in my price list (skipped)", vUnskip:"Undo", vSkip:"Not in my price list", vPickPh:"Find the item…",
+  vAutoTag:"guessed", vChange:"Change", vNewBuy:(b,u)=>`Update buy price to ${b} / ${u}`, vNowBuy:(c,p)=>`now ${c} · ${p}%`, vBigChange:"Big change: check how many bill units make one of your unit.", vNoRate:"No rate read on this line.", vNeedF:"Enter how many bill units make one of your unit.",
+  vSaveUpd:(m,u)=>`Save ${m} item${m===1?"":"s"} · update ${u} price${u===1?"":"s"}`, vSaveOnly:m=>`Save ${m} item${m===1?"":"s"} (no price change)`, vApplied:(m,u)=>`Saved ${m} item${m===1?"":"s"}${u?` · ${u} buy price${u===1?"":"s"} updated`:""}`,
+  vBoughtT:"Bought", vPerF:(f,bu,u)=>`${f} ${bu} = 1 ${u}`,
+  vNoteGst:(a,p)=>`GST couldn't be read, but the total is ${a} (${p}%) more than the items, which looks like GST`, vDoneL:"Checked:", vd_lines:n=>`${n} line${n===1?"":"s"}`, vd_sum:"items total", vd_tax:"GST", vd_total:"grand total", vd_entry:"your amount",
   vTotalOk:"Total OK", vBasicOk:"Only the total could be read. It matches your amount.", vUndoFill:"Undo filled values", vReadAgain:"Read again", vUndoneFill:"Filled values removed", vi_line:(n,d,q,r,e,a)=>`Line ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, bill says ${a}`, vi_sum:(s,b)=>`Lines add up to ${s}, bill says ${b}`, vi_tax:(n,r,b,e,a)=>`${n} ${r}% of ${b} = ${e}, bill says ${a}`, vi_cs:(c,s)=>`CGST ${c} and SGST ${s} don't match`, vi_total:(e,b)=>`Should total ${e}, bill says ${b}`, vi_entry:(m,b)=>`You entered ${m}, bill total is ${b}`,
   vChecking:"Checking…", vChecked:"Checked", vMarkedOk:"Marked OK", vIssuesN:n=>`${n} issue${n===1?"":"s"}`, vReading:"Reading the bill…", vReadLater:"Will be checked after saving.", vUnread:"Couldn't read this bill clearly. Fill it in yourself; nothing is flagged.",
   vAddsUp:"Bill calculation adds up", vFilledFrom:"Empty fields filled from the bill (green). Check them once.", vbf_flag:"Flagged", vFlagBar:n=>`${n} bill${n===1?" has":"s have"} calculation issues. Tap to see.`,
@@ -1661,7 +1692,14 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vNoteGst:(a,p)=>`GST पढ़ा नहीं गया, पर कुल रकम सामान से ${a} (${p}%) ज़्यादा है, जो GST लगता है`, vDoneL:"जाँचा:", vd_lines:n=>`${n} लाइन`, vd_sum:"सामान का जोड़", vd_tax:"GST", vd_total:"कुल", vd_entry:"आपकी रकम",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vItemsT:"इस बिल का सामान", vLoadingLines:"इस बिल की पढ़ी गई लाइनें ला रहे हैं…", vItemsBtn:n=>`इस बिल का सामान (${n})`, vItemsSub:"अपने सामान से मिलाएँ · खरीद रेट अपडेट करें", vItemsDone:(n,u)=>`✓ ${n} मिलाए · ${u} खरीद रेट अपडेट`,
+  vItemsD:"हर लाइन आपकी रेट लिस्ट के सामान से मिलाई जाती है। खरीद रेट GST के बिना है और सिर्फ़ टिक किए सामान का बदलता है।", vAppliedOn:(n,u,d,b)=>`पहले सेव: ${n} मिलाए, ${u} खरीद रेट अपडेट · ${d}${b?" · "+b:""}`,
+  vSeeLines:n=>`पढ़ी गई ${n} लाइन देखें`, vlUnclear:"साफ़ नहीं", vlShould:a=>`होना चाहिए ${a}`, vlSub:"सामान का कुल", vlDisc:"छूट", vlCharge:"खर्च", vlTax:"कुल GST", vlRo:"राउंड ऑफ़", vlTotal:"बिल का कुल",
+  vNoLines:"इस बिल से सामान की लाइनें नहीं पढ़ी गईं।", vNeedNet:"इंटरनेट चाहिए।", vPerUnit:(c,u)=>`${c} प्रति ${u}`, vUnitWord:"यूनिट", vSkipped:"मेरी रेट लिस्ट में नहीं (छोड़ा)", vUnskip:"वापस", vSkip:"मेरी रेट लिस्ट में नहीं", vPickPh:"सामान खोजें…",
+  vAutoTag:"अंदाज़ा", vChange:"बदलें", vNewBuy:(b,u)=>`खरीद रेट ${b} / ${u} करें`, vNowBuy:(c,p)=>`अभी ${c} · ${p}%`, vBigChange:"बड़ा बदलाव: देखें कि बिल की कितनी यूनिट से आपकी 1 यूनिट बनती है।", vNoRate:"इस लाइन पर रेट नहीं पढ़ा गया।", vNeedF:"लिखें कि बिल की कितनी यूनिट से आपकी 1 यूनिट बनती है।",
+  vSaveUpd:(m,u)=>`${m} सामान सेव · ${u} रेट अपडेट`, vSaveOnly:m=>`${m} सामान सेव (रेट नहीं बदलेगा)`, vApplied:(m,u)=>`${m} सामान सेव${u?` · ${u} खरीद रेट अपडेट`:""}`,
+  vBoughtT:"खरीदा", vPerF:(f,bu,u)=>`${f} ${bu} = 1 ${u}`,
+  vNoteGst:(a,p)=>`GST पढ़ा नहीं गया, पर कुल रकम सामान से ${a} (${p}%) ज़्यादा है, जो GST लगता है`, vDoneL:"जाँचा:", vd_lines:n=>`${n} लाइन`, vd_sum:"सामान का जोड़", vd_tax:"GST", vd_total:"कुल", vd_entry:"आपकी रकम",
   vTotalOk:"कुल सही", vBasicOk:"सिर्फ़ कुल पढ़ा गया। यह आपकी रकम से मिलता है।", vUndoFill:"भरी रकम हटाएँ", vReadAgain:"दोबारा पढ़ें", vUndoneFill:"भरी हुई जानकारी हटाई", vi_line:(n,d,q,r,e,a)=>`लाइन ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, बिल में ${a}`, vi_sum:(s,b)=>`लाइनों का जोड़ ${s}, बिल में ${b}`, vi_tax:(n,r,b,e,a)=>`${b} का ${n} ${r}% = ${e}, बिल में ${a}`, vi_cs:(c,s)=>`CGST ${c} और SGST ${s} बराबर नहीं`, vi_total:(e,b)=>`कुल ${e} होना चाहिए, बिल में ${b}`, vi_entry:(m,b)=>`आपने ${m} लिखा, बिल का कुल ${b}`,
   vChecking:"जाँच रहे…", vChecked:"जाँचा", vMarkedOk:"ठीक माना", vIssuesN:n=>`${n} गड़बड़`, vReading:"बिल पढ़ रहे…", vReadLater:"सेव के बाद जाँचा जाएगा।", vUnread:"बिल साफ़ नहीं पढ़ा गया। खुद भरें; कुछ फ़्लैग नहीं होगा।",
   vAddsUp:"बिल का हिसाब सही है", vFilledFrom:"खाली जगहें बिल से भरीं (हरी)। एक बार देख लें।", vbf_flag:"गड़बड़", vFlagBar:n=>`${n} बिल में हिसाब की गड़बड़। देखने के लिए दबाएँ।`,
@@ -1787,7 +1825,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=25;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=26;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -3822,6 +3860,7 @@ async function openDetail(id){
     </div>
     ${!hideBuy()&&marginPct(it)?`<p class="note">${esc(t("margin"))}: ${rs((+it.sell)-(+it.buy))} / ${esc(unitL(it.unit))} (${marginPct(it)})</p>`:""}
     <p class="note" id="d-upd">${esc(t("updatedAgo",ago(it.updatedAt),it.updatedBy||""))}</p>
+    ${can("manager")&&!hideBuy()?`<div class="d-buys" id="d-buys" hidden></div>`:""}
     <div class="qtyrow"><div class="step"><button id="dq-dec">−</button><input id="dq" class="num" inputmode="decimal" value="1"><button id="dq-inc">+</button></div><span class="note">${esc(unitL(it.unit))}</span>${inB?`<span class="note">· ${esc(t("inBill"))}: ${fmtN(inB)}</span>`:""}</div>`;
   const foot=`${can("manager")?`<button class="btn ghost" id="d-edit">${esc(t("edit"))}</button>`:""}<button class="btn primary" id="d-add">${esc(t("addToBill"))}</button>`;
   openSheet(itemTitle(it), body, foot);
@@ -3830,6 +3869,7 @@ async function openDetail(id){
   $("#dq-inc").onclick=()=>{ $("#dq").value=(toNum($("#dq").value)||0)+1; };
   $("#d-add").onclick=()=>{ const v=toNum($("#dq").value); addToBill(id, v>0?v:1); closeSheet(); };
   if(can("manager")) $("#d-edit").onclick=()=>openEdit(id);
+  if($("#d-buys")) itemBuysInto(id,$("#d-buys"));
   if(it.imgV){
     const g=$("#d-gal"); if(g && (it.imgs||1)>1) g.addEventListener("scroll",()=>{ const n=$("#d-gn"); if(n) n.textContent=`${Math.round(g.scrollLeft/g.clientWidth)+1}/${it.imgs}`; },{passive:true});
     const list=await loadAllPhotos(it).catch(()=>[]);
@@ -5042,7 +5082,8 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     const acts=`<div class="vread-acts sm">${filled.size?`<button type="button" class="btn ghost" id="vff-undofill">↶ ${esc(t("vUndoFill"))}</button>`:""}<button type="button" class="btn ghost" id="vff-reread">${esc(t("vReadAgain"))}</button></div>`;
     const done=vDoneText(c);
     el.innerHTML = (c.st==="ok" ? `<b>✓ ${esc(t("vAddsUp"))}</b>` : c.st==="basic" ? `<b>✓ ${esc(t("vBasicOk"))}</b>` : c.st==="issues" ? `<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>` : `<span>${esc(t("vUnread"))}</span>`)
-      + (done?`<small>${esc(done)}</small>`:"") + (filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:"") + acts;
+      + (done?`<small>${esc(done)}</small>`:"") + (filled.size?`<small>${esc(t("vFilledFrom"))}</small>`:"")
+      + ((ex.lines||[]).length?`<details class="vl-wrap"${c.st==="issues"?" open":""}><summary>${esc(t("vSeeLines",ex.lines.length))}</summary>${vLinesHTML(ex,c)}</details>`:"") + acts;
     const u=$("#vff-undofill"); if(u) u.onclick=undoFill; $("#vff-reread").onclick=()=>{ ex=null; readNow(); }; };
   const orig={};   // values before the bill reading filled them, so "Undo" puts them back
   const undoFill=()=>{ filled.forEach(id=>{ const el=$(id); if(el){ el.value=orig[id]!=null?orig[id]:""; el.classList.remove("autofill"); touched.add(id); } }); filled.clear(); toast(t("vUndoneFill")); panel(); };
@@ -5140,6 +5181,7 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
     <div class="vent-head"><b class="num ${!e||e.type==="bill"?"plus":"minus"}">${vMoney(isOpen?D.vendor.opening:e.amount)}</b><span>${esc(vDate(isOpen?D.vendor.openingDate:e.date))}${e&&e.billNo?` · ${esc(t("vBillNo"))} ${esc(e.billNo)}`:""}</span>${bill?`<span class="vr-st">${vStatusPill(bill)}${bill.due>0?` <b class="num">${esc(t("vDueAmt",vMoney(bill.due)))}</b>`:""}${bill.dueDate&&bill.due>0?` · ${esc(bill.overdue?t("vOverdueBy",vDays(bill.dueDate)):t("vDueOn",vDate(bill.dueDate)))}`:""}</span>`:""}</div>
     ${photos.length?`<div class="vent-ph">${photos.map((p,i)=>`<button type="button" class="vph-t big" data-vv="${i}">${p.m==="application/pdf"?`<span class="vph-pdf">PDF</span>`:`<span class="vph-img" data-vthumb="${esc(p.f)}"></span>`}</button>`).join("")}</div>`:""}
     ${e&&e.type==="bill"&&(e.photos||[]).length?vCheckBox(e):""}
+    ${e&&e.type==="bill"&&e.lines>0&&can("manager")?`<button type="button" class="vi-open" id="ve-items"><span><b>${esc(t("vItemsBtn",e.lines))}</b><small>${esc(e.applied?t("vItemsDone",e.applied.n,e.applied.u):t("vItemsSub"))}</small></span><span aria-hidden="true">›</span></button>`:""}
     ${e&&e.gst!=null&&e.gst!==""?`<div class="vkv"><span>${esc(t("vGstPart"))}</span><b class="num">${vMoney(e.gst)}</b></div>`:""}
     ${e&&e.type==="pay"?`<div class="vkv"><span>${esc(t("vHowPaid"))}</span><b>${esc(t("vm_"+(e.mode||"cash").toLowerCase()))}${e.ref?` · ${esc(e.ref)}`:""}</b></div>`:""}
     ${payBy?`<h4>${esc(t("vPaidBy"))}</h4>${payBy}`:""}
@@ -5158,6 +5200,7 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
   if($("#ve-recheck")) $("#ve-recheck").onclick=()=>{ vqAdd({k:"check",id:e.id}); vEntry(vendorId,eid); };
   if($("#ve-ack")) $("#ve-ack").onclick=()=>{ vqAdd({k:"ack",id:e.id,on:!(e.check&&e.check.ack)}); vEntry(vendorId,eid); };
   if($("#ve-edit")) $("#ve-edit").onclick=()=>vForm(e.type,vendorId,e);
+  if($("#ve-items")) $("#ve-items").onclick=()=>vItems(vendorId,eid);
   if($("#ve-del")) $("#ve-del").onclick=()=>{ const jid=vqAdd({k:"rm",id:e.id,on:true}); openVendor(vendorId); vSnack(t("vRemoved"), ()=>vUndo(jid,{k:"rm",id:e.id,on:false})); };
 }
 /** "Bill check" box on a bill's screen. */
@@ -5170,6 +5213,94 @@ function vCheckBox(e){ const c=e.check; let h="", cls="muted";
   else h=`<span>${esc(t(c.err==="ai_limit"?"vAiBusy":"vCheckFail"))}</span>`;
   const btns=S.cfg.aiOn&&!e.checking?`<div class="vread-acts"><button type="button" class="btn ghost" id="ve-recheck">${esc(t("vRecheck"))}</button>${c&&c.st==="issues"?`<button type="button" class="btn ghost" id="ve-ack">${esc(t(c.ack?"vUnack":"vAck"))}</button>`:""}</div>`:"";
   return `<h4>${esc(t("vCheckT"))}</h4><div class="vread ${cls}">${h}</div>${btns}`; }
+/* ---- #Bill: the lines read from a vendor bill → your items, buy prices (before GST) and purchase history ----
+ * vLinesHTML shows what Gemini read (problem lines highlighted). vItems is the review screen: each line is matched to a
+ * price-list item (remembered per vendor, else guessed from the name), with "how many bill units make 1 of your unit"
+ * (remembered too), giving the new buy price; ticked ones update the item. vApply saves it all in one go. */
+const vKeyD=d=>String(d||"").toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g," ").trim().slice(0,80);
+function unitCanon(u){ const x=String(u||"").toLowerCase().replace(/[.\s]/g,""); if(!x) return ""; if(["nos","no","number","numbers","pcs","pc"].includes(x)) return "pc"; if(/^rolls?$/.test(x)) return "roll";
+  if(/^(doz|dzn)$/.test(x)) return "dozen"; return String(unitFromWord(x)||x).toLowerCase(); }
+/** Cost of ONE bill unit before GST, from the line as written (rate ÷ per, line discount; or amount ÷ qty). */
+function vUnitCost(l){ const r2=v=>Math.round(v*1e4)/1e4; if(!l) return null;
+  if(l.r!=null){ let per=l.per>0?l.per:1;
+    if(l.a!=null && l.q>0){ const e=x=>{ let v=l.q*l.r/x; if(l.dp) v*=1-l.dp/100; if(l.da) v-=l.da; return v; };
+      if(Math.abs(e(per)-l.a)>Math.max(1,l.a*0.002)){ const p=[10,100,1000,12].find(x=>Math.abs(e(x)-l.a)<=Math.max(1,l.a*0.002)); if(p) per=p; } }   /* "per 100" not written on the bill */
+    let c=l.r/per; if(l.dp) c*=1-l.dp/100; if(l.da && l.q>0) c-=l.da/l.q; return c>0?r2(c):null; }
+  if(l.a!=null && l.q>0) return r2(l.a/l.q); return null; }
+/** Best price-list item for a bill line: most of the item's name words (and every number in it) appear in the line. */
+const vTok=x=>phonTokens(String(x||"").replace(/(\d)([a-z\u0900-\u097f])/gi,"$1 $2").replace(/([a-z\u0900-\u097f])(\d)/gi,"$1 $2"));   /* "1kg" and "1 kg" alike */
+function vMatchItem(desc){ const dt=vTok(desc); if(!dt.length) return null; const nums=new Set(dt.filter(x=>/^\d/.test(x)));
+  let best=null, second=0;
+  for(const e of S.index){ for(const src of [e.it.name, e.it.aliases]){ if(!src) continue;
+      for(const part of String(src).split(",")){ const it=vTok(part); if(!it.length) continue;
+        if(it.some(x=>/^\d/.test(x) && !nums.has(x))) continue;   /* a size like 250 must be on the bill line too */
+        const hit=it.filter(x=>tokScore(x,dt)>=60).length, sc=hit/it.length + Math.min(hit,4)*0.01;
+        if(hit/it.length<0.75) continue;
+        if(!best || sc>best.sc){ if(best && best.it.id!==e.it.id) second=Math.max(second,best.sc); best={it:e.it,sc}; } else if(e.it.id!==best.it.id) second=Math.max(second,sc); } } }
+  return best && best.sc-second>=0.05 ? best.it : null; }
+/** Bill units in 1 of the item's units: same unit → 1; the item's pack unit → packs per main unit; else unknown. */
+function vGuessF(it,billUnit){ const b=unitCanon(billUnit); if(!it) return null; if(!b || b===unitCanon(it.unit)) return 1;
+  if(hasAlt(it) && b===unitCanon(it.altUnit) && +it.altQty>0) return +it.altQty; return null; }
+function vLinesHTML(ex,chk){ if(!ex||!(ex.lines||[]).length) return "";
+  const bad={}; ((chk&&chk.issues)||[]).forEach(i=>{ if(i.t==="line") bad[i.i]=i; });
+  const q=l=>l.q!=null?`${fmtN(l.q)}${l.un?" "+esc(l.un):""}`:"", rows=ex.lines.map((l,k)=>{ const b=bad[k+1];
+    return `<div class="vl${b?" bad":""}${l.u?" unclear":""}"><span class="vl-n">${k+1}</span><span class="vl-d"><b>${esc(l.d||"—")}</b><small>${q(l)}${l.r!=null?` × ${vMoney(l.r)}${l.per>1?"/"+fmtN(l.per):""}`:""}${l.dp?` −${fmtN(l.dp)}%`:""}${l.u?` · ${esc(t("vlUnclear"))}`:""}</small>${b?`<small class="vl-bad">${esc(t("vlShould",vMoney(b.e)))}</small>`:""}</span><b class="num">${l.a!=null?vMoney(l.a):"—"}</b></div>`; }).join("");
+  const tot=(k,v,cls)=>v==null||v===""?"":`<div class="vl-t${cls?" "+cls:""}"><span>${esc(k)}</span><b class="num">${vMoney(v)}</b></div>`;
+  const iss=new Set(((chk&&chk.issues)||[]).map(i=>i.t));
+  return `<div class="vlines">${rows}${tot(t("vlSub"),ex.sub,iss.has("sum")?"bad":"")}${ex.disc?tot(t("vlDisc"),-ex.disc):""}${(ex.charges||[]).map(c=>tot(c.n||t("vlCharge"),c.a)).join("")}${(ex.taxes||[]).map(x=>tot((x.n||"GST")+(x.r?` ${fmtN(x.r)}%`:""),x.a)).join("")}${ex.tt!=null&&!(ex.taxes||[]).length?tot(t("vlTax"),ex.tt):""}${ex.ro?tot(t("vlRo"),ex.ro):""}${tot(t("vlTotal"),ex.total,"big"+(iss.has("total")?" bad":""))}</div>`; }
+async function vExGet(id){ VD.ex=VD.ex||{}; if(VD.ex[id]) return VD.ex[id]; const r=await apiPost({action:"vEx",id}); VD.ex[id]=r; return r; }
+async function vItems(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const e=D.entries.find(x=>x.id===eid); if(!e) return;
+  openSheet(t("vItemsT"), `<div class="vent"><button type="button" class="btn ghost" id="vi-back">← ${esc(vEntryTitle(e))}</button><div id="vi-body">${ldBlock(t("vLoadingLines"))}</div></div>`, "", {full:true});
+  $("#vi-back").onclick=()=>vEntry(vendorId,eid);
+  let X; try{ X=await vExGet(eid); }catch(err){ const b=$("#vi-body"); if(b) b.innerHTML=`<p class="err">${esc(navigator.onLine===false?t("vNeedNet"):errMsg(err))}</p>`; return; }
+  const body=$("#vi-body"); if(!body) return; const ex=X.ex; if(!ex||!(ex.lines||[]).length){ body.innerHTML=`<p class="note">${esc(t("vNoLines"))}</p>`; return; }
+  const map=(D.vendor&&D.vendor.map)||{}, chk=e.check;
+  const st=ex.lines.map(l=>{ const m=map[vKeyD(l.d)], uc=vUnitCost(l); let it=null, f=null, auto=false, skip=false;
+    if(m&&m.skip) skip=true; else if(m&&m.id&&S.byId.get(m.id)){ it=S.byId.get(m.id); f=+m.f||1; } else { it=vMatchItem(l.d); auto=!!it; f=vGuessF(it,l.un); }
+    return { l, uc, it, f, auto, skip, upd:null, pick:false }; });
+  const bad={}; ((chk&&chk.issues)||[]).forEach(i=>{ if(i.t==="line") bad[i.i]=i; });
+  const buyOf=x=>x.it&&x.uc!=null&&x.f>0?Math.round(x.uc*x.f*1000)/1000:null;
+  const defUpd=x=>{ const nb=buyOf(x), cur=+(x.it&&x.it.buy)||0; if(nb==null) return false; if(!cur) return true; const ch=Math.abs(nb-cur)/cur; return ch>=0.005 && ch<=0.5; };
+  st.forEach(x=>{ x.upd=defUpd(x); });
+  const draw=()=>{ const nU=st.filter(x=>x.upd&&buyOf(x)!=null&&!x.skip).length, nM=st.filter(x=>x.it&&!x.skip).length;
+    body.innerHTML=`${X.applied?`<p class="vi-done">✓ ${esc(t("vAppliedOn",X.applied.n,X.applied.u,fmtDate(X.applied.at),X.applied.by||""))}</p>`:""}
+      <p class="note" style="margin:0">${esc(t("vItemsD"))}</p>
+      ${st.map((x,k)=>{ const l=x.l, nb=buyOf(x), cur=+(x.it&&x.it.buy)||0, ch=nb!=null&&cur?(nb-cur)/cur*100:null, b=bad[k+1];
+        return `<div class="vi${b?" bad":""}${x.skip?" skip":""}" data-k="${k}">
+          <div class="vi-h"><b>${k+1}. ${esc(l.d||"—")}</b><b class="num">${l.a!=null?vMoney(l.a):""}</b></div>
+          <small class="vi-s">${l.q!=null?`${fmtN(l.q)} ${esc(l.un||"")}`:""}${l.r!=null?` × ${vMoney(l.r)}${l.per>1?"/"+fmtN(l.per):""}`:""}${l.dp?` −${fmtN(l.dp)}%`:""}${x.uc!=null?` · ${esc(t("vPerUnit",vMoney(x.uc),l.un||t("vUnitWord")))}`:""}${l.u?` · ${esc(t("vlUnclear"))}`:""}</small>
+          ${b?`<small class="vl-bad">${esc(t("vlShould",vMoney(b.e)))}</small>`:""}
+          ${x.skip?`<div class="vi-row"><span class="note">${esc(t("vSkipped"))}</span><button type="button" class="linkbtn" data-unskip="${k}">${esc(t("vUnskip"))}</button></div>`
+          : x.pick||!x.it?`<div class="vi-pick"><input type="search" data-q="${k}" placeholder="${esc(t("vPickPh"))}" autocomplete="off"><div class="vi-res" data-res="${k}"></div><div class="vi-row"><button type="button" class="linkbtn" data-skip="${k}">${esc(t("vSkip"))}</button>${x.it?`<button type="button" class="linkbtn" data-cancel="${k}">${esc(t("cancel"))}</button>`:""}</div></div>`
+          : `<div class="vi-row"><span class="vi-it">→ <b>${esc(itemTitle(x.it))}</b>${x.auto?` <span class="pill open">${esc(t("vAutoTag"))}</span>`:""}</span><button type="button" class="linkbtn" data-change="${k}">${esc(t("vChange"))}</button></div>
+             ${unitCanon(l.un)&&unitCanon(l.un)!==unitCanon(x.it.unit)||x.f!==1?`<div class="vi-row vi-f"><span>1 ${esc(unitL(x.it.unit))} =</span><input class="num money" data-dp="3" inputmode="decimal" data-f="${k}" value="${x.f?esc(moneyVal(x.f,3)):""}" placeholder="?"><span>${esc(l.un||t("vUnitWord"))}</span></div>`:""}
+             ${nb!=null?`<label class="vi-row vi-buy"><input type="checkbox" data-upd="${k}" ${x.upd?"checked":""}><span>${esc(t("vNewBuy",vMoney(nb),unitL(x.it.unit)))}${cur?` <small class="${ch!=null&&Math.abs(ch)>50?"warn":""}">${esc(t("vNowBuy",vMoney(cur),(ch>0?"+":"")+fmtN(Math.round(ch*10)/10)))}</small>`:""}</span></label>${ch!=null&&Math.abs(ch)>50?`<small class="warn">${esc(t("vBigChange"))}</small>`:""}`
+             :`<small class="note">${esc(x.uc==null?t("vNoRate"):t("vNeedF"))}</small>`}`}
+        </div>`; }).join("")}
+      <div class="vi-foot"><button type="button" class="btn primary" id="vi-save" ${nM?"":"disabled"}>${esc(nU?t("vSaveUpd",nM,nU):t("vSaveOnly",nM))}</button></div>`;
+    bindRows(); };
+  const bindRows=()=>{ body.querySelectorAll("[data-change]").forEach(b=>b.onclick=()=>{ st[+b.dataset.change].pick=true; draw(); const i=body.querySelector(`[data-q="${b.dataset.change}"]`); if(i) i.focus(); });
+    body.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{ st[+b.dataset.cancel].pick=false; draw(); });
+    body.querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{ const x=st[+b.dataset.skip]; x.skip=true; x.pick=false; draw(); });
+    body.querySelectorAll("[data-unskip]").forEach(b=>b.onclick=()=>{ const x=st[+b.dataset.unskip]; x.skip=false; x.pick=!x.it; draw(); });
+    body.querySelectorAll("[data-upd]").forEach(c=>c.onchange=()=>{ st[+c.dataset.upd].upd=c.checked; draw(); });
+    body.querySelectorAll("[data-f]").forEach(i=>i.onchange=()=>{ const x=st[+i.dataset.f], v=toNum(i.value); x.f=v>0?v:null; x.upd=defUpd(x); draw(); });
+    body.querySelectorAll("[data-q]").forEach(i=>{ const k=+i.dataset.q, res=body.querySelector(`[data-res="${k}"]`);
+      const show=()=>{ const q=i.value.trim(); const list=(q?runSearch(q).res.map(o=>o.e.it):[]).slice(0,5);
+        res.innerHTML=list.map(it=>`<button type="button" class="vi-opt" data-pick="${esc(it.id)}"><b>${esc(itemTitle(it))}</b><small>${esc(unitL(it.unit))}${hideBuy()?"":` · ${esc(t("buy"))} ${rs(it.buy)}`}</small></button>`).join("")||(q?`<small class="note">${esc(t("noMatch",q))}</small>`:"");
+        res.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{ const x=st[k]; x.it=S.byId.get(b.dataset.pick); x.auto=false; x.pick=false; x.skip=false; x.f=vGuessF(x.it,x.l.un); x.upd=defUpd(x); draw(); }); };
+      i.addEventListener("input",show); if(!i.value) i.value=st[k].l.d?String(st[k].l.d).split(/\s+/).slice(0,2).join(" "):""; show(); });
+    const sv=$("#vi-save"); if(sv) sv.onclick=async()=>{ if(navigator.onLine===false){ toast(t("vNeedNet")); return; }
+      const rows=st.map(x=>x.skip?{d:x.l.d,skip:1}:x.it&&buyOf(x)!=null?{d:x.l.d,itemId:x.it.id,f:x.f,buy:buyOf(x),upd:!!x.upd,q:x.l.q,un:x.l.un,r:x.l.r}:null).filter(Boolean);
+      btnBusy(sv,true); try{ const r=await apiPost({action:"vApply",entryId:eid,rows}); vMerge(r); vRebuild(); VD.ex[eid]=null;
+        (r.updated||[]).forEach(id=>{ const it=S.byId.get(id), row=rows.find(z=>z.itemId===id); if(it&&row){ it.buy=row.buy; it.updatedAt=Date.now(); } }); if((r.updated||[]).length){ saveCache(); renderList(); }
+        toast(t("vApplied",r.matched||0,(r.updated||[]).length)); VD.buys={}; vEntry(vendorId,eid); }
+      catch(err){ btnBusy(sv,false); toast(errMsg(err)); } }; };
+  draw(); }
+/** Item screen: where and at what price this item was last bought (from matched vendor bills). */
+async function itemBuysInto(id,el){ if(!el) return; VD.buys=VD.buys||{}; try{ const r=VD.buys[id]||(VD.buys[id]=await apiPost0({action:"itemBuys",id})); if(!r.buys||!r.buys.length){ el.remove(); return; }
+  const it=S.byId.get(id); el.innerHTML=`<h4>${esc(t("vBoughtT"))}</h4>`+r.buys.map(b=>`<div class="vkv"><span>${esc(vDate(b.date))} · ${esc(b.vendor||"")}<small>${b.qty!=null?`${fmtN(b.qty)} ${esc(b.unit)} × ${vMoney(b.rate)}`:""}${b.f&&b.f!==1?` · ${esc(t("vPerF",fmtN(b.f),b.unit,unitL(it?it.unit:"")))}`:""}</small></span><b class="num">${vMoney(b.buy)}<small>/${esc(unitL(it?it.unit:""))}</small></b></div>`).join(""); el.hidden=false; }
+  catch{ el.remove(); } }
 /* ---- share: statement PDF / vendor link / WhatsApp ---- */
 function vLinkSet(id,r){ const sv=VDB.srv.vendors.find(v=>v.id===id); if(sv){ sv.token=r.token; sv.linkOn=r.linkOn; vdbSave(); } vRebuild(); }
 function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok); }

@@ -408,10 +408,17 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
     - The vendor's link shows "✓ Calculation checked" or "⚠ Calculation issue" with the lines; marked-OK, unreadable and error checks are not shown there.
   - Errors: `ai_limit` (free quota) and others are stored as `st:"error"` and shown as "Tap Check again"; `ai_off` is ignored.
 - Not done yet: purchase bills updating stock or item buy prices; vendor "✓ balance confirmed" button.
-- **Parked as `#Bill` (Mayank, 8 Oct 2026), pick up when he says #Bill:**
-  1. Show the lines Gemini read on a vendor bill (name, qty, rate, amount; stored as `ex.lines` on the entry) in the bill form and the bill's Bill check box, with the line behind an issue highlighted. Small change; explains gaps like "lines add up to ₹32,514, bill says ₹32,000" (vendor discount vs misread).
-  2. Match lines to price-list items (name/aliases fuzzy match) and offer "update buy price?" per item, plus a purchase history per item (last rate, vendor, date).
-  3. Stock tracking: deliberately not now — loose / 250 g / unbilled sales would make stock drift.
+- **#Bill: bill lines → items, buy prices, purchase history** (built 8 Oct 2026, `SCRIPT_VERSION` 26 / `NEED_SV` 26). Stock tracking is deliberately not done (loose / 250 g / unbilled sales would make it drift).
+  - **Lines read:** the bill form's reading panel has "See the N lines read" (`vLinesHTML`, open by default when there are issues): each line (qty × rate, per, discount, unclear) with the line behind a `line` issue outlined red and "should be ₹X", then items total, discount, charges, taxes, round off and bill total (sum/total issues in red).
+  - **Saved bill → "Items on this bill (N)"** (`#ve-items` under the Bill check box; manager+; N = `lines` count sent by `vEntryOut_`). Opens `vItems()` (inner screen, `vi-back`). The reading comes from `vEx {id}` (cached in `VD.ex`).
+    - Each line is matched to an item: first the vendor's remembered match (`Vendors.map`, key = `vKeyD(desc)`), else `vMatchItem()` (≥ 75% of the item's name or alias words found in the line, every number in the item name must be in the line, "1kg" = "1 kg" via `vTok`; needs a clear winner). Shown as "→ Item  GUESSED · Change". Change = search box (`runSearch`) + "Not in my price list" (skip, remembered too).
+    - Units: "1 {your unit} = [f] {bill unit}" appears when units differ; `vGuessF` gives 1 for the same unit (pcs/nos/pc alike via `unitCanon`) or the item's pack count when the bill unit is the item's pack unit; otherwise you type it once and it's remembered per vendor + line.
+    - Buy price (before GST, user's choice) = `vUnitCost(line)` × f. `vUnitCost` = rate ÷ per (also detects an unwritten per 10/100/1000/dozen from the amount), minus line discount; or amount ÷ qty when no rate. Bill-level discount and freight are not spread onto items.
+    - "Update buy price to ₹X / unit · now ₹Y · +Z%" ticked by default when the change is 0.5–50%; over 50% is unticked with a "check units" warning.
+    - Save → `vApply {entryId, rows:[{d,itemId,f,buy,upd,q,un,r} | {d,skip:1}]}`: replaces that bill's rows in the new **Purchases** tab (`entryId | vendorId | itemId | date | desc | qty | unit | rate | f | buy | at | by`, per mode via `tab_`), saves the vendor `map`, updates ticked items' `buy` (+ updatedAt/By, bumps rev so every phone reloads prices) and stores `applied {at,by,n,u}` on the ledger entry (shown as "✓ 3 matched · 3 buy prices updated").
+  - **Item screen → "Bought"** (manager+, buy prices visible): `itemBuys {id}` → last 8 purchases: date · vendor · qty × rate · "50 Pcs = 1 packet" · buy per your unit. Cached per session in `VD.buys` (cleared after a save).
+  - New sheet columns: `Vendors.map` (JSON), `VendorLedger.applied` (JSON). New tab: `Purchases` / `Test Purchases`.
+  - Tested with the Mahaveer invoice lines (aluminium containers by pcs vs a packet item, rolls in NOS, a 72 m roll not in the list).
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 

@@ -1278,6 +1278,9 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .vs-url{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:6px 6px 6px 12px}
 .vs-url>span{flex:1;min-width:0;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vs-url button{flex:none;display:flex;align-items:center;gap:6px;border:0;background:var(--surface);color:var(--fg);border-radius:10px;padding:0 12px;height:38px;font:700 14px var(--f-body);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* Bill page qty and rate boxes: no outline, border or ring in any state (normal, focused, quick-strip open). The filled background shows they're tappable. */
+.bill-line .step input,.bill-line .rate input,.bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input:focus-visible,.bill-line .rate input:focus-visible,.bill-line .step input.qp-on{outline:0!important;border:0!important;box-shadow:none!important}
+.bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input.qp-on{background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -1811,15 +1814,15 @@ const inrGroup = d => d.length<=3 ? d : d.slice(0,-3).replace(/\B(?=(\d{2})+(?!\
 function moneyText(v, neg, dec){ dec=dec||2; let x=devDigits(v==null?"":v).replace(/[^\d.\-]/g,""); const minus=neg&&x.startsWith("-"); x=x.replace(/-/g,"");
   const dot=x.indexOf("."); let i=dot<0?x:x.slice(0,dot), f=dot<0?null:x.slice(dot+1).replace(/\./g,"").slice(0,dec);
   i=i.replace(/^0+(?=\d)/,""); if(i===""&&f!==null) i="0"; return (minus?"-":"")+inrGroup(i)+(f!==null?"."+f:""); }
-function moneySet(el, v){ if(el) el.value = v==null||v==="" ? "" : moneyText(typeof v==="number"? String(Math.round(v*1000)/1000) : v, el.dataset.neg!=null, +el.dataset.dec||2); }
+function moneySet(el, v){ if(el) el.value = v==null||v==="" ? "" : moneyText(typeof v==="number"? String(Math.round(v*1000)/1000) : v, el.dataset.neg!=null, +el.dataset.dp||2); }
 /* Show a stored price with commas in a box; leaves text that isn't a number alone (so a bad pasted value still shows as typed). */
 const moneyVal = (v, dec) => v==null||v==="" ? "" : isNaN(toNum(v)) ? String(v) : moneyText(String(v), true, dec||2);
 document.addEventListener("input", e=>{ const el=e.target; if(!el.classList||!el.classList.contains("money")) return;
-  const pos=el.selectionStart==null?el.value.length:el.selectionStart, keep=el.value.slice(0,pos).replace(/[^\d.\-०-९]/g,"").length, nv=moneyText(el.value, el.dataset.neg!=null, +el.dataset.dec||2);
+  const pos=el.selectionStart==null?el.value.length:el.selectionStart, keep=el.value.slice(0,pos).replace(/[^\d.\-०-९]/g,"").length, nv=moneyText(el.value, el.dataset.neg!=null, +el.dataset.dp||2);
   if(el.dataset.rate!=null) el.style.cssText=rateW(nv);
   if(nv===el.value) return; el.value=nv; let n=0, c=0; while(c<nv.length && n<keep){ if(/[\d.\-]/.test(nv[c])) n++; c++; } try{ el.setSelectionRange(c,c); }catch{} }, true);
 /* Bill rate box grows for long amounts (1,12,500) instead of hiding the first digits. */
-const rateW = v => { const n=String(v||"").length; return n>6 ? `width:calc(${n}ch + 22px);flex-basis:calc(${n}ch + 22px);max-width:118px` : ""; };
+const rateW = v => { const n=String(v||"").length; return n>5 ? `width:calc(${n}ch + 20px);flex-basis:calc(${n}ch + 20px);max-width:118px` : ""; };
 const toNum = v => { if (v==null) return NaN; const s=devDigits(v).replace(/[₹,\s]/g,""); if(s==="") return NaN; return Number(s); };
 
 /* ---------------- Phonetic search ---------------- */
@@ -2502,7 +2505,7 @@ function renderBill(){
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
         <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:(isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`)}
-        <label class="rate">× ₹<input id="br-${i}" class="num money" data-dec="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
+        <label class="rate">× ₹<input id="br-${i}" class="num money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
     $("#bill-total").hidden=false;
@@ -3886,8 +3889,8 @@ function openEdit(id,prefill=""){
   const body=`<form class="form" id="ef" novalidate>
     <div class="field"><label for="ef-name">${esc(t("itemName"))}</label><input id="ef-name" value="${esc(it?.name||prefill)}" autocomplete="off" enterkeyhint="next"></div>
     <div class="two">
-      <div class="field"><label for="ef-buy">${esc(t("buyRate"))}</label><input id="ef-buy" class="num money" data-dec="3" inputmode="decimal" enterkeyhint="next" value="${it?esc(moneyVal(it.buy,3)):""}"></div>
-      <div class="field"><label for="ef-sell">${esc(t("sellRate"))}</label><input id="ef-sell" class="num money" data-dec="3" inputmode="decimal" enterkeyhint="done" value="${it?esc(moneyVal(it.sell,3)):""}"></div>
+      <div class="field"><label for="ef-buy">${esc(t("buyRate"))}</label><input id="ef-buy" class="num money" data-dp="3" inputmode="decimal" enterkeyhint="next" value="${it?esc(moneyVal(it.buy,3)):""}"></div>
+      <div class="field"><label for="ef-sell">${esc(t("sellRate"))}</label><input id="ef-sell" class="num money" data-dp="3" inputmode="decimal" enterkeyhint="done" value="${it?esc(moneyVal(it.sell,3)):""}"></div>
     </div>
     <div class="field"><label>${esc(t("unit"))}</label>${unitBtnHTML("ef-unit",it?.unit||S.cfg.defaultUnit)}</div>
     <div class="two">
@@ -3899,7 +3902,7 @@ function openEdit(id,prefill=""){
         <div class="field"><label>${esc(t("packUnit"))}</label>${unitBtnHTML("ef-aunit",(it&&it.altUnit)||"packet")}</div>
         <div class="two">
           <div class="field"><label for="ef-aqty" id="ef-aqty-l">${esc(t("perMain",unitL(it?.unit||S.cfg.defaultUnit)))}</label><input id="ef-aqty" class="num" inputmode="decimal" value="${hasAlt(it)?esc(it.altQty):""}" placeholder="5"></div>
-          <div class="field"><label for="ef-asell">${esc(t("packPrice"))}</label><input id="ef-asell" class="num money" data-dec="3" inputmode="decimal" value="${it&&it.altSell!=null&&hasAlt(it)?esc(moneyVal(it.altSell,3)):""}" placeholder="${esc(t("packAuto"))}"></div>
+          <div class="field"><label for="ef-asell">${esc(t("packPrice"))}</label><input id="ef-asell" class="num money" data-dp="3" inputmode="decimal" value="${it&&it.altSell!=null&&hasAlt(it)?esc(moneyVal(it.altSell,3)):""}" placeholder="${esc(t("packAuto"))}"></div>
         </div>
         <p class="note" id="ef-ahint" style="margin:0"></p>
       </div>
@@ -4035,8 +4038,8 @@ function openBulkAdd(){
   const tagFor=r=>{ const dup=r.name.trim()?findDup(r.name):null; const bad=r.name.trim()&&(isNaN(toNum(r.sell))||(r.buy!==""&&isNaN(toNum(r.buy)))); return bad?`<span class="tag bad">${esc(t("badRow"))}</span>`:dup?`<span class="tag">${esc(t("willUpdate"))}</span>`:""; };
   const rowHTML=(r,i)=>`<tr data-r="${i}"><td class="c-name"><input id="ba-n-${i}" data-f="name" value="${esc(r.name)}" autocomplete="off" enterkeyhint="next">${tagFor(r)}</td>
       <td class="c-unit">${unitBtnHTML("ba-u-"+i,r.unit,'data-ur="'+i+'"')}</td>
-      <td class="c-num"><input id="ba-b-${i}" data-f="buy" class="money" data-dec="3" inputmode="decimal" value="${esc(moneyVal(r.buy,3))}"></td>
-      <td class="c-num"><input id="ba-s-${i}" data-f="sell" class="money" data-dec="3" inputmode="decimal" value="${esc(moneyVal(r.sell,3))}"></td>
+      <td class="c-num"><input id="ba-b-${i}" data-f="buy" class="money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(r.buy,3))}"></td>
+      <td class="c-num"><input id="ba-s-${i}" data-f="sell" class="money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(r.sell,3))}"></td>
       <td class="c-name"><input id="ba-h-${i}" data-f="hi" value="${esc(r.hi)}" lang="hi"></td>
       <td class="c-unit"><input id="ba-x-${i}" data-f="hsn" inputmode="numeric" value="${esc(r.hsn||"")}" placeholder="${esc(S.cfg.defaultHsn||"3923")}"></td></tr>`;
   const valid=()=>rows.filter(r=>r.name.trim() && !isNaN(toNum(r.sell)) && (r.buy===""||!isNaN(toNum(r.buy))));
@@ -4086,7 +4089,7 @@ function openBulkEdit(){
     <p class="note" id="be-prog"></p>`;
   openSheet(t("bulkEdit"), body, `<button class="btn ghost" id="be-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="be-save"></button>`, {full:true});
   const tb=$("#be-body");
-  const cell=(it,f)=>{ const ch=changes.get(it.id)?.[f]!==undefined; return `<input id="be-${f}-${esc(it.id)}" data-id="${esc(it.id)}" data-f="${f}" inputmode="decimal" class="${ch?"changed":""}${f==="buy"||f==="sell"?" money\" data-dec=\"3":""}" value="${esc(f==="buy"||f==="sell"?moneyVal(val(it,f),3):val(it,f))}">`; };
+  const cell=(it,f)=>{ const ch=changes.get(it.id)?.[f]!==undefined; return `<input id="be-${f}-${esc(it.id)}" data-id="${esc(it.id)}" data-f="${f}" inputmode="decimal" class="${ch?"changed":""}${f==="buy"||f==="sell"?" money\" data-dp=\"3":""}" value="${esc(f==="buy"||f==="sell"?moneyVal(val(it,f),3):val(it,f))}">`; };
   const draw=()=>{ const v=visible(); tb.innerHTML=v.slice(0,300).map(it=>`<tr><td><input type="checkbox" data-sel="${esc(it.id)}" ${sel.has(it.id)?"checked":""} aria-label="Select"></td><td class="c-name">${esc(it.name)}</td><td class="c-unit">${unitBtnHTML("be-unit-"+it.id,val(it,"unit"),`data-uid="${esc(it.id)}"`).replace('class="unitbtn"',`class="unitbtn${changes.get(it.id)?.unit!==undefined?" changed":""}"`)}</td><td class="c-num">${cell(it,"buy")}</td><td class="c-num">${cell(it,"sell")}</td><td class="c-unit">${cell(it,"hsn")}</td><td class="c-num">${cell(it,"gst")}</td></tr>`).join(""); info(); };
   const info=()=>{ $("#be-sel").textContent = sel.size? t("selected",sel.size) : t("allShown"); const n=changes.size; const b=$("#be-save"); b.textContent=n?t("saveN",n):t("unchanged"); b.disabled=!n; };
   const setChange=(id,f,v)=>{ const it=S.byId.get(id); if(!it) return; const o=changes.get(id)||{}; const cur=f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]; if(String(v)===String(cur)) delete o[f]; else o[f]=v; if(Object.keys(o).length) changes.set(id,o); else changes.delete(id); };

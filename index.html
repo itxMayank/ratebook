@@ -4795,13 +4795,17 @@ async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite |
   catch(e){ clearTimeout(vqTimer); vqTimer=setTimeout(vqFlush,20000); }
   finally{ vqBusy=false; vNoteUpd(); } }
 window.addEventListener("online",()=>setTimeout(vqFlush,800));
-let vSyncing=null, vSyncAt=0;
+let vSyncing=null, vSyncAt=0; const VSCHEMA=2;
 /** Ask the sheet for changes (from other phones). Shows the local copy meanwhile. At most every 8 s unless forced. */
 function vSync(force){ if(vSyncing) return vSyncing; if(!force && Date.now()-vSyncAt<8000 && vSynced()) return Promise.resolve(); vSyncAt=Date.now(); vSyncing=(async()=>{ await vdbInit(); if(!S.canWrite||!can("manager")) return;
     if(vqGet().length && !force){ vqFlush(); return; }
-    try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.vrev||""}); if(!r.same){ VDB.srv={vrev:r.vrev,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
+    /* A copy saved by an older app/script lacks newer fields (e.g. the line count behind "Items on this bill"), and "nothing
+       changed" would keep it forever: send no version until the copy is in the current shape (VSCHEMA). */
+    try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.schema===VSCHEMA?(VDB.srv.vrev||""):""}); if(!r.same){ VDB.srv={vrev:r.vrev,schema:VSCHEMA,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
     catch(e){ if(e&&e.code==="bad_action"){ /* old script: fall back to the per-vendor calls */ } } })().finally(()=>{ vSyncing=null; }); return vSyncing; }
-function vRefreshOpen(){ if($("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vRenderVendor(VD.cur,true); vNoteUpd(); }
+function vRefreshOpen(){ if($("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vRenderVendor(VD.cur,true);
+  else if($("#ve-back") && VD.ent && VD.det[VD.ent.v]){ const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; vEntry(VD.ent.v,VD.ent.e); const sc2=$("#sheet-body"); if(sc2) sc2.scrollTop=st; }   /* a bill's screen: "Checking…" turns into the result */
+  vNoteUpd(); }
 /** The small "Saving… / waiting to send / photo problem" line. */
 function vNoteUpd(){ const el=$("#vq-note"); if(!el) return; const n=vqGet().filter(j=>!VD.cur||!$("#vd-page")||j.k==="vendor"&&j.v.id===VD.cur||(j.e&&j.e.vendorId===VD.cur)||j.vendorId===VD.cur||(j.k==="rm")).length;
   if(!n){ el.hidden=true; return; } el.hidden=false; el.classList.toggle("err",!!vqErr);
@@ -5169,7 +5173,7 @@ function vAlloc(amount,ticks,bills,extraMode){ const out={}; let left=Math.round
   if(left>0 && others.length){ if(extraMode==="old") { others.forEach(put); return {alloc:out, extra:left, ask:true, extraRaw}; } return {alloc:out, extra:left, ask:true, extraRaw}; }
   return {alloc:out, extra:left, ask:false}; }
 /* ---- one entry ---- */
-function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=D.calc;
+function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=D.calc; VD.ent={v:vendorId,e:eid};
   const isOpen=eid.startsWith("open:"); const e=isOpen?null:D.entries.find(x=>x.id===eid); if(!isOpen && !e){ openVendor(vendorId); return; }
   const bill=c.bills.find(b=>b.id===eid); const name=isOpen?t("vOpening"):vEntryTitle(e);
   const payBy=bill?bill.by.map(x=>{ const p=D.entries.find(y=>y.id===x.id); return p?`<div class="vkv"><span>${esc(vDate(p.date))} · ${esc(p.type==="pay"?(t("vPaid")+(p.mode?" · "+t("vm_"+p.mode.toLowerCase()):"")):t("vReturn"))}${p.ref?` · ${esc(p.ref)}`:""}</span><b class="num">${vMoney(x.a)}</b></div>`:""; }).join(""):"";

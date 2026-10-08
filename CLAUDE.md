@@ -417,7 +417,8 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
     - "Update buy price to ₹X / unit · now ₹Y · +Z%" ticked by default when the change is 0.5–50%; over 50% is unticked with a "check units" warning.
     - Save → `vApply {entryId, rows:[{d,itemId,f,buy,upd,q,un,r} | {d,skip:1}]}`: replaces that bill's rows in the new **Purchases** tab (`entryId | vendorId | itemId | date | desc | qty | unit | rate | f | buy | at | by`, per mode via `tab_`), saves the vendor `map`, updates ticked items' `buy` (+ updatedAt/By, bumps rev so every phone reloads prices) and stores `applied {at,by,n,u}` on the ledger entry (shown as "✓ 3 matched · 3 buy prices updated").
   - **Item screen → "Bought"** (manager+, buy prices visible): `itemBuys {id}` → last 8 purchases: date · vendor · qty × rate · "50 Pcs = 1 packet" · buy per your unit. Cached per session in `VD.buys` (cleared after a save).
-  - New sheet columns: `Vendors.map` (JSON), `VendorLedger.applied` (JSON). New tab: `Purchases` / `Test Purchases`.
+  - New sheet columns: `Vendors.map` (JSON), `VendorLedger.applied` (JSON).
+  - Fixes (8 Oct 2026): a bill's own screen now redraws when its check finishes (`vRefreshOpen` → `vEntry` via `VD.ent`), so "Checking…" turns into the result without going back. The phone's vendor copy carries `schema` (`VSCHEMA` = 2); an older copy is refetched in full instead of getting `{same:true}` forever, which had hidden "Items on this bill" (old copies had no `lines` count). New tab: `Purchases` / `Test Purchases`.
   - Tested with the Mahaveer invoice lines (aluminium containers by pcs vs a packet item, rolls in NOS, a 72 m roll not in the list).
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)

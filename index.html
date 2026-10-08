@@ -1806,6 +1806,15 @@ function stepQty(q,u,up){ q=+q||0; const r=x=>Math.round(x*1000)/1000;
   if(!fracSub(u)) return Math.max(0,r(q+(up?1:-1)));
   if(up) return q<1 ? r(Math.floor(q*4+1e-9)/4+0.25) : r(q+1);
   return q>1 ? r(q-1) : Math.max(0,r(Math.ceil(q*4-1e-9)/4-0.25)); }
+/* Money boxes (class "money"): show Indian commas while typing (1,25,000.50). toNum() strips them again. */
+const inrGroup = d => d.length<=3 ? d : d.slice(0,-3).replace(/\B(?=(\d{2})+(?!\d))/g,",")+","+d.slice(-3);
+function moneyText(v, neg){ let x=devDigits(v==null?"":v).replace(/[^\d.\-]/g,""); const minus=neg&&x.startsWith("-"); x=x.replace(/-/g,"");
+  const dot=x.indexOf("."); let i=dot<0?x:x.slice(0,dot), f=dot<0?null:x.slice(dot+1).replace(/\./g,"").slice(0,2);
+  i=i.replace(/^0+(?=\d)/,""); if(i===""&&f!==null) i="0"; return (minus?"-":"")+inrGroup(i)+(f!==null?"."+f:""); }
+function moneySet(el, v){ if(el) el.value = v==null||v==="" ? "" : moneyText(typeof v==="number"? String(Math.round(v*100)/100) : v, el.dataset.neg!=null); }
+document.addEventListener("input", e=>{ const el=e.target; if(!el.classList||!el.classList.contains("money")) return;
+  const pos=el.selectionStart==null?el.value.length:el.selectionStart, keep=el.value.slice(0,pos).replace(/[^\d.\-०-९]/g,"").length, nv=moneyText(el.value, el.dataset.neg!=null);
+  if(nv===el.value) return; el.value=nv; let n=0, c=0; while(c<nv.length && n<keep){ if(/[\d.\-]/.test(nv[c])) n++; c++; } try{ el.setSelectionRange(c,c); }catch{} }, true);
 const toNum = v => { if (v==null) return NaN; const s=devDigits(v).replace(/[₹,\s]/g,""); if(s==="") return NaN; return Number(s); };
 
 /* ---------------- Phonetic search ---------------- */
@@ -4895,7 +4904,7 @@ function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"
     <div class="two"><div class="field"><label for="vf-mob">${esc(t("mobL"))}</label><input id="vf-mob" inputmode="tel" value="${esc(v.mobile)}" maxlength="15" autocomplete="off"></div>
       <div class="field"><label for="vf-cd">${esc(t("vCreditL"))}</label><input id="vf-cd" class="num" inputmode="numeric" value="${esc(v.creditDays||"")}" placeholder="30"></div></div>
     <div class="field"><label for="vf-gst">${esc(t("vGstinL"))}</label><input id="vf-gst" value="${esc(v.gstin)}" maxlength="15" style="text-transform:uppercase" autocomplete="off"></div>
-    <div class="two"><div class="field"><label for="vf-op">${esc(t("vOpeningL"))}</label><input id="vf-op" class="num" inputmode="decimal" value="${esc(v.opening||"")}" placeholder="0"></div>
+    <div class="two"><div class="field"><label for="vf-op">${esc(t("vOpeningL"))}</label><input id="vf-op" class="num money" data-neg inputmode="decimal" value="${esc(v.opening?moneyText(String(v.opening),true):"")}" placeholder="0"></div>
       <div class="field"><label for="vf-opd">${esc(t("vOpeningDate"))}</label><input id="vf-opd" type="date" value="${esc(v.openingDate||vToday())}"></div></div>
     <p class="note" style="margin:0">${esc(t("vOpeningD"))}</p>
     <div class="field"><label for="vf-addr">${esc(t("vAddress"))}</label><input id="vf-addr" value="${esc(v.address)}" maxlength="200" autocomplete="off"></div>
@@ -4934,13 +4943,13 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
         <div class="vread" id="vff-read" hidden></div>
         <label class="switch sm" id="vff-clrw" hidden><span>${esc(t("vClearText"))}</span><input type="checkbox" id="vff-clr"></label>
         <input type="file" id="vff-cam" class="vh" accept="image/*" capture="environment" tabindex="-1"><input type="file" id="vff-gal" class="vh" accept="image/*,application/pdf" multiple tabindex="-1"></div>`:""}
-    <div class="field"><label for="vff-amt">${esc(t(type==="bill"?"vBillAmt":type==="pay"?"vPayAmt":"vRetAmt"))}</label><input id="vff-amt" class="num big" inputmode="decimal" value="${e.amount!=null?esc(e.amount):""}" placeholder="₹ 0" autocomplete="off"></div>
+    <div class="field"><label for="vff-amt">${esc(t(type==="bill"?"vBillAmt":type==="pay"?"vPayAmt":"vRetAmt"))}</label><input id="vff-amt" class="num big money" inputmode="decimal" value="${e.amount!=null?esc(moneyText(String(e.amount))):""}" placeholder="₹ 0" autocomplete="off"></div>
     ${type==="pay"?`<div class="field"><label>${esc(t("vHowPaid"))}</label><div class="seg" id="vff-mode">${VMODES.map(m=>`<button type="button" data-mode="${m}" aria-pressed="${(e.mode||"Cash")===m}">${esc(t("vm_"+m.toLowerCase()))}</button>`).join("")}</div></div>
       <div class="field" id="vff-refw"><label for="vff-ref" id="vff-refl"></label><input id="vff-ref" value="${esc(e.ref||"")}" maxlength="60" autocomplete="off"></div>`:""}
     ${type!=="bill"?`<div class="field"><label>${esc(t("vWhichBills"))}</label><div class="vbills" id="vff-bills"></div><p class="vprev" id="vff-prev"></p><div id="vff-extra"></div></div>`:""}
     <div class="two">${type==="bill"?`<div class="field"><label for="vff-no">${esc(t("vBillNo"))}</label><input id="vff-no" value="${esc(e.billNo||"")}" maxlength="40" autocomplete="off"></div>`:""}
       <div class="field"><label for="vff-date">${esc(t("vDateL"))}</label><input id="vff-date" type="date" value="${esc(e.date||vToday())}" max="${vToday()}"></div></div>
-    ${type==="bill"?`<div class="field"><label for="vff-gst">${esc(t("vGstPart"))}</label><input id="vff-gst" class="num" inputmode="decimal" value="${e.gst!=null?esc(e.gst):""}" placeholder="${esc(t("optional"))}"></div>`:""}
+    ${type==="bill"?`<div class="field"><label for="vff-gst">${esc(t("vGstPart"))}</label><input id="vff-gst" class="num money" inputmode="decimal" value="${e.gst!=null&&e.gst!==""?esc(moneyText(String(e.gst))):""}" placeholder="${esc(t("optional"))}"></div>`:""}
     <div id="vff-adv"></div>
     <div class="field"><label for="vff-nv">${esc(t("vNoteV"))}</label><textarea id="vff-nv" rows="2" maxlength="500" placeholder="${esc(t("vNoteVPh"))}">${esc(e.noteV||"")}</textarea></div>
     <div class="field"><label for="vff-np">🔒 ${esc(t("vNoteP"))}</label><textarea id="vff-np" rows="2" maxlength="500" placeholder="${esc(t("vNotePPh"))}">${esc(e.noteP||"")}</textarea></div>
@@ -4972,7 +4981,7 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
     const u=$("#vff-undofill"); if(u) u.onclick=undoFill; $("#vff-reread").onclick=()=>{ ex=null; readNow(); }; };
   const orig={};   // values before the bill reading filled them, so "Undo" puts them back
   const undoFill=()=>{ filled.forEach(id=>{ const el=$(id); if(el){ el.value=orig[id]!=null?orig[id]:""; el.classList.remove("autofill"); touched.add(id); } }); filled.clear(); toast(t("vUndoneFill")); panel(); };
-  const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; if(!filled.has(id)) orig[id]=el.value; el.value=String(val); el.classList.add("autofill"); filled.add(id); };
+  const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; if(!filled.has(id)) orig[id]=el.value; if(el.classList.contains("money")) moneySet(el,val); else el.value=String(val); el.classList.add("autofill"); filled.add(id); };
     set("#vff-amt",ex.total); set("#vff-no",ex.billNo); if(ex.date && ex.date<=vToday()) set("#vff-date",ex.date); const tx=(ex.taxes||[]).reduce((a,x)=>a+(+x.a||0),0); if(tx>0) set("#vff-gst",Math.round(tx*100)/100); };
   const readNow=async()=>{ const my=++readSeq; const ready=photos.filter(p=>p.f||p.proc); if(!ready.length||photos.some(p=>p.file&&!p.proc)){ if(!photos.length){ ex=null; readState=""; panel(); } return; }
     if(!S.cfg.aiOn || navigator.onLine===false){ readState=S.cfg.aiOn?"later":""; panel(); return; }
@@ -5017,7 +5026,7 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
       if(al.ask){ ex.innerHTML=`<div class="vextra"><p>${esc(t("vExtraQ",vMoney(al.extraRaw)))}</p><label><input type="radio" name="vx" value="adv" ${extraMode==="adv"?"checked":""}> ${esc(t("vExtraAdv"))}</label><label><input type="radio" name="vx" value="old" ${extraMode==="old"?"checked":""}> ${esc(t("vExtraOld"))}</label></div>`;
         ex.querySelectorAll("input").forEach(r=>r.onchange=()=>{ extraMode=r.value; preview(); }); } else ex.innerHTML=""; };
     $("#vff-bills").onchange=ev=>{ const id=ev.target.dataset.bt; if(!id) return; if(ev.target.checked){ if(!ticks.includes(id)) ticks.push(id); } else ticks=ticks.filter(x=>x!==id);
-      if(!amtI.value.trim()||amtAuto){ const ob=openBills(); const sum=ticks.reduce((s,x)=>s+((ob.find(b=>b.id===x)||{}).due||0),0); amtI.value=sum?String(Math.round(sum*100)/100):""; amtAuto=!!sum; }
+      if(!amtI.value.trim()||amtAuto){ const ob=openBills(); const sum=ticks.reduce((s,x)=>s+((ob.find(b=>b.id===x)||{}).due||0),0); moneySet(amtI, sum||""); amtAuto=!!sum; }
       drawBills(); };
     amtI.addEventListener("input",()=>{ amtAuto=false; preview(); });
     drawBills(); vForm._ticks=()=>ticks; vForm._alloc=()=>vAlloc(toNum(amtI.value),ticks,openBills(),extraMode);
@@ -5256,7 +5265,7 @@ function openRecordPay(c){
   let note="";
   const body=`<div class="form">
     <div class="dues-sum"><b class="num">${rs(due)}</b><span>${esc(c.name||"")}${c.mobile?` · ${esc(c.mobile)}`:""}${c.bill?` · ${esc(t("billNoL"))} ${esc(c.bill.n)}`:""}</span></div>
-    <div class="field"><label for="rp-amt">${esc(t("payAmt"))}</label><input id="rp-amt" class="num" inputmode="decimal" value="${esc(String(due))}" style="font-size:22px;font-weight:700"></div>
+    <div class="field"><label for="rp-amt">${esc(t("payAmt"))}</label><input id="rp-amt" class="num money" inputmode="decimal" value="${esc(moneyText(String(due)))}" style="font-size:22px;font-weight:700"></div>
     <div class="chips" id="rp-quick"><button type="button" data-q="${due}">${esc(t("fullAmt",rs(due)))}</button>${due>=2?`<button type="button" data-q="${r2(due/2)}">½ · ${rs(r2(due/2))}</button>`:""}</div>
     <div class="field"><label>${esc(t("payNote"))}</label><div class="chips" id="rp-note"><button type="button" data-n="Cash">Cash</button><button type="button" data-n="UPI">UPI</button><button type="button" data-n="Bank">Bank</button><button type="button" data-n="Cheque">Cheque</button></div></div>
     <div class="preview" id="rp-prev"></div>
@@ -5269,7 +5278,7 @@ function openRecordPay(c){
     for(const b of bills){ if(left<=0) break; const take=Math.min(+b.due||0,left); left=r2(left-take); const rest=r2((+b.due||0)-take); out.push(rest>0?t("leavesBill",b.n,rs(rest)):t("clearsBill",b.n)); }
     $("#rp-prev").innerHTML=`<span>${esc(t("payPreview"))}</span>`+out.map(x=>`<span>• ${esc(x)}</span>`).join("")+(left>0?`<span style="color:var(--gold)">${esc(t("payMore",rs(left)))}</span>`:""); };
   $("#rp-amt").addEventListener("input",prev); prev();
-  $("#rp-quick").onclick=e=>{ const b=e.target.closest("[data-q]"); if(b){ $("#rp-amt").value=b.dataset.q; prev(); } };
+  $("#rp-quick").onclick=e=>{ const b=e.target.closest("[data-q]"); if(b){ moneySet($("#rp-amt"),b.dataset.q); prev(); } };
   $("#rp-note").onclick=e=>{ const b=e.target.closest("[data-n]"); if(!b) return; note = note===b.dataset.n ? "" : b.dataset.n; $("#rp-note").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.n===note)); };
   $("#rp-cancel").onclick=()=>{ if(c.bill) showBill(c.bill); else backToCustomer(c); };
   $("#rp-save").onclick=async()=>{ const a=toNum($("#rp-amt").value); if(isNaN(a)||a<=0) return;

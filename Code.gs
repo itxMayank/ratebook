@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 27;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 28;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1555,14 +1555,14 @@ const AI_PROMPT = 'You read Indian purchase bills / tax invoices / kacha bills /
   'taxTotal = the total tax amount if written (e.g. "Total Tax Amount" or the total of the tax summary table). tcs = TCS amount. roundOff = round off written (negative if subtracted). ' +
   'total = the grand total of THIS bill. previousBalance = old balance / previous dues written on the bill, if any. netPayable = the final amount payable if the bill adds previous balance or subtracts amount paid. date as YYYY-MM-DD. ' +
   'readable = false if this is not a bill or the amounts cannot be read reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
-function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_off');
+function aiCall_(parts, schema) { const key = aiKey_(); if (!key) throw new Error('ai_off');
   const pref = PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL');
   const models = (pref ? [pref] : []).concat(['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']).filter((m, i, a) => a.indexOf(m) === i);
   let last = '', why = '';
   const gmsg = body => { try { const e = JSON.parse(body).error || {}; return String((e.status ? e.status + ': ' : '') + (e.message || '')).slice(0, 220); } catch (x) { return String(body || '').slice(0, 160); } };
   for (const m of models) {   /* each model has its own free quota: if one is used up or not offered to this key, try the next */
     const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: AI_SCHEMA } }) });
+      payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema || AI_SCHEMA } }) });
     const code = res.getResponseCode(), body = res.getContentText();
     if (code === 400 && /API key not valid|API_KEY_INVALID/i.test(body)) throw new Error('ai_key');
     if (code === 403 && /API key|API_KEY|has not been used|is disabled|SERVICE_DISABLED|blocked/i.test(body)) throw new Error('ai_http|403|' + gmsg(body));
@@ -1582,7 +1582,14 @@ function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts
   (fileIds || []).slice(0, 6).forEach(f => { const b = DriveApp.getFileById(String(f)).getBlob(); const mime = b.getContentType();
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return; parts.push({ inline_data: { mime_type: mime, data: Utilities.base64Encode(b.getBytes()) } }); });
   if (parts.length < 2) return { readable: false, confidence: 0 };
-  return vExClean_(aiCall_(parts)); }
+  const raw = aiCall_(parts);
+  /* Totals read but no item rows (lighter models often skip them on long invoices): ask once more for the rows only. */
+  if (raw && raw.readable && !(raw.lines || []).length) {
+    try { const more = aiCall_([{ text: AI_LINES_PROMPT }].concat(parts.slice(1)), AI_LINES_SCHEMA); if (more && (more.lines || []).length) raw.lines = more.lines; } catch (e) {} }
+  return vExClean_(raw); }
+const AI_LINES_SCHEMA = { type: 'OBJECT', properties: { lines: AI_SCHEMA.properties.lines }, required: ['lines'] };
+const AI_LINES_PROMPT = 'This is a purchase bill / tax invoice, possibly over several pages. List ONLY its item rows, from every page, as lines: desc (item description), qty, unit, rate, per (only if the rate is per 10/100/1000/dozen), discPct, discAmt, amount. ' +
+  'Copy numbers exactly as written (no commas, no currency), never recompute. Skip totals, tax lines, HSN summary rows and headings. unclear = true if a number on that row is hard to read.';
 function vExClean_(x) { const n = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Math.round(Number(v) * 1000) / 1000;
   x = x || {}; const pos = v => { const k = n(v); return k != null && k > 0 ? k : null; };   /* a total of 0 means it wasn't read */
   return { model: str_(x.__model || '', 40), readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',

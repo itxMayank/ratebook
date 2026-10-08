@@ -1281,6 +1281,24 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 /* Bill page qty and rate boxes: no outline, border or ring in any state (normal, focused, quick-strip open). The filled background shows they're tappable. */
 .bill-line .step input,.bill-line .rate input,.bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input:focus-visible,.bill-line .rate input:focus-visible,.bill-line .step input.qp-on{outline:0!important;border:0!important;box-shadow:none!important}
 .bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input.qp-on{background:var(--surface-2)}
+/* Bill line controls stay on ONE row on small phones and at large text sizes. The pack switch ("packet ⇄") sits on the
+   name's second line (next to the Hindi name), so it never pushes the rate onto a second line; the stepper and × get
+   tighter when the row is narrow. */
+.bill-line .bl-sub{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.bill-line .bl-sub .unitchip{display:inline-block;white-space:nowrap;padding:2px 9px;font-size:12.5px;line-height:1.35;margin:2px 0}
+.bill-line .ctrl{container-type:inline-size}
+.bill-line .ctrl .uwrap{flex-wrap:nowrap;gap:5px}
+.bill-line .uwrap .note{white-space:nowrap;flex:none}
+@container (max-width:290px){
+  .bill-line .step button{width:30px;font-size:17px}
+  .bill-line .step input{width:40px}
+  .bill-line .x{width:32px;height:32px}
+}
+@container (max-width:250px){
+  .bill-line .step button{width:27px}
+  .bill-line .step input{width:34px}
+  .bill-line .uwrap .note{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -1561,13 +1579,13 @@ const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 Object.assign(STR.en,{notAllowed:"Your role can't do this. Ask the owner.",yourNameOpt:"Your name (only with the shop PIN)",roleOwner:"Owner",roleManager:"Manager",roleStaff:"Staff",
   codeNeedT:"Enter the shop code",codeNeedD:"Needed to see buy rates and to save bills on this phone. Ask the owner for it.",codePh:"Shop code",codeOk:"OK",codeBad:"That code didn't work.",codeSaved:"Shop code saved.",
   queueN:n=>`${n} bill${n===1?"":"s"} waiting to send`,queueSend:"Send now",queueCode:"Can't send: this phone needs the shop code.",
-  renumT:"Bill number changed",renumD:(a,b)=>`Bill ${a} had already been used on another phone, so it was saved as Bill ${b}. If you shared it on WhatsApp, open it in Past bills and send it again.`,renumOpen:"Open Past bills",
+  renumT:"Bill number changed",renumD:(a,b)=>`Bill ${a} had already been used on another phone, so it was saved as Bill ${b}. If you shared it on WhatsApp, open it in Past bills and send it again.`,renumOpen:"Open Past bills",renumToast:(a,b)=>`Saved as Bill ${b} (No. ${a} was already used on another phone)`,
   manualWarn:"may already be used",conflictItem:by=>`${by||"Someone"} changed this item just now. Showing the latest; make your change again.`,billChanged:"Someone else saved this bill after you opened it. Reopen it from Past bills to see the latest.",
   sentQ:"Did the bill go on WhatsApp?",sentQD:"Tap Yes to save it and start a new bill. Tap No to keep working on this bill.",sentYes:"Yes, it was sent",sentNo:"No, keep this bill"});
 Object.assign(STR.hi,{notAllowed:"आपकी भूमिका में यह नहीं कर सकते। मालिक से पूछें।",yourNameOpt:"आपका नाम (सिर्फ़ दुकान के PIN के साथ)",roleOwner:"मालिक",roleManager:"मैनेजर",roleStaff:"स्टाफ़",
   codeNeedT:"दुकान का कोड डालें",codeNeedD:"इस फ़ोन पर ख़रीद रेट देखने और बिल सेव करने के लिए चाहिए। मालिक से पूछें।",codePh:"दुकान का कोड",codeOk:"ठीक है",codeBad:"यह कोड नहीं चला।",codeSaved:"दुकान का कोड सेव हो गया।",
   queueN:n=>`${n} बिल भेजने बाकी`,queueSend:"अभी भेजें",queueCode:"नहीं भेज सके: इस फ़ोन को दुकान का कोड चाहिए।",
-  renumT:"बिल नंबर बदला",renumD:(a,b)=>`बिल ${a} दूसरे फ़ोन पर पहले से बन चुका था, इसलिए इसे बिल ${b} के रूप में सेव किया गया। अगर WhatsApp पर भेजा था, तो पुराने बिलों में खोलकर फिर से भेजें।`,renumOpen:"पुराने बिल खोलें",
+  renumT:"बिल नंबर बदला",renumD:(a,b)=>`बिल ${a} दूसरे फ़ोन पर पहले से बन चुका था, इसलिए इसे बिल ${b} के रूप में सेव किया गया। अगर WhatsApp पर भेजा था, तो पुराने बिलों में खोलकर फिर से भेजें।`,renumOpen:"पुराने बिल खोलें",renumToast:(a,b)=>`बिल ${b} के रूप में सेव हुआ (नं. ${a} दूसरे फ़ोन पर बन चुका था)`,
   manualWarn:"शायद पहले से इस्तेमाल हुआ",conflictItem:by=>`${by||"किसी"} ने अभी यह सामान बदला। नया दिखा रहे हैं; अपना बदलाव फिर से करें।`,billChanged:"आपके खोलने के बाद किसी और ने यह बिल सेव किया। पुराने बिलों से फिर से खोलें।",
   sentQ:"क्या बिल WhatsApp पर गया?",sentQD:"हाँ दबाएँ तो बिल सेव होगा और नया बिल शुरू होगा। नहीं दबाएँ तो यही बिल रहेगा।",sentYes:"हाँ, भेज दिया",sentNo:"नहीं, यही बिल रखें"});
 Object.assign(STR.en,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",posPick:"Customer's state (place of supply)",shopStateL:"Shop's state (for GST bills)",fyResetL:"Start GST invoice numbers from 1 every April",fyResetD:"Each financial year (April–March) starts again from 1. Numbers show without a year prefix. Normal bills keep counting.",
@@ -2501,10 +2519,10 @@ function renderBill(){
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
-      <div class="name">${esc(lineName(l))}${lineHi(l)&&lineHi(l)!==l.name?`<div class="sub" lang="hi" style="font-size:13px;margin-top:0">${esc(lineHi(l))}</div>`:""}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
+      <div class="name">${esc(lineName(l))}${(()=>{ const hi=lineHi(l)&&lineHi(l)!==l.name?`<span lang="hi">${esc(lineHi(l))}</span>`:"", chip=hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:""; return hi||chip?`<div class="sub bl-sub" style="font-size:13px;margin-top:0">${hi}${chip}</div>`:""; })()}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
-        <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:(isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`)}
+        <div class="uwrap">${hasAlt(S.byId.get(l.id))||isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`}
         <label class="rate">× ₹<input id="br-${i}" class="num money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
@@ -2736,6 +2754,7 @@ function finishBill(opts){
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const lastInv=invFromCurrent(); ls.set("rb_lastinv",lastInv);
   blcAdd(rec);
+  rec.shared=!!opts.keep; tookNo(rec.n, !!S.gst);
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
   if(opts.keep){
     rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
@@ -2807,7 +2826,10 @@ async function flushBills(){
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
       S.needCode=false;
       if(j.renumbered){ { const li=ls.get("rb_lastinv",null); if(li && String(li.no)===String(j.renumbered.from) && S.lastBill && S.lastBill.n===rec.n){ li.no=String(j.renumbered.to); ls.set("rb_lastinv",li); } }
-        if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); } showRenumbered(j.renumbered); }
+        if(S.lastBill && S.lastBill.n===rec.n){ S.lastBill.n=j.renumbered.to; ls.set("rb_lastbill",S.lastBill); }
+        tookNo(j.renumbered.to, !!rec.gst);
+        if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); }
+        if(rec.shared) showRenumbered(j.renumbered); else toast(t("renumToast",j.renumbered.from,j.renumbered.to)); }
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }
@@ -3384,6 +3406,7 @@ document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=docume
 function setTab(tab){
   if(tab!==S.tab){ S.q=""; S.qTabs={}; S.limit=40; BL.q=""; duesQ=""; }   // moving to another tab starts with an empty search
   S.tab=tab; document.body.dataset.tab=tab;
+  if(tab==="bill" && Date.now()-(S._billRevAt||0)>5000){ S._billRevAt=Date.now(); setTimeout(()=>{ try{ checkRev(); }catch{} },0); }   // pick up a number another phone just used
   if(tab!=="tools"){ S.q=S.qTabs[tab]||""; const qi=$("#q"); qi.value=S.q; qi.placeholder=t(tab==="bill"?"billSearchPh":"searchPh"); $("#q-clear").hidden=!S.q; }
   if(DESK() && tab==="bill"){ tab="items"; S.tab="items"; }
   ["items","bill","tools"].forEach(k=>{ $("#view-"+k).hidden = k==="bill" ? !(k===tab || DESK()) : k!==tab; $("#tab-"+k).setAttribute("aria-selected",k===tab); });
@@ -5368,6 +5391,11 @@ document.addEventListener("click",async e=>{ if(!e.target.closest("#setup-go")) 
   try{ const r=await fetch(u+"?_="+Date.now()); const j=await r.json(); if(!j.ok||j.app!=="ratebook") throw 0; ls.set("rb_api",u); renderAll(); sync(); }catch{ err.textContent=t("badUrl"); } });
 
 /* ---------------- Sync with the sheet ---------------- */
+/* Bill numbers this phone just used (per mode). A price-list sync that started before the bill reached the sheet can carry
+   the older "next number"; for 15 minutes that never moves this phone's number back onto one it already used. */
+function tookNo(n, gst){ const k=envKey("rb_took"), o=ls.get(k,{}); o[gst?"g":"n"]={n:+n, at:Date.now()}; ls.set(k,o); }
+function keepTaken(){ const o=ls.get(envKey("rb_took"),{}), fresh=x=>x && Date.now()-x.at < 15*60000;
+  if(fresh(o.n) && S.cfg.nextBill<=o.n.n) S.cfg.nextBill=o.n.n+1; if(fresh(o.g) && S.cfg.nextGstBill<=o.g.n) S.cfg.nextGstBill=o.g.n+1; }
 function applyConfig(x){
   x=x||{}; if(x.raw) x={...x, ...x.raw};   // saved copy on this phone keeps both sets of bill numbers in raw
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
@@ -5378,6 +5406,7 @@ function applyConfig(x){
   if(S.cfg.mode==="test"){ S.cfg.nextBill=S.cfg.raw.testNextBill; S.cfg.nextGstBill=S.cfg.raw.testNextGstBill; }
   // bills taken on this phone but not yet recorded keep the number moving forward
   for(const q of S.billQ||[]){ if((q.env||"test")!==S.cfg.mode) continue; if(q.gst){ if(q.n>=S.cfg.nextGstBill) S.cfg.nextGstBill=q.n+1; } else if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1; }
+  try{ keepTaken(); }catch{}
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,

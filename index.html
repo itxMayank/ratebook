@@ -1304,6 +1304,11 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 #sheet-back[hidden]{display:none}
 .sheet.has-sub #sheet-body button[id$="-back"]{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
 .sheet.hero-mode #sheet-back{background:rgba(255,255,255,.92);color:#111}
+/* ✕ on an inner screen closes everything: it becomes a small "✕ All" pill in the same header row (no extra row). */
+.sheet.has-sub #sheet-close{width:auto;min-width:0;padding:0 12px 0 9px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.sheet.has-sub #sheet-close svg{width:16px;height:16px}
+.sheet.has-sub #sheet-close::after{content:"All";font:700 13.5px/1 var(--f);color:var(--fg)}
+:root[lang="hi"] .sheet.has-sub #sheet-close::after{content:"सब बंद";font-family:"Mukta",var(--f);font-size:14px}
 </style>
 </head>
 <body>
@@ -1541,7 +1546,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   gstinBad:"GSTIN should be 15 characters, e.g. 09ABCDE1234F1Z5.",billSearchPh:"Search item to add to bill…",dec:"Reduce",hsnShort:"HSN",
   pastBills:"Past bills",pastBillsD:"Find a bill by number, name or mobile and send it again",billsSearchPh:"Customer, mobile, GSTIN, bill no., item or date (dd/mm/yyyy)",billsNone:"No bills found.",billsLoading:"Loading bills…",billOpening:"Opening bill…",custLooking:"Looking up this number…",custNew:"New customer, no past bills.",inWordsL:"Amount in words",
   billsNeedPin:"Past bills show customer details, so they need the shop PIN. Unlock editing first.",billsFail:"Couldn't load bills. Check your connection.",allBills:"All bills",
-  back:"Back",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
+  back:"Back",closeAll:"Close all",sendTo:"Send to (mobile, optional)",repeatBill:"Repeat as new bill",repeatQ:"Replace the bill you're making now?",repeated:"Loaded into a new bill",gstShort:"GST",madeBy:n=>`by ${n}`,
   altSec:"Also sold in smaller packs (optional)",packUnit:"Pack unit",perMain:u=>`How many packs in 1 ${u}`,packPrice:"Price per pack (₹, optional)",packAuto:"auto",
   packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} per ${a}`,packBad:"Packs in 1 unit must be more than 0.",switchUnit:"Switch unit",takePhoto:"Camera",tapProfit:"Profit",custBack:(n,c,d)=>`${n?n+" · ":""}${c} bill${c===1?"":"s"} before${d?` · last ${d}`:""}`,custTotal:t=>`total ${t}`,profitSet:"Profit on past bills",profitSetD:"Shows how much each bill earns, in ₹ and %, on the bill screen while you make it and in Past bills. It never appears on WhatsApp bills.",profitL:"Profit",saleExGst:"Sale (before GST)",costL:"Cost (buy rate)",perItem:"Per item",estNote:"Estimated from today's buy rates (this bill was saved before profit was recorded).",profitShort:(p,pc)=>`Profit ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"Convert names to Hindi",toHindiD:"Write every item name in Hindi letters",toHindiHelp:"Each name is written in Hindi letters. Check and correct any that look wrong, then save. English names are kept for search.",current:"Now",onlyMissing:"Only items without a Hindi name",convertN:n=>`Save ${n}`,hiNone:"All items already have these Hindi names.",shareShort:"Share",saveShort:"Save",saveShareShort:"Save & send",totalInclGst:"Total incl. GST",local:"CGST+SGST",igstShort:"IGST",manualNo:"set by hand",fromGallery:"Gallery",photoWorking:"Preparing photo…",
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
@@ -1567,7 +1572,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   gstinBad:"GSTIN 15 अक्षरों का होता है, जैसे 09ABCDE1234F1Z5।",billSearchPh:"बिल में जोड़ने के लिए सामान खोजें…",dec:"कम करें",hsnShort:"HSN",
   pastBills:"पुराने बिल",pastBillsD:"नंबर, नाम या मोबाइल से बिल ढूँढें और फिर से भेजें",billsSearchPh:"ग्राहक, मोबाइल, GSTIN, बिल नं., सामान या तारीख़ (dd/mm/yyyy)",billsNone:"कोई बिल नहीं मिला।",billsLoading:"बिल लोड हो रहे हैं…",billOpening:"बिल खुल रहा है…",custLooking:"इस नंबर को ढूँढ रहे हैं…",custNew:"नया ग्राहक, कोई पुराना बिल नहीं।",inWordsL:"शब्दों में राशि",
   billsNeedPin:"पुराने बिलों में ग्राहक की जानकारी होती है, इसलिए दुकान का PIN चाहिए। पहले एडिटिंग खोलें।",billsFail:"बिल लोड नहीं हुए। इंटरनेट देखें।",allBills:"सभी बिल",
-  back:"वापस",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
+  back:"वापस",closeAll:"सब बंद करें",sendTo:"किसे भेजें (मोबाइल, वैकल्पिक)",repeatBill:"इसे नए बिल में दोहराएँ",repeatQ:"अभी बन रहा बिल हटाकर यह लगाएँ?",repeated:"नए बिल में लगा दिया",gstShort:"GST",madeBy:n=>`${n} ने बनाया`,
   altSec:"छोटे पैकेट में भी बिकता है (वैकल्पिक)",packUnit:"पैकेट की इकाई",perMain:u=>`1 ${u} में कितने पैकेट`,packPrice:"एक पैकेट का दाम (₹, वैकल्पिक)",packAuto:"अपने-आप",
   packHint:(u,n,a,p)=>`1 ${u} = ${n} ${a} · ${p} प्रति ${a}`,packBad:"1 इकाई में पैकेट 0 से ज़्यादा होने चाहिए।",switchUnit:"इकाई बदलें",takePhoto:"कैमरा",tapProfit:"मुनाफ़ा",custBack:(n,c,d)=>`${n?n+" · ":""}पहले ${c} बिल${d?` · पिछला ${d}`:""}`,custTotal:t=>`कुल ${t}`,profitSet:"पुराने बिलों पर मुनाफ़ा",profitSetD:"हर बिल से कितना मुनाफ़ा हो रहा है (₹ और %), बिल बनाते समय बिल स्क्रीन पर और पुराने बिलों में दिखेगा। WhatsApp बिल पर कभी नहीं दिखेगा।",profitL:"मुनाफ़ा",saleExGst:"बिक्री (GST से पहले)",costL:"लागत (ख़रीद रेट)",perItem:"हर सामान",estNote:"आज के ख़रीद रेट से अंदाज़ा (यह बिल मुनाफ़ा दर्ज होने से पहले का है)।",profitShort:(p,pc)=>`मुनाफ़ा ${p}${pc!=null?` · ${pc}%`:""}`,toHindiT:"नाम हिंदी में बदलें",toHindiD:"हर सामान का नाम हिंदी अक्षरों में लिखें",toHindiHelp:"हर नाम हिंदी अक्षरों में लिखा गया है। जो गलत लगे उसे ठीक करें, फिर सेव करें। खोजने के लिए अंग्रेज़ी नाम भी रखा रहेगा।",current:"अभी",onlyMissing:"सिर्फ़ जिनका हिंदी नाम नहीं है",convertN:n=>`${n} सेव करें`,hiNone:"सब सामानों के यही हिंदी नाम पहले से हैं।",shareShort:"भेजें",saveShort:"सेव",saveShareShort:"सेव करके भेजें",totalInclGst:"कुल (GST सहित)",local:"CGST+SGST",igstShort:"IGST",manualNo:"हाथ से डाला",fromGallery:"गैलरी",photoWorking:"फ़ोटो तैयार हो रही है…",
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
@@ -1602,7 +1607,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vDoneL:"Checked:", vd_lines:n=>`${n} line${n===1?"":"s"}`, vd_sum:"items total", vd_tax:"GST", vd_total:"grand total", vd_entry:"your amount",
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vNoteGst:(a,p)=>`GST couldn't be read, but the total is ${a} (${p}%) more than the items, which looks like GST`, vDoneL:"Checked:", vd_lines:n=>`${n} line${n===1?"":"s"}`, vd_sum:"items total", vd_tax:"GST", vd_total:"grand total", vd_entry:"your amount",
   vTotalOk:"Total OK", vBasicOk:"Only the total could be read. It matches your amount.", vUndoFill:"Undo filled values", vReadAgain:"Read again", vUndoneFill:"Filled values removed", vi_line:(n,d,q,r,e,a)=>`Line ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, bill says ${a}`, vi_sum:(s,b)=>`Lines add up to ${s}, bill says ${b}`, vi_tax:(n,r,b,e,a)=>`${n} ${r}% of ${b} = ${e}, bill says ${a}`, vi_cs:(c,s)=>`CGST ${c} and SGST ${s} don't match`, vi_total:(e,b)=>`Should total ${e}, bill says ${b}`, vi_entry:(m,b)=>`You entered ${m}, bill total is ${b}`,
   vChecking:"Checking…", vChecked:"Checked", vMarkedOk:"Marked OK", vIssuesN:n=>`${n} issue${n===1?"":"s"}`, vReading:"Reading the bill…", vReadLater:"Will be checked after saving.", vUnread:"Couldn't read this bill clearly. Fill it in yourself; nothing is flagged.",
   vAddsUp:"Bill calculation adds up", vFilledFrom:"Empty fields filled from the bill (green). Check them once.", vbf_flag:"Flagged", vFlagBar:n=>`${n} bill${n===1?" has":"s have"} calculation issues. Tap to see.`,
@@ -1656,7 +1661,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vDoneL:"जाँचा:", vd_lines:n=>`${n} लाइन`, vd_sum:"सामान का जोड़", vd_tax:"GST", vd_total:"कुल", vd_entry:"आपकी रकम",
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vNoteGst:(a,p)=>`GST पढ़ा नहीं गया, पर कुल रकम सामान से ${a} (${p}%) ज़्यादा है, जो GST लगता है`, vDoneL:"जाँचा:", vd_lines:n=>`${n} लाइन`, vd_sum:"सामान का जोड़", vd_tax:"GST", vd_total:"कुल", vd_entry:"आपकी रकम",
   vTotalOk:"कुल सही", vBasicOk:"सिर्फ़ कुल पढ़ा गया। यह आपकी रकम से मिलता है।", vUndoFill:"भरी रकम हटाएँ", vReadAgain:"दोबारा पढ़ें", vUndoneFill:"भरी हुई जानकारी हटाई", vi_line:(n,d,q,r,e,a)=>`लाइन ${n}${d?" ("+d+")":""}: ${q} × ${r} = ${e}, बिल में ${a}`, vi_sum:(s,b)=>`लाइनों का जोड़ ${s}, बिल में ${b}`, vi_tax:(n,r,b,e,a)=>`${b} का ${n} ${r}% = ${e}, बिल में ${a}`, vi_cs:(c,s)=>`CGST ${c} और SGST ${s} बराबर नहीं`, vi_total:(e,b)=>`कुल ${e} होना चाहिए, बिल में ${b}`, vi_entry:(m,b)=>`आपने ${m} लिखा, बिल का कुल ${b}`,
   vChecking:"जाँच रहे…", vChecked:"जाँचा", vMarkedOk:"ठीक माना", vIssuesN:n=>`${n} गड़बड़`, vReading:"बिल पढ़ रहे…", vReadLater:"सेव के बाद जाँचा जाएगा।", vUnread:"बिल साफ़ नहीं पढ़ा गया। खुद भरें; कुछ फ़्लैग नहीं होगा।",
   vAddsUp:"बिल का हिसाब सही है", vFilledFrom:"खाली जगहें बिल से भरीं (हरी)। एक बार देख लें।", vbf_flag:"गड़बड़", vFlagBar:n=>`${n} बिल में हिसाब की गड़बड़। देखने के लिए दबाएँ।`,
@@ -1782,7 +1787,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=24;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=25;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -3765,14 +3770,15 @@ function openSheet(title,body,foot,{full=false,onClose=null}={}){
   $("#sheet-body").scrollTop=0; sheetOnClose=onClose;
 }
 function closeSheet(){ if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
-/* Step-wise closing. A sheet showing an inner screen (a bill opened from All bills, a customer from Credit, a vendor's bill …)
-   has a "*-back" button in its body. ✕, a tap outside, the header ← and the phone's Back all go up ONE level through it;
-   only the top screen closes the sheet. The body's own "← Back" pill is hidden; the header ← replaces it. */
+/* Sheet navigation. A sheet showing an inner screen (a bill opened from All bills, a customer from Credit, a vendor's bill …)
+   has a "*-back" button in its body. The header ← (left, next to the title), a tap outside and the phone's Back go up ONE
+   level through it. ✕ (right) always closes the whole sheet in one tap, from any depth. On inner screens ✕ shows a small
+   "all" tag so it reads as "close all". The body's own "← Back" pill is hidden; the header ← replaces it. */
 function sheetSubBack(){ return [...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null && !b.disabled); }
 function sheetStep(){ const b=sheetSubBack(); if(b) b.click(); else closeSheet(); }
 function sheetNavSync(){ const sub=!!sheetSubBack(), sh=$("#sheet"); sh.classList.toggle("has-sub",sub); $("#sheet-back").hidden=!sub;
-  $("#sheet-close").setAttribute("aria-label", sub?t("back"):t("close")); }
-$("#sheet-close").onclick=sheetStep; $("#sheet-back").onclick=sheetStep; $("#scrim").onclick=sheetStep;
+  $("#sheet-close").setAttribute("aria-label", sub?t("closeAll"):t("close")); }
+$("#sheet-close").onclick=closeSheet; $("#sheet-back").onclick=sheetStep; $("#scrim").onclick=sheetStep;
 { let q=0; new MutationObserver(()=>{ if(q) return; q=requestAnimationFrame(()=>{ q=0; sheetNavSync(); }); }).observe($("#sheet-body"),{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style","class"]}); }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#picker").hidden) closePicker(null); else if(!$("#sheet").hidden) closeSheet(); } });
 
@@ -4766,7 +4772,7 @@ setTimeout(()=>{ if(S.canWrite && can("manager")) vSync(); },5000);   // warm th
 function vCheckJS(ex, entered) {
   if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
   const r2 = v => Math.round(v * 100) / 100, near = (a, b, t) => Math.abs(a - b) <= t, tol = v => Math.max(1, Math.abs(v) * 0.002);
-  const issues = [], done = [], all = ex.lines || [], lines = all.filter(l => !l.u);
+  const issues = [], done = [], notes = [], all = ex.lines || [], lines = all.filter(l => !l.u);
   let nLine = 0;
   lines.forEach(l => { if (l.a == null || l.q == null || l.r == null) return; const per = l.per > 0 ? l.per : 1;
     let e = l.q * l.r / per; if (l.dp) e *= 1 - l.dp / 100; if (l.da) e -= l.da; e = r2(e); nLine++;
@@ -4787,23 +4793,39 @@ function vCheckJS(ex, entered) {
     const mixed = Object.values(rates).some(s => s.size > 1);   /* several GST rates on one bill: the split per rate isn't known, so only the totals are checked */
     if (!mixed) { const bases = [r2(base - disc), r2(base - disc + chg)];
       taxes.forEach(x => { if (!(x.r > 0)) return; const es = bases.map(b => r2(b * x.r / 100)); if (!es.some(e => near(e, x.a, tol(e)))) issues.push({ t: 'tax', n: x.n, r: x.r, b: bases[0], a: x.a, e: es[0] }); });
-      done.push('tax'); } }
+      if (taxes.some(x => x.r > 0)) done.push('tax'); } }
   const c = taxes.filter(x => /cgst/i.test(x.n)).reduce((s, x) => s + x.a, 0), sg = taxes.filter(x => /sgst|utgst/i.test(x.n)).reduce((s, x) => s + x.a, 0);
   if (c && sg) { if (!near(c, sg, 1)) issues.push({ t: 'cs', c: r2(c), s: r2(sg) }); if (done.indexOf('tax') < 0) done.push('tax'); }
-  if (base != null) { done.push('total'); const b = base - disc;
-    const ways = [b + chg + T + tcs + ro, b + T + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + T + tcs, b + chg + T + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
-    if (!ways.some(w => near(w, ex.total, 1.01))) issues.push({ t: 'total', e: ways[0], tot: ex.total }); }
+  if (base != null) { const b = base - disc;
+    /* GST as read can be incomplete or doubled on multi-page / tabular bills: only CGST or only SGST found (the other half on
+       another page), the HSN tax-summary rows copied as well as the tax lines, or only a "total tax" figure. Try those too. */
+    const one = taxes.length > 0 && !taxes.some(x => /igst/i.test(x.n)) && (!c !== !sg);
+    const Ts = [T]; if (ex.tt != null) Ts.push(ex.tt); if (one) Ts.push(r2(T * 2)); if (T) Ts.push(r2(T / 2));
+    const waysFor = t => [b + chg + t + tcs + ro, b + t + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + t + tcs, b + chg + t + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
+    if (Ts.some(t => waysFor(t).some(w => near(w, ex.total, 1.01)))) done.push('total');
+    else if (!taxes.length && ex.tt == null && ex.total > b && (ex.total - b - chg - tcs - ro) / (b || 1) <= 0.285) {
+      /* no GST was read at all and the gap is what GST could be (up to 28%): say so, don't flag */
+      const gap = r2(ex.total - b - chg - tcs - ro); notes.push({ t: 'gst', a: gap, p: Math.round(gap / (b || 1) * 1000) / 10 }); }
+    else { done.push('total'); issues.push({ t: 'total', e: waysFor(T)[0], tot: ex.total }); } }
   if (entered != null && !isNaN(entered)) { done.push('entry'); const en = Number(entered);
     if (!near(en, ex.total, 1)) { if (ex.prev && near(en, r2(ex.total + ex.prev), 1)) issues.push({ t: 'prev', ent: en, tot: ex.total, prev: ex.prev });
       else if (!(ex.net != null && near(en, ex.net, 1))) issues.push({ t: 'entry', ent: en, tot: ex.total }); } }
   const deep = done.some(d => d === 'lines' || d === 'sum' || d === 'total');
-  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, total: ex.total, tax: T || null, lines: nLine };
+  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, notes: notes, total: ex.total, tax: T || (ex.tt != null ? ex.tt : null), lines: nLine };
 }
 function vIssueText(i){ const m=v=>vMoney(v), n=v=>fmtN(v);
   switch(i.t){ case "line": return t("vi_line",i.i,i.d||"",n(i.q),m(i.r),m(i.e),m(i.a)); case "sum": return t("vi_sum",m(i.s),m(i.sub)); case "tax": return t("vi_tax",i.n||"GST",n(i.r),m(i.b),m(i.e),m(i.a));
     case "cs": return t("vi_cs",m(i.c),m(i.s)); case "total": return t("vi_total",m(i.e),m(i.tot)); case "entry": return t("vi_entry",m(i.ent),m(i.tot)); case "prev": return t("vi_prev",m(i.ent),m(i.prev),m(i.tot)); default: return ""; } }
 /** "Checked: 12 lines · total · GST · your amount" — what the check could actually verify on this bill. */
-function vDoneText(c){ if(!c||!c.done||!c.done.length) return ""; return t("vDoneL")+" "+c.done.map(d=>d==="lines"?t("vd_lines",c.lines||0):t("vd_"+d)).join(" · "); }
+function vDoneText(c){ if(!c) return ""; const d=c.done&&c.done.length ? t("vDoneL")+" "+c.done.map(d=>d==="lines"?t("vd_lines",c.lines||0):t("vd_"+d)).join(" · ") : "";
+  const n=(c.notes||[]).map(x=>x.t==="gst"?t("vNoteGst",vMoney(x.a),fmtN(x.p)):"").filter(Boolean).join(" ");   /* GST not read: the gap looks like GST, so it's explained, not flagged */
+  return [d,n].filter(Boolean).join(". "); }
+/** GST to fill in from a reading: the total-tax figure, or whichever reading of the tax lines makes the bill add up. */
+function vGstOf(ex){ if(!ex) return 0; const r2=v=>Math.round(v*100)/100, T=r2((ex.taxes||[]).reduce((a,x)=>a+(+x.a||0),0)), c=(ex.taxes||[]).some(x=>/cgst/i.test(x.n)), sg=(ex.taxes||[]).some(x=>/sgst|utgst/i.test(x.n));
+  const b=(ex.sub!=null?ex.sub:0)-(ex.disc||0), rest=(ex.charges||[]).reduce((a,x)=>a+(+x.a||0),0)+(ex.tcs||0)+(ex.ro||0);
+  const cands=[ex.tt, T, c!==sg?r2(T*2):null, T?r2(T/2):null].filter(v=>v!=null&&v>0);
+  if(ex.sub!=null && ex.total!=null){ const hit=cands.find(v=>Math.abs(b+rest+v-ex.total)<=1.01 || Math.abs(b+v-ex.total)<=1.01); if(hit) return hit; }
+  return ex.tt!=null ? ex.tt : T; }
 const vFlagged=e=>!!(e&&e.type==="bill"&&!e.removed&&e.check&&e.check.st==="issues"&&!e.check.ack);
 function vCheckPill(e){ if(!e||e.type!=="bill") return ""; if(e.checking) return `<span class="pill chk wait">${esc(t("vChecking"))}</span>`; const c=e.check; if(!c) return "";
   if(c.st==="issues") return c.ack?`<span class="pill chk ok">✓ ${esc(t("vMarkedOk"))}</span>`:`<span class="pill chk bad">⚠ ${esc(t("vIssuesN",c.issues.length))}</span>`;
@@ -5025,7 +5047,7 @@ function vForm(type,vendorId,edit,opts){ opts=opts||{};
   const orig={};   // values before the bill reading filled them, so "Undo" puts them back
   const undoFill=()=>{ filled.forEach(id=>{ const el=$(id); if(el){ el.value=orig[id]!=null?orig[id]:""; el.classList.remove("autofill"); touched.add(id); } }); filled.clear(); toast(t("vUndoneFill")); panel(); };
   const fill=()=>{ if(!ex||!ex.readable) return; const set=(id,val)=>{ const el=$(id); if(!el||val==null||val==="") return; if(touched.has(id)) return; if(id==="#vff-date"? (el.value&&el.value!==vToday()&&!filled.has(id)) : (el.value.trim()&&!filled.has(id))) return; if(!filled.has(id)) orig[id]=el.value; if(el.classList.contains("money")) moneySet(el,val); else el.value=String(val); el.classList.add("autofill"); filled.add(id); };
-    set("#vff-amt",ex.total); set("#vff-no",ex.billNo); if(ex.date && ex.date<=vToday()) set("#vff-date",ex.date); const tx=(ex.taxes||[]).reduce((a,x)=>a+(+x.a||0),0); if(tx>0) set("#vff-gst",Math.round(tx*100)/100); };
+    set("#vff-amt",ex.total); set("#vff-no",ex.billNo); if(ex.date && ex.date<=vToday()) set("#vff-date",ex.date); const tx=vGstOf(ex); if(tx>0) set("#vff-gst",Math.round(tx*100)/100); };
   const readNow=async()=>{ const my=++readSeq; const ready=photos.filter(p=>p.f||p.proc); if(!ready.length||photos.some(p=>p.file&&!p.proc)){ if(!photos.length){ ex=null; readState=""; panel(); } return; }
     if(!S.cfg.aiOn || navigator.onLine===false){ readState=S.cfg.aiOn?"later":""; panel(); return; }
     readState="reading"; panel();

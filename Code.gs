@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 24;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 25;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1540,13 +1540,15 @@ const AI_SCHEMA = { type: 'OBJECT', properties: {
     discPct: { type: 'NUMBER' }, discAmt: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, unclear: { type: 'BOOLEAN' } } } },
   subtotal: { type: 'NUMBER' }, discount: { type: 'NUMBER' }, charges: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, amount: { type: 'NUMBER' } } } },
   taxes: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, rate: { type: 'NUMBER' }, amount: { type: 'NUMBER' } } } },
-  tcs: { type: 'NUMBER' }, roundOff: { type: 'NUMBER' }, total: { type: 'NUMBER' }, previousBalance: { type: 'NUMBER' }, netPayable: { type: 'NUMBER' } }, required: ['readable', 'confidence'] };
+  taxTotal: { type: 'NUMBER' }, tcs: { type: 'NUMBER' }, roundOff: { type: 'NUMBER' }, total: { type: 'NUMBER' }, previousBalance: { type: 'NUMBER' }, netPayable: { type: 'NUMBER' } }, required: ['readable', 'confidence'] };
 const AI_PROMPT = 'You read Indian purchase bills / tax invoices / kacha bills / estimates. They may be printed, thermal, PDF or handwritten, in English, Hindi or a mix, in any layout. ' +
   'Copy exactly what is WRITTEN. Never fix, recompute or guess any arithmetic: if a line says 25 x 185 = 4652, report amount 4652. Numbers as plain numbers (no commas, no currency). Leave out anything not written. ' +
   'lines: one per item row. qty = quantity, unit = its unit (kg, pcs, bag, box, dozen…), rate = the price written, per = how many units that rate is for when the bill says so (e.g. 100 for "per 100 pcs" or "/100"), otherwise leave per out. ' +
   'discPct / discAmt = a discount written on that line. amount = the line amount written. unclear = true if any number on that line is hard to read. Weights like "25 kg" are the qty. ' +
   'subtotal = total of the items before bill discount, charges and tax, if written. discount = bill-level discount (positive). charges = extra lines like freight, cartage, packing, loading, labour, hamali, transport. ' +
-  'taxes = each tax line (CGST, SGST, IGST, GST, cess) with its rate in percent and amount. tcs = TCS amount. roundOff = round off written (negative if subtracted). ' +
+  'Bills can run over several pages: read EVERY page; the subtotal, tax lines and grand total are often on the last pages. ' +
+  'taxes = each tax line added to the bill (CGST, SGST, IGST, GST, cess) with its rate in percent (leave rate out if not written next to it) and amount, each line once. Do NOT copy the rows of the HSN / tax summary table into taxes. ' +
+  'taxTotal = the total tax amount if written (e.g. "Total Tax Amount" or the total of the tax summary table). tcs = TCS amount. roundOff = round off written (negative if subtracted). ' +
   'total = the grand total of THIS bill. previousBalance = old balance / previous dues written on the bill, if any. netPayable = the final amount payable if the bill adds previous balance or subtracts amount paid. date as YYYY-MM-DD. ' +
   'readable = false if this is not a bill or the amounts cannot be read reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
 function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_off');
@@ -1577,16 +1579,16 @@ function vExClean_(x) { const n = v => (v === null || v === undefined || v === '
   x = x || {}; return { readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',
     seller: str_(x.sellerName || '', 80), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 120).map(l => ({ d: str_(l.desc || '', 60), q: n(l.qty), un: str_(l.unit || '', 12), r: n(l.rate), per: n(l.per), dp: n(l.discPct), da: n(l.discAmt), a: n(l.amount), u: !!l.unclear })),
     sub: n(x.subtotal), disc: n(x.discount), charges: (Array.isArray(x.charges) ? x.charges : []).slice(0, 10).map(c => ({ n: str_(c.name || '', 30), a: n(c.amount) })),
-    taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 10).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), tcs: n(x.tcs), ro: n(x.roundOff), total: n(x.total), prev: n(x.previousBalance), net: n(x.netPayable) }; }
+    taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 10).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), tt: n(x.taxTotal), tcs: n(x.tcs), ro: n(x.roundOff), total: n(x.total), prev: n(x.previousBalance), net: n(x.netPayable) }; }
 /** The same reading sent back by the phone (already in the short form): re-check every field. */
 function vExSafe_(e) { if (!e || typeof e !== 'object') return null;
-  return vExClean_({ readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
+  return vExClean_({ readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, taxTotal: e.tt, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
     lines: (e.lines || []).map(l => ({ desc: l.d, qty: l.q, unit: l.un, rate: l.r, per: l.per, discPct: l.dp, discAmt: l.da, amount: l.a, unclear: l.u })), charges: (e.charges || []).map(c => ({ name: c.n, amount: c.a })), taxes: (e.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) }); }
 /** The arithmetic (the AI only reads). Identical to vCheckJS in index.html; keep them the same. */
 function vCheckCalc_(ex, entered) {
   if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
   const r2 = v => Math.round(v * 100) / 100, near = (a, b, t) => Math.abs(a - b) <= t, tol = v => Math.max(1, Math.abs(v) * 0.002);
-  const issues = [], done = [], all = ex.lines || [], lines = all.filter(l => !l.u);
+  const issues = [], done = [], notes = [], all = ex.lines || [], lines = all.filter(l => !l.u);
   let nLine = 0;
   lines.forEach(l => { if (l.a == null || l.q == null || l.r == null) return; const per = l.per > 0 ? l.per : 1;
     let e = l.q * l.r / per; if (l.dp) e *= 1 - l.dp / 100; if (l.da) e -= l.da; e = r2(e); nLine++;
@@ -1607,17 +1609,25 @@ function vCheckCalc_(ex, entered) {
     const mixed = Object.values(rates).some(s => s.size > 1);   /* several GST rates on one bill: the split per rate isn't known, so only the totals are checked */
     if (!mixed) { const bases = [r2(base - disc), r2(base - disc + chg)];
       taxes.forEach(x => { if (!(x.r > 0)) return; const es = bases.map(b => r2(b * x.r / 100)); if (!es.some(e => near(e, x.a, tol(e)))) issues.push({ t: 'tax', n: x.n, r: x.r, b: bases[0], a: x.a, e: es[0] }); });
-      done.push('tax'); } }
+      if (taxes.some(x => x.r > 0)) done.push('tax'); } }
   const c = taxes.filter(x => /cgst/i.test(x.n)).reduce((s, x) => s + x.a, 0), sg = taxes.filter(x => /sgst|utgst/i.test(x.n)).reduce((s, x) => s + x.a, 0);
   if (c && sg) { if (!near(c, sg, 1)) issues.push({ t: 'cs', c: r2(c), s: r2(sg) }); if (done.indexOf('tax') < 0) done.push('tax'); }
-  if (base != null) { done.push('total'); const b = base - disc;
-    const ways = [b + chg + T + tcs + ro, b + T + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + T + tcs, b + chg + T + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
-    if (!ways.some(w => near(w, ex.total, 1.01))) issues.push({ t: 'total', e: ways[0], tot: ex.total }); }
+  if (base != null) { const b = base - disc;
+    /* GST as read can be incomplete or doubled on multi-page / tabular bills: only CGST or only SGST found (the other half on
+       another page), the HSN tax-summary rows copied as well as the tax lines, or only a "total tax" figure. Try those too. */
+    const one = taxes.length > 0 && !taxes.some(x => /igst/i.test(x.n)) && (!c !== !sg);
+    const Ts = [T]; if (ex.tt != null) Ts.push(ex.tt); if (one) Ts.push(r2(T * 2)); if (T) Ts.push(r2(T / 2));
+    const waysFor = t => [b + chg + t + tcs + ro, b + t + tcs + ro, b + chg + tcs + ro, b + ro, b + chg + t + tcs, b + chg + t + tcs - ro].map(r2);   /* charges/GST already inside the subtotal, round-off sign */
+    if (Ts.some(t => waysFor(t).some(w => near(w, ex.total, 1.01)))) done.push('total');
+    else if (!taxes.length && ex.tt == null && ex.total > b && (ex.total - b - chg - tcs - ro) / (b || 1) <= 0.285) {
+      /* no GST was read at all and the gap is what GST could be (up to 28%): say so, don't flag */
+      const gap = r2(ex.total - b - chg - tcs - ro); notes.push({ t: 'gst', a: gap, p: Math.round(gap / (b || 1) * 1000) / 10 }); }
+    else { done.push('total'); issues.push({ t: 'total', e: waysFor(T)[0], tot: ex.total }); } }
   if (entered != null && !isNaN(entered)) { done.push('entry'); const en = Number(entered);
     if (!near(en, ex.total, 1)) { if (ex.prev && near(en, r2(ex.total + ex.prev), 1)) issues.push({ t: 'prev', ent: en, tot: ex.total, prev: ex.prev });
       else if (!(ex.net != null && near(en, ex.net, 1))) issues.push({ t: 'entry', ent: en, tot: ex.total }); } }
   const deep = done.some(d => d === 'lines' || d === 'sum' || d === 'total');
-  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, total: ex.total, tax: T || null, lines: nLine };
+  return { st: issues.length ? 'issues' : deep ? 'ok' : 'basic', issues: issues, done: done, notes: notes, total: ex.total, tax: T || (ex.tt != null ? ex.tt : null), lines: nLine };
 }
 /** Read an entry's photos and store the check on it (outside the lock while Gemini works). */
 function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id === String(id)); if (!e) throw new Error('no_entry');

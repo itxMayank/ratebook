@@ -1395,7 +1395,7 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
       </div>
       <div class="bh-cust">
         <input id="cust" name="rb-cust-x" autocomplete="rb-cust-name" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
-        <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="16" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
+        <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="20" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
       </div>
       <div class="sugbox" id="sug-cust" role="listbox" hidden></div>
       <span class="err" id="mob-err"></span>
@@ -2558,7 +2558,14 @@ function gstCalcFor(lines, igst, rateOf){
 function billTotal(){ return S.gst ? gstCalc().total : billSum(); }
 function gstinOk(v){ const x=String(v||"").trim().toUpperCase(); return !x || /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]Z[0-9A-Z]$/.test(x); }
 /** Indian mobile → "91XXXXXXXXXX" for WhatsApp, "" if empty, null if invalid. */
-function normMobile(v){ let d=devDigits(String(v||"")).replace(/\D/g,""); if(!d) return ""; if(d.length===11&&d[0]==="0") d=d.slice(1); if(d.length===12&&d.startsWith("91")) d=d.slice(2); if(d.length===10&&/^[6-9]/.test(d)) return "91"+d; return null; }
+/** Indian mobile → "91XXXXXXXXXX" for WhatsApp links; "" when empty, null when it isn't a mobile number.
+ *  Accepts 98765 43210, 098765…, 91 98765…, +91-98765…, 0091 98765…, Hindi digits. Every place that builds a wa.me/tel link uses this. */
+function normMobile(v){ let d=devDigits(String(v||"")).replace(/\D/g,""); if(!d) return "";
+  if(d.startsWith("0091")) d=d.slice(4); else if(d.length===13&&d.startsWith("910")) d=d.slice(3); else if(d.length===12&&d.startsWith("91")) d=d.slice(2);
+  if(d.length===11&&d[0]==="0") d=d.slice(1);
+  return d.length===10&&/^[6-9]/.test(d) ? "91"+d : null; }
+const mob10=v=>{ const m=normMobile(v); return m?m.slice(2):""; };   /* the plain 10 digits, for saving */
+const telHref=v=>{ const m=normMobile(v); return m?"tel:+"+m:"tel:"+String(v||"").replace(/[^\d+]/g,""); };
 function waLink(){ const m=normMobile(S.mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(billText()); }
 function billSum(){ return Math.round(S.bill.reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0)*100)/100; }
 function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
@@ -2759,7 +2766,7 @@ async function saveEdit(opts){
       return; } }
   if(navigator.onLine===false){ toast(t("editOffline")); return; }
   const g=S.gst?gstCalc():null;
-  const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(),
+  const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
@@ -2777,7 +2784,7 @@ async function saveEdit(opts){
 /** The bill on screen as a record for the sheet. */
 function draftRec(extra){
   const g=S.gst?gstCalc():null;
-  const rec={ customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
+  const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
@@ -2793,7 +2800,7 @@ function finishBill(opts){
   if(S.editing){ saveEdit(opts); return; }
   const n=curBillNo(), auto=autoBillNo();
   const g=S.gst?gstCalc():null;
-  const rec={ n, customer:S.cust.trim(), mobile:S.mob.trim(), total:billTotal(), link:waLink(),
+  const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
@@ -2906,7 +2913,7 @@ function loadPdf(){ if(window.jspdf) return Promise.resolve(window.jspdf); if(pd
   pdfLib=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="pdf.js"; sc.onload=()=>res(window.jspdf); sc.onerror=()=>{ pdfLib=null; rej(new Error("pdf")); }; document.head.appendChild(sc); }); return pdfLib; }
 function invFromCurrent(){
   const p=payInfo(billTotal());
-  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:S.mob.trim(),gstin:S.custGstin.trim().toUpperCase()}, pos:S.gst?posLabel():"",
+  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:mob10(S.mob)||S.mob.trim(),gstin:S.custGstin.trim().toUpperCase()}, pos:S.gst?posLabel():"",
     lines:S.bill.map(l=>({name:l.name,hsn:lineInfo(l).hsn,qty:+l.qty||0,unit:l.unit,rate:+l.rate||0,gst:lineInfo(l).gst})), pay:p, cancelled:false };
 }
 function invFromBill(b){
@@ -4663,7 +4670,7 @@ async function showBill(b){
     ${b.cancelled?"":payBoxHTML(b)}
     <pre class="billtext" id="bd-text">${esc(text)}</pre>
     ${S.cfg.showProfit?profitBox(billProfit(b)):""}
-    <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="16"></div>
+    <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="20"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
     <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button><button type="button" class="btn ghost" id="bd-print">${esc(t("printBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
@@ -4996,7 +5003,7 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
   const openN=c.bills.filter(x=>x.due>0).length;
   body.innerHTML=`<div class="vd-card ${vAmtCls({balance:c.balance,advance:c.advance})}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b>
       <span class="vd-sub">${c.advance>0&&c.balance>0?`${esc(t("vAdvanceAvail",vMoney(c.advance)))} · `:""}${v.creditDays?esc(t("vCreditDays",v.creditDays)):""}${c.overdue?` · <em>${esc(t("vOverdueN",c.overdue))}</em>`:""}</span>
-      <span class="vd-tools">${v.mobile?`<a class="iconbtn" href="tel:${esc(v.mobile)}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>`:""}
+      <span class="vd-tools">${v.mobile?`<a class="iconbtn" href="${esc(telHref(v.mobile))}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>`:""}
         <button type="button" class="iconbtn" id="vd-share" aria-label="${esc(t("vShare"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         <button type="button" class="iconbtn" id="vd-edit" aria-label="${esc(t("vEditVendor"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button></span></div>
     <div class="vd-acts"><button type="button" class="btn primary" id="vd-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vd-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vd-adj">${esc(t("vReturnShort"))}</button></div>
@@ -5019,7 +5026,7 @@ function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"
   const back=id?()=>openVendor(id):()=>openVendors();
   openSheet(id?t("vEditVendor"):t("vNewVendor"), `<form class="form" id="vf" novalidate><button type="button" class="btn ghost bl-back" id="vf-back">← ${esc(t("back"))}</button>
     <div class="field"><label for="vf-name">${esc(t("vName"))}</label><input id="vf-name" value="${esc(v.name)}" autocomplete="off" maxlength="80"></div>
-    <div class="two"><div class="field"><label for="vf-mob">${esc(t("mobL"))}</label><input id="vf-mob" inputmode="tel" value="${esc(v.mobile)}" maxlength="15" autocomplete="off"></div>
+    <div class="two"><div class="field"><label for="vf-mob">${esc(t("mobL"))}</label><input id="vf-mob" inputmode="tel" value="${esc(v.mobile)}" maxlength="20" autocomplete="off"></div>
       <div class="field"><label for="vf-cd">${esc(t("vCreditL"))}</label><input id="vf-cd" class="num" inputmode="numeric" value="${esc(v.creditDays||"")}" placeholder="30"></div></div>
     <div class="field"><label for="vf-gst">${esc(t("vGstinL"))}</label><input id="vf-gst" value="${esc(v.gstin)}" maxlength="15" style="text-transform:uppercase" autocomplete="off"></div>
     <div class="two"><div class="field"><label for="vf-op">${esc(t("vOpeningL"))}</label><input id="vf-op" class="num money" data-neg inputmode="decimal" value="${esc(v.opening?moneyText(String(v.opening),true):"")}" placeholder="0"></div>
@@ -5028,11 +5035,11 @@ function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"
     <div class="field"><label for="vf-addr">${esc(t("vAddress"))}</label><input id="vf-addr" value="${esc(v.address)}" maxlength="200" autocomplete="off"></div>
     <div class="err" id="vf-err" role="alert"></div></form>`, `<button class="btn ghost" id="vf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="vf-save">${esc(t("save"))}</button>`, {full:true});
   $("#vf-back").onclick=back; $("#vf-cancel").onclick=back; if(!id) setTimeout(()=>$("#vf-name")&&$("#vf-name").focus(),250);
-  $("#vf-save").onclick=async()=>{ const name=$("#vf-name").value.trim(); if(!name){ $("#vf-err").textContent=t("needName"); return; }
+  $("#vf-save").onclick=async()=>{ const name=$("#vf-name").value.trim(); if(!name){ $("#vf-err").textContent=t("needName"); return; } const mv=$("#vf-mob").value.trim(); if(mv && normMobile(mv)===null){ $("#vf-err").textContent=t("mobBad"); $("#vf-mob").focus(); return; }
     const op=toNum($("#vf-op").value||"0"); if(isNaN(op)){ $("#vf-err").textContent=t("needRate"); return; }
     if((VD.list?VD.list.vendors:[]).some(x=>x.id!==id && x.name.toLowerCase()===name.toLowerCase())){ $("#vf-err").textContent=t("vDup"); return; }
     const vid=id||vId("v"), cd=Math.max(0,Math.min(365,Math.floor(toNum($("#vf-cd").value||"0"))||0));
-    vqAdd({k:"vendor", v:{id:vid,name,mobile:$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim().toUpperCase(),creditDays:cd,opening:op||0,openingDate:$("#vf-opd").value||vToday(),address:$("#vf-addr").value.trim()}});
+    vqAdd({k:"vendor", v:{id:vid,name,mobile:mob10($("#vf-mob").value)||$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim().toUpperCase(),creditDays:cd,opening:op||0,openingDate:$("#vf-opd").value||vToday(),address:$("#vf-addr").value.trim()}});
     toast(t("saved")); if(after) after(vid); else openVendor(vid); };
 }
 /* ---- + Bill / + Payment / Return ---- */
@@ -5324,7 +5331,7 @@ async function itemBuysInto(id,el){ if(!el) return; VD.buys=VD.buys||{}; try{ co
 function vLinkSet(id,r){ const sv=VDB.srv.vendors.find(v=>v.id===id); if(sv){ sv.token=r.token; sv.linkOn=r.linkOn; vdbSave(); } vRebuild(); }
 function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok); }
 function vShareSheet(id){ const D=VD.det[id]; if(!D) return; const v=D.vendor, c=D.calc;
-  const fy=curFY(), fyStart=`20${fy.slice(2,4)}-04-01`, wa=v.mobile?`https://wa.me/${normMobile(v.mobile)?"91"+normMobile(v.mobile):""}`:"";
+  const fy=curFY(), fyStart=`20${fy.slice(2,4)}-04-01`, wa=v.mobile?`https://wa.me/${normMobile(v.mobile)||""}`:"";
   const balTxt=c.balance>0?vMoney(c.balance):c.balance<0?t("vAdvance")+" "+vMoney(-c.balance):t("vSettled");
   openSheet(t("vShare"), `<div class="vshare"><button type="button" class="btn ghost bl-back" id="vs-back">← ${esc(v.name)}</button>
     <div class="vs-bal"><span>${esc(v.name)}</span><b class="num">${esc(balTxt)}</b></div>
@@ -5459,7 +5466,7 @@ function openDueCustomer(c){
     <div class="dues-sum"><b class="num">${rs(c.due)}</b><span>${esc(c.mobile||"")}${c.mobile?" · ":""}${esc(t("billsN",c.bills.length))} · ${esc(t("since",fmtShort(c.oldest),daysSince(c.oldest)))}</span></div>
     <div class="row-btns" style="justify-content:flex-start">
       <button type="button" class="btn primary" id="dc-pay">${esc(t("recordPay"))}</button>
-      ${m?`<a class="btn wa" id="dc-wa" target="_blank" rel="noopener" href="${esc(`https://wa.me/${m}?text=${encodeURIComponent(remindText(c))}`)}">${esc(t("remind"))}</a><a class="btn ghost" href="tel:${esc(c.mobile)}">${esc(t("call"))}</a>`:""}
+      ${m?`<a class="btn wa" id="dc-wa" target="_blank" rel="noopener" href="${esc(`https://wa.me/${m}?text=${encodeURIComponent(remindText(c))}`)}">${esc(t("remind"))}</a><a class="btn ghost" href="${esc(telHref(c.mobile))}">${esc(t("call"))}</a>`:""}
     </div>
     <div class="bills-list" style="margin-top:0">${c.bills.map((b,i)=>`<button type="button" class="billcard" data-db="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(b.n)} · ${esc(fmtShort(b.date))}</b><span class="amt num" style="color:var(--danger)">${rs(b.due)}</span>
       <span class="meta2">${esc(t("ofTotal",rs(b.paid),rs(b.total)))}${payPill(b)}</span></button>`).join("")}</div></div>`;

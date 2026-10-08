@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 28;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 29;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1555,12 +1555,13 @@ const AI_PROMPT = 'You read Indian purchase bills / tax invoices / kacha bills /
   'taxTotal = the total tax amount if written (e.g. "Total Tax Amount" or the total of the tax summary table). tcs = TCS amount. roundOff = round off written (negative if subtracted). ' +
   'total = the grand total of THIS bill. previousBalance = old balance / previous dues written on the bill, if any. netPayable = the final amount payable if the bill adds previous balance or subtracts amount paid. date as YYYY-MM-DD. ' +
   'readable = false if this is not a bill or the amounts cannot be read reliably. confidence = 0 to 1, how sure you are that every number you returned is read correctly.';
-function aiCall_(parts, schema) { const key = aiKey_(); if (!key) throw new Error('ai_off');
+let AI_T0 = 0;   // start of this request's bill reading: stop trying more models before Apps Script's time runs out
+function aiCall_(parts, schema) { const key = aiKey_(); if (!key) throw new Error('ai_off'); if (!AI_T0) AI_T0 = Date.now();
   const pref = PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL');
   const models = (pref ? [pref] : []).concat(['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']).filter((m, i, a) => a.indexOf(m) === i);
   let last = '', why = '';
   const gmsg = body => { try { const e = JSON.parse(body).error || {}; return String((e.status ? e.status + ': ' : '') + (e.message || '')).slice(0, 220); } catch (x) { return String(body || '').slice(0, 160); } };
-  for (const m of models) {   /* each model has its own free quota: if one is used up or not offered to this key, try the next */
+  for (const m of models) { if (Date.now() - AI_T0 > 80000) { last = last || 'ai_slow'; break; }   /* each model has its own free quota: if one is used up or not offered to this key, try the next */
     const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent?key=' + encodeURIComponent(key), { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       payload: JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema || AI_SCHEMA } }) });
     const code = res.getResponseCode(), body = res.getContentText();
@@ -1582,9 +1583,9 @@ function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts
   (fileIds || []).slice(0, 6).forEach(f => { const b = DriveApp.getFileById(String(f)).getBlob(); const mime = b.getContentType();
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return; parts.push({ inline_data: { mime_type: mime, data: Utilities.base64Encode(b.getBytes()) } }); });
   if (parts.length < 2) return { readable: false, confidence: 0 };
-  const raw = aiCall_(parts);
+  AI_T0 = Date.now(); const raw = aiCall_(parts);
   /* Totals read but no item rows (lighter models often skip them on long invoices): ask once more for the rows only. */
-  if (raw && raw.readable && !(raw.lines || []).length) {
+  if (raw && raw.readable && !(raw.lines || []).length && Date.now() - AI_T0 < 45000) {
     try { const more = aiCall_([{ text: AI_LINES_PROMPT }].concat(parts.slice(1)), AI_LINES_SCHEMA); if (more && (more.lines || []).length) raw.lines = more.lines; } catch (e) {} }
   return vExClean_(raw); }
 const AI_LINES_SCHEMA = { type: 'OBJECT', properties: { lines: AI_SCHEMA.properties.lines }, required: ['lines'] };

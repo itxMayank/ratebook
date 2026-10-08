@@ -1299,6 +1299,11 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
   .bill-line .step input{width:34px}
   .bill-line .uwrap .note{font-size:12px}
 }
+/* Step-wise sheets: header ← on inner screens; the body's own "← Back" pill is kept (it does the work) but hidden. */
+#sheet-back{flex:none;margin-left:-6px}
+#sheet-back[hidden]{display:none}
+.sheet.has-sub #sheet-body button[id$="-back"]{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;clip:rect(0 0 0 0);opacity:0;pointer-events:none}
+.sheet.hero-mode #sheet-back{background:rgba(255,255,255,.92);color:#111}
 </style>
 </head>
 <body>
@@ -1445,7 +1450,7 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
   <div class="grab"></div>
-  <div class="sheet-h"><h2 id="sheet-title"></h2><button class="iconbtn" id="sheet-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="sheet-h"><button class="iconbtn" id="sheet-back" hidden aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h2 id="sheet-title"></h2><button class="iconbtn" id="sheet-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="sheet-b" id="sheet-body"></div>
   <div class="sheet-f" id="sheet-foot" hidden></div>
 </div>
@@ -3366,8 +3371,7 @@ window.addEventListener("popstate",()=>{
   { const qp=document.getElementById("qpick"); if(qp && !qp.hidden){ qpClose(); pushGuard(); return; } }
   if(!$("#picker").hidden){ closePicker(null); pushGuard(); return; }
   if(!$("#sheet").hidden){
-    const back=[...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null);
-    if(back) back.click(); else closeSheet();
+    sheetStep();
     pushGuard(); return;
   }
   if(S.tab!=="items" && !(DESK() && S.tab==="bill")){ setTab("items"); pushGuard(); return; }
@@ -3761,7 +3765,15 @@ function openSheet(title,body,foot,{full=false,onClose=null}={}){
   $("#sheet-body").scrollTop=0; sheetOnClose=onClose;
 }
 function closeSheet(){ if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
-$("#sheet-close").onclick=closeSheet; $("#scrim").onclick=closeSheet;
+/* Step-wise closing. A sheet showing an inner screen (a bill opened from All bills, a customer from Credit, a vendor's bill …)
+   has a "*-back" button in its body. ✕, a tap outside, the header ← and the phone's Back all go up ONE level through it;
+   only the top screen closes the sheet. The body's own "← Back" pill is hidden; the header ← replaces it. */
+function sheetSubBack(){ return [...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null && !b.disabled); }
+function sheetStep(){ const b=sheetSubBack(); if(b) b.click(); else closeSheet(); }
+function sheetNavSync(){ const sub=!!sheetSubBack(), sh=$("#sheet"); sh.classList.toggle("has-sub",sub); $("#sheet-back").hidden=!sub;
+  $("#sheet-close").setAttribute("aria-label", sub?t("back"):t("close")); }
+$("#sheet-close").onclick=sheetStep; $("#sheet-back").onclick=sheetStep; $("#scrim").onclick=sheetStep;
+{ let q=0; new MutationObserver(()=>{ if(q) return; q=requestAnimationFrame(()=>{ q=0; sheetNavSync(); }); }).observe($("#sheet-body"),{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style","class"]}); }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if(!$("#picker").hidden) closePicker(null); else if(!$("#sheet").hidden) closeSheet(); } });
 
 /* ---------------- Unit picker (replaces native dropdowns) ---------------- */

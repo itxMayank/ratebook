@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 26;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 27;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1570,7 +1570,11 @@ function aiCall_(parts) { const key = aiKey_(); if (!key) throw new Error('ai_of
     if (code === 429) { last = 'ai_limit'; continue; }
     if (code !== 200) { last = 'ai_http|' + code + '|' + gmsg(body); continue; }
     const j = JSON.parse(body); const txt = (((j.candidates || [])[0] || {}).content || {}).parts; const s = txt && txt[0] && txt[0].text;
-    if (!s) { last = 'ai_empty'; continue; } return JSON.parse(s); }
+    const fin = (((j.candidates || [])[0] || {}).finishReason) || '';
+    try { PropertiesService.getScriptProperties().setProperty('AI_LAST', JSON.stringify({ at: new Date().toISOString(), model: m, finish: fin, text: String(s || '').slice(0, 7000) })); } catch (x) {}
+    if (!s) { last = 'ai_empty'; continue; }
+    let out; try { out = JSON.parse(s); } catch (x) { last = 'ai_cut'; continue; }   /* reply cut off (e.g. MAX_TOKENS): try the next model */
+    out.__model = m; return out; }
   if (last === 'ai_model') last = 'ai_http|' + why.replace(' ', '|');
   throw new Error(last || 'ai_fail'); }
 /** Read the bill files (Drive ids) → normalised extraction. */
@@ -1580,13 +1584,14 @@ function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts
   if (parts.length < 2) return { readable: false, confidence: 0 };
   return vExClean_(aiCall_(parts)); }
 function vExClean_(x) { const n = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? null : Math.round(Number(v) * 1000) / 1000;
-  x = x || {}; return { readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',
+  x = x || {}; const pos = v => { const k = n(v); return k != null && k > 0 ? k : null; };   /* a total of 0 means it wasn't read */
+  return { model: str_(x.__model || '', 40), readable: !!x.readable, confidence: Math.max(0, Math.min(1, Number(x.confidence) || 0)), billNo: str_(x.billNo || '', 40), date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : '',
     seller: str_(x.sellerName || '', 80), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 120).map(l => ({ d: str_(l.desc || '', 60), q: n(l.qty), un: str_(l.unit || '', 12), r: n(l.rate), per: n(l.per), dp: n(l.discPct), da: n(l.discAmt), a: n(l.amount), u: !!l.unclear })),
-    sub: n(x.subtotal), disc: n(x.discount), charges: (Array.isArray(x.charges) ? x.charges : []).slice(0, 10).map(c => ({ n: str_(c.name || '', 30), a: n(c.amount) })),
-    taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 10).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), tt: n(x.taxTotal), tcs: n(x.tcs), ro: n(x.roundOff), total: n(x.total), prev: n(x.previousBalance), net: n(x.netPayable) }; }
+    sub: pos(x.subtotal), disc: n(x.discount), charges: (Array.isArray(x.charges) ? x.charges : []).slice(0, 10).map(c => ({ n: str_(c.name || '', 30), a: n(c.amount) })),
+    taxes: (Array.isArray(x.taxes) ? x.taxes : []).slice(0, 10).map(t => ({ n: str_(t.name || '', 20), r: n(t.rate), a: n(t.amount) })), tt: n(x.taxTotal), tcs: n(x.tcs), ro: n(x.roundOff), total: pos(x.total), prev: n(x.previousBalance), net: n(x.netPayable) }; }
 /** The same reading sent back by the phone (already in the short form): re-check every field. */
 function vExSafe_(e) { if (!e || typeof e !== 'object') return null;
-  return vExClean_({ readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, taxTotal: e.tt, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
+  return vExClean_({ __model: e.model, readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, taxTotal: e.tt, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
     lines: (e.lines || []).map(l => ({ desc: l.d, qty: l.q, unit: l.un, rate: l.r, per: l.per, discPct: l.dp, discAmt: l.da, amount: l.a, unclear: l.u })), charges: (e.charges || []).map(c => ({ name: c.n, amount: c.a })), taxes: (e.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) }); }
 /** The arithmetic (the AI only reads). Identical to vCheckJS in index.html; keep them the same. */
 function vCheckCalc_(ex, entered) {
@@ -1639,8 +1644,12 @@ function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id ===
   try { ex = files.length ? vRead_(files) : null; } catch (er) { err = String(er && er.message || er); if (err === 'ai_off') throw er; }
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try { A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
-    const chk = err ? { st: 'error', err: err } : vCheckCalc_(ex, num_(r.amount)); chk.at = Date.now(); chk.by = by;
-    r.ex = ex ? JSON.stringify(ex).slice(0, 45000) : ''; r.check = JSON.stringify(chk); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+    /* "Check again" never makes things worse: a failed or poorer reading (no total / fewer lines, e.g. from the lighter
+       fallback model when the main one's free quota is used up) keeps the earlier reading for the same photos. */
+    const old = vjson_(r.ex, null), q = x => !x || !x.readable ? 0 : (x.total != null ? 4 : 0) + (x.sub != null ? 1 : 0) + Math.min(3, ((x.lines || []).filter(l => l.a != null).length));
+    let kept = false; if (old && old.readable && (err || q(ex) < q(old))) { ex = vExSafe_(old); err = ''; kept = true; }
+    const chk = err ? { st: 'error', err: err } : vCheckCalc_(ex, num_(r.amount)); chk.at = Date.now(); chk.by = by; if (kept) chk.kept = 1; if (ex && ex.model) chk.m = ex.model;
+    if (ex) r.ex = JSON.stringify(ex).slice(0, 45000); r.check = JSON.stringify(chk); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
   finally { lock.releaseLock(); } }
 function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
   const c = vjson_(r.check, {}); if (on) c.ack = { by: by, at: Date.now() }; else delete c.ack; r.check = JSON.stringify(c); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
@@ -1687,6 +1696,8 @@ function aiSetKey_(key) { key = String(key || '').trim(); const p = PropertiesSe
     if (/UrlFetchApp|script\.external_request|Required permissions/i.test(m)) throw new Error('ai_auth');
     throw new Error(/^ai_/.test(m) ? m : 'ai_http|0|' + m.slice(0, 220)); }
   bump_(); return { aiOn: true }; }
+/** Run in the editor (choose showLastBillReading → Run) to see exactly what Gemini returned for the last bill read. */
+function showLastBillReading() { const v = PropertiesService.getScriptProperties().getProperty('AI_LAST'); Logger.log(v || 'No bill read yet since this update.'); }
 /** Run this in the Apps Script editor (choose testBillReading → Run) to see exactly what Google says about the saved key. */
 function testBillReading() { const key = aiKey_(); if (!key) { Logger.log('No key saved yet. Paste it in the app: Settings → Bill reading.'); return; }
   ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'].forEach(m => {

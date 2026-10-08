@@ -1333,6 +1333,7 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .vi-foot{position:sticky;bottom:0;padding:12px 0 4px;background:linear-gradient(transparent,var(--surface) 30%)}.vi-foot .btn{width:100%}
 .vi-done{margin:0 0 6px;padding:8px 12px;border-radius:12px;background:color-mix(in srgb,var(--good,#17703f) 12%,var(--surface));font-size:13px}
 .d-buys{margin-top:10px}.d-buys h4{margin:0 0 4px}.d-buys .vkv small{display:block;color:var(--muted);font-size:12px}
+.vread-m{opacity:.75;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -1631,7 +1632,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vItemsT:"Items on this bill", vLoadingLines:"Getting the lines read from this bill…", vItemsBtn:n=>`Items on this bill (${n})`, vItemsSub:"Match to your items · update buy prices", vItemsDone:(n,u)=>`✓ ${n} matched · ${u} buy price${u===1?"":"s"} updated`,
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vKept:"The new reading was poorer, so the earlier one is kept.", vReadBy:m=>`Read by ${m}`, vItemsT:"Items on this bill", vLoadingLines:"Getting the lines read from this bill…", vItemsBtn:n=>`Items on this bill (${n})`, vItemsSub:"Match to your items · update buy prices", vItemsDone:(n,u)=>`✓ ${n} matched · ${u} buy price${u===1?"":"s"} updated`,
   vItemsD:"Each line is matched to an item in your price list. Buy prices are before GST and are only changed where ticked.", vAppliedOn:(n,u,d,b)=>`Saved before: ${n} matched, ${u} buy price${u===1?"":"s"} updated · ${d}${b?" · "+b:""}`,
   vSeeLines:n=>`See the ${n} line${n===1?"":"s"} read`, vlUnclear:"unclear", vlShould:a=>`should be ${a}`, vlSub:"Items total", vlDisc:"Discount", vlCharge:"Charges", vlTax:"Total GST", vlRo:"Round off", vlTotal:"Bill total",
   vNoLines:"No item lines were read from this bill.", vNeedNet:"Needs internet.", vPerUnit:(c,u)=>`${c} per ${u}`, vUnitWord:"unit", vSkipped:"Not in my price list (skipped)", vUnskip:"Undo", vSkip:"Not in my price list", vPickPh:"Find the item…",
@@ -1692,7 +1693,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vItemsT:"इस बिल का सामान", vLoadingLines:"इस बिल की पढ़ी गई लाइनें ला रहे हैं…", vItemsBtn:n=>`इस बिल का सामान (${n})`, vItemsSub:"अपने सामान से मिलाएँ · खरीद रेट अपडेट करें", vItemsDone:(n,u)=>`✓ ${n} मिलाए · ${u} खरीद रेट अपडेट`,
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vKept:"नई रीडिंग कमज़ोर थी, इसलिए पहले वाली रखी गई।", vReadBy:m=>`${m} ने पढ़ा`, vItemsT:"इस बिल का सामान", vLoadingLines:"इस बिल की पढ़ी गई लाइनें ला रहे हैं…", vItemsBtn:n=>`इस बिल का सामान (${n})`, vItemsSub:"अपने सामान से मिलाएँ · खरीद रेट अपडेट करें", vItemsDone:(n,u)=>`✓ ${n} मिलाए · ${u} खरीद रेट अपडेट`,
   vItemsD:"हर लाइन आपकी रेट लिस्ट के सामान से मिलाई जाती है। खरीद रेट GST के बिना है और सिर्फ़ टिक किए सामान का बदलता है।", vAppliedOn:(n,u,d,b)=>`पहले सेव: ${n} मिलाए, ${u} खरीद रेट अपडेट · ${d}${b?" · "+b:""}`,
   vSeeLines:n=>`पढ़ी गई ${n} लाइन देखें`, vlUnclear:"साफ़ नहीं", vlShould:a=>`होना चाहिए ${a}`, vlSub:"सामान का कुल", vlDisc:"छूट", vlCharge:"खर्च", vlTax:"कुल GST", vlRo:"राउंड ऑफ़", vlTotal:"बिल का कुल",
   vNoLines:"इस बिल से सामान की लाइनें नहीं पढ़ी गईं।", vNeedNet:"इंटरनेट चाहिए।", vPerUnit:(c,u)=>`${c} प्रति ${u}`, vUnitWord:"यूनिट", vSkipped:"मेरी रेट लिस्ट में नहीं (छोड़ा)", vUnskip:"वापस", vSkip:"मेरी रेट लिस्ट में नहीं", vPickPh:"सामान खोजें…",
@@ -1825,7 +1826,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=26;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=27;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -5215,6 +5216,7 @@ function vCheckBox(e){ const c=e.check; let h="", cls="muted";
   else if(c.st==="issues"){ cls=c.ack?"muted":"bad"; h=`<b>⚠ ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${vDoneText(c)?`<small>${esc(vDoneText(c))}</small>`:""}${c.ack?`<small>✓ ${esc(t("vAckBy",c.ack.by||"",fmtDate(c.ack.at)))}</small>`:""}`; }
   else if(c.st==="unread") h=`<span>${esc(t("vUnreadShort"))}</span>`;
   else h=`<span>${esc(t(c.err==="ai_limit"?"vAiBusy":"vCheckFail"))}</span>`;
+  if(c && (c.kept || c.m)) h+=`<small class="vread-m">${c.kept?esc(t("vKept"))+" ":""}${c.m?esc(t("vReadBy",c.m)):""}</small>`;
   const btns=S.cfg.aiOn&&!e.checking?`<div class="vread-acts"><button type="button" class="btn ghost" id="ve-recheck">${esc(t("vRecheck"))}</button>${c&&c.st==="issues"?`<button type="button" class="btn ghost" id="ve-ack">${esc(t(c.ack?"vUnack":"vAck"))}</button>`:""}</div>`:"";
   return `<h4>${esc(t("vCheckT"))}</h4><div class="vread ${cls}">${h}</div>${btns}`; }
 /* ---- #Bill: the lines read from a vendor bill → your items, buy prices (before GST) and purchase history ----

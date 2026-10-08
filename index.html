@@ -1816,7 +1816,10 @@ function moneySet(el, v){ if(el) el.value = v==null||v==="" ? "" : moneyText(typ
 const moneyVal = (v, dec) => v==null||v==="" ? "" : isNaN(toNum(v)) ? String(v) : moneyText(String(v), true, dec||2);
 document.addEventListener("input", e=>{ const el=e.target; if(!el.classList||!el.classList.contains("money")) return;
   const pos=el.selectionStart==null?el.value.length:el.selectionStart, keep=el.value.slice(0,pos).replace(/[^\d.\-०-९]/g,"").length, nv=moneyText(el.value, el.dataset.neg!=null, +el.dataset.dec||2);
+  if(el.dataset.rate!=null) el.style.cssText=rateW(nv);
   if(nv===el.value) return; el.value=nv; let n=0, c=0; while(c<nv.length && n<keep){ if(/[\d.\-]/.test(nv[c])) n++; c++; } try{ el.setSelectionRange(c,c); }catch{} }, true);
+/* Bill rate box grows for long amounts (1,12,500) instead of hiding the first digits. */
+const rateW = v => { const n=String(v||"").length; return n>6 ? `width:calc(${n}ch + 22px);flex-basis:calc(${n}ch + 22px);max-width:118px` : ""; };
 const toNum = v => { if (v==null) return NaN; const s=devDigits(v).replace(/[₹,\s]/g,""); if(s==="") return NaN; return Number(s); };
 
 /* ---------------- Phonetic search ---------------- */
@@ -2499,7 +2502,7 @@ function renderBill(){
       <div class="ctrl">
         <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
         <div class="uwrap">${hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" style="display:inline-block" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:(isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`)}
-        <label class="rate">× ₹<input id="br-${i}" class="num" inputmode="decimal" value="${l.rate}" data-rate="${i}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
+        <label class="rate">× ₹<input id="br-${i}" class="num money" data-dec="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
         <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div></div>`).join("");
     $("#bill-total").hidden=false;

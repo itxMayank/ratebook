@@ -1279,9 +1279,15 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .vs-url{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:6px 6px 6px 12px}
 .vs-url>span{flex:1;min-width:0;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vs-url button{flex:none;display:flex;align-items:center;gap:6px;border:0;background:var(--surface);color:var(--fg);border-radius:10px;padding:0 12px;height:38px;font:700 14px var(--f-body);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-/* Bill page qty and rate boxes: no outline, border or ring in any state (normal, focused, quick-strip open). The filled background shows they're tappable. */
+/* Bill page qty and rate boxes: no default focus ring (the thin outline below replaces it). */
 .bill-line .step input,.bill-line .rate input,.bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input:focus-visible,.bill-line .rate input:focus-visible,.bill-line .step input.qp-on{outline:0!important;border:0!important;box-shadow:none!important}
 .bill-line .step input:focus,.bill-line .rate input:focus,.bill-line .step input.qp-on{background:var(--surface-2)}
+/* Bill page text boxes (customer name / mobile / GSTIN, received, qty, rate, cash given): a thin 1px outline so each box
+   reads as a box, and a 1px ink outline while typing (or while the quick qty strip is open). No thick focus ring. */
+#view-bill{--fieldline:color-mix(in srgb,var(--fg) 17%,transparent)}
+#view-bill .bh-cust input,#view-bill .pay-part input,#view-bill .cash-in input,#view-bill .bill-line .step input,#view-bill .bill-line .rate input{border:1px solid var(--fieldline)!important;box-shadow:none!important;outline:0!important}
+#view-bill .bh-cust input:focus,#view-bill .pay-part input:focus,#view-bill .cash-in input:focus,#view-bill .bill-line .step input:focus,#view-bill .bill-line .rate input:focus,#view-bill .bill-line .step input.qp-on{border-color:var(--ink)!important}
+#view-bill .bh-cust input.need,#view-bill .pay-part input.need{border-color:var(--danger,#c0392b)!important;box-shadow:0 0 0 1px var(--danger,#c0392b)!important}   /* credit bill missing name/mobile */
 /* Bill line controls stay on ONE row on small phones and at large text sizes. The pack switch ("packet ⇄") sits on the
    name's second line (next to the Hindi name), so it never pushes the rate onto a second line; the stepper and × get
    tighter when the row is narrow. */

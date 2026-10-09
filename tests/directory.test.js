@@ -8,12 +8,15 @@ let nid = 0; const files = {}, sheetsById = {};
 function mkSheet(name) { const rows = []; return { name, rows, getName: () => name, setName(n) { this.name = n; name = n; },
   getLastRow: () => rows.length, getRange(r, c, nr = 1, nc = 1) { return { setValues(v) { v.forEach((row, i) => { rows[r - 1 + i] = rows[r - 1 + i] || []; row.forEach((x, j) => { rows[r - 1 + i][c - 1 + j] = x; }); }); return this; },
     getValues() { return Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => ((rows[r - 1 + i] || [])[c - 1 + j] ?? ''))); }, getValue() { return (rows[r - 1] || [])[c - 1] ?? ''; }, setFontWeight() { return this; } }; },
-  appendRow(row) { rows.push(row); }, setFrozenRows() {} }; }
+  appendRow(row) { rows.push(row); }, deleteRow(r) { rows.splice(r - 1, 1); }, deleteRows(r, n) { rows.splice(r - 1, n); }, setFrozenRows() {} }; }
 function mkSS(title) { const id = 'ss' + (++nid); const sh = [mkSheet('Sheet1')]; const ss = { id, title, getId: () => id, getUrl: () => 'https://docs/' + id, getSheets: () => sh, getSheetByName: n => sh.find(s => s.getName() === n) || null, insertSheet(n) { const s = mkSheet(n); sh.push(s); return s; } };
-  sheetsById[id] = ss; files[id] = { id, parent: 'root' }; return ss; }
+  sheetsById[id] = ss; files[id] = { id, name: title, parent: 'root' }; return ss; }
 function mkFolder(name, parent) { const id = 'f' + (++nid); files[id] = { id, name, parent, folder: true }; return { getId: () => id, isTrashed: () => false, createFolder: n => mkFolder(n, id), getName: () => name }; }
-const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => ({ getId: () => id, isTrashed: () => false, createFolder: n => mkFolder(n, id) }),
-  getFileById: id => ({ moveTo: f => { (files[id] = files[id] || { id }).parent = f.getId(); } }) };
+const gone = id => { if (!files[id]) throw new Error('File not found: ' + id); return files[id]; };
+const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => ({ getId: () => id, isTrashed: () => !!(files[id] || {}).trashed, createFolder: n => mkFolder(n, id),
+    getParents: () => { const ps = [gone(id).parent]; return { hasNext: () => ps.length > 0, next: () => ({ getId: () => ps.shift() }) }; }, setTrashed: v => { gone(id).trashed = v; } }),
+  getFileById: id => ({ moveTo: f => { (files[id] = files[id] || { id }).parent = f.getId(); }, getName: () => gone(id).name, setTrashed: v => { gone(id).trashed = v; } }) };
+let retireReply = null, driveDeleted = [];
 const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 // --- Apps Script API + GitHub + shop endpoints ---
 const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [], hx = {};
@@ -22,7 +25,7 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
   if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
   if (url.startsWith('https://script.googleapis.com/v1/projects')) { if (!apiOn) return respond(403, { error: { message: 'Apps Script API has not been used in project 123 before or it is disabled.' } });
     const p = url.replace('https://script.googleapis.com/v1/projects', '').split('/').filter(Boolean);
-    if (!p.length && m === 'post') { const id = 'scr' + (++nid); projects[id] = { files: [], versions: 0, deps: {} }; return respond(200, { scriptId: id }); }
+    if (!p.length && m === 'post') { const id = 'scr' + (++nid); projects[id] = { files: [], versions: 0, deps: {} }; files[id] = { id, name: body.title, parent: 'root' }; return respond(200, { scriptId: id }); }
     const pr = projects[p[0]];
     if (p.length === 1 && m === 'get') return respond(200, { scriptId: p[0] });
     if (p[1] === 'content' && m === 'put') { pr.files = body.files; return respond(200, {}); }
@@ -30,14 +33,18 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
     if (p[1] === 'versions') { pr.versions++; return respond(200, { versionNumber: pr.versions }); }
     if (p[1] === 'deployments' && m === 'post') { const d = 'dep' + (++nid); pr.deps[d] = body.versionNumber; return respond(200, { deploymentId: d, entryPoints: [{ entryPointType: 'WEB_APP', webApp: { url: 'https://script.google.com/macros/s/' + d + '/exec' } }] }); }
     if (p[1] === 'deployments' && m === 'get') return respond(200, { deploymentConfig: { versionNumber: pr.deps[p[2]] } });
+    if (p[1] === 'deployments' && m === 'delete') { delete pr.deps[p[2]]; return respond(200, {}); }
     if (p[1] === 'deployments' && m === 'put') { pr.deps[p[2]] = body.deploymentConfig.versionNumber; return respond(200, {}); } }
+  if (url.startsWith('https://www.googleapis.com/drive/v3/files/') && m === 'delete') { const id = decodeURIComponent(url.split('/files/')[1].split('?')[0]); if (!files[id]) return respond(404, '');
+    const rm = i => { driveDeleted.push(i); delete files[i]; Object.values(files).filter(f => f.parent === i).forEach(f => rm(f.id)); }; rm(id); return respond(204, ''); }
+  if (/action=retire/.test(url)) return respond(200, retireReply || { ok: true, triggers: 2, sheetId: '' });
   if (/action=ping/.test(url)) return respond(200, shopAlive ? { ok: true } : '<html>error</html>');
   if (/action=list/.test(url)) return respond(200, { ok: true, config: { units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'पीस' }], defaultUnit: 'kg', defaultHsn: '3923' } });
   if (/action=health/.test(url)) return respond(200, authed ? Object.assign({ ok: true, sv: 35 }, /MAIN/.test(url) ? hx : {}) : '<html>Authorisation needed</html>');
   return respond(404, ''); }
 const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp, SpreadsheetApp, UrlFetchApp: { fetch, fetchAll: rs => rs.map(r => fetch(r.url, r)) },
   ScriptApp: { getOAuthToken: () => 'tok', getScriptId: () => 'dirscript', getService: () => ({ getUrl: () => 'https://dir/exec' }) } });
-g.Utilities.sleep = () => {}; const R = g.R;
+g.Utilities.sleep = () => {}; const R = g.R; const shopGet = c => R('shopGet_(' + JSON.stringify(c) + ')');
 // setup + admin sign-in
 R('setupDirectory()'); const pinH = g.props.ADMIN_PIN_H; ok(!!pinH && !!g.props.DIR_SHEET_ID, 'setupDirectory: sheet made, admin PIN stored only as a hash');
 const post = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents: JSON.stringify(b) } }) + ').text'));
@@ -89,6 +96,20 @@ ok(er.length === 2 && er[0].kind === 'phone' && er[0].who === 'Raju' && /screen:
 ok(lst.find(x => x.code === 'main').err24 === 2 && lst.find(x => x.code === cr.shop.code).err24 === 0 && !rc.health.main.errors && !rc.health.main.cerrors, 'error count per shop on the card; raw error lists not sent with health');
 hx.cerrors.push({ t: now - 1000, m: 'second', w: 'promise' }); post({ tok, action: 'recheck' });
 ok(post({ tok, action: 'errors', code: 'main' }).errors.length === 3, 'only new errors are added on the next check');
+// delete a shop: jobs off, link off, its files only, its records; the original shop can never be deleted; creating still works
+const sh2 = post({ tok, action: 'create', shop: { name: 'Delete Me' } }).shop; authed = true; post({ tok, action: 'recheck' });
+const s2 = shopGet(sh2.code), folderKids = Object.values(files).filter(f => f.parent === s2.folderId).map(f => f.id);
+ok(post({ tok, action: 'deleteShop', code: sh2.code, confirm: 'WRONG' }).error === 'confirm_code' && !!files[s2.sheetId], 'delete needs the shop code typed exactly; nothing touched otherwise');
+ok(post({ tok, action: 'deleteShop', code: 'main', confirm: 'main' }).error === 'no_shop' && files.mainscr === undefined && !!projects.mainscr, 'the original shop can never be deleted');
+const keepSheet = cr.shop.sheetId, keepScript = cr.shop.scriptId; driveDeleted = [];
+const del = post({ tok, action: 'deleteShop', code: sh2.code, confirm: sh2.code.toLowerCase() });
+ok(del.ok && /Timed jobs removed \(2\)/.test(del.steps.join('|')) && /link switched off/.test(del.steps.join('|')) && !projects[sh2.scriptId].deps[sh2.deploymentId], 'delete: the shop removes its timed jobs, its link is switched off');
+ok(driveDeleted.includes(sh2.scriptId) && driveDeleted.includes(s2.sheetId) && driveDeleted.includes(s2.folderId) && folderKids.every(k => driveDeleted.includes(k)), 'delete: script, sheet and the folder with backups / vendor bills permanently deleted');
+ok(!!files[keepSheet] && !!files[keepScript] && !!files[g.props.DIR_SHEET_ID] && !!files[g.props.ROOT_FOLDER] && !shopGet(sh2.code) && !!shopGet(cr.shop.code), 'other shops, the Directory sheet and the shops folder untouched; row removed');
+const sh3 = post({ tok, action: 'create', shop: { name: 'Trash Me' } }).shop; const s3 = shopGet(sh3.code); retireReply = { ok: false, error: 'bad_action' };
+const del3 = post({ tok, action: 'deleteShop', code: sh3.code, confirm: sh3.code, permanent: false }); retireReply = null;
+ok(del3.ok && files[s3.folderId].trashed && files[s3.sheetId].trashed && files[sh3.scriptId].trashed && !shopGet(sh3.code), 'Trash option: files moved to the Drive Trash instead (older shop script updated first)');
+ok(post({ tok, action: 'create', shop: { name: 'After Delete' } }).ok, 'creating a shop still works after deleting');
 apiOn = false; const off = post({ tok, action: 'create', shop: { name: 'X' } }); ok(!off.ok && /^script_api_off/.test(off.error), 'Apps Script API off: a clear message (and the folder/sheet are recorded on the dashboard)');
 ok(g.locks.n === 0, 'locks released');
 process.exit(fails ? 1 : 0);

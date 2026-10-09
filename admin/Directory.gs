@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, index.html, vendor.html.
  */
-const DIR_VERSION = 2;
+const DIR_VERSION = 3;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -103,7 +103,7 @@ function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || St
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
-const ADMIN_ACTIONS = { errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1 };
+const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1 };
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
@@ -125,6 +125,7 @@ function doPost(e) {
       case 'register': return out_(Object.assign({ ok: true }, registerMain_(b)));
       case 'recheck': { const h = healthAll_(b.code); return out_({ ok: true, health: h, shops: shops_().map(pub_) }); }
       case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
+      case 'deleteShop': return out_(Object.assign({ ok: true }, deleteShop_(b.code, b)));
     }
   } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   finally { try { lock.releaseLock(); } catch (e2) {} }
@@ -237,6 +238,52 @@ function registerMain_(b) {
   return { shop: pub_(x), healthKey: x.healthKey }; }
 
 /* ---------- update a shop's script to the latest Code.gs (the link never changes) ---------- */
+/* ---------- delete a shop (never the original one) ----------
+ * 1. The shop's script removes its own timed jobs (retire; an older script is updated first so it knows how).
+ * 2. Its web app link is switched off (deployment removed).
+ * 3. Its files go: the script project, the shop folder (sheet, backups, vendor bills) and its sheet (also a restored copy).
+ *    Permanently by default; to the Drive Trash if asked. Only files that are clearly this shop's are touched:
+ *    the folder must sit in "Rate Book Shops", the others must be named "Rate Book…", and nothing used by another shop row,
+ *    the Directory sheet or the "Rate Book Shops" folder itself is ever touched.
+ * 4. Its row, error-log rows and remembered state are removed from the Directory. Creating new shops works as before. */
+function retireCall_(x) { try { const r = UrlFetchApp.fetch(x.apiUrl + '?action=retire&key=' + encodeURIComponent(x.healthKey) + '&code=' + encodeURIComponent(x.code) + '&_=' + Date.now(), { muteHttpExceptions: true, followRedirects: true });
+  const t = r.getContentText(); return /^\s*\{/.test(t) ? JSON.parse(t) : { ok: false, error: r.getResponseCode() === 200 ? 'needs_auth' : 'http_' + r.getResponseCode() }; } catch (e) { return { ok: false, error: 'unreachable' }; } }
+function driveGone_(id, permanent, isFolder) {
+  if (permanent) { const r = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?supportsAllDrives=true', { method: 'delete', muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() } });
+    const c = r.getResponseCode(); if (c === 404) return 'gone'; if (c >= 300) throw new Error('drive|' + c + '|' + r.getContentText().slice(0, 200)); return 'deleted'; }
+  (isFolder ? DriveApp.getFolderById(id) : DriveApp.getFileById(id)).setTrashed(true); return 'trashed'; }
+function deleteShop_(code, b) {
+  const x = shopGet_(code); if (!x || x.code === 'main') throw new Error('no_shop');
+  if (String(b.confirm || '').trim().toUpperCase() !== String(x.code).toUpperCase()) throw new Error('confirm_code');
+  const permanent = b.permanent !== false, out = { steps: [], warn: [] };
+  // 1. timed jobs
+  if (x.apiUrl && x.healthKey) { let r = retireCall_(x);
+    if (!r.ok && r.error === 'bad_action' && x.scriptId && x.deploymentId) { try { updateShop_(x.code); r = retireCall_(x); } catch (e) {} }
+    if (r.ok) out.steps.push('Timed jobs removed (' + r.triggers + ')');
+    else if (x.status === 'needs-auth' || r.error === 'needs_auth') out.steps.push('No timed jobs (setupShop was never run)');
+    else out.warn.push('Couldn\'t reach the shop to remove its timed jobs (' + r.error + ')' + (permanent ? '; they stop when its script is deleted below.' : '; they stop when the Trash is emptied.'));
+    if (r.sheetId && r.sheetId !== x.sheetId) x.curSheet = r.sheetId; }
+  // 2. web app link
+  if (x.scriptId && x.deploymentId) { try { api_('delete', '/' + x.scriptId + '/deployments/' + x.deploymentId); out.steps.push('Shop link switched off'); } catch (e) { out.warn.push('Link not switched off (' + String(e.message).split('|')[0] + ')'); } }
+  // 3. files, with safety checks
+  const others = {}; shops_().forEach(y => { if (y.code !== x.code) ['scriptId', 'sheetId', 'folderId'].forEach(k => { if (y[k]) others[y[k]] = 1; }); });
+  others[P_().getProperty('DIR_SHEET_ID') || '-'] = 1; others[P_().getProperty('ROOT_FOLDER') || '-'] = 1; others[ScriptApp.getScriptId()] = 1;
+  const root = P_().getProperty('ROOT_FOLDER');
+  const kill = (id, label, isFolder, check) => { if (!id) return; if (others[id]) { out.warn.push(label + ' kept: it is shared with something else'); return; }
+    try { if (check && !check()) { out.warn.push(label + ' kept: it doesn\'t look like this shop\'s'); return; }
+      const how = driveGone_(id, permanent, isFolder); out.steps.push(label + (how === 'gone' ? ' (already gone)' : how === 'trashed' ? ' moved to Trash' : ' deleted')); }
+    catch (e) { if (/not found|No item|does not exist/i.test(String(e.message))) out.steps.push(label + ' (already gone)'); else out.warn.push(label + ': ' + String(e.message).slice(0, 160)); } };
+  const named = id => () => /^Rate Book/.test(DriveApp.getFileById(id).getName());
+  kill(x.scriptId, 'Shop script', false, named(x.scriptId));
+  kill(x.curSheet, 'Restored sheet', false, named(x.curSheet || '-'));
+  kill(x.sheetId, 'Sheet', false, named(x.sheetId));
+  kill(x.folderId, 'Folder (backups, vendor bills)', true, () => { const it = DriveApp.getFolderById(x.folderId).getParents(); while (it.hasNext()) if (it.next().getId() === root) return true; return false; });
+  // 4. the Directory's own records
+  try { const es = errSheet_(), n = es.getLastRow() - 1; if (n > 0) { const v = es.getRange(2, 2, n, 1).getValues(); for (let i = n - 1; i >= 0; i--) if (v[i][0] === x.code) es.deleteRow(i + 2); } } catch (e) {}
+  shopsSheet_().deleteRow(x._row); P_().deleteProperty('ERRSEEN_' + x.code); CacheService.getScriptCache().remove('shop:' + String(x.code).toUpperCase());
+  out.steps.push('Removed from the dashboard');
+  return out; }
+
 function updateShop_(code, ref) {
   const x = shopGet_(code); if (!x || !x.scriptId || !x.deploymentId) throw new Error('no_ids');
   const src = codeGs_(ref), sv = svOf_(src);

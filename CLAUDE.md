@@ -510,6 +510,12 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 - **Dashboard:** "N errors in 24 h" on each card and an **Errors** button: the log per shop or all, 24 h / 7 / 30 days, phone or sheet, who, phone, screen and details.
 - **Dashboard look:** square corners (`--r:0`) and an Auto / Light / Dark switch (`rbadm_theme`, `data-theme` on `<html>`).
 
+**Delete a shop (added 9 Oct 2026, `SCRIPT_VERSION` 37, `DIR_VERSION` 3)**: dashboard → shop card → **Delete shop** (not on the original shop). Type the shop's code to enable the button; "Delete permanently now" is ticked by default (untick = Drive Trash, emptied by Google after 30 days). Directory `deleteShop_ {code, confirm, permanent}`:
+1. `retire` on the shop's script (`GET ?action=retire&key=<health key>&code=`, Directory-made shops only, never main): deletes all its triggers and sets `RETIRED` so `ensureTriggers_` never re-adds them; returns the current `SHEET_ID` (a restored copy). An older script (`bad_action`) is updated from GitHub first, then retired.
+2. The web-app deployment is deleted (the shop link stops working).
+3. Files: the script project, the current sheet (if restored), the original sheet and the shop folder (backups, vendor bills) are permanently deleted through the Drive API (or trashed). Safety: the folder must be inside "Rate Book Shops", other files must be named "Rate Book…", and nothing used by another shop, the Directory sheet, the shops folder or the Directory script is touched.
+4. Its Shops row, Errors rows, `ERRSEEN_<code>` and cached lookup are removed. The Directory and creating shops are unaffected.
+
 **Tests:** `tests/directory.test.js` (create, seed, Shop.gs, lookup, lockouts, pause, update keeps link / other files / Shop.gs, automatic rollback), `tests/shops.test.js` (main unchanged, shop link, approval wait, per-shop storage, staff locked to shop, owner switching, queued bill only to its shop, wrong-shop reply ignored), `tests/admin.test.js`.
 
 ## Speed (added 9 Oct 2026, `SCRIPT_VERSION` 35)

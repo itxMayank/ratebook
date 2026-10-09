@@ -112,7 +112,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const rs=n=>"₹"+Number(Math.round((+n||0)*100)/100).toLocaleString("en-IN",{maximumFractionDigits:2});
 const dd=d=>d?new Date(d+"T00:00:00").toLocaleDateString(L==="hi"?"hi-IN":"en-IN",{day:"2-digit",month:"short",year:"numeric",numberingSystem:"latn"}):"";
 /* Links for shops other than the original carry &s=<shop code>; the Directory gives that shop's backend link (keep DIR_URL the same as in index.html). */
-const DIR_URL = "", shopCode=(qs.get("s")||"").toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40);
+const DIR_URL = "https://script.google.com/macros/s/AKfycbwFArKraCzF-asuI-8RI5NBGNUbmcmAp0lz1H1G98TqtZNWOlfp3L5hE-vY86vxC99K/exec", shopCode=(qs.get("s")||"").toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40);
 let apiBase=null;
 async function base(){ if(apiBase) return apiBase; if(!shopCode || shopCode==="MAIN" || !DIR_URL) return (apiBase=API_URL);
   const j=await fetch(DIR_URL+"?"+new URLSearchParams({action:"shop",code:shopCode,_:Date.now()}),{cache:"no-store"}).then(r=>r.json());

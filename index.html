@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>document.documentElement.classList.add("locked")</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rate Book</title>
@@ -1350,6 +1351,34 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .cu-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .cu-stat{background:var(--surface-2);border-radius:14px;padding:9px 8px;display:grid;gap:2px;min-width:0}.cu-stat span{font-size:11.5px;color:var(--muted);font-weight:600}.cu-stat b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cu-stat b.bad{color:var(--danger)}
 @media (max-width:360px){.cu-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ---- app lock / sign-in (covers everything; html.locked is set in <head> so nothing flashes before it) ---- */
+html.locked body>*:not(#applock):not(#toast){visibility:hidden}
+html.cover body>*{visibility:hidden}
+#applock{position:fixed;inset:0;z-index:100000;background:var(--bg);display:grid;place-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom));overflow:auto}
+#applock[hidden]{display:none}
+.al-box{width:100%;max-width:340px;display:grid;gap:14px;text-align:center}
+.al-shop{font-weight:800;font-size:20px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.al-hi{font-size:15px;color:var(--muted)}
+.al-av{width:64px;height:64px;border-radius:50%;margin:0 auto;display:grid;place-items:center;font-size:28px;font-weight:800;background:var(--ink);color:var(--ink-fg)}
+.al-dots{display:flex;justify-content:center;gap:12px;min-height:18px}
+.al-dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted)}
+.al-dots i.on{background:var(--ink);border-color:var(--ink)}
+.al-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:0 auto;width:100%}
+.al-pad button{height:58px;border-radius:16px;border:0;background:var(--surface);color:var(--fg);font-size:24px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.al-pad button:active{transform:scale(.96)}
+.al-pad button.al-ok{background:var(--ink);color:var(--ink-fg);font-size:18px}
+.al-pad button[disabled]{opacity:.45}
+.al-err{min-height:20px;color:var(--danger,#c0392b);font-size:14px}
+.al-link{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:14px;padding:6px;cursor:pointer}
+.al-bio{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;border-radius:999px;border:0;background:var(--ink);color:var(--ink-fg);font-weight:700;font-size:16px;padding:0 22px;cursor:pointer;margin:0 auto}
+.al-form{display:grid;gap:10px;text-align:left}
+.al-form input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font-size:18px;padding:0 14px}
+.al-form .btn{height:50px;font-size:16px}
+.al-shake{animation:alshake .35s}
+@keyframes alshake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.sess-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.sess-row:last-child{border-bottom:0}
+.sess-row small{color:var(--muted);display:block}
 </style>
 </head>
 <body>
@@ -1542,7 +1571,7 @@ const STR = {
     just:"just now",min:n=>`${n} min ago`,hr:n=>`${n} h ago`,day:n=>`${n} d ago`,billTitle:"Bill",custL:"Customer",
     pickUnit:"Choose unit",otherUnit:"Other unit…",ok:"OK",
     shopName:"Shop name",units:"Units",unitCode:"Unit (e.g. kg)",unitHi:"Hindi (e.g. किलो)",defUnit:"Default unit for new items",rounding:"Round % price changes to",r1:"₹1",r05:"₹0.50",r0:"No rounding",billFooter:"Bill footer",billFooterPh:"Thank you, visit again",
-    thisPhone:"On this phone",hideBuy:"Hide buy rate and margin",hideBuyD:"Use when a customer can see your screen.",settingsSaved:"Settings saved for everyone",sharedNote:"These settings apply to everyone using this list.",
+    thisPhone:"On this phone",hideBuy:"Hide buy rate and margin",hideBuyD:"Use when a customer can see your screen.",meT:"Just for you",meD:n=>`Saved for ${n}, on every phone you use.`,myEnvD:"Your bills are practice bills, kept apart from real ones with their own numbers and credit. Only you are switched: everyone else keeps their own setting.",myEnvOnQ:"Switch to test mode? Your new bills will be practice bills. Other people are not affected.",myEnvOffQ:"Switch to real billing? Your new bills will be real bills. Test bills stay separate.",myLiveNow:"Real billing is on for you.",noTestD:"The owner has turned test mode off for you.",noTestNow:"Test mode is off for you. Switched to real billing.",pplTest:"Can use test mode",pplTestD:"Lets this person switch their own bills to practice bills.",alHello:n=>`Namaste, ${n}`,alPin:"Enter your PIN",alBio:"Unlock with fingerprint / face",alOther:"Use another account",alForgot:"Forgot your PIN? Ask the owner to set a new one, then tap “Use another account”.",alWrong:n=>`Wrong PIN. ${n} more tries, then this phone signs out.`,alWait:s=>`Too many wrong tries. Try again in ${s} s.`,alOut:"Signed out after too many wrong tries. Sign in again with your PIN.",siT:"Sign in",siD:"Your own PIN fills in your name. With the shop PIN, type your name too.",siName:"Your name",siPin:"PIN",siBtn:"Sign in",siNet:"Signing in needs internet.",siGone:"This phone was signed out. Sign in again.",bioAsk:"Unlock with fingerprint or face next time?",bioYes:"Yes, use it",bioNo:"Not now",bioSet:"Fingerprint / face unlock on this phone",bioSetD:"Unlock with one touch instead of typing your PIN.",bioFail:"Fingerprint didn't work. Use your PIN.",signOutBtn:"Sign out of this phone",signOutQ:"Sign out of this phone? Signing in again needs your PIN and internet.",lockNow:"Lock now",lockNowD:n=>`Signed in as ${n}. Locks by itself after 5 minutes away.`,sessT:"Signed-in phones",sessD:"Sign out a phone that's lost or no longer used. It will need a PIN again.",sessOut:"Sign out",sessThis:"this phone",sessUsed:d=>`last used ${d}`,sessShop:"shop PIN",sessNone:"No phones signed in yet.",settingsSaved:"Settings saved for everyone",sharedNote:"These settings apply to everyone using this list.",
     cmdPh:"e.g. add 51 micron bag 1kg rates 110 and 120",cmdHelp:"Type or speak a change. You'll see exactly what will happen before anything is saved.",preview:"Show changes",thinking:"Understanding…",stop:"Stop",
     applyN:n=>`Apply ${n}`,nothing:"Couldn't find a change in that. Try: add Toor Dal 1kg rates 120 and 140.",now:"Now",willDel:"Will be removed for everyone",exists:"Already in list, will update it",notFound:"Not in list, will add it",
     opAdd:"Add",opUpdate:"Update",opDelete:"Delete",include:"Include",examples:"Try saying",cmdHintL:"Looks like a change:",cmdHintA:"Preview it",localNote:"Read on this phone (Claude wasn't available).",appliedN:n=>`Applied ${n} changes`,again:"Edit text"
@@ -1565,7 +1594,7 @@ const STR = {
     just:"अभी",min:n=>`${n} मिनट पहले`,hr:n=>`${n} घंटे पहले`,day:n=>`${n} दिन पहले`,billTitle:"बिल",custL:"ग्राहक",
     pickUnit:"इकाई चुनें",otherUnit:"दूसरी इकाई…",ok:"ठीक",
     shopName:"दुकान का नाम",units:"इकाइयाँ",unitCode:"इकाई (जैसे kg)",unitHi:"हिंदी (जैसे किलो)",defUnit:"नए सामान की इकाई",rounding:"% बदलाव को गोल करें",r1:"₹1",r05:"₹0.50",r0:"गोल न करें",billFooter:"बिल के नीचे",billFooterPh:"धन्यवाद, फिर आइए",
-    thisPhone:"इस फ़ोन पर",hideBuy:"ख़रीद रेट और मुनाफ़ा छिपाएँ",hideBuyD:"जब ग्राहक आपकी स्क्रीन देख रहा हो।",settingsSaved:"सेटिंग्स सबके लिए सेव हुईं",sharedNote:"ये सेटिंग्स इस लिस्ट के सभी लोगों पर लागू होंगी।",
+    thisPhone:"इस फ़ोन पर",hideBuy:"ख़रीद रेट और मुनाफ़ा छिपाएँ",hideBuyD:"जब ग्राहक आपकी स्क्रीन देख रहा हो।",meT:"सिर्फ़ आपके लिए",meD:n=>`${n} के लिए सेव, आपके हर फ़ोन पर।`,myEnvD:"आपके बिल अभ्यास के बिल हैं, असली बिलों से अलग, अपने नंबर और उधार के साथ। सिर्फ़ आपका मोड बदलता है: बाकी सब का अपना रहता है।",myEnvOnQ:"टेस्ट मोड चालू करें? आपके नए बिल अभ्यास के बिल होंगे। दूसरों पर कोई असर नहीं।",myEnvOffQ:"असली बिलिंग शुरू करें? आपके नए बिल असली होंगे। टेस्ट बिल अलग रहेंगे।",myLiveNow:"आपके लिए असली बिलिंग चालू है।",noTestD:"मालिक ने आपके लिए टेस्ट मोड बंद किया है।",noTestNow:"आपके लिए टेस्ट मोड बंद है। असली बिलिंग पर बदला।",pplTest:"टेस्ट मोड इस्तेमाल कर सकते हैं",pplTestD:"यह व्यक्ति अपने बिल अभ्यास के बिल बना सकता है।",alHello:n=>`नमस्ते, ${n}`,alPin:"अपना PIN डालें",alBio:"फ़िंगरप्रिंट / चेहरे से खोलें",alOther:"दूसरे नाम से खोलें",alForgot:"PIN भूल गए? मालिक से नया PIN लगवाएँ, फिर “दूसरे नाम से खोलें” दबाएँ।",alWrong:n=>`ग़लत PIN। ${n} बार और, फिर यह फ़ोन साइन आउट हो जाएगा।`,alWait:s=>`बहुत बार ग़लत। ${s} सेकंड बाद फिर कोशिश करें।`,alOut:"बहुत बार ग़लत PIN, साइन आउट हो गया। अपने PIN से फिर साइन इन करें।",siT:"साइन इन",siD:"अपने PIN से आपका नाम अपने आप आ जाता है। दुकान के PIN के साथ अपना नाम भी लिखें।",siName:"आपका नाम",siPin:"PIN",siBtn:"साइन इन",siNet:"साइन इन के लिए इंटरनेट चाहिए।",siGone:"यह फ़ोन साइन आउट कर दिया गया। फिर साइन इन करें।",bioAsk:"अगली बार फ़िंगरप्रिंट या चेहरे से खोलें?",bioYes:"हाँ",bioNo:"अभी नहीं",bioSet:"इस फ़ोन पर फ़िंगरप्रिंट / चेहरे से खोलना",bioSetD:"PIN लिखने की जगह एक टच से खोलें।",bioFail:"फ़िंगरप्रिंट नहीं चला। PIN डालें।",signOutBtn:"इस फ़ोन से साइन आउट",signOutQ:"इस फ़ोन से साइन आउट करें? फिर से साइन इन के लिए PIN और इंटरनेट चाहिए।",lockNow:"अभी लॉक करें",lockNowD:n=>`${n} के नाम से साइन इन। 5 मिनट बाहर रहने पर अपने आप लॉक।`,sessT:"साइन इन किए फ़ोन",sessD:"खोया या बंद फ़ोन साइन आउट करें। उसे फिर PIN चाहिए होगा।",sessOut:"साइन आउट",sessThis:"यह फ़ोन",sessUsed:d=>`आख़िरी बार ${d}`,sessShop:"दुकान का PIN",sessNone:"अभी कोई फ़ोन साइन इन नहीं है।",settingsSaved:"सेटिंग्स सबके लिए सेव हुईं",sharedNote:"ये सेटिंग्स इस लिस्ट के सभी लोगों पर लागू होंगी।",
     cmdPh:"जैसे: 51 माइक्रोन बैग 1kg जोड़ो रेट 110 और 120",cmdHelp:"बदलाव लिखें या बोलें। सेव करने से पहले आपको साफ़ दिखेगा कि क्या होगा।",preview:"बदलाव दिखाएँ",thinking:"समझ रहे हैं…",stop:"रोकें",
     applyN:n=>`${n} लागू करें`,nothing:"इसमें कोई बदलाव समझ नहीं आया। ऐसे लिखें: तूर दाल 1kg जोड़ो रेट 120 और 140।",now:"अभी",willDel:"सबके लिए हट जाएगा",exists:"लिस्ट में पहले से है, अपडेट होगा",notFound:"लिस्ट में नहीं है, नया जुड़ेगा",
     opAdd:"नया",opUpdate:"अपडेट",opDelete:"हटाएँ",include:"शामिल",examples:"ऐसे बोलें",cmdHintL:"यह बदलाव लगता है:",cmdHintA:"देखें",localNote:"इसी फ़ोन पर समझा गया (Claude उपलब्ध नहीं था)।",appliedN:n=>`${n} बदलाव लागू हुए`,again:"टेक्स्ट बदलें"
@@ -1850,14 +1879,22 @@ cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें"
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
   auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), posSel: ls.get("rb_pos",""), pendShare: !!ls.get("rb_pshare",0), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923", mode:"test" } };
-S.canWrite = !!(S.auth && S.auth.pin);
+S.canWrite = !!(S.auth && (S.auth.tok || S.auth.pin));
+if(S.canWrite && S.auth.prefs && typeof S.auth.prefs.hideBuy==="boolean") S.hideBuy=S.auth.prefs.hideBuy;   // this person's choice beats the phone's
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=32;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=34;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
+/** This person's own settings (from verify / setMyPrefs, kept in rb_auth so they work offline). Empty when locked. */
+const myPrefs=()=>(S.canWrite && S.auth && S.auth.prefs) || {};
+const myTestOk=()=>!(S.auth && S.auth.testOk===false);
+/** Re-work the mode, profit and hide-buy after this person's settings change (or someone else unlocks / the phone locks). */
+function applyPrefs(){ const P=myPrefs(); S.hideBuy=typeof P.hideBuy==="boolean"?P.hideBuy:ls.get("rb_hidebuy",false); switchEnv(S.cfg); }
+async function setMyPrefs(p){ const j=await apiPost({action:"setMyPrefs",prefs:p}); S.auth={...S.auth,prefs:j.prefs||{},testOk:j.testOk!==false}; ls.set("rb_auth",S.auth); applyPrefs(); return j; }
+function noTestNow(){ if(!S.auth) return; const was=S.cfg.mode; S.auth={...S.auth,testOk:false,prefs:{...myPrefs(),mode:"live"}}; ls.set("rb_auth",S.auth); applyPrefs(); if(was==="test") toast(t("noTestNow")); }
 
 const $ = s => document.querySelector(s);
 /* Text size, chosen per phone (Settings → Text size). */
@@ -2905,7 +2942,7 @@ async function flushBills(){
   try{
     while(S.billQ.length){
       const rec=S.billQ[0];
-      blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,k:ls.get("rb_view",""),pin:(S.auth&&S.auth.pin)||"",dev:DEV})});
+      blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,k:ls.get("rb_view",""),...(S.auth&&S.auth.tok?{tok:S.auth.tok}:{pin:(S.auth&&S.auth.pin)||""}),dev:DEV})});
       const j=await r.json();
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
       S.needCode=false;
@@ -3329,7 +3366,13 @@ async function loadOwnerCards(){
   if(!can("owner")) return;
   try{ const [u,a]=await Promise.all([apiPost({action:"listUsers"}),apiPost({action:"getAccess"})]); pplCache=u.users||[]; renderPeople(); renderAccess(a.access); }
   catch(e){ const b=$("#ppl-body"); if(b) b.innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
+  apiPost({action:"listSessions"}).then(renderSessions).catch(()=>{ const b=$("#sess-body"); if(b) b.innerHTML=`<p class="note">${esc(t("oldScript"))}</p>`; });
 }
+/** Owner: every signed-in phone, newest use first; sign any of them out. */
+function renderSessions(j){ const box=$("#sess-body"); if(!box) return; const L=(j&&j.sessions)||[];
+  box.innerHTML=L.length?L.map(x=>`<div class="sess-row"><div><b>${esc(x.name)}</b>${x.me?` <span class="pill">${esc(t("sessThis"))}</span>`:""}${x.shopPin?` <span class="pill">${esc(t("sessShop"))}</span>`:""}<small>${esc(x.label||"—")} · ${esc(t("sessUsed",x.seen?fmtDT(new Date(x.seen)):"—"))}</small></div>${x.me?"":`<button type="button" class="btn ghost sm" data-sess="${esc(x.id)}">${esc(t("sessOut"))}</button>`}</div>`).join("")
+    :`<p class="note" style="margin:0">${esc(t("sessNone"))}</p>`;
+  box.querySelectorAll("[data-sess]").forEach(b=>b.onclick=async()=>{ btnBusy(b,true); try{ renderSessions(await apiPost({action:"endSession",id:b.dataset.sess})); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } }); }
 function renderPeople(){
   const box=$("#ppl-body"); if(!box) return; const list=pplCache||[];
   box.innerHTML=(list.length?list.map(u=>`<div class="ppl-row${u.active?"":" off"}"><span class="av">${esc((u.name||"?").charAt(0).toUpperCase())}</span><div><b>${esc(u.name)}</b><span class="pill role-${u.role}">${esc(t("role"+u.role[0].toUpperCase()+u.role.slice(1)))}</span></div><button type="button" class="btn ghost sm" data-ppl="${esc(u.id)}">${esc(t("pplEdit"))}</button></div>`).join(""):`<p class="note" style="margin:0">${esc(t("pplNone"))}</p>`)
@@ -3344,6 +3387,7 @@ function openPerson(u){
     <div class="field"><label for="pp-name">${esc(t("pplName"))}</label><input id="pp-name" value="${esc(u?u.name:"")}" maxlength="40"></div>
     <div class="field"><label for="pp-pin">${esc(u?t("pplNewPin"):t("pplPin"))}</label><input id="pp-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
     <div class="field"><label>${esc(t("pplRole"))}</label><div class="role-list" id="pp-roles">${roles.map(r=>`<button type="button" data-role="${r}" aria-pressed="${r===role}"><b>${esc(t("role"+r[0].toUpperCase()+r.slice(1)))}</b><span>${esc(t("role"+r[0].toUpperCase()+r.slice(1)+"D"))}</span></button>`).join("")}</div></div>
+    <label class="switch"><span><b>${esc(t("pplTest"))}</b><br><span class="note">${esc(t("pplTestD"))}</span></span><input type="checkbox" id="pp-test" ${!u||u.testOk!==false?"checked":""}></label>
     ${u?`<label class="switch"><span><b>${esc(t("pplActive"))}</b></span><input type="checkbox" id="pp-active" ${u.active?"checked":""}></label>`:""}
     <div class="err" id="pp-err"></div>
     ${u?`<div><button type="button" class="btn danger" id="pp-remove">${esc(t("pplRemove"))}</button></div>`:""}</div>`,
@@ -3353,7 +3397,7 @@ function openPerson(u){
   $("#pp-save").onclick=async()=>{ const name=$("#pp-name").value.trim(), pin=$("#pp-pin").value.trim(), err=$("#pp-err");
     if(!name){ err.textContent=t("needYourName"); return; } if((!u||pin) && !/^\d{4,8}$/.test(pin)){ err.textContent=t("pplPin"); return; }
     const b=$("#pp-save"); btnBusy(b,true);
-    try{ const j=await apiPost({action:"saveUser",user:{id:u?u.id:undefined,name,pin,role,active:u?$("#pp-active").checked:true}}); pplCache=j.users; toast(t("pplSaved")); openSettings(); }
+    try{ const j=await apiPost({action:"saveUser",user:{id:u?u.id:undefined,name,pin,role,active:u?$("#pp-active").checked:true,testOk:$("#pp-test").checked}}); pplCache=j.users; toast(t("pplSaved")); openSettings(); }
     catch(e){ btnBusy(b,false); err.textContent = e&&e.code==="pin_taken"?t("pplTaken"):errMsg(e); } };
   if($("#pp-remove")) $("#pp-remove").onclick=async()=>{ const b=$("#pp-remove"); btnBusy(b,true); try{ const j=await apiPost({action:"removeUser",id:u.id}); pplCache=j.users; openSettings(); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } };
 }
@@ -3394,12 +3438,15 @@ let meChecked=false;
 /** Once per app start: refresh this phone's role (the owner may have changed it) and pick up the shop code if needed. */
 async function refreshMe(j){
   if(meChecked || !S.canWrite) return; meChecked=true;
-  try{ const r=await apiPost({action:"verify",by:(S.auth&&S.auth.by)||""}); const me=r.me||{};
+  try{ const old=S.auth.pin && !S.auth.tok, r=await apiPost({action:"verify",by:(S.auth&&S.auth.by)||"",...(old?{wantTok:true,dl:devLabel()}:{})}); const me=r.me||{};
+    if(old && r.tok){ const pin=S.auth.pin, chk=await pinCheckSet(pin); S.auth={...S.auth,...chk,tok:r.tok,pinLen:pin.length,personal:!!me.personal}; delete S.auth.pin; ls.set("rb_auth",S.auth); }
     const role=me.role||"owner", name=me.personal?me.name:S.auth.by; const changed=role!==S.auth.role || name!==S.auth.by;
-    S.auth={...S.auth,role,by:name}; ls.set("rb_auth",S.auth);
+    const P0=JSON.stringify(myPrefs())+(S.auth.testOk!==false);
+    S.auth={...S.auth,role,by:name}; if(me.prefs) S.auth.prefs=me.prefs; if(me.testOk!==undefined) S.auth.testOk=me.testOk!==false; ls.set("rb_auth",S.auth);
+    const prefsChanged=JSON.stringify(myPrefs())+(S.auth.testOk!==false)!==P0;
     const hadCode=ls.get("rb_view",""); if(r.view && r.view!==hadCode){ ls.set("rb_view",r.view); if(j&&j.limited){ S.rev=null; sync(); return; } }
-    if(changed) renderAll();
-  }catch(e){ if(e&&e.code==="bad_pin"){ lockPhone(); } }
+    if(prefsChanged) applyPrefs(); else if(changed) renderAll();
+  }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); }
 }
 function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
@@ -3428,8 +3475,8 @@ function renderAll(){
   document.querySelectorAll("#view-tools [data-w]").forEach(b=>b.disabled=!can("manager"));
   { const r=$("#t-reports"); if(r) r.hidden=!can("manager"); }
   renderQueue(); renderCodeNote();
-  $("#t-unlock-t").textContent = S.canWrite ? t("lockT") : t("unlockT");
-  $("#t-unlock-d").textContent = S.canWrite ? t("lockD", (S.auth.by||"—")+(S.auth.role&&S.auth.role!=="owner"?` · ${t("role"+S.auth.role[0].toUpperCase()+S.auth.role.slice(1))}`:"")) : t("unlockD");
+  $("#t-unlock-t").textContent = S.canWrite ? t("lockNow") : t("unlockT");
+  $("#t-unlock-d").textContent = S.canWrite ? t("lockNowD", (S.auth.by||"—")+(S.auth.role&&S.auth.role!=="owner"?` · ${t("role"+S.auth.role[0].toUpperCase()+S.auth.role.slice(1))}`:"")) : t("unlockD");
   renderNet(); renderInstall();
 }
 
@@ -3947,9 +3994,9 @@ async function apiGet0(params){
 async function apiPost0(body){
   if(navigator.onLine===false) throw {code:"offline"};
   const a=S.auth||{};
-  const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({pin:a.pin,by:a.by||"",env:S.cfg.mode,dev:DEV,k:ls.get("rb_view",""),...body})});
+  const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({...(a.tok?{tok:a.tok}:{pin:a.pin}),by:a.by||"",env:S.cfg.mode,dev:DEV,k:ls.get("rb_view",""),...body})});
   if(!r.ok) throw {code:"http"};
-  const j=await r.json(); if(!j.ok) throw {code:j.error||"server"}; return j;
+  const j=await r.json(); if(!j.ok){ if(j.error==="no_test") setTimeout(noTestNow,0); if(j.error==="bad_session" && a.tok && S.auth && S.auth.tok===a.tok) setTimeout(()=>signedOut("siGone"),0); throw {code:j.error||"server"}; } return j;
 }
 function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
 let chain=Promise.resolve();
@@ -4233,8 +4280,16 @@ function openBulkEdit(){
 /* ---------------- Settings ---------------- */
 function openSettings(){
   const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:seriesNext(false), nextGstBill:seriesNext(true), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
-  const w=can("owner");
+  const w=can("owner"), me=S.canWrite, test=S.cfg.mode==="test";
   const body=`
+    ${me?`<div class="cfg-sec" style="display:grid;gap:10px" id="cf-me"><div><h3 style="margin:0">${esc(t("meT"))}</h3><p class="note" style="margin:2px 0 0">${esc(t("meD",S.auth.by||""))}</p></div>
+      <div class="env-sec${test?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(myTestOk()?t("myEnvD"):t("noTestD"))}</span></span><input type="checkbox" id="cf-env" ${test?"checked":""} ${myTestOk()||test?"":"disabled"}></label>
+        <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
+      ${can("manager")?`<label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-myprofit" ${S.cfg.showProfit?"checked":""}></label>`:""}
+      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>
+      <div id="cf-bio"></div>
+      <div><button type="button" class="btn ghost" id="cf-signout">${esc(t("signOutBtn"))}</button></div>
+      <div class="err" id="cf-meerr" role="alert"></div></div>`:""}
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("tsizeT"))}</h3>
       <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("tsizeD"))}</p></div>
@@ -4247,8 +4302,6 @@ function openSettings(){
     <div class="cfg-sec" style="display:grid;gap:8px" id="cf-ai"></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>
     <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
-    <div class="cfg-sec env-sec${S.cfg.mode==="test"?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(t("envD"))}</span></span><input type="checkbox" id="cf-env" ${S.cfg.mode==="test"?"checked":""} ${w?"":"disabled"}></label>
-      <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
     <div class="cfg-sec"><div class="field"><label for="cf-shop">${esc(t("shopName"))}</label><input id="cf-shop" value="${esc(c.shopName)}" ${w?"":"disabled"}></div></div>
     <div class="cfg-sec"><h3>${esc(t("units"))}</h3><div class="unit-chips" id="cf-units"></div>
       ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
@@ -4265,13 +4318,13 @@ function openSettings(){
         <div class="field"><label for="cf-dhsn">${esc(t("defHsn"))}</label><input id="cf-dhsn" class="num" inputmode="numeric" maxlength="10" value="${esc(c.defaultHsn)}" ${w?"":"disabled"}></div></div>
     </div>
     ${w?`<div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
+    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("sessT"))}</h3><p class="note" style="margin:0">${esc(t("sessD"))}</p><div id="sess-body">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>`:""}
     ${w?`<div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`:""}
-    <div class="cfg-sec"><label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-profit" ${S.cfg.showProfit?"checked":""} ${w?"":"disabled"}></label></div>
     <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>
     ${w?`<div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`:""}
-    <div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
-      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label></div>
+    ${me?"":`<div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
+      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label></div>`}
     <div class="err" id="cf-err" role="alert"></div>`;
   openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
   const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
@@ -4281,7 +4334,26 @@ function openSettings(){
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   renderPrCfg(); renderAiCfg(); $("#cf-groups").onclick=()=>openGroups();
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
-  $("#cf-hide").onchange=e=>{ S.hideBuy=e.target.checked; ls.set("rb_hidebuy",S.hideBuy); renderList(); };
+  /* Just for you: saved with the person on the sheet (follows them to any phone); without signing in, hide-buy stays per phone */
+  const mySet=async(el,p,undo)=>{ el.disabled=true; $("#cf-meerr").textContent="";
+    try{ await setMyPrefs(p); }catch(er){ undo(); $("#cf-meerr").textContent=errMsg(er); } finally{ el.disabled=false; } };
+  $("#cf-hide").onchange=e=>{ const v=e.target.checked; if(!me){ S.hideBuy=v; ls.set("rb_hidebuy",v); renderList(); return; }
+    S.hideBuy=v; renderList(); mySet(e.target,{hideBuy:v},()=>{ e.target.checked=!v; S.hideBuy=!v; renderList(); }); };
+  if($("#cf-signout")) $("#cf-signout").onclick=()=>{ if(confirm(t("signOutQ"))){ closeSheet(); lockPhone(); } };
+  if($("#cf-bio")) bioAvail().then(ok=>{ const box=$("#cf-bio"); if(!ok||!box) return;
+    box.innerHTML=`<label class="switch"><span><b>${esc(t("bioSet"))}</b><br><span class="note">${esc(t("bioSetD"))}</span></span><input type="checkbox" id="cf-bioon" ${S.auth.bio?"checked":""}></label>`;
+    $("#cf-bioon").onchange=async e=>{ const on=e.target.checked;
+      if(on){ try{ await bioRegister(); }catch{ e.target.checked=false; $("#cf-meerr").textContent=t("bioFail"); } }
+      else { delete S.auth.bio; ls.set("rb_auth",S.auth); ls.set("rb_bio_"+(S.auth.by||""),null); ls.set("rb_bio_no_"+(S.auth.by||""),true); } }; });
+  if($("#cf-myprofit")) $("#cf-myprofit").onchange=e=>{ const v=e.target.checked; mySet(e.target,{showProfit:v},()=>{ e.target.checked=!v; }); };
+  if($("#cf-env")){
+    const env=$("#cf-env"), box=$("#cf-envc");
+    env.onchange=()=>{ const toLive=!env.checked; env.checked=toLive;   /* stays as it was until confirmed */ box.hidden=false; $("#cf-envq").textContent=t(toLive?"myEnvOffQ":"myEnvOnQ"); $("#cf-envy").textContent=t(toLive?"envYesLive":"envYesTest"); $("#cf-envy").dataset.to=toLive?"live":"test"; box.scrollIntoView({block:"center",behavior:"smooth"}); };
+    $("#cf-envn").onclick=()=>{ box.hidden=true; };
+    $("#cf-envy").onclick=async()=>{ const to=$("#cf-envy").dataset.to, b=$("#cf-envy"); btnBusy(b,true);
+      try{ await setMyPrefs({mode:to}); closeSheet(); toast(t(to==="live"?"myLiveNow":"envTestNow")); }
+      catch(er){ btnBusy(b,false); $("#cf-meerr").textContent=errMsg(er); } };
+  }
   if(!w) return;
   $("#cf-uadd").onclick=()=>{ const code=$("#cf-ucode").value.trim(), hi=$("#cf-uhi").value.trim(); if(!code) return; if(c.units.some(u=>u.code.toLowerCase()===code.toLowerCase())){ $("#cf-ucode").value=""; return; } c.units.push({code,hi}); $("#cf-ucode").value=""; $("#cf-uhi").value=""; drawUnits(); };
   $("#cf-def").onclick=async e=>{ const btn=e.currentTarget; const saved=S.cfg.units; S.cfg.units=c.units; const v=await pickUnit(btn.dataset.unit); S.cfg.units=saved; if(v){ c.defaultUnit=v; btn.dataset.unit=v; btn.querySelector("span").textContent=v; if(!c.units.some(u=>u.code===v)){ c.units.push({code:v,hi:""}); drawUnits(); } } };
@@ -4289,24 +4361,16 @@ function openSettings(){
   $("#cf-cancel").onclick=closeSheet;
   $("#cf-pin").onclick=async()=>{ const p1=$("#cf-p1").value.trim(), p2=$("#cf-p2").value.trim(), er=$("#cf-perr");
     if(!/^\d{4,8}$/.test(p1)){ er.textContent=t("pinRule"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
-    $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
+    $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); if(S.auth.tok){ if(!S.auth.personal) S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; } else S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   if($("#cf-bk")) loadBackupCard();
   if($("#ppl-body")) loadOwnerCards();
-  if($("#cf-env")){
-    const env=$("#cf-env"), box=$("#cf-envc");
-    env.onchange=()=>{ const toLive=!env.checked; env.checked=toLive;   /* stays as it was until confirmed */ box.hidden=false; $("#cf-envq").textContent=t(toLive?"envOffQ":"envOnQ"); $("#cf-envy").textContent=t(toLive?"envYesLive":"envYesTest"); $("#cf-envy").dataset.to=toLive?"live":"test"; box.scrollIntoView({block:"center",behavior:"smooth"}); };
-    $("#cf-envn").onclick=()=>{ box.hidden=true; };
-    $("#cf-envy").onclick=async()=>{ const to=$("#cf-envy").dataset.to, b=$("#cf-envy"); btnBusy(b,true);
-      try{ const j=await write({action:"setConfig",config:{mode:to}}); switchEnv(j.config); closeSheet(); toast(t(to==="live"?"envLiveNow":"envTestNow")); }
-      catch(er){ btnBusy(b,false); $("#cf-err").textContent=errMsg(er); } };
-  }
   $("#cf-save").onclick=async()=>{ const btn=$("#cf-save"); btn.disabled=true;
     const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-bill").focus(); return; }
     const ngb=Math.floor(toNum($("#cf-gbill").value)); if(!(ngb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-gbill").focus(); return; }
     const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); $("#cf-gstin").focus(); return; }
     const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; $("#cf-dgst").focus(); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
-    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), showProfit:$("#cf-profit").checked, shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
+    const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
 }
 
@@ -5678,26 +5742,88 @@ $("#t-bulkedit").onclick=()=>openBulkEdit();
 $("#t-settings").onclick=()=>openSettings();
 
 /* ---------------- Unlock / lock ---------------- */
-function openUnlock(){
-  if(!apiUrl()) return;
-  const body=`<form class="form" id="ul" novalidate><p class="note" style="margin:0">${esc(t("unlockD"))}</p>
-    <div class="field"><label for="ul-name">${esc(t("yourNameOpt"))}</label><input id="ul-name" autocomplete="name" value="${esc((S.auth&&S.auth.by)||ls.get("rb_name",""))}" enterkeyhint="next"></div>
-    <div class="field"><label for="ul-pin">${esc(t("pinL"))}</label><input id="ul-pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" enterkeyhint="done"></div>
-    <div class="err" id="ul-err" role="alert"></div></form>`;
-  openSheet(t("unlockT"), body, `<button class="btn ghost" id="ul-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ul-go">${esc(t("unlockBtn"))}</button>`);
-  setTimeout(()=>$(($("#ul-name").value?"#ul-pin":"#ul-name"))?.focus(),260);
-  $("#ul-cancel").onclick=closeSheet;
-  $("#ul").onsubmit=e=>{ e.preventDefault(); $("#ul-go").click(); };
-  $("#ul-name").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#ul-pin").focus(); } });
-  $("#ul-go").onclick=async()=>{ const by=$("#ul-name").value.trim(), pin=$("#ul-pin").value.trim(), err=$("#ul-err");
-    if(!pin){ $("#ul-pin").focus(); return; }
-    btnBusy($("#ul-go"),true);
-    try{ const j=await apiPost({action:"verify",pin,by}); const me=j.me||{}; if(!me.personal && !by){ btnBusy($("#ul-go"),false); err.textContent=t("needYourName"); $("#ul-name").focus(); return; } S.auth={pin,by:me.personal?me.name:by,role:me.role||"owner"}; if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; closeSheet(); renderAll(); toast(t("unlocked")); }
-    catch(e){ err.textContent=errMsg(e); btnBusy($("#ul-go"),false); }
-  };
-}
-function lockPhone(){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; renderAll(); toast(t("lockedNow")); }
-$("#t-unlock").onclick=()=>{ if(S.canWrite) lockPhone(); else openUnlock(); };
+function openUnlock(){ appLock(); }
+/* ---------------- Sign-in and app lock ----------------
+ * Signing in (PIN, online) gets a token from the sheet. The phone keeps the token, never the PIN, plus a PBKDF2 check value
+ * (pinH/pinS) so the lock screen works offline. The app locks on every fresh open and after LOCK_MS in the background; while
+ * locked nothing shows (html.locked hides everything but #applock), but bills waiting to send still go. Fingerprint/face uses
+ * the phone's own unlock (WebAuthn, platform authenticator) as a local gate; the token stays the real credential. */
+const LOCK_MS=5*60000, LOCK={on:false, fails:ls.get("rb_lockfail",{n:0,until:0})};
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u))), unb64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+async function pinHash(pin,salt){ const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveBits"]);
+  return b64(await crypto.subtle.deriveBits({name:"PBKDF2",hash:"SHA-256",salt:unb64(salt),iterations:150000},k,256)); }
+async function pinCheckSet(pin){ const pinS=b64(crypto.getRandomValues(new Uint8Array(16))); return {pinS, pinH:await pinHash(pin,pinS)}; }
+function devLabel(){ const u=navigator.userAgent, os=/iPhone|iPad/.test(u)?"iPhone":/Android/.test(u)?"Android":/Mac/.test(u)?"Mac":/Windows/.test(u)?"Windows":"Phone",
+  br=/EdgA?\//.test(u)?"Edge":/SamsungBrowser/.test(u)?"Samsung":/CriOS|Chrome/.test(u)?"Chrome":/Firefox|FxiOS/.test(u)?"Firefox":/Safari/.test(u)?"Safari":"";
+  return (os+(br?" · "+br:"")+(isStandalone()?" · app":"")).slice(0,60); }
+const bioAvail=async()=>{ try{ return !!(window.PublicKeyCredential && isSecureContext && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); }catch{ return false; } };
+async function bioRegister(){ const nm=(S.auth&&S.auth.by)||"Rate Book";
+  const c=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), rp:{name:"Rate Book"}, user:{id:crypto.getRandomValues(new Uint8Array(16)), name:nm, displayName:nm},
+    pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}], authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"}, timeout:60000, attestation:"none"}});
+  S.auth={...S.auth,bio:b64(c.rawId)}; ls.set("rb_auth",S.auth); ls.set("rb_bio_"+(S.auth.by||""),S.auth.bio); }
+async function bioCheck(){ await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), allowCredentials:[{type:"public-key",id:unb64(S.auth.bio)}], userVerification:"required", timeout:60000}}); }
+function lockEl(){ let el=$("#applock"); if(!el){ el=document.createElement("div"); el.id="applock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.hidden=true; document.body.appendChild(el); } return el; }
+function lockInert(on){ for(const c of document.body.children){ if(c.id!=="applock" && c.id!=="toast"){ if(on) c.setAttribute("inert",""); else c.removeAttribute("inert"); } } }
+/** Lock the app (or show sign-in when nobody is signed in on this phone). */
+function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false;
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if(S.canWrite && (S.auth.pinH || S.auth.pin || S.auth.bio)) lockPinUI(msg); else signInUI(msg); }
+function appUnlock(){ LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
+  document.documentElement.classList.remove("locked"); renderAll(); if(S.pendShare) setTimeout(askSent,400); }
+/** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
+function signedOut(msgKey){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }
+function lockHead(){ return `<div class="al-shop">${esc(S.cfg.shopName||"Rate Book")}</div>`; }
+function lockPinUI(msg){ const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.auth.pinLen||(S.auth.pin||"").length))||0; let pin="";
+  el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-av">${esc((a.by||"?").charAt(0).toUpperCase())}</div><div class="al-hi">${esc(t("alHello",a.by||""))}</div>
+    <div id="al-biobox"></div><div class="al-hi" id="al-lbl">${esc(t("alPin"))}</div><div class="al-dots" id="al-dots"></div><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div>
+    <div class="al-pad" id="al-pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-k="${n}">${n}</button>`).join("")}<button type="button" data-k="del" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" class="al-ok" data-k="ok">OK</button></div>
+    <button type="button" class="al-link" id="al-other">${esc(t("alOther"))}</button><p class="note" style="margin:0;font-size:12px">${esc(t("alForgot"))}</p></div>`;
+  const dots=()=>{ const n=Math.max(pinLen()||4,pin.length); $("#al-dots").innerHTML=Array.from({length:n},(_,i)=>`<i class="${i<pin.length?"on":""}"></i>`).join(""); };
+  const wait=()=>{ const left=Math.ceil((LOCK.fails.until-Date.now())/1000); if(left>0){ $("#al-err").textContent=t("alWait",left); return true; } return false; };
+  const check=async()=>{ if(pin.length<4 || wait()) return; const try_=pin; pin=""; dots();
+    const A=S.auth||{}; let good=false; try{ good = A.pinH ? (await pinHash(try_,A.pinS))===A.pinH : try_===A.pin; }catch{}   /* S.auth may have switched to a token meanwhile */
+    if(good){ if(A.pin && !A.pinH){ Object.assign(S.auth, await pinCheckSet(try_)); S.auth.pinLen=try_.length; ls.set("rb_auth",S.auth); } afterPinUnlock(); return; }
+    LOCK.fails.n++; if(LOCK.fails.n>=5) LOCK.fails.until=Date.now()+30000*Math.pow(2,LOCK.fails.n-5); ls.set("rb_lockfail",LOCK.fails);
+    if(LOCK.fails.n>=10){ LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockPhone(); $("#al-err") && ($("#al-err").textContent=t("alOut")); return; }
+    const box=$(".al-box"); box.classList.remove("al-shake"); void box.offsetWidth; box.classList.add("al-shake"); try{ navigator.vibrate&&navigator.vibrate(60); }catch{}
+    if(!wait()) $("#al-err").textContent=t("alWrong",10-LOCK.fails.n); };
+  $("#al-pad").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; const k=b.dataset.k;
+    if(k==="del") pin=pin.slice(0,-1); else if(k==="ok"){ check(); return; } else if(pin.length<8){ pin+=k; if(pinLen() && pin.length===pinLen()){ dots(); check(); return; } } dots(); };
+  el.onkeydown=e=>{ if(/^\d$/.test(e.key)){ $(`#al-pad [data-k="${e.key}"]`).click(); } else if(e.key==="Backspace") $('#al-pad [data-k="del"]').click(); else if(e.key==="Enter") $('#al-pad [data-k="ok"]').click(); };
+  $("#al-other").onclick=()=>{ if(confirm(t("signOutQ"))) lockPhone(); };
+  dots(); wait(); el.tabIndex=-1; el.focus();
+  if(a.bio) bioAvail().then(ok=>{ if(!ok || !$("#al-biobox")) return; $("#al-biobox").innerHTML=`<button type="button" class="al-bio" id="al-bio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 11v3M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M9 14c0 3 1 5 2 6M15 13c0 3-.5 5-1.5 7"/></svg>${esc(t("alBio"))}</button>`;
+    const go=async()=>{ try{ await bioCheck(); appUnlock(); }catch{ const er=$("#al-err"); if(er && LOCK.on) er.textContent=t("bioFail"); } };
+    $("#al-bio").onclick=go; if(!/iPhone|iPad/.test(navigator.userAgent) && document.visibilityState==="visible") go(); }); }
+/** After a PIN unlock: offer fingerprint once per person per phone, then open. */
+async function afterPinUnlock(){ const a=S.auth; if(a.bio || ls.get("rb_bio_no_"+(a.by||""),false) || !(await bioAvail())){ appUnlock(); return; }
+  const el=lockEl(); el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg)">${esc(t("bioAsk"))}</div>
+    <button type="button" class="al-bio" id="al-by">${esc(t("bioYes"))}</button><button type="button" class="al-link" id="al-bn">${esc(t("bioNo"))}</button><div class="al-err" id="al-err"></div></div>`;
+  $("#al-by").onclick=async()=>{ try{ await bioRegister(); appUnlock(); }catch{ $("#al-err").textContent=t("bioFail"); setTimeout(appUnlock,1200); } };
+  $("#al-bn").onclick=()=>{ ls.set("rb_bio_no_"+(a.by||""),true); appUnlock(); }; }
+function signInUI(msg){ const el=lockEl();
+  el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg);font-weight:700">${esc(t("siT"))}</div><p class="note" style="margin:0">${esc(t("siD"))}</p>
+    <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="name" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
+    <input id="al-pin" type="password" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="current-password" enterkeyhint="go" aria-label="${esc(t("siPin"))}">
+    <button type="submit" class="btn primary" id="al-go">${esc(t("siBtn"))}</button></form><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div></div>`;
+  $("#al-f").onsubmit=async e=>{ e.preventDefault(); const by=$("#al-name").value.trim(), pin=$("#al-pin").value.trim(), err=$("#al-err");
+    if(!/^\d{4,8}$/.test(pin)){ $("#al-pin").focus(); return; } if(navigator.onLine===false){ err.textContent=t("siNet"); return; }
+    btnBusy($("#al-go"),true);
+    try{ const j=await apiPost0({action:"verify",tok:"",pin,by,wantTok:true,dl:devLabel()}); const me=j.me||{};
+      if(!me.personal && !by){ btnBusy($("#al-go"),false); err.textContent=t("needYourName"); $("#al-name").focus(); return; }
+      S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin)};
+      const bio=ls.get("rb_bio_"+S.auth.by,null); if(bio) S.auth.bio=bio;
+      if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; applyPrefs(); afterPinUnlock(); }
+    catch(er){ btnBusy($("#al-go"),false); err.textContent=errMsg(er); $("#al-pin").value=""; $("#al-pin").focus(); } };
+  setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }
+/* Away for LOCK_MS → lock. While away, cover the screen so the phone's app switcher shows nothing. */
+function lockAway(){ if(document.visibilityState==="hidden"){ if(!LOCK.on) ls.set("rb_bgAt",Date.now()); document.documentElement.classList.add("cover"); }
+  else { document.documentElement.classList.remove("cover"); const at=+ls.get("rb_bgAt",0); if(!LOCK.on && at && Date.now()-at>LOCK_MS) appLock(); ls.set("rb_bgAt",0); } }
+document.addEventListener("visibilitychange",lockAway);
+window.addEventListener("pagehide",()=>{ if(!LOCK.on) ls.set("rb_bgAt",Date.now()); });
+/** Sign this phone out (the token is ended on the sheet when online). */
+function lockPhone(){ const a=S.auth; if(a&&a.tok) apiPost0({action:"signOut"}).catch(()=>{}); signedOut(); }
+$("#t-unlock").onclick=()=>appLock();
 document.addEventListener("click",e=>{ if(e.target.closest('[data-act="unlock"]')) openUnlock(); });
 
 /* ---------------- Setup (only when no link is set) ---------------- */
@@ -5717,12 +5843,18 @@ function applyConfig(x){
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
   S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1), showProfit: x.showProfit===true || String(x.showProfit).toLowerCase()==="true",
     shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923"), groups:Array.isArray(x.groups)?x.groups.map(String).filter(Boolean):[], bizType:String(x.bizType||""), aiOn:!!x.aiOn };
-  S.cfg.mode = x.mode==="live" ? "live" : "test";
+  /* shopMode / shopProfit = the shop's own setting; mode / showProfit = what this person uses (their choice, else the shop's) */
+  const P=myPrefs();
+  S.cfg.shopMode = x.shopMode!==undefined ? (x.shopMode==="live"?"live":"test") : (x.mode==="live" ? "live" : "test");
+  S.cfg.mode = (P.mode==="live"||P.mode==="test") && !(P.mode==="test" && !myTestOk()) ? P.mode : S.cfg.shopMode;
+  S.cfg.shopProfit = x.shopProfit!==undefined ? !!x.shopProfit : !!S.cfg.showProfit;
+  S.cfg.showProfit = typeof P.showProfit==="boolean" && can("manager") ? P.showProfit : S.cfg.shopProfit;
   S.cfg.raw = { nextBill:S.cfg.nextBill, nextGstBill:S.cfg.nextGstBill, testNextBill:Math.max(1,Math.floor(+x.testNextBill)||1), testNextGstBill:Math.max(1,Math.floor(+x.testNextGstBill)||1) };
   if(S.cfg.mode==="test"){ S.cfg.nextBill=S.cfg.raw.testNextBill; S.cfg.nextGstBill=S.cfg.raw.testNextGstBill; }
   // bills taken on this phone but not yet recorded keep the number moving forward
   for(const q of S.billQ||[]){ if((q.env||"test")!==S.cfg.mode) continue; if(q.gst){ if(q.n>=S.cfg.nextGstBill) S.cfg.nextGstBill=q.n+1; } else if(q.n>=S.cfg.nextBill) S.cfg.nextBill=q.n+1; }
   try{ keepTaken(); }catch{}
+  const ah=document.querySelector(".al-shop"); if(ah) ah.textContent=S.cfg.shopName||"Rate Book";   // lock screen on a first open
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
@@ -5809,6 +5941,7 @@ async function boot(){
   S.sortBy=ls.get("rb_sort","pop");
   if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
   applyLang(); renderBadge();
+  appLock();   // every fresh open: unlock (or sign in) first
   S.thumbs=await idb.all("thumbs"); if(S.loaded) renderList();
   if(apiUrl()) sync();
   if(S.pendShare) setTimeout(askSent,1200);   // the app was closed while a shared bill waited for confirmation

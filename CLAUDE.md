@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (no data missed between phones).
+Last updated: 9 October 2026 (per-person settings; sign-in tokens and app lock).
 
 ## Where everything lives
 
@@ -131,7 +131,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
 ## Test mode and real mode (added 3 Oct 2026)
 
-- **Shared setting** `mode` in Config: `test` (the default) or `live`. It's the first card in Settings, a switch with a confirm step. It changes every phone (they pick it up on the next sync, and `switchEnv()` starts a clean bill).
+- **Per person since 9 Oct 2026** (see "Per-person settings" below). Config `mode` (`test` default / `live`) is now only the shop's default for anyone who hasn't chosen, and for locked phones. `switchEnv()` starts a clean bill whenever the mode in use changes.
 - **Separate data per mode:**
   - Real: `Bills`, `BillHistory`, `Customers`. Test: `Test Bills`, `Test BillHistory`, `Test Customers`.
   - Bill numbers: real uses `nextBill`/`nextGstBill`, test uses `testNextBill`/`testNextGstBill`.
@@ -448,6 +448,27 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - **Credit opens instantly**: the last list is kept in IndexedDB (`dues:<mode>`, `duesLocal()`), shown at once, then replaced by the fresh one (`duesShow()`).
   - Vendor changes waiting on a phone are retried by every 25-second check (they used to wait for Vendors to open or a 20 s retry after a failure). The item screen's "Bought" cache (`VD.buys`) clears when vendor data changes.
 
+## Per-person settings (added 9 Oct 2026, `SCRIPT_VERSION` 33 / `NEED_SV` 33)
+
+Part 1 of the security plan; parts 2–3 (sign-in tokens, lock screen) are in the next section.
+- **Settings → "Just for you"** (top card, any signed-in person): **Test mode** (with a confirm step), **Profit on past bills** (managers and owner only) and **Hide buy rate and margin**. Saved on the sheet with the person, so they follow them to any phone. The old shop-wide test switch and shared profit switch are gone from Settings.
+- **Storage:** `USERS[].prefs = {mode, showProfit, hideBuy}`; people who unlock with the shop PIN are kept by lowercase name in script property `MPREFS`. `setMyPrefs` (POST, staff+, doesn't bump `rev`) merges and returns `{prefs, testOk}`; `verify` returns `me.prefs` and `me.testOk`.
+- **Owner control:** Settings → People → a person → **Can use test mode** (`USERS[].testOk`, default on). Turning it off moves that person to real billing. The server refuses their test-mode requests with `no_test` (except `verify`/`setMyPrefs`); the app then switches them to real billing with a message (`noTestNow`).
+- **App:** prefs live in `rb_auth` (`S.auth.prefs`, `S.auth.testOk`) so they work offline. `applyConfig` keeps the shop's values as `S.cfg.shopMode` / `S.cfg.shopProfit` and sets `S.cfg.mode` / `S.cfg.showProfit` to the person's choice, else the shop's. `S.hideBuy` = the person's choice, else this phone's `rb_hidebuy`. `applyPrefs()` re-works all three (via `switchEnv`) after unlocking, locking, a change in Settings, or new values from `verify` at app start.
+- Every request already carried `env`, and every per-mode list (bills, customers, credit, vendors, bill numbers) is already keyed by mode, so two people in different modes on the same sheet don't mix.
+
+## Sign-in tokens and app lock (added 9 Oct 2026, `SCRIPT_VERSION` 34 / `NEED_SV` 34)
+
+- **Nothing shows until unlocked.** `<head>` sets `html.locked` before anything paints; CSS hides every `body` child except `#applock` (and `#toast`), and the rest is made `inert`. Locked phones can no longer view prices or make bills: **everyone needs a PIN** (a personal one from Settings → People, or the shop PIN with their name).
+- **When it locks:** every fresh open (`boot()` → `appLock()`), and when the app comes back after more than 5 minutes in the background (`LOCK_MS`; `rb_bgAt` is set on `visibilitychange`/`pagehide`). Back within 5 minutes (e.g. from WhatsApp) stays open. While in the background the screen is covered (`html.cover`), so the app switcher shows nothing. Tools → **Lock now**.
+- **Lock screen (`lockPinUI`)**: shop name, "Namaste, {name}", fingerprint/face button, PIN dots + keypad (checks by itself after the PIN's length, `pinLen`), "Use another account" (= sign out), and a forgot-PIN note. Wrong PINs: from 5, a wait of 30 s doubling each time; at 10 the phone signs out (`rb_lockfail`). Works offline: the PIN is checked against a PBKDF2-SHA-256 value (150,000 rounds, random salt; `pinH`/`pinS` in `rb_auth`). The PIN itself is never stored.
+- **Sign in (`signInUI`, needs internet):** name + PIN → `verify` with `wantTok:true` and `dl` (phone label such as "Android · Chrome · app") → the script returns a token. The phone keeps `{tok, by, role, personal, prefs, testOk, pinH, pinS, pinLen, bio}` in `rb_auth`. Requests send `tok` (or `pin` for a phone not switched over yet). Phones signed in the old way switch over silently at their next start (`refreshMe` asks for a token, stores the check value, deletes the PIN).
+- **Fingerprint / face (`bioRegister`, `bioCheck`):** WebAuthn with the phone's own unlock (platform authenticator, user verification required). It's a local gate only; the token stays the real credential. Offered once after the first PIN unlock (`rb_bio_no_<name>` = said "Not now"), and in Settings → Just for you. Tried automatically on Android when the lock shows; iPhone needs a tap. The credential id is kept per person on the phone (`rb_bio_<name>`), so signing in again keeps it.
+- **Script side:** script property `SESS` (cached) maps SHA-256 of each token → `{u (user id, or 'm:<name>' for the shop PIN), n, l (label), c (created), s (last used, updated at most hourly)}`. `auth_` checks `tok` first (`sessWho_`; a wrong token is `bad_session`, not counted as a wrong PIN). The person is looked up again on every request. Signed out automatically: unused for 90 days (`SESS_DAYS`), the person removed or switched off, or a new PIN set for them (a new shop PIN signs out other shop-PIN phones). `sessEdit_` takes the script lock only when `doPost` isn't already holding it (`LOCKED_`).
+- **Actions:** `signOut` (staff; this phone), `listSessions` / `endSession {id}` (owner). Settings → **Signed-in phones** (owner) lists every phone (name, label, last used, "this phone", "shop PIN") with **Sign out**. Settings → Just for you → **Sign out of this phone**. A phone signed out elsewhere gets `bad_session`; the app forgets the token and shows sign-in with "This phone was signed out".
+- Tested with simulated phones: old-phone switch-over, wrong/right PIN, 2 min vs 6 min away, offline unlock, new sign-in, remote sign-out, 10 wrong PINs, reopen = locked, and fingerprint via Chrome's virtual authenticator (register, unlock, failure → PIN).
+- Not done yet (part 4): asking for the PIN again before risky actions (settings, backup restore, deleting items, people).
+
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 
 **Security**
@@ -546,7 +567,7 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
 
 ## On each phone (browser storage keys)
 
-`rb_api` (backend link entered by hand, only used if `API_URL` is empty), `rb_auth` (name + PIN when unlocked), `rb_cache`, `rb_bill`, `rb_cust`, `rb_mob`, `rb_lastbill`, `rb_billq`, `rb_lang`, `rb_hidebuy`, `rb_name`, `rb_inst_x` (install banner dismissed), `rb_sr_bad` (speech blocked on this phone). Clearing the browser's site data for the app resets these. Prices are safe in the sheet.
+`rb_api` (backend link entered by hand, only used if `API_URL` is empty), `rb_auth` (signed-in person: token, name, role, own settings, PIN check value, fingerprint id; never the PIN since 9 Oct 2026), `rb_lockfail`, `rb_bgAt`, `rb_bio_<name>`, `rb_bio_no_<name>`, `rb_cache`, `rb_bill`, `rb_cust`, `rb_mob`, `rb_lastbill`, `rb_billq`, `rb_lang`, `rb_hidebuy`, `rb_name`, `rb_inst_x` (install banner dismissed), `rb_sr_bad` (speech blocked on this phone). Clearing the browser's site data for the app resets these. Prices are safe in the sheet.
 
 ## Known limitations and open items
 

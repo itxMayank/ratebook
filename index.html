@@ -1335,6 +1335,21 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
 .d-buys{margin-top:10px}.d-buys h4{margin:0 0 4px}.d-buys .vkv small{display:block;color:var(--muted);font-size:12px}
 .vread-m{opacity:.75;font-size:11.5px}
 .vchk-run{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.vchk-run small{opacity:.75}
+/* Bill page: ✕ clears the customer (only when something is filled) */
+.bh-cust.has-x{grid-template-columns:1.2fr 1fr 36px}
+.cust-x{width:36px;height:auto;min-height:36px;border:0;border-radius:12px;background:var(--surface-2);color:var(--muted);display:grid;place-items:center;cursor:pointer;padding:0}
+.cust-x[hidden]{display:none}
+/* Customers page */
+.cucard .meta2 .pill{margin-left:4px}
+.cu-card{border:1.5px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px;background:var(--surface)}
+.cu-top{display:flex;align-items:center;gap:12px}.cu-top>div:not(.cu-av){flex:1}
+.cu-av{flex:none;width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--ink-fg);display:grid;place-items:center;font:800 19px var(--f-display)}
+.cu-name{display:block;font-size:18px;overflow-wrap:anywhere}.cu-mob{display:block;color:var(--muted);font-size:14px;margin-top:2px;white-space:nowrap}
+.cu-acts{display:flex;gap:6px;flex:none}.cu-acts .iconbtn{background:var(--surface-2)}
+.cu-info{display:grid;gap:4px;border-top:1px dashed var(--line);padding-top:8px}.cu-txt{text-align:right;max-width:65%;overflow-wrap:anywhere}
+.cu-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cu-stat{background:var(--surface-2);border-radius:14px;padding:9px 8px;display:grid;gap:2px;min-width:0}.cu-stat span{font-size:11.5px;color:var(--muted);font-weight:600}.cu-stat b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cu-stat b.bad{color:var(--danger)}
+@media (max-width:360px){.cu-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -1396,6 +1411,7 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
       <div class="bh-cust">
         <input id="cust" name="rb-cust-x" autocomplete="rb-cust-name" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
         <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="20" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
+        <button type="button" class="cust-x" id="cust-x" hidden aria-label="Clear customer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
       <div class="sugbox" id="sug-cust" role="listbox" hidden></div>
       <span class="err" id="mob-err"></span>
@@ -1462,6 +1478,7 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
       <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
       <button id="t-reports" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><div><b data-t="repT">Reports</b><span data-t="repD">Sales, top items, GST summary and files for your CA</span></div></button>
       <button id="t-vendors" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18M9 20v-6h6v6"/></svg><div><b data-t="vTitle">Vendors</b><span data-t="vToolD">Bills from suppliers, payments, what you owe</span></div></button>
+      <button id="t-custs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 20a6 6 0 0 0-2.5-4.9"/></svg><div><b data-t="cuT">Customers</b><span data-t="cuToolD">Everyone who bought, their details and bills</span></div></button>
       <button id="t-dues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2-2-1.3V4z"/><path d="M8 9h6M8 13h4"/><circle cx="18" cy="7" r="4" fill="var(--surface)"/><path d="M18 5.2v3.6M16.6 6h2.3a.7.7 0 0 1 0 1.4h-1.8a.7.7 0 0 0 0 1.4h2.3"/></svg><div><b data-t="duesT">Credit (Udhaar)</b><span id="t-dues-sub" data-t="duesD">Who owes money, and record payments</span></div></button>
       <button id="t-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><b data-t="settings">Settings</b><span data-t="settingsD">Shop name, units, rounding, bill footer</span></div></button>
     </div>
@@ -1633,7 +1650,12 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, vKept:"The new reading was poorer, so the earlier one is kept.", vCheckingWait:" · can take up to a minute", vStopChk:"Stop", vChkStopped:"Stopped. Tap Check again any time.", vChkSlow:"Checking took too long (Google was slow or busy). Tap Check again later.", vChkFail2:"Couldn't finish checking. Tap Check again.", vLiteNoLines:"Item lines weren't read: today's free limit of Google's main model is used up, so a lighter one read only the totals. Tap Check again after about 1:30 pm tomorrow to get the items.", vReadBy:m=>`Read by ${m}`, vItemsT:"Items on this bill", vLoadingLines:"Getting the lines read from this bill…", vItemsBtn:n=>`Items on this bill (${n})`, vItemsSub:"Match to your items · update buy prices", vItemsDone:(n,u)=>`✓ ${n} matched · ${u} buy price${u===1?"":"s"} updated`,
+  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, cuCleared:"Customer cleared", cuT:"Customers", cuToolD:"Everyone who bought, their details and bills", cuSearch:"Search name, mobile or GSTIN", cuSort_recent:"Recent", cuSort_top:"Most business", cuSort_due:"Has dues", cuSort_az:"A–Z",
+  cuSummary:(n,d)=>`${n} customer${n===1?"":"s"}${d?` · ${d} due`:""}`, cuNone:q=>`No customer matches “${q}”.`, cuEmpty:"Customers appear here once a bill has a mobile number.", cuDue:a=>`Due ${a}`, cuLast:d=>`last ${d}`, cuMore:n=>`Show ${n} more`,
+  cuNoName:"(no name)", cuAddr:"Address", cuNote:"Private note", cuNotePh:"Only your shop sees this", cuBills:"Bills", cuTotal:"Total", cuDueL:"Due", cuLastL:"Last bill", cuStartBill:"Start a bill", cuSeeCredit:"Dues & payment", cuBillsH:"Bills",
+  cuNoBills:"No bills found for this number.", cuOlder:"Older bills: search the number in Past bills.", cuBillsOld:"Couldn't load bills right now.", cuOnBill:n=>`${n} is on the bill`, cuFinishEdit:"Finish or cancel the bill you're editing first.",
+  cuEditT:"Edit customer", cuNameL:"Name", cuMobMove:"All this customer's bills and dues will move to the new number.", cuEditInfo:"Past bills keep the details they were sent with. New bills use these.", cuMoved:n=>`Saved · ${n} bill${n===1?"":"s"} moved to the new number`,
+  vKept:"The new reading was poorer, so the earlier one is kept.", vCheckingWait:" · can take up to a minute", vStopChk:"Stop", vChkStopped:"Stopped. Tap Check again any time.", vChkSlow:"Checking took too long (Google was slow or busy). Tap Check again later.", vChkFail2:"Couldn't finish checking. Tap Check again.", vLiteNoLines:"Item lines weren't read: today's free limit of Google's main model is used up, so a lighter one read only the totals. Tap Check again after about 1:30 pm tomorrow to get the items.", vReadBy:m=>`Read by ${m}`, vItemsT:"Items on this bill", vLoadingLines:"Getting the lines read from this bill…", vItemsBtn:n=>`Items on this bill (${n})`, vItemsSub:"Match to your items · update buy prices", vItemsDone:(n,u)=>`✓ ${n} matched · ${u} buy price${u===1?"":"s"} updated`,
   vItemsD:"Each line is matched to an item in your price list. Buy prices are before GST and are only changed where ticked.", vAppliedOn:(n,u,d,b)=>`Saved before: ${n} matched, ${u} buy price${u===1?"":"s"} updated · ${d}${b?" · "+b:""}`,
   vSeeLines:n=>`See the ${n} line${n===1?"":"s"} read`, vlUnclear:"unclear", vlShould:a=>`should be ${a}`, vlSub:"Items total", vlDisc:"Discount", vlCharge:"Charges", vlTax:"Total GST", vlRo:"Round off", vlTotal:"Bill total",
   vNoLines:"No item lines were read from this bill.", vNeedNet:"Needs internet.", vPerUnit:(c,u)=>`${c} per ${u}`, vUnitWord:"unit", vSkipped:"Not in my price list (skipped)", vUnskip:"Undo", vSkip:"Not in my price list", vPickPh:"Find the item…",
@@ -1694,7 +1716,12 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, vKept:"नई रीडिंग कमज़ोर थी, इसलिए पहले वाली रखी गई।", vCheckingWait:" · एक मिनट तक लग सकता है", vStopChk:"रोकें", vChkStopped:"रोक दिया। कभी भी Check again दबाएँ।", vChkSlow:"जाँच में बहुत समय लगा (Google धीमा या व्यस्त था)। बाद में Check again दबाएँ।", vChkFail2:"जाँच पूरी नहीं हो सकी। Check again दबाएँ।", vLiteNoLines:"सामान की लाइनें नहीं पढ़ी गईं: Google के मुख्य मॉडल की आज की मुफ़्त सीमा खत्म है, इसलिए हल्के मॉडल ने सिर्फ़ कुल रकम पढ़ी। सामान के लिए कल दोपहर ~1:30 के बाद Check again दबाएँ।", vReadBy:m=>`${m} ने पढ़ा`, vItemsT:"इस बिल का सामान", vLoadingLines:"इस बिल की पढ़ी गई लाइनें ला रहे हैं…", vItemsBtn:n=>`इस बिल का सामान (${n})`, vItemsSub:"अपने सामान से मिलाएँ · खरीद रेट अपडेट करें", vItemsDone:(n,u)=>`✓ ${n} मिलाए · ${u} खरीद रेट अपडेट`,
+  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, cuCleared:"ग्राहक हटाया", cuT:"ग्राहक", cuToolD:"सभी ग्राहक, उनकी जानकारी और बिल", cuSearch:"नाम, मोबाइल या GSTIN खोजें", cuSort_recent:"हाल के", cuSort_top:"सबसे ज़्यादा खरीद", cuSort_due:"बकाया वाले", cuSort_az:"A–Z",
+  cuSummary:(n,d)=>`${n} ग्राहक${d?` · ${d} बकाया`:""}`, cuNone:q=>`“${q}” से कोई ग्राहक नहीं मिला।`, cuEmpty:"बिल पर मोबाइल नंबर डालने पर ग्राहक यहाँ दिखेंगे।", cuDue:a=>`बकाया ${a}`, cuLast:d=>`पिछला ${d}`, cuMore:n=>`${n} और दिखाएँ`,
+  cuNoName:"(नाम नहीं)", cuAddr:"पता", cuNote:"निजी नोट", cuNotePh:"सिर्फ़ आपकी दुकान देखेगी", cuBills:"बिल", cuTotal:"कुल", cuDueL:"बकाया", cuLastL:"पिछला बिल", cuStartBill:"बिल शुरू करें", cuSeeCredit:"बकाया व भुगतान", cuBillsH:"बिल",
+  cuNoBills:"इस नंबर के कोई बिल नहीं मिले।", cuOlder:"पुराने बिल: Past bills में नंबर खोजें।", cuBillsOld:"अभी बिल लोड नहीं हो सके।", cuOnBill:n=>`${n} बिल पर आ गए`, cuFinishEdit:"पहले जो बिल बदल रहे हैं उसे पूरा या रद्द करें।",
+  cuEditT:"ग्राहक बदलें", cuNameL:"नाम", cuMobMove:"इस ग्राहक के सभी बिल और बकाया नए नंबर पर चले जाएँगे।", cuEditInfo:"पुराने बिलों में वही जानकारी रहेगी जो भेजी गई थी। नए बिल यह जानकारी लेंगे।", cuMoved:n=>`सेव · ${n} बिल नए नंबर पर गए`,
+  vKept:"नई रीडिंग कमज़ोर थी, इसलिए पहले वाली रखी गई।", vCheckingWait:" · एक मिनट तक लग सकता है", vStopChk:"रोकें", vChkStopped:"रोक दिया। कभी भी Check again दबाएँ।", vChkSlow:"जाँच में बहुत समय लगा (Google धीमा या व्यस्त था)। बाद में Check again दबाएँ।", vChkFail2:"जाँच पूरी नहीं हो सकी। Check again दबाएँ।", vLiteNoLines:"सामान की लाइनें नहीं पढ़ी गईं: Google के मुख्य मॉडल की आज की मुफ़्त सीमा खत्म है, इसलिए हल्के मॉडल ने सिर्फ़ कुल रकम पढ़ी। सामान के लिए कल दोपहर ~1:30 के बाद Check again दबाएँ।", vReadBy:m=>`${m} ने पढ़ा`, vItemsT:"इस बिल का सामान", vLoadingLines:"इस बिल की पढ़ी गई लाइनें ला रहे हैं…", vItemsBtn:n=>`इस बिल का सामान (${n})`, vItemsSub:"अपने सामान से मिलाएँ · खरीद रेट अपडेट करें", vItemsDone:(n,u)=>`✓ ${n} मिलाए · ${u} खरीद रेट अपडेट`,
   vItemsD:"हर लाइन आपकी रेट लिस्ट के सामान से मिलाई जाती है। खरीद रेट GST के बिना है और सिर्फ़ टिक किए सामान का बदलता है।", vAppliedOn:(n,u,d,b)=>`पहले सेव: ${n} मिलाए, ${u} खरीद रेट अपडेट · ${d}${b?" · "+b:""}`,
   vSeeLines:n=>`पढ़ी गई ${n} लाइन देखें`, vlUnclear:"साफ़ नहीं", vlShould:a=>`होना चाहिए ${a}`, vlSub:"सामान का कुल", vlDisc:"छूट", vlCharge:"खर्च", vlTax:"कुल GST", vlRo:"राउंड ऑफ़", vlTotal:"बिल का कुल",
   vNoLines:"इस बिल से सामान की लाइनें नहीं पढ़ी गईं।", vNeedNet:"इंटरनेट चाहिए।", vPerUnit:(c,u)=>`${c} प्रति ${u}`, vUnitWord:"यूनिट", vSkipped:"मेरी रेट लिस्ट में नहीं (छोड़ा)", vUnskip:"वापस", vSkip:"मेरी रेट लिस्ट में नहीं", vPickPh:"सामान खोजें…",
@@ -1827,7 +1854,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=29;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=30;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -2588,7 +2615,7 @@ function renderBill(){
   updateBillTotals();
   renderBillSearch();
 }
-function updateBillTotals(){
+function updateBillTotals(){ try{ custXSync(); }catch{}
   const bp=$("#bill-profit"), pb=$("#bill-pbox");
   if(S.cfg.showProfit && S.bill.length){ const pf=profitOf(S.bill);
     bp.hidden=false;
@@ -3650,7 +3677,8 @@ document.addEventListener("scroll",qpFollow,{passive:true,capture:true}); window
 document.addEventListener("focusout",e=>{ if(e.target.dataset?.hsn!=null && !e.target.value.trim()){ const l=S.bill[+e.target.dataset.hsn]; if(l) e.target.value=lineInfo(l).hsn; } });
 $("#cust").value=S.cust; $("#cust").addEventListener("input",e=>{ S.cust=e.target.value; ls.set("rb_cust",S.cust); updateBillTotals(); });
 $("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("#cust-mob").focus(); } });
-$("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); custLookup(); });
+$("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); custLookup(); custXSync(); });
+$("#cust-x").onclick=()=>{ custClear(); toast(t("cuCleared")); };
 $("#pay-seg").addEventListener("click",e=>{ const b=e.target.closest("[data-pay]"); if(b) setPay(b.dataset.pay); });
 $("#pay-recv").value=S.recv; $("#pay-recv").addEventListener("input",e=>{ S.recv=e.target.value; ls.set("rb_recv",S.recv); e.target.classList.remove("need"); updateBillTotals(); });
 ["#cust","#cust-mob"].forEach(k=>$(k).addEventListener("input",e=>e.target.classList.remove("need")));
@@ -3719,7 +3747,7 @@ function custIndex(){
   const local=custCache(), key=(CUSTD&&CUSTD.brev||"")+"|"+S.cfg.mode+"|"+custLV+"|"+Object.keys(local).length+"|"+((CUSTD&&CUSTD.list.length)||0);
   if(custIdx && custIdxKey===key) return custIdx;
   const m=new Map();
-  for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])) m.set(r[0],{mob:r[0],name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6]});
+  for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])) m.set(r[0],{mob:r[0],name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6],addr:r[7]||"",note:r[8]||"",lastNo:r[9]||""});
   for(const k of Object.keys(local)){ const o=local[k], e=m.get(k); if(!e) m.set(k,{mob:k,name:o.name||"",gstin:o.gstin||"",count:o.count||0,total:o.total||0,last:o.last||"",due:+o.due||0});
     else { if(!e.name && o.name) e.name=o.name; if(!e.gstin && o.gstin) e.gstin=o.gstin; } }
   custIdx=[...m.values()].map(c=>({...c, ln:String(c.name||"").toLowerCase(), lg:String(c.gstin||"").toUpperCase()})); custIdxKey=key; return custIdx;
@@ -4713,6 +4741,7 @@ async function showBill(b){
 }
 $("#t-bills").onclick=()=>{ billBackFn=openBills; openBills(); };
 $("#t-dues").onclick=()=>openDues();
+$("#t-custs").onclick=()=>openCustomers();
 $("#t-vendors").onclick=()=>openVendors();
 $("#t-reports").onclick=()=>openReports();
 $("#bill-pdf").onclick=()=>pdfFor(invFromCurrent(), $("#bill-pdf"));
@@ -5422,6 +5451,91 @@ const daysSince=d=>d?Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86
 async function loadDues(){
   const j=await apiPost({action:"listDues"}); duesCache=j; duesDirty=false;
   ls.set(envKey("rb_dues_sum"),{total:j.total||0,n:(j.customers||[]).length}); duesSub(); return j;
+}
+/* ---------------- Bill page: one ✕ clears customer name, mobile and GSTIN ---------------- */
+function custXSync(){ const b=$("#cust-x"); if(!b) return; const on=!!(S.cust.trim()||S.mob.trim()||String(S.custGstin||"").trim()); b.hidden=!on; $(".bh-cust").classList.toggle("has-x",on); }
+function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; S.custAuto=""; S.custQ="";
+  ["#cust","#cust-mob","#cust-gstin"].forEach(k=>{ const el=$(k); if(el){ el.value=""; el.classList.remove("need"); } }); ["rb_cust","rb_mob","rb_cgstin"].forEach(k=>ls.set(k,""));
+  const me=$("#mob-err"); if(me) me.textContent=""; const ge=$("#gstin-err"); if(ge) ge.textContent=""; sugClose(); showCustHint(null); updateBillTotals(); custXSync(); }
+/** Put a customer on the bill (Customers page → "Start a bill"). A bill already in progress for someone else is kept as an open bill. */
+function custFill(c){ if(S.editing && !S.editing.fresh){ toast(t("cuFinishEdit")); return false; }
+  if(S.bill.length && (S.cust.trim()||S.mob.trim()) && custKey(S.mob)!==c.mob) newHeldBill();
+  S.cust=c.name||""; S.custAuto=""; S.mob=c.mob; S.custGstin=c.gstin||""; $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
+  ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_cgstin",S.custGstin); S.custQ=""; custLookup(); updateBillTotals(); custXSync(); return true; }
+/* ---------------- Customers page: list → customer → their bills (same bill view as Past bills) ---------------- */
+const CU={q:"",sort:"recent",lim:150};
+async function openCustomers(){
+  if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
+  openSheet(t("cuT"), `<div id="cu-page"><div class="bl-bar"><input id="cu-q" type="search" placeholder="${esc(t("cuSearch"))}" autocomplete="off" value="${esc(CU.q)}">
+      <div class="bl-chips" id="cu-sort">${["recent","top","due","az"].map(k=>`<button type="button" class="chip" data-cs="${k}" aria-pressed="${CU.sort===k}">${esc(t("cuSort_"+k))}</button>`).join("")}</div></div>
+    <p class="note" id="cu-sum" style="margin:2px 2px 8px"></p><div id="cu-list">${skelCards(5,true)}</div></div>`, "", {full:true});
+  $("#cu-q").oninput=e=>{ CU.q=e.target.value; CU.lim=150; cuRender(); };
+  $("#cu-sort").onclick=e=>{ const b=e.target.closest("[data-cs]"); if(!b) return; CU.sort=b.dataset.cs; $("#cu-sort").querySelectorAll("[data-cs]").forEach(x=>x.setAttribute("aria-pressed",x===b)); cuRender(); };
+  await custdGet(); if(CUSTD) cuRender(); custIdx=null;
+  custdRefresh(true).then(()=>{ custIdx=null; if($("#cu-list")) cuRender(); }).catch(()=>{});
+}
+function cuAll(){ const q=CU.q.trim().toLowerCase(), qd=q.replace(/\D/g,"");
+  let L=custIndex().filter(c=>!q || c.ln.includes(q) || (qd.length>=3 && c.mob.includes(qd)) || c.lg.toLowerCase().includes(q));
+  const ts=c=>c.last?Date.parse(c.last)||0:0;
+  L=L.slice().sort(CU.sort==="top"?(a,b)=>(b.total||0)-(a.total||0):CU.sort==="due"?(a,b)=>(b.due||0)-(a.due||0)||ts(b)-ts(a):CU.sort==="az"?(a,b)=>(a.name||a.mob).localeCompare(b.name||b.mob,"en",{sensitivity:"base"}):(a,b)=>ts(b)-ts(a));
+  if(CU.sort==="due") L=L.filter(c=>c.due>0); return L; }
+function cuRender(){ const el=$("#cu-list"); if(!el) return; const L=cuAll(), due=r2(L.reduce((a,c)=>a+(+c.due||0),0));
+  $("#cu-sum").textContent=t("cuSummary",L.length,due>0?rs(due):"");
+  if(!L.length){ el.innerHTML=`<div class="empty"><p>${esc(CU.q?t("cuNone",CU.q):t("cuEmpty"))}</p></div>`; return; }
+  el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,CU.lim).map(c=>`<button type="button" class="billcard cucard" data-cm="${esc(c.mob)}"><b>${esc(c.name||("+91 "+c.mob))}</b><span class="amt num"${c.due>0?' style="color:var(--danger)"':""}>${c.due>0?esc(t("cuDue",rs(c.due))):rs(c.total||0)}</span>
+      <span class="meta2">${c.name?esc(c.mob)+" · ":""}${esc(t("billsN",c.count||0))}${c.last?` · ${esc(t("cuLast",fmtShort(c.last)))}`:""}${c.gstin?` <span class="pill gst">GSTIN</span>`:""}</span></button>`).join("")}</div>
+    ${L.length>CU.lim?`<button type="button" class="btn ghost" id="cu-more" style="width:100%;margin-top:8px">${esc(t("cuMore",L.length-CU.lim))}</button>`:""}`;
+  el.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>openCustomer(b.dataset.cm));
+  const mo=$("#cu-more"); if(mo) mo.onclick=()=>{ CU.lim+=300; cuRender(); }; }
+async function openCustomer(mob){ const c=custIndex().find(x=>x.mob===mob)||{mob,name:"",gstin:"",count:0,total:0,due:0,addr:"",note:""};
+  const m=normMobile(mob), title=c.name||("+91 "+mob);
+  const stat=(k,v,cls)=>`<div class="cu-stat"><span>${esc(k)}</span><b class="num${cls?" "+cls:""}">${v}</b></div>`;
+  openSheet(title, `<div class="cu-page" style="display:grid;gap:12px"><div><button type="button" class="btn ghost" id="cu-back">← ${esc(t("cuT"))}</button></div>
+    <div class="cu-card"><div class="cu-top"><div class="cu-av">${esc((c.name||"#").trim().charAt(0).toUpperCase())}</div><div style="min-width:0"><b class="cu-name">${esc(c.name||t("cuNoName"))}</b><span class="cu-mob num">+91 ${esc(mob.slice(0,5)+" "+mob.slice(5))}</span></div>
+      <span class="cu-acts">${can("manager")?`<button type="button" class="iconbtn" id="cu-edit" aria-label="${esc(t("edit"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>`:""}${m?`<a class="iconbtn" href="${esc(telHref(mob))}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a><a class="iconbtn" target="_blank" rel="noopener" href="https://wa.me/${esc(m)}" aria-label="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg></a>`:""}</span></div>
+      ${c.gstin||c.addr||c.note?`<div class="cu-info">${c.gstin?`<div class="vkv"><span>GSTIN</span><b class="num">${esc(c.gstin)}</b></div>`:""}${c.addr?`<div class="vkv"><span>${esc(t("cuAddr"))}</span><span class="cu-txt">${esc(c.addr)}</span></div>`:""}${c.note?`<div class="vkv"><span>🔒 ${esc(t("cuNote"))}</span><span class="cu-txt">${esc(c.note)}</span></div>`:""}</div>`:""}
+    </div>
+    <div class="cu-stats">${stat(t("cuBills"),fmtN(c.count||0))}${stat(t("cuTotal"),rs(c.total||0))}${stat(t("cuDueL"),rs(c.due||0),c.due>0?"bad":"")}${stat(t("cuLastL"),c.last?esc(fmtShort(c.last)):"—")}</div>
+    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cu-bill">${esc(t("cuStartBill"))}</button>${c.due>0?`<button type="button" class="btn ghost" id="cu-credit">${esc(t("cuSeeCredit"))}</button>`:""}</div>
+    <h4 style="margin:6px 0 0">${esc(t("cuBillsH"))}</h4><div id="cu-bills">${skelCards(3,true)}</div></div>`, "", {full:true});
+  $("#cu-back").onclick=()=>openCustomers();
+  $("#cu-bill").onclick=()=>{ if(custFill(c)){ closeSheet(); setTab("bill"); toast(t("cuOnBill",c.name||mob)); } };
+  if($("#cu-edit")) $("#cu-edit").onclick=()=>cuEdit(c);
+  if($("#cu-credit")) $("#cu-credit").onclick=async()=>{ openSheet(t("duesT"), ldBlock(), "", {full:true}); try{ await loadDues(); }catch{} const d=(duesCache&&duesCache.customers||[]).find(x=>custKey(x.mobile)===mob); if(d) openDueCustomer(d); else openDues(); };
+  cuBills(mob);
+}
+/** This customer's bills: from the phone's copy of Past bills (refreshed first if it's old), newest first. */
+async function cuBills(mob){ const draw=C=>{ const el=$("#cu-bills"); if(!el||!C) return;
+    const L=C.bills.filter(b=>custKey(b.mobile)===mob).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    if(!L.length){ el.innerHTML=`<p class="note">${esc(t("cuNoBills"))}</p>`; return; }
+    el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,200).map((b,i)=>{ const d=b.date?new Date(b.date):null; return `<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-ci="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}</b><span class="amt num">${rs(b.total)}</span>
+      <span class="meta2">${d?esc(fmtShort(b.date)+" · "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}</span></button>`; }).join("")}</div>
+      ${L.length>200?`<p class="note">${esc(t("cuOlder"))}</p>`:""}`;
+    el.querySelectorAll("[data-ci]").forEach(x=>x.onclick=()=>{ billBackFn=()=>openCustomer(mob); showBill(L[+x.dataset.ci]); }); };
+  const C=await blcGet(); if(C) draw(C);
+  try{ if(!C || Date.now()-(C.at||0)>20000){ const C2=await blcRefresh(); if(C2) draw(C2); else if(!C){ const el=$("#cu-bills"); if(el) el.innerHTML=`<p class="note">${esc(t("cuBillsOld"))}</p>`; } } }
+  catch{ if(!C){ const el=$("#cu-bills"); if(el) el.innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; } } }
+/** Edit: name, mobile, GSTIN, address, private note. Past bills keep what was sent; a new mobile moves this customer's bills to it. */
+function cuEdit(c){
+  openSheet(t("cuEditT"), `<div class="form"><div><button type="button" class="btn ghost" id="ce-back">← ${esc(c.name||c.mob)}</button></div>
+    <div class="field"><label for="ce-name">${esc(t("cuNameL"))}</label><input id="ce-name" value="${esc(c.name||"")}" maxlength="80" autocomplete="off"></div>
+    <div class="field"><label for="ce-mob">${esc(t("mobL"))}</label><input id="ce-mob" inputmode="tel" value="${esc(c.mob)}" maxlength="20" autocomplete="off"><small class="note" id="ce-mobnote" hidden>${esc(t("cuMobMove"))}</small></div>
+    <div class="field"><label for="ce-gst">GSTIN</label><input id="ce-gst" value="${esc(c.gstin||"")}" maxlength="15" autocomplete="off" style="text-transform:uppercase" placeholder="${esc(t("optional"))}"></div>
+    <div class="field"><label for="ce-addr">${esc(t("cuAddr"))}</label><textarea id="ce-addr" rows="2" maxlength="200" placeholder="${esc(t("optional"))}">${esc(c.addr||"")}</textarea></div>
+    <div class="field"><label for="ce-note">🔒 ${esc(t("cuNote"))}</label><textarea id="ce-note" rows="2" maxlength="300" placeholder="${esc(t("cuNotePh"))}">${esc(c.note||"")}</textarea></div>
+    <p class="note" style="margin:0">${esc(t("cuEditInfo"))}</p><p class="err" id="ce-err"></p></div>`,
+    `<button class="btn ghost" id="ce-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ce-save">${esc(t("save"))}</button>`);
+  $("#ce-back").onclick=$("#ce-cancel").onclick=()=>openCustomer(c.mob);
+  $("#ce-mob").oninput=()=>{ $("#ce-mobnote").hidden=custKey($("#ce-mob").value)===c.mob; };
+  $("#ce-save").onclick=async()=>{ const err=$("#ce-err"); err.textContent=""; const nm=custKey($("#ce-mob").value), g=$("#ce-gst").value.trim().toUpperCase();
+    if(!nm){ err.textContent=t("mobBad"); return; } if(g && !gstinOk(g)){ err.textContent=t("gstinBad"); return; }
+    if(navigator.onLine===false){ err.textContent=t("vNeedNet"); return; }
+    const b=$("#ce-save"); btnBusy(b,true);
+    try{ const r=await apiPost({action:"saveCustomer",customer:{mobile:c.mob,newMobile:nm,name:$("#ce-name").value.trim(),gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim()}});
+      const cc=custCache(); delete cc[c.mob]; if(nm!==c.mob) delete cc[nm]; ls.set(envKey("rb_customers"),cc); custLV++;
+      await custdRefresh(true); custIdx=null; if(r.moved){ try{ await blcRefresh(); }catch{} }   /* bills now carry the new number */
+      toast(r.moved?t("cuMoved",r.moved):t("saved")); openCustomer(nm); }
+    catch(e){ btnBusy(b,false); err.textContent=e&&e.code==="bad_gstin"?t("gstinBad"):e&&e.code==="bad_mobile"?t("mobBad"):e&&e.code==="not_allowed"?t("notAllowed"):errMsg(e); } };
 }
 async function openDues(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 29;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 30;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -29,7 +29,8 @@ function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
 function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
 const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos'];
 
-const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due'];
+const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due', 'address', 'note', 'updatedAt', 'updatedBy'];
+const CPAD_ = r => { while (r.length < CUST_COLS.length) r.push(''); return r.slice(0, CUST_COLS.length); };   // rows always as wide as the header
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs', 'aliases', 'cat'];
 const MAX_PHOTOS = 5;   // photos per item; each is its own cell in the Images tab (under 48,000 characters, below Google's 50,000 per cell)
@@ -295,7 +296,7 @@ function ensureEnv_() {
       live.getRange(1, 1, 1, CUST_COLS.length).setValues([CUST_COLS]).setFontWeight('bold'); live.setFrozenRows(1);
       const n = oldCust.getLastRow() - 1;
       if (n > 0) {
-        const rows = oldCust.getRange(2, 1, n, 3).getValues().filter(r => String(r[0]).replace(/\D/g, '')).map(r => ["'" + String(r[0]).replace(/\D/g, '').slice(-10), r[1], r[2], 0, 0, '', '', 0]);
+        const rows = oldCust.getRange(2, 1, n, 3).getValues().filter(r => String(r[0]).replace(/\D/g, '')).map(r => CPAD_(["'" + String(r[0]).replace(/\D/g, '').slice(-10), r[1], r[2], 0, 0, '', '', 0]));
         if (rows.length) live.getRange(2, 1, rows.length, CUST_COLS.length).setValues(rows);
       }
     }
@@ -365,7 +366,7 @@ function recountCustomers_() {
   if (m < 1) return;
   const rows = cs.getRange(2, 1, m, CUST_COLS.length).getValues().map(r => {
     const x = stat[mob10_(r[0])] || { bills: 0, total: 0, last: '', lastNo: '', due: 0 };
-    return [mob10_(r[0]) ? "'" + mob10_(r[0]) : r[0], r[1], r[2], x.bills, x.total, x.last, x.lastNo, x.due];
+    return CPAD_([mob10_(r[0]) ? "'" + mob10_(r[0]) : r[0], r[1], r[2], x.bills, x.total, x.last, x.lastNo, x.due].concat(r.slice(8)));   // keeps address/note
   });
   cs.getRange(2, 1, m, CUST_COLS.length).setValues(rows);
 }
@@ -433,6 +434,7 @@ function doPost(e) {
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'listCustomers': res = listCustomers_(String(body.brev || '')); break;
+      case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = listDues_(); break;
@@ -468,7 +470,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer'].indexOf(body.action) < 0) bump_();
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -484,7 +486,7 @@ function doPost(e) {
  * Wrong PINs lock only that phone (dev id) after MAX_FAILS in 15 min; GLOBAL_MAX_FAILS per hour locks everyone.
  */
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
-const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
+const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
@@ -1070,7 +1072,7 @@ function findCustomer_(mobile) {
   if (i < 0) return { customer: null };
   const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
   const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
-  return { customer: { name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]), due: num_(r[7]) } };
+  return { customer: { address: String(r[8] || ''), note: String(r[9] || ''), name: String(r[1] || ''), gstin: String(r[2] || ''), count: num_(r[3]), total: num_(r[4]), last: isNaN(d) ? '' : d.toISOString(), lastBillNo: num_(r[6]), due: num_(r[7]) } };
 }
 
 /**
@@ -1084,11 +1086,33 @@ function listCustomers_(brev) {
   if (n > 0) s.getRange(2, 1, n, CUST_COLS.length).getValues().forEach(r => {
     const m = mob10_(r[0]); if (!m) return;
     const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
-    out.push([m, String(r[1] || ''), String(r[2] || ''), num_(r[3]), num_(r[4]), isNaN(d) ? '' : d.toISOString(), num_(r[7])]);
+    out.push([m, String(r[1] || ''), String(r[2] || ''), num_(r[3]), num_(r[4]), isNaN(d) ? '' : d.toISOString(), num_(r[7]), String(r[8] || ''), String(r[9] || ''), num_(r[6])]);   // + address, note, last bill no.
   });
   return { customers: out, brev: v };
 }
 
+/** Edit a customer (Customers page). Name/GSTIN/address/note change only the customer, never past bills (they keep what was sent).
+ *  A new mobile moves this mode's bills to it (their mobile column) and joins the two customers if the new number already exists. */
+function saveCustomer_(x, by) { const k = mob10_(x.mobile); if (!k) throw new Error('bad_mobile');
+  const k2 = x.newMobile ? mob10_(x.newMobile) : k; if (!k2) throw new Error('bad_mobile');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try { const s = customersSheet_(); let i = custRow_(s, k);
+    if (i < 0) { s.appendRow(CPAD_(["'" + k, '', '', 0, 0, '', '', 0])); i = custRow_(s, k); }
+    const r = CPAD_(s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0]);
+    const g = String(x.gstin || '').trim().toUpperCase();
+    if (g && !/^\d{2}[A-Z0-9]{13}$/.test(g)) throw new Error('bad_gstin');
+    r[1] = str_(String(x.name || '').trim(), 80); r[2] = g; r[8] = str_(String(x.address || '').trim(), 200); r[9] = str_(String(x.note || '').trim(), 300); r[10] = new Date(); r[11] = by;
+    let moved = 0;
+    if (k2 !== k) {
+      const bs = sheet_(tab_('Bills'), BILL_COLS), B = BILL_COLS.reduce((m, c, j) => (m[c] = j, m), {}), n = bs.getLastRow() - 1;
+      if (n > 0) { const col = bs.getRange(2, B.mobile + 1, n, 1).getValues(); col.forEach(c => { if (mob10_(c[0]) === k) { c[0] = "'" + k2; moved++; } }); if (moved) bs.getRange(2, B.mobile + 1, n, 1).setValues(col); }
+      const j = custRow_(s, k2);
+      if (j > 0) { const o = CPAD_(s.getRange(j, 1, 1, CUST_COLS.length).getValues()[0]); [1, 2, 8, 9].forEach(c => { if (!r[c]) r[c] = o[c]; }); r[0] = "'" + k2; s.getRange(j, 1, 1, CUST_COLS.length).setValues([r]); s.deleteRow(i); }
+      else { r[0] = "'" + k2; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]); }
+      recountCustomers_(); bumpB_(true);
+    } else { r[0] = "'" + k; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]); bumpB_(false, 'cust:' + k); }   // customers list refreshes; no bills to resend
+    return Object.assign(findCustomer_(k2), { mobile: k2, moved: moved }); }
+  finally { lock.releaseLock(); } }
 function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? d : ''; }
 
 /** The Customers tab: one row per mobile. Built once from existing bills the first time it's needed. */
@@ -1113,7 +1137,7 @@ function customersSheet_() {
     c[3] += 1; c[4] = Math.round((c[4] + num_(r[B.total])) * 100) / 100; c[5] = r[B.date]; c[6] = r[B.billNo];
     if (dueV && (dueV[ix][0] === 'Credit' || dueV[ix][0] === 'Part paid')) c[7] = r2_(c[7] + num_(dueV[ix][2]));
   });
-  const rows = order.map(k => map[k]);
+  const rows = order.map(k => CPAD_(map[k]));
   if (rows.length) s.getRange(2, 1, rows.length, CUST_COLS.length).setValues(rows);
   return s;
 }
@@ -1130,7 +1154,7 @@ function touchCustomer_(mobile, name, gstin, total, billNo, newBill) {
   const s = customersSheet_();
   const i = custRow_(s, k);
   name = String(name || '').trim(); gstin = String(gstin || '').trim();
-  if (i < 0) { s.appendRow(["'" + k, str_(name, 80), str_(gstin, 20), 1, num_(total), new Date(), billNo, 0]); return; }
+  if (i < 0) { s.appendRow(CPAD_(["'" + k, str_(name, 80), str_(gstin, 20), 1, num_(total), new Date(), billNo, 0])); return; }
   const r = s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0];
   if (name) r[1] = str_(name, 80);
   if (gstin) r[2] = str_(gstin, 20);

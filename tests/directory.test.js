@@ -51,9 +51,14 @@ const post = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents
 const get = q => JSON.parse(R('doGet(' + JSON.stringify({ parameter: q }) + ').text'));
 ok(post({ action: 'list' }).error === 'bad_session', 'admin actions need sign-in');
 for (let i = 0; i < 6; i++) post({ action: 'signIn', pin: '0', dev: 'x' }); ok(post({ action: 'signIn', pin: '0', dev: 'x' }).error === 'locked', 'wrong admin PINs lock that device');
-R("P_().setProperty('ADMIN_PIN_H', hash_('12345678'))"); const tok = post({ action: 'signIn', pin: '12345678', dev: 'y' }).tok; ok(!!tok, 'right admin PIN signs in');
+R("P_().setProperty('ADMIN_PIN_H', hash_('12345678'))"); let tok = post({ action: 'signIn', pin: '12345678', dev: 'y' }).tok; ok(!!tok, 'right admin PIN signs in');
+// forgot the admin PIN: a new one works, the old one and old dashboards don't, nothing else changes
+const shopsBefore = JSON.stringify(R('shops_().length')); const newPin = R('newAdminPin()');
+ok(/^\d{8}$/.test(newPin) && post({ action: 'list', tok }).error === 'bad_session' && post({ action: 'signIn', pin: '12345678', dev: 'z' }).error === 'bad_pin' && JSON.stringify(R('shops_().length')) === shopsBefore, 'newAdminPin: new PIN, old PIN and old sign-ins stop working, shops untouched');
+const tok2 = post({ action: 'signIn', pin: newPin, dev: 'z2' }).tok; ok(!!tok2 && post({ tok: tok2, action: 'list' }).ok, 'signing in with the new PIN works');
+R("P_().setProperty('ADMIN_PIN_H', hash_('12345678'))"); const tokR = post({ action: 'signIn', pin: '12345678', dev: 'y' }).tok;
 // register main, then create a shop
-const reg = post({ tok, action: 'register', name: 'Gupta Plastics', apiUrl: 'https://script.google.com/macros/s/MAIN/exec', scriptId: 'mainscr', deploymentId: 'maindep' });
+tok = tokR; const reg = post({ tok, action: 'register', name: 'Gupta Plastics', apiUrl: 'https://script.google.com/macros/s/MAIN/exec', scriptId: 'mainscr', deploymentId: 'maindep' });
 ok(reg.ok && reg.healthKey && reg.healthKey.length === 24, 'register main shop: gets a health key to paste');
 const cr = post({ tok, action: 'create', shop: { name: 'Sharma Traders', owner: 'Sharma ji', phone: '98', bizType: 'kirana', state: '27', dirUrl: 'https://dir/exec' } });
 ok(cr.ok && /^SHARMATRAD-[A-Z2-9]{10}$/.test(cr.shop.code) && cr.shop.status === 'needs-auth' && /^\d{6}$/.test(cr.initPin), 'create shop: random code, waiting for one authorisation, starting PIN');

@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (per-person settings; sign-in tokens and app lock).
+Last updated: 9 October 2026 (back-stack for screens inside screens; sign-in tokens and app lock).
 
 ## Where everything lives
 
@@ -339,9 +339,13 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - One step back: the header ← (`#sheet-back`, left of the title), tapping outside (`#scrim`) and the phone's Back all call `sheetStep()`, which clicks the visible `*-back` button, else closes the sheet.
   - Close everything: ✕ (`#sheet-close`) always calls `closeSheet()`. On inner screens it turns into a small "✕ All" pill (Hindi "सब बंद") in the same header row, so it's clear it closes everything; on a top screen it's the plain ✕.
   - `sheetNavSync()` (MutationObserver on `#sheet-body`) shows the header ←, sets `.has-sub` (pill + hides the body "← Back" pill, which stays in the DOM and is still clicked by code) and the ✕ aria-label. New inner screens only need a button whose id ends in `-back`.
+- **Back-stack for screens inside screens** (9 Oct 2026): opening a screen while another is showing puts the current one on `SHEET_STK` (its live DOM, so typed text and buttons survive, plus footer, title, classes, scroll position and `onClose`). Header ←, the phone's Back, a tap outside and Cancel (`sheetBack` / `sheetCancel`) put it back exactly where it was; ✕ (`closeSheet`) clears the stack. Before, Cancel/✕ on e.g. Settings → edit a person closed everything or reopened Settings at the top.
+  - Parent screens open with a key (`sheetKey("settings"), openSheet(…)`; also `bills`, `customers`, `cust:<mob>`, `dues`, `duec:<mob>`, `vendors`, `vendor:<id>`, `vent:<id>`, `reports`, `groups`, `backups`, `item:<id>`, `bill:<id>`). Opening a key that's already on the stack (a save that calls `openSettings()`, a legacy `*-back` that re-opens its list) returns to that level with fresh content and the same scroll (`sheetKeepScroll` holds it for 1.5 s while cards load). The same key as the current screen redraws in place, keeping the scroll.
+  - A click on any `button[id$="-back"]` marks "going back" (`sheetGoingBack`), so a parent it re-opens that isn't on the stack replaces the current level instead of stacking.
+  - Cancel buttons that used to close everything (groups, edit item, bulk add/edit, settings, command preview, Hindi names) now go back one level; at the top level that still closes. Groups → Save goes back to Settings when opened from there.
 - **Back button:** one guard entry in history (`pushGuard`). On `popstate`:
   1. close the unit picker;
-  2. else in a sheet, click its visible `*-back` button (bill → list, customer → Credit list, backups → Settings), otherwise close the sheet;
+  2. else in a sheet, click its visible `*-back` button (bill → list, customer → Credit list, backups → Settings), else go back one level on the back-stack, else close the sheet;
   3. else switch to Prices;
   4. else show "Press back again to exit", and a second press within 2 s leaves the app.
 

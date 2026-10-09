@@ -233,6 +233,14 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - `listDues_` and `getBill_` return those fields, and `showBill` merges them from `getBill`.
   - `startEdit` stores `edits:null` when the count is unknown, and `saveEdit` then skips the `baseEdits` check rather than blocking the save.
   - `SCRIPT_VERSION` 9 / `NEED_SV` 9.
+- **Reports summary card** (9 Oct 2026, `index.html` only, no script change): the top of Reports is one card (`#rp-hero`, `rpHeroInit` / `rpHero`) that moves smoothly between periods, modelled on a usage-card video Mayank shared.
+  - Numbers roll to the new value (`tweenNum`, ~0.65 s ease-out, `tabular-nums`): sales, bills, average bill, each split row and %, average per day, and the three meters (credit received, given on credit, pending now).
+  - **Split bar + rows** (`rpSplit`): sales by item group (the price list's `cat`, matched by item name; "No group" for items without one), top 4 + Other; by top items if the shop has no groups. Uses bill-line amounts (before GST, noted on GST periods). Rows are kept by key: new ones grow in, gone ones fold away (`grid-template-rows` 1fr↔0fr), re-ordered ones slide (FLIP). Darkest shade = biggest (`RPO`).
+  - **Per day** bars (`rpPts`: every day of the period, by month past ~2 months) with "Avg ₹X / day". Same number of bars → heights move; different number → old bars drop, new ones grow in left to right (staggered).
+  - Tap (or point with a mouse at) a part of the split, a row or a day: it's highlighted, the rest fade, and a label shows "Bags · ₹9,000 · 75%" or "6 Oct · ₹1,240 · 2 bills" (`RP.hl`, `rpHl`).
+  - **Instant switching, still live:** each period's report is kept on the phone (`RPC`, by date range). Opening Reports loads Today, then quietly loads This week, This month, Yesterday and Last month one at a time (`rpPrefetch`, `apiPost0`). A copy under 20 s old (`RPC_FRESH`) is shown as is; an older one is shown at once and re-read, and the card moves to the fresh figures. While reading, the card dims slightly with a small spinner (`.rph.busy`).
+  - Follows the phone's "reduce motion" setting (no rolling or moving). The old trend chart (`rpChart`) and the Sales / Bills / Average / Received / Credit / Pending tiles were replaced by the card; GST and Profit tiles stay under it.
+  - Test: `tests/reports.test.js`.
 - **Reports**: always open on **Today** (`openReports` resets `RP.k`). Tapping a top item expands `rpItemDetail()`, which shows:
   - number of bills, quantity and sales
   - average selling price (sales ÷ qty, with the sum written out)

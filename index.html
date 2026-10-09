@@ -919,6 +919,49 @@ html.fz-big .bill-line .step input{width:40px}
 .rp-chart rect{fill:var(--ink)}
 .rp-chart rect.zero{fill:var(--line)}
 .rp-chart text{font:600 8px var(--f-body);fill:var(--muted);text-anchor:middle}
+/* Reports summary card: numbers roll, the split bar and per-day bars move to the new period, rows fade in/out (9 Oct 2026) */
+.rph{position:relative;background:var(--surface);border:1.5px solid var(--line);border-radius:20px;padding:14px 14px 12px;display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.rph-main{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);transition:opacity .25s}
+.rph.busy .rph-main{opacity:.55}
+.rph-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:18px}
+.rph-per{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.01em}
+.rph-spin{display:none}.rph.busy .rph-spin{display:inline-block}
+.rph-big{font:800 32px/1.05 var(--f-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.rph-sub{font-size:13px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.rph-sub b{color:var(--fg)}
+.rph-bar{position:relative;display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+.rph-seg{--o:1;height:100%;width:0;flex:none;background:var(--ink);opacity:var(--o);border-right:2px solid var(--surface);cursor:pointer;transition:width .65s cubic-bezier(.2,.8,.2,1),opacity .25s}
+.rph-seg:last-child{border-right:0}
+.rph.hl .rph-seg:not(.on){opacity:calc(var(--o) * .22)}
+.rph-rows{display:grid;grid-template-columns:minmax(0,1fr)}
+.rph-rw{display:grid;grid-template-rows:1fr;transition:grid-template-rows .4s cubic-bezier(.2,.8,.2,1),opacity .3s,transform .45s cubic-bezier(.2,.8,.2,1)}
+.rph-rw>div{overflow:hidden;min-height:0}
+.rph-rw.out{grid-template-rows:0fr;opacity:0}
+.rph-row{--o:1;display:grid;grid-template-columns:10px minmax(0,1fr) auto 40px;gap:8px;align-items:center;padding:6px 6px;border-radius:10px;font-size:14px;cursor:pointer;transition:opacity .25s,background .2s}
+.rph-row .dot{width:9px;height:9px;border-radius:3px;background:var(--ink);opacity:var(--o)}
+.rph-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rph-row b{font-weight:800;font-variant-numeric:tabular-nums}
+.rph-row .pc{text-align:right;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.rph.hl .rph-row:not(.on){opacity:.4}
+.rph-row.on{background:var(--surface-2)}
+.rph-lbl{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
+.rph-lbl b{color:var(--fg);font-variant-numeric:tabular-nums}
+.rph-days{display:flex;align-items:flex-end;gap:3px;height:56px;margin-top:6px}
+.rph-d{--h:0;flex:1 1 0;min-width:0;height:max(2px,calc(var(--h) * 1%));background:var(--ink);opacity:.2;border-radius:3px 3px 1px 1px;cursor:pointer;transition:height .55s cubic-bezier(.2,.8,.2,1) var(--dl,0s),opacity .2s}
+.rph-d.z{opacity:.08}
+.rph-d.on{opacity:.85}
+.rph-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.rph-meters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.rph-m span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rph-m b{font:800 15px var(--f-display);font-variant-numeric:tabular-nums}
+.rph-m.warn b{color:var(--danger)}
+.rph-m i{display:block;height:3px;border-radius:2px;background:var(--surface-2);margin-top:5px;overflow:hidden}
+.rph-m i::after{content:"";display:block;height:100%;width:calc(var(--p,0) * 1%);background:var(--ink);opacity:.55;transition:width .65s cubic-bezier(.2,.8,.2,1)}
+.rph-m.warn i::after{background:var(--danger)}
+.rph-tip{position:absolute;z-index:3;pointer-events:none;background:var(--ink);color:var(--ink-fg);font-size:12px;font-weight:600;padding:6px 9px;border-radius:9px;white-space:nowrap;transform:translate(-50%,-100%);opacity:0;transition:opacity .15s,left .2s,top .2s;font-variant-numeric:tabular-nums}
+.rph-tip.show{opacity:1}
+.rph-empty{font-size:13px;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:reduce){.rph *,.rph{transition:none!important}}
 .rp-items{display:grid;gap:6px}
 .rp-pbtn{text-align:left;cursor:pointer;font:inherit;color:inherit;border:0;width:100%}
 .rp-pbtn i{font-style:normal;opacity:.6}
@@ -1714,7 +1757,7 @@ Object.assign(STR.hi,{invNoLine:n=>`Invoice No: ${n}`,posL:"Place of supply",pos
 Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't make the PDF. Check the internet once, then try again.",
   repT:"Reports",repD:"Sales, top items, GST summary and files for your CA",rpToday:"Today",rpYest:"Yesterday",rpWeek:"This week",rpMonth:"This month",rpLastMonth:"Last month",rpFy:"This year (FY)",rpLastFy:"Last FY",rpCustom:"Custom",rpFrom:"From",rpTo:"To",rpShow:"Show",
   rpSales:"Sales",rpBills:"Bills",rpAvg:"Average bill",rpGst:"GST collected",rpProfit:"Profit",rpRecv:"Credit received",rpCredit:"Given on credit",rpOut:"Pending now (all time)",rpCancelled:n=>`${n} cancelled bill${n===1?"":"s"} not counted`,
-  rpTrend:"Sales trend",rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, cuCleared:"Customer cleared", cuT:"Customers", cuToolD:"Everyone who bought, their details and bills", cuSearch:"Search name, mobile or GSTIN", cuSort_recent:"Recent", cuSort_top:"Most business", cuSort_due:"Has dues", cuSort_az:"A–Z",
+  rpTrend:"Sales trend",rpOutS:"Pending now",rpBillsW:"bills",rpAvgW:"avg",rpNoGroup:"No group",rpOther:"Other",rpByGroup:"Sales by group",rpByItem:"Top items",rpBeforeGst:"before GST",rpPerDay:"Per day",rpPerMonth:"Per month",rpAvgDay:"Avg {v} / day",rpAvgMonth:"Avg {v} / month",rpBillsN:n=>`${n} bill${n==1?"":"s"}`,rpTop:"Top items",rpTapItem:"Tap an item to see its average price and profit.",rpPEst:a=>`${a} of these sales were on bills saved without a buy price; today's buy price from the price list is used for them.`,riEst:(q,u)=>`${q} ${u} used today's buy price (the bill had none saved).`,blOlder:"Search older bills on the sheet", blSyncing:"Updating", vi_prev:(m,p,b)=>`You entered ${m}, which includes the old balance ${p}. This bill is ${b}.`, cuCleared:"Customer cleared", cuT:"Customers", cuToolD:"Everyone who bought, their details and bills", cuSearch:"Search name, mobile or GSTIN", cuSort_recent:"Recent", cuSort_top:"Most business", cuSort_due:"Has dues", cuSort_az:"A–Z",
   cuSummary:(n,d)=>`${n} customer${n===1?"":"s"}${d?` · ${d} due`:""}`, cuNone:q=>`No customer matches “${q}”.`, cuEmpty:"Customers appear here once a bill has a mobile number.", cuDue:a=>`Due ${a}`, cuLast:d=>`last ${d}`, cuMore:n=>`Show ${n} more`,
   cuNoName:"(no name)", cuAddr:"Address", cuNote:"Private note", cuNotePh:"Only your shop sees this", cuBills:"Bills", cuTotal:"Total", cuDueL:"Due", cuLastL:"Last bill", cuStartBill:"Start a bill", cuSeeCredit:"Dues & payment", cuBillsH:"Bills",
   cuNoBills:"No bills found for this number.", cuOlder:"Older bills: search the number in Past bills.", cuBillsOld:"Couldn't load bills right now.", cuOnBill:n=>`${n} is on the bill`, cuFinishEdit:"Finish or cancel the bill you're editing first.",
@@ -1780,7 +1823,7 @@ Object.assign(STR.en,{pdfBtn:"PDF",pdfMaking:"Making PDF…",pdfFail:"Couldn't m
 Object.assign(STR.hi,{pdfBtn:"PDF",pdfMaking:"PDF बन रहा है…",pdfFail:"PDF नहीं बना। एक बार इंटरनेट चालू करके फिर कोशिश करें।",
   repT:"रिपोर्ट",repD:"बिक्री, सबसे ज़्यादा बिकने वाला सामान, GST सार और CA के लिए फ़ाइलें",rpToday:"आज",rpYest:"कल",rpWeek:"इस हफ़्ते",rpMonth:"इस महीने",rpLastMonth:"पिछले महीने",rpFy:"इस साल (FY)",rpLastFy:"पिछला FY",rpCustom:"तारीख़ चुनें",rpFrom:"से",rpTo:"तक",rpShow:"दिखाएँ",
   rpSales:"बिक्री",rpBills:"बिल",rpAvg:"औसत बिल",rpGst:"GST मिला",rpProfit:"मुनाफ़ा",rpRecv:"उधार वसूली",rpCredit:"उधार दिया",rpOut:"अभी बाकी (कुल)",rpCancelled:n=>`${n} रद्द बिल नहीं गिने`,
-  rpTrend:"बिक्री का रुझान",rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, cuCleared:"ग्राहक हटाया", cuT:"ग्राहक", cuToolD:"सभी ग्राहक, उनकी जानकारी और बिल", cuSearch:"नाम, मोबाइल या GSTIN खोजें", cuSort_recent:"हाल के", cuSort_top:"सबसे ज़्यादा खरीद", cuSort_due:"बकाया वाले", cuSort_az:"A–Z",
+  rpTrend:"बिक्री का रुझान",rpOutS:"अभी बाकी",rpBillsW:"बिल",rpAvgW:"औसत",rpNoGroup:"बिना ग्रुप",rpOther:"बाकी",rpByGroup:"ग्रुप के हिसाब से बिक्री",rpByItem:"सबसे ज़्यादा बिके",rpBeforeGst:"GST से पहले",rpPerDay:"हर दिन",rpPerMonth:"हर महीने",rpAvgDay:"औसत {v} / दिन",rpAvgMonth:"औसत {v} / महीना",rpBillsN:n=>`${n} बिल`,rpTop:"सबसे ज़्यादा बिका",rpTapItem:"औसत रेट और मुनाफ़ा देखने के लिए सामान पर दबाएँ।",rpPEst:a=>`इनमें से ${a} की बिक्री वाले बिलों में खरीद रेट सेव नहीं था; उनके लिए रेट लिस्ट का आज का खरीद रेट लिया गया।`,riEst:(q,u)=>`${q} ${u} पर आज का खरीद रेट लिया गया (बिल में सेव नहीं था)।`,blOlder:"पुराने बिल शीट में खोजें", blSyncing:"अपडेट हो रहा", vi_prev:(m,p,b)=>`आपने ${m} लिखा, इसमें पुराना बाकी ${p} जुड़ा है। यह बिल ${b} का है।`, cuCleared:"ग्राहक हटाया", cuT:"ग्राहक", cuToolD:"सभी ग्राहक, उनकी जानकारी और बिल", cuSearch:"नाम, मोबाइल या GSTIN खोजें", cuSort_recent:"हाल के", cuSort_top:"सबसे ज़्यादा खरीद", cuSort_due:"बकाया वाले", cuSort_az:"A–Z",
   cuSummary:(n,d)=>`${n} ग्राहक${d?` · ${d} बकाया`:""}`, cuNone:q=>`“${q}” से कोई ग्राहक नहीं मिला।`, cuEmpty:"बिल पर मोबाइल नंबर डालने पर ग्राहक यहाँ दिखेंगे।", cuDue:a=>`बकाया ${a}`, cuLast:d=>`पिछला ${d}`, cuMore:n=>`${n} और दिखाएँ`,
   cuNoName:"(नाम नहीं)", cuAddr:"पता", cuNote:"निजी नोट", cuNotePh:"सिर्फ़ आपकी दुकान देखेगी", cuBills:"बिल", cuTotal:"कुल", cuDueL:"बकाया", cuLastL:"पिछला बिल", cuStartBill:"बिल शुरू करें", cuSeeCredit:"बकाया व भुगतान", cuBillsH:"बिल",
   cuNoBills:"इस नंबर के कोई बिल नहीं मिले।", cuOlder:"पुराने बिल: Past bills में नंबर खोजें।", cuBillsOld:"अभी बिल लोड नहीं हो सके।", cuOnBill:n=>`${n} बिल पर आ गए`, cuFinishEdit:"पहले जो बिल बदल रहे हैं उसे पूरा या रद्द करें।",
@@ -3283,7 +3326,7 @@ function rpRange(k){
   if(k==="lastFy") return [isoDay(fyStart(fyy-1)),isoDay(new Date(fyy,2,31))];
   return null;
 }
-let RP={k:"today",from:"",to:"",data:null,allItems:false,open:""};
+let RP={k:"today",from:"",to:"",data:null,allItems:false,open:"",seq:0,hl:""};
 function openReports(){
   if(!can("manager")){ toast(t("notAllowed")); return; }
   RP.k="today"; RP.open=""; RP.allItems=false;   // always opens on Today
@@ -3291,34 +3334,155 @@ function openReports(){
   sheetKey("reports"), openSheet(t("repT"), `<div class="rp">
     <div class="fchips" id="rp-chips">${chips.map(([k,l])=>`<button type="button" class="fchip" data-rp="${k}" aria-pressed="${RP.k===k}">${esc(t(l))}</button>`).join("")}</div>
     <div class="rp-custom" id="rp-custom" ${RP.k==="custom"?"":"hidden"}><label>${esc(t("rpFrom"))} <input type="date" id="rp-from"></label><label>${esc(t("rpTo"))} <input type="date" id="rp-to"></label><button type="button" class="btn primary sm" id="rp-go">${esc(t("rpShow"))}</button></div>
-    <div id="rp-body">${ldBlock()}</div></div>`, "", {full:true});
+    <div class="rph" id="rp-hero"></div>
+    <div id="rp-body"></div></div>`, "", {full:true});
+  rpHeroInit();
   $("#rp-chips").onclick=e=>{ const b=e.target.closest("[data-rp]"); if(!b) return; RP.k=b.dataset.rp; $("#rp-chips").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); $("#rp-custom").hidden=RP.k!=="custom"; if(RP.k!=="custom") loadReport(); };
   const r0=rpRange("month"); $("#rp-from").value=RP.from||r0[0]; $("#rp-to").value=RP.to||r0[1];
   $("#rp-go").onclick=()=>loadReport();
-  loadReport();
+  RP.data=null; loadReport().then(rpPrefetch);
 }
+/* Reports for a period are kept on the phone for a short while, so switching between periods animates at once.
+   Money must be current: a copy older than RPC_FRESH is shown and immediately re-read; the card then moves to the fresh figures. */
+const RPC={}, RPC_FRESH=20000;
+const rpKey=()=>RP.from+"_"+RP.to;
+async function rpFetch(from,to,quiet){ const body={action:"report",from,to,tz:new Date().getTimezoneOffset()};
+  const j = await (quiet ? apiPost0(body) : apiPost(body)); if(!j || j.ok===false) throw j||{}; RPC[from+"_"+to]={r:j.report,at:Date.now()}; return j.report; }
 async function loadReport(){
   const box=$("#rp-body"); if(!box) return;
   const rg = RP.k==="custom" ? [$("#rp-from").value,$("#rp-to").value] : rpRange(RP.k);
-  RP.from=rg[0]; RP.to=rg[1]; box.innerHTML=skelCards(3,true);
-  try{ const j=await apiPost({action:"report",from:RP.from,to:RP.to,tz:new Date().getTimezoneOffset()}); RP.data=j.report; RP.allItems=false; renderReport(); }
-  catch(e){ if($("#rp-body")) $("#rp-body").innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
+  RP.from=rg[0]; RP.to=rg[1]; RP.hl=""; const seq=++RP.seq, c=RPC[rpKey()];
+  if(c){ RP.data=c.r; RP.allItems=false; renderReport(); if(Date.now()-c.at<RPC_FRESH) return; }
+  else if(!RP.data) box.innerHTML=skelCards(3,true);
+  rpBusy(true);
+  try{ const r=await rpFetch(RP.from,RP.to); if(seq!==RP.seq || !$("#rp-body")) return; RP.data=r; if(!c) RP.allItems=false; renderReport(); }
+  catch(e){ if(seq===RP.seq && !c && $("#rp-body")) $("#rp-body").innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
+  finally{ if(seq===RP.seq) rpBusy(false); }
 }
-function rpChart(days){
-  if(!days.length) return "";
-  let pts=days.map(d=>({k:d.d,v:d.sales}));
-  if(RP.from && RP.to){ const a=new Date(RP.from+"T00:00:00"), z=new Date(RP.to+"T00:00:00"), n=Math.round((z-a)/864e5)+1;   // show every day of the period, empty days as zero
-    if(n>1 && n<=62){ const m={}; pts.forEach(p=>m[p.k]=p.v); pts=[]; for(let i=0;i<n;i++){ const d=new Date(a); d.setDate(a.getDate()+i); const k=isoDay(d); pts.push({k,v:m[k]||0}); } } }
-  if(pts.length>62){ const m={}; pts.forEach(p=>{ const k=p.k.slice(0,7); m[k]=(m[k]||0)+p.v; }); pts=Object.keys(m).sort().map(k=>({k,v:m[k]})); }
-  const max=Math.max(...pts.map(p=>p.v),1), W=320, H=110, bw=W/pts.length, barW=Math.min(bw*0.7,26), off=(bw-barW)/2;
-  const lbl=k=>k.length===7?new Date(+k.slice(0,4),+k.slice(5)-1,1).toLocaleDateString("en-IN",{month:"short"}):String(+k.slice(8));
-  const every=Math.ceil(pts.length/8);
-  return `<svg viewBox="0 0 ${W} ${H+16}" class="rp-chart" role="img" aria-label="${esc(t("rpTrend"))}">${pts.map((p,i)=>{ const h=Math.max(2,(p.v/max)*H); return `<rect x="${(i*bw+off).toFixed(1)}" y="${(H-h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(4,barW*0.3).toFixed(1)}" class="${p.v?"":"zero"}"><title>${esc(lbl(p.k))}: ${esc(rs(p.v))}</title></rect>${i%every===0?`<text x="${(i*bw+bw/2).toFixed(1)}" y="${H+12}">${esc(lbl(p.k))}</text>`:""}`; }).join("")}</svg>`;
+/** After the first period shows: quietly load the other common periods, one at a time, while Reports stays open. */
+async function rpPrefetch(){ for(const k of ["week","month","yest","lastMonth"]){ if(!$("#rp-body")) return; const rg=rpRange(k), c=RPC[rg[0]+"_"+rg[1]];
+  if(c && Date.now()-c.at<RPC_FRESH) continue; try{ await rpFetch(rg[0],rg[1],true); }catch{ return; } } }
+function rpBusy(on){ const h=$("#rp-hero"); if(h) h.classList.toggle("busy",!!on); }
+
+/* ---- Summary card ---- */
+const rmo=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** Roll a number to its new value (ease-out, ~0.65 s). The value is kept on the element, so the next change starts from it. */
+function tweenNum(el,to,fmt,ms){ if(!el) return; to=+to||0; const from=el.dataset.v===undefined?to:+el.dataset.v; el.dataset.v=to; cancelAnimationFrame(el._raf);
+  if(rmo()||from===to||document.hidden){ el.textContent=fmt(to); return; }
+  const t0=performance.now(), d=ms||650, ease=x=>1-Math.pow(1-x,3);
+  const step=now=>{ const p=Math.min(1,(now-t0)/d); el.textContent=fmt(p<1?from+(to-from)*ease(p):to); if(p<1) el._raf=requestAnimationFrame(step); };
+  el._raf=requestAnimationFrame(step); }
+const rsR=v=>rs(Math.round(v)), pcR=v=>Math.round(v)+"%", nR=v=>String(Math.round(v));
+const RPO=[1,.7,.48,.32,.2,.12];   // shades of the theme colour for the split: darkest = biggest
+/** Sales split by item group (from the price list's groups), top 4 + Other; by top items if the shop uses no groups.
+    Uses the bill-line amounts (before GST), so the split matches what was sold. */
+function rpSplit(R){
+  const items=R.items||[], grp=new Map(); let anyCat=false;
+  S.items.forEach(it=>{ if(it.cat) anyCat=true; grp.set(String(it.name||"").trim().toLowerCase(), it.cat||""); });
+  let rows;
+  if(anyCat){ const m=new Map(); items.forEach(i=>{ const c=grp.get(String(i.name).trim().toLowerCase())||""; m.set(c,(m.get(c)||0)+i.amount); });
+    rows=[...m].map(([c,v])=>({k:"g:"+c, n:c||t("rpNoGroup"), v})); }
+  else rows=items.map(i=>({k:"i:"+i.name+"|"+i.unit, n:i.name, v:i.amount}));
+  rows=rows.filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
+  const known=rows.reduce((x,r)=>x+r.v,0), all=R.totals.lineSale!=null?Math.max(R.totals.lineSale,known):known;
+  const top=rows.slice(0,4), rest=rows.slice(4).reduce((x,r)=>x+r.v,0)+(all-known);
+  if(rest>0.5) top.push({k:"~other", n:t("rpOther"), v:rest});
+  const sum=top.reduce((x,r)=>x+r.v,0)||1; top.forEach((r,i)=>{ r.p=r.v/sum*100; r.o=RPO[Math.min(i,RPO.length-1)]; });
+  return {rows:top, by:anyCat?"group":"item"};
+}
+/** Every day of the period (empty days as 0); by month when the period is longer than ~2 months. */
+function rpPts(days){
+  let pts=(days||[]).map(d=>({k:d.d,v:d.sales,b:d.bills}));
+  if(RP.from && RP.to){ const a=new Date(RP.from+"T00:00:00"), z=new Date(RP.to+"T00:00:00"), n=Math.round((z-a)/864e5)+1;
+    if(n>=1 && n<=62){ const m={}; pts.forEach(p=>m[p.k]=p); pts=[]; for(let i=0;i<n;i++){ const d=new Date(a); d.setDate(a.getDate()+i); const k=isoDay(d); pts.push(m[k]||{k,v:0,b:0}); } } }
+  if(pts.length>62){ const m={}; pts.forEach(p=>{ const k=p.k.slice(0,7); m[k]=m[k]||{k,v:0,b:0}; m[k].v+=p.v; m[k].b+=p.b; }); pts=Object.keys(m).sort().map(k=>m[k]); }
+  return pts;
+}
+const rpDayL=(k,long)=>k.length===7?new Date(+k.slice(0,4),+k.slice(5)-1,1).toLocaleDateString(S.lang==="hi"?"hi-IN":"en-IN",{month:"short",year:long?"numeric":undefined})
+  :new Date(k+"T00:00:00").toLocaleDateString(S.lang==="hi"?"hi-IN":"en-IN",{day:"numeric",month:"short"});
+function rpHeroInit(){ const h=$("#rp-hero"); if(!h) return;
+  h.innerHTML=`<div class="rph-top"><span class="rph-per" id="rph-per"></span><span class="ld rph-spin"></span></div>
+    <div class="rph-main">
+      <div><div class="rph-big" id="rph-sales">₹0</div><div class="rph-sub"><b id="rph-bills">0</b> ${esc(t("rpBillsW"))} · ${esc(t("rpAvgW"))} <b id="rph-avg">₹0</b></div></div>
+      <p class="rph-empty" id="rph-empty" hidden>${esc(t("rpNone"))}</p>
+      <div id="rph-splitw"><div class="rph-lbl" style="margin-bottom:8px"><span id="rph-by"></span><span id="rph-gstn"></span></div><div class="rph-bar" id="rph-bar"></div><div class="rph-rows" id="rph-rows" style="margin-top:6px"></div></div>
+      <div><div class="rph-lbl"><span id="rph-perday"></span><span id="rph-avgday"></span></div><div class="rph-days" id="rph-days"></div><div class="rph-axis"><span id="rph-a0"></span><span id="rph-a1"></span></div></div>
+      <div class="rph-meters">
+        <div class="rph-m"><span>${esc(t("rpRecv"))}</span><b id="rph-recv">₹0</b><i id="rph-recvp"></i></div>
+        <div class="rph-m"><span>${esc(t("rpCredit"))}</span><b id="rph-cred">₹0</b><i id="rph-credp"></i></div>
+        <div class="rph-m warn" title="${esc(t("rpOut"))}"><span>${esc(t("rpOutS"))}</span><b id="rph-out">₹0</b><i id="rph-outp"></i></div>
+      </div>
+    </div><div class="rph-tip" id="rph-tip"></div>`;
+  // tap (phones) or point (laptop) at a part of the split or a day → highlight it and show its numbers
+  const pick=(el,tog)=>{ const k=el?el.dataset.k||el.dataset.dk:""; RP.hl = tog && RP.hl===k ? "" : k; rpHl(); };
+  h.addEventListener("click",e=>{ const el=e.target.closest("[data-k],[data-dk]"); pick(el, e.pointerType!=="mouse"); });   // a tap toggles; a mouse click keeps what pointing showed
+  h.addEventListener("pointerover",e=>{ if(e.pointerType!=="mouse") return; const el=e.target.closest("[data-k],[data-dk]"); if(el) pick(el,"hover"); });
+  h.addEventListener("pointerleave",e=>{ if(e.pointerType==="mouse"){ RP.hl=""; rpHl(); } });
+}
+function rpHl(){ const h=$("#rp-hero"), tip=$("#rph-tip"); if(!h||!tip) return; const k=RP.hl;
+  const isDay=k && k.startsWith("d:");
+  h.classList.toggle("hl", !!k && !isDay);
+  h.querySelectorAll("[data-k]").forEach(el=>el.classList.toggle("on", el.dataset.k===k));
+  h.querySelectorAll("[data-dk]").forEach(el=>el.classList.toggle("on", el.dataset.dk===k));
+  const target = k ? (isDay ? h.querySelector(`[data-dk="${CSS.escape(k)}"]`) : h.querySelector(`.rph-seg[data-k="${CSS.escape(k)}"]`)) : null;
+  if(!target || !RP.data){ tip.classList.remove("show"); return; }
+  const hr=h.getBoundingClientRect(), r=target.getBoundingClientRect();
+  if(isDay){ const p=(RP.pts||[]).find(x=>"d:"+x.k===k); if(!p){ tip.classList.remove("show"); return; } tip.textContent=`${rpDayL(p.k,true)} · ${rs(Math.round(p.v))} · ${t("rpBillsN",p.b)}`; }
+  else { const s=(RP.split||[]).find(x=>x.k===k); if(!s){ tip.classList.remove("show"); return; } tip.textContent=`${s.n} · ${rs(Math.round(s.v))} · ${Math.round(s.p)}%`; }
+  const x=Math.min(Math.max(r.left+r.width/2-hr.left, 70), hr.width-70); tip.style.left=x+"px"; tip.style.top=(r.top-hr.top-6)+"px"; tip.classList.add("show"); }
+/** Move the card to report R: roll numbers, resize the split, keep rows by key (new ones grow in, gone ones fold away), move days. */
+function rpHero(R){ const h=$("#rp-hero"); if(!h||!R) return; const T=R.totals, n=T.bills||0;
+  $("#rph-per").textContent = RP.from===RP.to ? rpDayL(RP.from,true) : `${rpDayL(RP.from)} – ${rpDayL(RP.to,true)}`;
+  tweenNum($("#rph-sales"),T.sales||0,rsR); tweenNum($("#rph-bills"),n,nR); tweenNum($("#rph-avg"),n?T.sales/n:0,rsR);
+  $("#rph-empty").hidden=!!n;
+  // split bar + rows
+  const sp=rpSplit(R); RP.split=sp.rows;
+  $("#rph-by").textContent=t(sp.by==="group"?"rpByGroup":"rpByItem"); $("#rph-gstn").textContent=T.gstBills?t("rpBeforeGst"):"";
+  $("#rph-splitw").hidden=!sp.rows.length;
+  const bar=$("#rph-bar"), rows=$("#rph-rows"), anim=!rmo();
+  const segs=new Map([...bar.children].map(el=>[el.dataset.k,el])), rws=new Map([...rows.children].filter(el=>!el.dataset.gone).map(el=>[el.dataset.k,el]));
+  const before=new Map([...rws].map(([k,el])=>[k,el.getBoundingClientRect().top]));
+  sp.rows.forEach(r=>{
+    let sg=segs.get(r.k); if(sg) segs.delete(r.k); else { sg=document.createElement("div"); sg.className="rph-seg"; sg.dataset.k=r.k; sg.style.width="0%"; }
+    bar.appendChild(sg); sg.style.setProperty("--o",r.o);
+    let rw=rws.get(r.k), fresh=!rw;
+    if(rw) rws.delete(r.k); else { rw=document.createElement("div"); rw.className="rph-rw"+(anim?" out":""); rw.dataset.k=r.k;
+      rw.innerHTML=`<div><div class="rph-row" data-k="${esc(r.k)}"><span class="dot"></span><span class="nm"></span><b>₹0</b><span class="pc">0%</span></div></div>`; }
+    rows.appendChild(rw); const row=rw.querySelector(".rph-row"); row.style.setProperty("--o",r.o); row.querySelector(".nm").textContent=r.n;
+    tweenNum(row.querySelector("b"),r.v,rsR); tweenNum(row.querySelector(".pc"),r.p,pcR);
+    if(fresh && anim) requestAnimationFrame(()=>requestAnimationFrame(()=>rw.classList.remove("out")));
+  });
+  void bar.offsetWidth;   // let new segments start at 0 width
+  sp.rows.forEach(r=>{ const sg=bar.querySelector(`.rph-seg[data-k="${CSS.escape(r.k)}"]`); if(sg) sg.style.width=r.p+"%"; });
+  segs.forEach(sg=>{ sg.style.width="0%"; setTimeout(()=>sg.remove(), anim?650:0); });
+  rws.forEach(rw=>{ rw.dataset.gone="1"; rw.classList.add("out"); rows.appendChild(rw); setTimeout(()=>rw.remove(), anim?420:0); });
+  if(anim) [...rows.children].forEach(rw=>{ const t0=before.get(rw.dataset.k); if(t0===undefined||rw.dataset.gone) return; const d=t0-rw.getBoundingClientRect().top; if(!d) return;
+    rw.style.transition="none"; rw.style.transform=`translateY(${d}px)`; void rw.offsetWidth; rw.style.transition=""; rw.style.transform=""; });
+  // per-day bars
+  const pts=rpPts(R.byDay); RP.pts=pts; const days=$("#rph-days"), max=Math.max(...pts.map(p=>p.v),1), monthly=pts.length && pts[0].k.length===7;
+  const setH=(el,p,i,stagger)=>{ el.dataset.dk="d:"+p.k; el.classList.toggle("z",!p.v); el.style.setProperty("--dl", stagger?Math.min(i*14,420)+"ms":"0s"); el.style.setProperty("--h", p.v?Math.max(4,p.v/max*100):0); };
+  const old=[...days.children];
+  if(old.length===pts.length) pts.forEach((p,i)=>setH(old[i],p,i,false));
+  else { const build=()=>{ days.innerHTML=pts.map(()=>`<div class="rph-d"></div>`).join(""); const els=[...days.children]; void days.offsetWidth; pts.forEach((p,i)=>setH(els[i],p,i,anim)); };
+    if(anim && old.length){ old.forEach(el=>{ el.style.setProperty("--dl","0s"); el.style.setProperty("--h",0); }); clearTimeout(days._t); days._t=setTimeout(build,230); } else build(); }
+  $("#rph-perday").textContent=t(monthly?"rpPerMonth":"rpPerDay");
+  const avgD=pts.length?(T.sales||0)/pts.length:0, ad=$("#rph-avgday");
+  if(pts.length>1){ if(!$("#rph-avgd") || ad.dataset.m!==String(monthly)){ const [a,b]=t(monthly?"rpAvgMonth":"rpAvgDay").split("{v}"); ad.innerHTML=`${esc(a)}<b id="rph-avgd">${esc(rsR(RP.lastAvgD||0))}</b>${esc(b||"")}`; ad.dataset.m=String(monthly); $("#rph-avgd").dataset.v=RP.lastAvgD||0; }
+    tweenNum($("#rph-avgd"),avgD,rsR); } else { ad.textContent=""; ad.dataset.m=""; }
+  RP.lastAvgD=avgD;
+  $("#rph-a0").textContent=pts.length>1?rpDayL(pts[0].k):""; $("#rph-a1").textContent=pts.length>1?rpDayL(pts[pts.length-1].k):"";
+  // money meters: received / given on credit / pending, as parts of the larger of sales and pending
+  const base=Math.max(T.sales||0,R.outstanding||0,R.received||0,R.creditGiven||0,1);
+  tweenNum($("#rph-recv"),R.received||0,rsR); tweenNum($("#rph-cred"),R.creditGiven||0,rsR); tweenNum($("#rph-out"),R.outstanding||0,rsR);
+  $("#rph-recvp").style.setProperty("--p",(R.received||0)/base*100); $("#rph-credp").style.setProperty("--p",(R.creditGiven||0)/base*100); $("#rph-outp").style.setProperty("--p",(R.outstanding||0)/base*100);
+  if(RP.hl && !(RP.split||[]).some(x=>x.k===RP.hl) && !(RP.pts||[]).some(x=>"d:"+x.k===RP.hl)) RP.hl="";
+  setTimeout(rpHl, anim?680:0);
 }
 function renderReport(){
   const box=$("#rp-body"), R=RP.data; if(!box||!R) return;
+  rpHero(R);
   const T=R.totals;
-  if(!T.bills){ box.innerHTML=`<p class="note">${esc(t("rpNone"))}</p>${T.cancelled?`<p class="note">${esc(t("rpCancelled",T.cancelled))}</p>`:""}`; return; }
+  if(!T.bills){ box.innerHTML=T.cancelled?`<p class="note">${esc(t("rpCancelled",T.cancelled))}</p>`:""; return; }
   const stat=(l,v,cls)=>`<div class="rp-stat${cls?" "+cls:""}"><span>${esc(l)}</span><b class="num">${esc(v)}</b></div>`;
   const lineP = T.pSale!==undefined, P = lineP ? r2(T.pSale-T.pCost) : T.profit, C = lineP ? T.pCost : T.cost;
   const pf=S.cfg.showProfit&&(lineP?T.pCost>0:T.profitBills) ? `<button type="button" class="rp-stat good rp-pbtn" id="rp-pbtn" aria-expanded="${!!RP.pOpen}"><span>${esc(t("rpProfit"))} <i>ⓘ</i></span><b class="num">${esc(rs(P))}${C>0?` · ${Math.round(P/C*1000)/10}%`:""}</b></button>` : "";
@@ -3335,9 +3499,8 @@ function renderReport(){
   const items=RP.allItems?R.items:R.items.slice(0,10);
   const gt=(rows,head)=>`<div class="rp-table"><table><thead><tr>${head.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td${i?' class="num"':""}>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   const G=R.gst;
-  box.innerHTML=`<div class="rp-grid">${stat(t("rpSales"),rs(T.sales),"big")}${stat(t("rpBills"),String(T.bills))}${stat(t("rpAvg"),rs(Math.round(T.sales/T.bills)))}${T.gstBills?stat(t("rpGst"),rs(T.tax)):""}${pf}${stat(t("rpRecv"),rs(R.received))}${stat(t("rpCredit"),rs(R.creditGiven))}${stat(t("rpOut"),rs(R.outstanding),"warn")}</div>${pdet}
+  box.innerHTML=`${T.gstBills||pf?`<div class="rp-grid">${T.gstBills?stat(t("rpGst"),rs(T.tax)):""}${pf}</div>`:""}${pdet}
     ${T.cancelled?`<p class="note" style="margin:0">${esc(t("rpCancelled",T.cancelled))}</p>`:""}
-    <h3 class="rp-h">${esc(t("rpTrend"))}</h3>${rpChart(R.byDay)}
     <h3 class="rp-h">${esc(t("rpTop"))}</h3>
     <p class="rp-sub" style="margin:0">${esc(t("rpTapItem"))}</p>
     <div class="rp-items">${items.map((it,i)=>{ const k=it.name+"|"+it.unit, open=RP.open===k; return `<div class="rp-iw${open?" open":""}"><button type="button" class="rp-item" data-rpi="${esc(k)}" aria-expanded="${open}"><span class="rk">${i+1}</span><span class="nm">${esc(it.name)}</span><span class="q num">${esc(fmtN(it.qty))} ${esc(unitL(it.unit))}</span><b class="num">${rs(it.amount)}</b><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>${open?rpItemDetail(it):""}</div>`; }).join("")}</div>

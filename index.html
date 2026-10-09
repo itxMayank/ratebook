@@ -1854,7 +1854,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=31;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=32;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -4849,7 +4849,7 @@ function vSync(force){ if(vSyncing) return vSyncing; if(!force && Date.now()-vSy
     /* A copy saved by an older app/script lacks newer fields (e.g. the line count behind "Items on this bill"), and "nothing
        changed" would keep it forever: send no version until the copy is in the current shape (VSCHEMA). */
     try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.schema===VSCHEMA?(VDB.srv.vrev||""):""}); if(!r.same){ if(vMergeN!==m0){ setTimeout(()=>vSync(true),0); return; }   /* a send finished meanwhile: this reply may predate it, ask again */
-        VDB.srv={vrev:r.vrev,schema:VSCHEMA,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
+        VDB.srv={vrev:r.vrev,schema:VSCHEMA,vendors:r.vendors||[],entries:r.entries||[]}; VD.buys={}; vdbSave(); vRebuild(); vRefreshOpen(); } }
     catch(e){ if(e&&e.code==="bad_action"){ /* old script: fall back to the per-vendor calls */ } } })().finally(()=>{ vSyncing=null; vNoteUpd(); }); return vSyncing; }
 function vRefreshOpen(){ if($("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vRenderVendor(VD.cur,true);
   else if($("#ve-back") && VD.ent && VD.det[VD.ent.v]){ const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; vEntry(VD.ent.v,VD.ent.e); const sc2=$("#sheet-body"); if(sc2) sc2.scrollTop=st; }   /* a bill's screen: "Checking…" turns into the result */
@@ -5452,8 +5452,14 @@ function payBoxHTML(b){
 }
 function duesSub(){ const el=$("#t-dues-sub"); if(!el) return; const c=ls.get(envKey("rb_dues_sum"),null); el.textContent = c&&c.total>0 ? (c.n>0?t("duesSum",rs(c.total),c.n):t("pendingHint",rs(c.total))) : t("duesD"); }
 const daysSince=d=>d?Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/864e5)):0;
+const duesKey=()=>"dues:"+S.cfg.mode;
+/** The Credit list as last loaded on this phone (IndexedDB), so the screen opens at once; null if none for this mode. */
+async function duesLocal(){ if(duesCache && duesCache.env===S.cfg.mode) return duesCache; try{ const c=await idb.get("images",duesKey()); return c && c.env===S.cfg.mode && Array.isArray(c.customers) ? c : null; }catch{ return null; } }
+/** Redraw the Credit list in place (only while it's the screen showing), keeping the search box's focus and cursor. */
+function duesShow(){ if(!$("#du-body")) return; const q=$("#du-q"), had=q && document.activeElement===q, pos=had?q.selectionStart:0; renderDues();
+  const n=$("#du-q"); if(had && n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } }
 async function loadDues(){
-  const j=await apiPost({action:"listDues"}); duesCache=j; duesDirty=false;
+  const env=S.cfg.mode, j=await apiPost({action:"listDues"}); if(env!==S.cfg.mode) return j; j.env=env; duesCache=j; duesDirty=false; idb.set("images",duesKey(),j);
   ls.set(envKey("rb_dues_sum"),{total:j.total||0,n:(j.customers||[]).length}); duesSub(); return j;
 }
 /* ---------------- Bill page: one ✕ clears customer name, mobile and GSTIN ---------------- */
@@ -5544,8 +5550,9 @@ function cuEdit(c){
 async function openDues(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
   openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
-  try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
-  renderDues();
+  const have=await duesLocal(); if(have){ duesCache=have; duesShow(); }   // the saved list at once; the fresh one replaces it below
+  try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el && !have) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
+  duesShow();
 }
 function renderDues(){
   const box=$("#du-body"); if(!box||!duesCache) return;
@@ -5735,11 +5742,19 @@ function sync(){
   })();
   return syncing;
 }
+let lastBv="";
+/** Bills changed somewhere (another phone, a payment, a hand edit): refresh the lists this phone keeps, quietly. */
+async function billsChangedBg(){
+  if(CUSTD || await custdGet()) custdRefresh(true).then(()=>{ custIdx=null; if($("#cu-list")) cuRender(); }).catch(()=>{});
+  if($("#du-body")) loadDues().then(duesShow).catch(()=>{});   // Credit list open: redraw it; otherwise it refreshes when opened
+}
 async function checkRev(){
   if(!apiUrl() || document.hidden) return;
   try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); }
     const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv));
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
+    if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
+    if(vqGet().length && !vqBusy) vqFlush();
     const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true); }
   catch{ S.online=false; renderNet(); }
 }

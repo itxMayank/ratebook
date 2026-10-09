@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (vendors sync between phones in the background).
+Last updated: 9 October 2026 (no data missed between phones).
 
 ## Where everything lives
 
@@ -440,6 +440,13 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - The 25-second `rev` check also returns `vl`/`vt` (vendors version per mode, `vrevC_`, from CacheService). If it differs from the phone's copy, `checkRev` runs `vSync(true)` quietly, so Vendors is already current when opened (also on coming back to the app, which runs `checkRev`). Before, vendor data was only fetched when Vendors opened or 5 s after a fresh start, and an installed app usually resumes instead of starting fresh.
   - `vSync` no longer skips fetching while the outbox has changes waiting; it starts sending them and fetches anyway, so one stuck change can't hide other phones' entries. If a send's reply is merged while a fetch is in flight (`vMergeN`), the fetch asks again rather than overwrite with older data.
   - While fetching, the Vendors list and vendor page show "Updating" in the `#vq-note` line.
+- **No data missed between phones** (9 Oct 2026, `SCRIPT_VERSION` 32 / `NEED_SV` 32). Every shared list and how a phone learns it changed:
+  - Prices + settings: `rev` → full `list` reload. Bills (Past bills copy): `bl`/`bt` → delta. Vendors: `vl`/`vt` → `vSync`. Customers list: bills version → `listCustomers`. Credit: re-read on open. All checked every 25 s and on coming back to the app (`checkRev`).
+  - **Hand edits** (`watchSheet` every 5 min, `onEdit`) now compare Drive's time with the app's latest write of *any* kind (`rev`, `brev_*`, `vrev_*`). Before, they compared only `rev`, so every vendor save looked like a hand edit and ~5 min later all phones re-downloaded the price list and bills copy. Hand edits and **backup restores** now also bump the vendors version in both modes (`vbumpAll_`); before, vendor data on phones stayed as it was.
+  - `vRead`, `vCheck`, `recordPayment`, `undoPayment` no longer bump `rev` (they change bills/vendors only, which have their own versions), so they don't make every phone reload the price list.
+  - When the bills version changes, `billsChangedBg()` refreshes the phone's customers list (if it keeps one) and, while Credit is open, the Credit list (redrawn in place, search focus kept). `lastBv` skips the first check after the app opens: those lists refresh when opened anyway.
+  - **Credit opens instantly**: the last list is kept in IndexedDB (`dues:<mode>`, `duesLocal()`), shown at once, then replaced by the fresh one (`duesShow()`).
+  - Vendor changes waiting on a phone are retried by every 25-second check (they used to wait for Vendors to open or a 20 s retry after a failure). The item screen's "Bought" cache (`VD.buys`) clears when vendor data changes.
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 

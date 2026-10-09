@@ -424,6 +424,23 @@ label.thumb{cursor:pointer}
 .pay-part{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
 .pay-part input{width:110px;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 10px;font:600 16px var(--f-body);color:var(--fg)}
 .pay-due{margin-left:auto;font-weight:700;color:var(--danger)}
+/* "Paid by" tiles (optional): none picked = as before */
+.pm-row{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:5px;align-items:center;container-type:inline-size}
+@container (max-width:300px){.pm svg{display:none}}
+.pm-row[hidden]{display:none}
+.pill.pmp{background:var(--surface-2);color:var(--fg)}
+.rph-modes{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.rph-modes[hidden]{display:none}
+.rph-modes b{color:var(--fg);font-variant-numeric:tabular-nums}
+.rph-modes span.c{background:var(--surface-2);border-radius:999px;padding:4px 9px}
+.pm-l{font-size:12px;font-weight:700;color:var(--muted);padding-right:2px;white-space:nowrap}
+.pm{display:flex;align-items:center;justify-content:center;gap:4px;min-height:40px;padding:6px 4px;border:1px solid var(--fieldline,var(--line));background:transparent;color:var(--fg);border-radius:12px;font:600 14px var(--f-body);cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .1s;-webkit-tap-highlight-color:transparent;min-width:0}
+.pm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm svg{flex:none;opacity:.75;width:15px;height:15px}
+.pm:active{transform:scale(.97)}
+.pm[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+.pm[aria-pressed="true"] svg{opacity:1}
+html.fz-big .pm svg{display:none}
 .need{border-color:var(--danger)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 18%,transparent)}
 .duechip{display:inline-block;width:max-content;justify-self:start;align-self:flex-start;margin-left:0;font-size:12px;font-weight:700;color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent);border-radius:999px;padding:1px 8px;vertical-align:middle}
 .custhint .due{color:var(--danger)}
@@ -1507,6 +1524,11 @@ html.cover body>*{visibility:hidden}
           <button type="button" role="radio" data-pay="part" data-t="payPart">Part paid</button>
         </div>
         <div class="pay-part" id="pay-part" hidden><label for="pay-recv" data-t="recvL">Received ₹</label><input id="pay-recv" class="num" inputmode="decimal" autocomplete="off"><span class="pay-due num" id="pay-due"></span></div>
+        <div class="pm-row" id="pm-row" role="group" aria-labelledby="pm-l"><span class="pm-l" id="pm-l" data-t="pmL">Paid by</span>
+          <button type="button" class="pm" data-pm="cash" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg><span data-t="pmCash">Cash</span></button>
+          <button type="button" class="pm" data-pm="upi" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18h3"/><path d="m10 8.5 2 4 2-4"/></svg><span data-t="pmUpi">UPI</span></button>
+          <button type="button" class="pm" data-pm="cheque" aria-pressed="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M6 10h7M6 14h4M15 14.5l3-3"/></svg><span data-t="pmCheque">Cheque</span></button>
+        </div>
       </div>
       <div id="bh-extra" hidden>
         <div class="bh-field"><label for="bill-no"><span data-t="billNoL">Bill No.</span> <span class="auto" id="bill-auto" hidden></span></label><input id="bill-no" class="num" inputmode="numeric" autocomplete="off" aria-label="Bill No." style="width:110px;text-align:right;font:700 22px/1 var(--f-display);color:var(--accent);border:1.5px dashed var(--line);background:none;border-radius:10px;padding:4px 8px"></div>
@@ -1931,7 +1953,7 @@ Object.assign(STR.hi,{testBadge:"टेस्ट",envT:"टेस्ट मो�
   envBanner:"टेस्ट मोड: अभी बने बिल अभ्यास के बिल हैं।",testBillLine:"_TEST BILL (practice, not a real invoice)_",envNumsNote:"ये नंबर टेस्ट बिलों के हैं। असली बिलों के नंबर अलग हैं।"});
 /* Credit (udhaar) strings */
 Object.assign(STR.en,{sortL:"Change order",sortPop:"Most sold",sortAz:"A–Z",soldIn:n=>`On ${n} bill${n===1?"":"s"}`,newBillChip:"New bill",heldNew:"New",heldEmpty:"New bill",heldItems:n=>`${n} item${n===1?"":"s"}`,heldOld:"old",heldToast:n=>`${n} kept aside. Tap it on top to go back.`,heldMax:n=>`${n} bills are already open. Finish or remove one first.`,heldDelQ:"Remove this open bill?",heldDelD:"Its items will be removed. No bill number is used.",heldDelYes:"Yes, remove",heldDeleted:"Open bill removed.",addingTo:"Adding to:",heldMore:n=>`+${n} open`,heldNoteEditing:n=>`#${n} · editing`,
-cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amount",clearX:"Clear",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
+cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amount",clearX:"Clear",payPaid:"Paid",payCredit:"Credit",payPart:"Part paid",pmL:"Paid by",pmCash:"Cash",pmUpi:"UPI",pmCheque:"Cheque",pmNone:"Not marked",rpModes:"Money in",recvL:"Received ₹",dueL:"Due",dueAmt:a=>`Due ${a}`,
   creditNeeds:"Name and mobile are needed for a credit bill.",recvBad:"Enter the amount received now (less than the total).",recvAll:"That's the full amount. Choose Paid instead.",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
   duesT:"Credit (Udhaar)",duesD:"Who owes money, and record payments",duesSum:(a,n)=>`${a} pending · ${n} customer${n===1?"":"s"}`,duesNone:"Nobody owes anything right now.",duesFrom:(n,b)=>`from ${n} customer${n===1?"":"s"} · ${b} bill${b===1?"":"s"}`,
@@ -1944,7 +1966,7 @@ cashGiven:"Cash given",cashRet:"Return",cashShort:"Short",cashExact:"Exact amoun
   payUpdate:(d,p,b)=>`_Payment update (${d}): paid ${p}, balance due ${b}_`,payUpdateDone:d=>`_Fully paid on ${d}. Thank you._`,
   pillDue:a=>`Due ${a}`,pillCleared:"Paid later",pendingHint:a=>`${a} pending`,duesTabHint:"Bills on credit or part paid show up here. Mark a bill as Credit or Part paid on the bill screen."});
 Object.assign(STR.hi,{sortL:"क्रम बदलें",sortPop:"सबसे ज़्यादा बिकने वाले",sortAz:"A–Z",soldIn:n=>`${n} बिल में`,newBillChip:"नया बिल",heldNew:"नया",heldEmpty:"नया बिल",heldItems:n=>`${n} सामान`,heldOld:"पुराना",heldToast:n=>`${n} अलग रखा गया। वापस जाने के लिए ऊपर उस पर दबाएँ।`,heldMax:n=>`${n} बिल पहले से खुले हैं। पहले कोई एक पूरा करें या हटाएँ।`,heldDelQ:"यह खुला बिल हटाएँ?",heldDelD:"इसका सामान हट जाएगा। कोई बिल नंबर इस्तेमाल नहीं होगा।",heldDelYes:"हाँ, हटाएँ",heldDeleted:"खुला बिल हटा दिया।",addingTo:"इसमें जुड़ रहा:",heldMore:n=>`+${n} खुले`,heldNoteEditing:n=>`#${n} · बदल रहे`,
-cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें",cashShort:"कम हैं",cashExact:"पूरे पैसे",clearX:"साफ़ करें",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
+cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें",cashShort:"कम हैं",cashExact:"पूरे पैसे",clearX:"साफ़ करें",payPaid:"पूरा मिला",payCredit:"उधार",payPart:"कुछ मिला",pmL:"भुगतान",pmCash:"नकद",pmUpi:"UPI",pmCheque:"चेक",pmNone:"नहीं बताया",rpModes:"आया पैसा",recvL:"मिले ₹",dueL:"बाकी",dueAmt:a=>`बाकी ${a}`,
   creditNeeds:"उधार बिल के लिए नाम और मोबाइल ज़रूरी है।",recvBad:"अभी मिली राशि डालें (कुल से कम)।",recvAll:"यह पूरी राशि है। “पूरा मिला” चुनें।",
   waPayCredit:"Payment: Credit (to be paid later)",waPaid:"Paid",waBal:"Balance due",
   duesT:"उधार खाता",duesD:"किसका कितना बाकी है, और भुगतान दर्ज करें",duesSum:(a,n)=>`${a} बाकी · ${n} ग्राहक`,duesNone:"अभी किसी का कुछ बाकी नहीं है।",duesFrom:(n,b)=>`${n} ग्राहक · ${b} बिल`,
@@ -1955,7 +1977,7 @@ cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें"
   payHist:"भुगतान",atBilling:"बिल के समय",undoPay:"आख़िरी भुगतान हटाएँ",undoDone:a=>`${a} का भुगतान हटाया।`,clearedOn:d=>`${d} को पूरा भुगतान`,
   pillDue:a=>`बाकी ${a}`,pillCleared:"बाद में मिला",pendingHint:a=>`${a} बाकी`,duesTabHint:"उधार या कुछ मिले वाले बिल यहाँ दिखेंगे। बिल स्क्रीन पर “उधार” या “कुछ मिला” चुनें।"});
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), posSel: ls.get("rb_pos",""), pendShare: !!ls.get("rb_pshare",0), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), billNoOvr: ls.get("rb_billno",null), posSel: ls.get("rb_pos",""), pendShare: !!ls.get("rb_pshare",0), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), pm: ls.get("rb_pm",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923", mode:"test" } };
 S.canWrite = !!(S.auth && (S.auth.tok || S.auth.pin));
 if(S.canWrite && S.auth.prefs && typeof S.auth.prefs.hideBuy==="boolean") S.hideBuy=S.auth.prefs.hideBuy;   // this person's choice beats the phone's
@@ -2587,16 +2609,24 @@ function billText(){
   s+=`\n*${t("total")}: ${rs(billSum())}*`+payText(billSum()); if(S.cfg.billFooter) s+=`\n\n${S.cfg.billFooter}`; return s;
 }
 /* ---------------- Credit (udhaar) on the bill ---------------- */
-function payInfo(total){ total=+total||0;
-  if(S.pay==="credit") return {mode:"credit",recv:0,due:total};
-  if(S.pay==="part"){ const r=toNum(S.recv); const v=isNaN(r)?0:Math.max(0,r); return {mode:"part",recv:v,due:r2(Math.max(0,total-v))}; }
-  return {mode:"paid",recv:total,due:0}; }
-function payText(total){ const p=payInfo(total); if(p.mode==="paid") return "";
-  return p.mode==="credit" ? `\n${t("waPayCredit")}\n*${t("waBal")}: ${rs(p.due)}*` : `\n${t("waPaid")}: ${rs(p.recv)}\n*${t("waBal")}: ${rs(p.due)}*`; }
+/** How the money was taken (Paid by tiles): "" = not marked (as before), cash / upi / cheque. Not used on credit bills. */
+const PM_KEYS={cash:"pmCash",upi:"pmUpi",cheque:"pmCheque"};
+const pmLabel=k=>PM_KEYS[k]?t(PM_KEYS[k]):"";
+const PM_EN={cash:"Cash",upi:"UPI",cheque:"Cheque"};   // printed / PDF bills are in English (ASCII)
+function payInfo(total){ total=+total||0; const pm=S.pay==="credit"?"":(S.pm||"");
+  if(S.pay==="credit") return {mode:"credit",recv:0,due:total,pm:""};
+  if(S.pay==="part"){ const r=toNum(S.recv); const v=isNaN(r)?0:Math.max(0,r); return {mode:"part",recv:v,due:r2(Math.max(0,total-v)),pm}; }
+  return {mode:"paid",recv:total,due:0,pm}; }
+function payText(total){ const p=payInfo(total), by=p.pm?pmLabel(p.pm):"";
+  if(p.mode==="paid") return by?`\n${t("pmL")}: ${by}`:"";
+  return p.mode==="credit" ? `\n${t("waPayCredit")}\n*${t("waBal")}: ${rs(p.due)}*` : `\n${t("waPaid")}: ${rs(p.recv)}${by?` (${by})`:""}\n*${t("waBal")}: ${rs(p.due)}*`; }
 function setPay(m){ S.pay=m; ls.set("rb_pay",m); renderPay(); updateBillTotals(); }
+/** Tap a tile to pick it; tap it again to un-pick (nothing picked works as before). */
+function setPm(k){ S.pm = S.pm===k ? "" : k; ls.set("rb_pm",S.pm); renderPay(); updateBillTotals(); }
 function renderPay(){
   document.querySelectorAll("#pay-seg [data-pay]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.pay===S.pay)));
   $("#pay-part").hidden = S.pay!=="part";
+  const pr=$("#pm-row"); if(pr){ pr.hidden = S.pay==="credit"; pr.querySelectorAll("[data-pm]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.pm===S.pm))); }
   const cr=S.pay!=="paid";
   $("#cust").placeholder = t("custName")+(cr?" *":""); $("#cust-mob").placeholder = t("custMob")+(cr?" *":"");
   if(!cr) ["#cust","#cust-mob","#pay-recv"].forEach(k=>$(k).classList.remove("need"));
@@ -2665,7 +2695,7 @@ const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"sh
 const fmtDT=d=>{ const x=new Date(d); return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+", "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
 function billDateStr(){ return S.editing && S.editing.date ? fmtDate(S.editing.date) : fmtDate(Date.now()); }
 function editedLine(){ return S.editing && !S.editing.fresh ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
-const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel]);
+const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""]);
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
@@ -2790,8 +2820,8 @@ function renderEnv(){
   const bb=$("#bill-envnote"); if(bb){ bb.hidden=!test; bb.textContent=t("envBanner"); }
   duesSub();
 }
-function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, billNoOvr:S.billNoOvr, pay:S.pay, recv:S.recv }; }
-function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.billNoOvr=d.billNoOvr||null; S.pay=d.pay||"paid"; S.recv=d.recv||"";
+function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, billNoOvr:S.billNoOvr, pay:S.pay, recv:S.recv, pm:S.pm||"" }; }
+function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; S.billNoOvr=d.billNoOvr||null; S.pay=d.pay||"paid"; S.recv=d.recv||""; S.pm=d.pm||""; ls.set("rb_pm",S.pm);
   ls.set("rb_pay",S.pay); ls.set("rb_recv",S.recv); $("#pay-recv").value=S.recv; renderPay();
   ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",S.billNoOvr);
   $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin; saveBill(); }
@@ -2913,7 +2943,7 @@ async function saveEdit(opts){
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
-  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
   if(ed.edits!==null && ed.edits!==undefined) rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
   const btn=$("#bill-done"); btn.disabled=true;
   try{ const j=await apiPost({action:"updateBill",bill:rec});
@@ -2932,7 +2962,7 @@ function draftRec(extra){
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
-  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; rec.paidBy=p.pm; }
   return rec;
 }
 /** keep:true (Share) saves the bill but leaves it on screen as "saved"; later changes update the same bill. */
@@ -2949,7 +2979,7 @@ function finishBill(opts){
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
-  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; }
+  { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; rec.paidBy=p.pm; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const lastInv=invFromCurrent(); ls.set("rb_lastinv",lastInv);
   blcAdd(rec);
@@ -2970,13 +3000,14 @@ function finishBill(opts){
   toast(t("billSent",n,seriesNext(wasGst)));
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
   if(rec.due>0){ const ds=ls.get(envKey("rb_dues_sum"),{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set(envKey("rb_dues_sum"),ds); duesSub(); }
-  S.pay="paid"; S.recv=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
+  S.pay="paid"; S.recv=""; S.pm=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); ls.set("rb_pm",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
   S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
   if(prGet().auto) setTimeout(()=>printInv(lastInv),250);   // "Print automatically after Done" (this phone / laptop)
 }
 /* Cash given -> how much to give back. Only on this phone; never saved with the bill. */
-function cashDue(){ const tot=billTotal(); if(S.pay==="paid") return tot; if(S.pay==="part"){ const r=parseFloat(S.recv); return r>0?r:0; } return 0; }
+function cashDue(){ if(S.pm && S.pm!=="cash") return 0;   // UPI / cheque: no change to give
+  const tot=billTotal(); if(S.pay==="paid") return tot; if(S.pay==="part"){ const r=parseFloat(S.recv); return r>0?r:0; } return 0; }
 function cashNotes(T){ const out=[]; [50,100,500,2000].forEach(m=>{ const v=Math.ceil(T/m)*m; if(v>T && !out.includes(v)) out.push(v); }); return out.slice(0,3); }
 function renderCash(){
   const row=$("#cashrow"); if(!row) return;
@@ -3062,6 +3093,7 @@ function invFromCurrent(){
 function invFromBill(b){
   const lines=(b.lines&&b.lines.length?b.lines:linesFromItems(b)).map(l=>({name:l.name,hsn:l.hsn||"",qty:+l.qty||0,unit:l.unit||"",rate:+l.rate||0,gst:+l.gst||0}));
   const pay = !b.pay||b.pay==="Paid"||b.pay==="Cleared" ? {mode:"paid",recv:b.total,due:0} : {mode:b.paid>0?"part":"credit",recv:+b.paid||0,due:+b.due||0};
+  pay.pm = PM_KEYS[String(b.paidBy||"").toLowerCase()] ? String(b.paidBy).toLowerCase() : "";
   return { gst:!!b.gst, igst:!!b.igst, no:dispNo(b.n,b.gst,b.fy), date:b.date, cust:{name:b.customer||"",mobile:b.mobile||"",gstin:b.custGstin||""}, pos:b.pos||"", lines, pay, cancelled:!!b.cancelled };
 }
 async function makeInvoicePdf(inv){
@@ -3092,10 +3124,11 @@ async function makeInvoicePdf(inv){
   const sum=[]; let total;
   if(g){ sum.push(["Taxable value",R(g.taxable)]); g.rows.forEach(r=>sum.push([r.kind==="I"?`IGST ${fmtN(r.rate)}%`:`${r.kind==="C"?"CGST":"SGST"} ${fmtN(r.rate/2)}%`,R(r.v)])); if(g.roundOff) sum.push(["Round off",(g.roundOff>0?"+":"-")+R(Math.abs(g.roundOff)).slice(4)]); total=g.total; }
   else total=r2(inv.lines.reduce((a,l)=>a+l.qty*l.rate,0));
-  sum.push([inv.gst?"Total (incl. GST)":"Total",R(total)]);
+  const totIdx=sum.length; sum.push([inv.gst?"Total (incl. GST)":"Total",R(total)]);
   if(inv.pay && inv.pay.mode!=="paid"){ sum.push(["Paid",R(inv.pay.recv)]); sum.push(["Balance due",R(inv.pay.due)]); }
+  if(inv.pay && PM_EN[inv.pay.pm]) sum.push(["Paid by",PM_EN[inv.pay.pm]]);
   doc.autoTable({ startY:y, margin:{left:W/2,right:M}, body:sum, theme:"plain", styles:{fontSize:9.5,cellPadding:3}, columnStyles:{1:{halign:"right"}},
-    didParseCell:d=>{ if(d.row.index===sum.length-1-((inv.pay&&inv.pay.mode!=="paid")?2:0)) d.cell.styles.fontStyle="bold"; } });
+    didParseCell:d=>{ if(d.row.index===totIdx) d.cell.styles.fontStyle="bold"; } });
   y=doc.lastAutoTable.finalY+10;
   doc.setFontSize(9); doc.setFont("helvetica","italic"); doc.text(doc.splitTextToSize("Amount in words: "+inWords(total),W-2*M),M,y); doc.setFont("helvetica","normal"); y+=24;
   if(g){ const hs={}; inv.lines.forEach(l=>{ const k=(l.hsn||"-")+"|"+l.gst; const a=r2(l.qty*l.rate); hs[k]=hs[k]||{hsn:l.hsn||"-",rate:l.gst,tx:0}; hs[k].tx=r2(hs[k].tx+a); });
@@ -3179,6 +3212,7 @@ function receiptLines(inv,w){
   if(c.g){ push(prLR("Taxable value",prMoney(c.g.taxable),w)); c.taxes.forEach(x=>push(prLR(x.label,prMoney(x.v),w))); if(c.g.roundOff) push(prLR("Round off",(c.g.roundOff>0?"+":"-")+prMoney(Math.abs(c.g.roundOff)),w)); }
   if(w>=40) push(prLR("TOTAL","Rs."+prMoney(c.total),Math.floor(w/2)),{b:1,big:1}); else push(prLR("TOTAL","Rs. "+prMoney(c.total),w),{b:1});
   if(c.due){ push(prLR("Paid",prMoney(inv.pay.recv),w)); push(prLR("Balance due",prMoney(inv.pay.due),w),{b:1}); }
+  if(inv.pay && PM_EN[inv.pay.pm]) push(prLR("Paid by",PM_EN[inv.pay.pm],w));
   if(inv.gst) prWrap(prAsc(inWords(c.total)),w).forEach(x=>push(x));
   L.push(hr);
   if(S.cfg.billFooter) prWrap(prAsc(S.cfg.billFooter),w).forEach(x=>push(x,{c:1}));
@@ -3222,6 +3256,7 @@ function prHtmlInvoice(inv){
   let sum=""; if(c.g){ sum+=`<tr><td>Taxable value</td><td class="r">${R(c.g.taxable)}</td></tr>`+c.taxes.map(x=>`<tr><td>${e(x.label)}</td><td class="r">${R(x.v)}</td></tr>`).join(""); if(c.g.roundOff) sum+=`<tr><td>Round off</td><td class="r">${c.g.roundOff>0?"+":"−"}${R(Math.abs(c.g.roundOff))}</td></tr>`; }
   sum+=`<tr class="tot"><td>${inv.gst?"Total (incl. GST)":"Total"}</td><td class="r">${R(c.total)}</td></tr>`;
   if(c.due) sum+=`<tr><td>Paid</td><td class="r">${R(inv.pay.recv)}</td></tr><tr class="tot"><td>Balance due</td><td class="r">${R(inv.pay.due)}</td></tr>`;
+  if(inv.pay && PM_EN[inv.pay.pm]) sum+=`<tr><td>Paid by</td><td class="r">${PM_EN[inv.pay.pm]}</td></tr>`;
   let hsn=""; if(c.g){ const hs={}; inv.lines.forEach(l=>{ const k=(l.hsn||"-")+"|"+l.gst; hs[k]=hs[k]||{hsn:l.hsn||"-",rate:l.gst,tx:0}; hs[k].tx=r2(hs[k].tx+r2(l.qty*l.rate)); });
     hsn=`<table class="pi-hsn"><tr><th>HSN</th><th class="r">Taxable</th><th class="r">Rate</th>${inv.igst?`<th class="r">IGST</th>`:`<th class="r">CGST</th><th class="r">SGST</th>`}<th class="r">Total tax</th></tr>${Object.values(hs).map(h=>{ const tax=r2(h.tx*h.rate/100); return `<tr><td>${e(h.hsn)}</td><td class="r">${R(h.tx)}</td><td class="r">${fmtN(h.rate)}%</td>${inv.igst?`<td class="r">${R(tax)}</td>`:`<td class="r">${R(r2(tax/2))}</td><td class="r">${R(r2(tax/2))}</td>`}<td class="r">${R(tax)}</td></tr>`; }).join("")}</table>`; }
   return `<div class="pi">${head}${flags}${to}<table class="pi-items">${th}${rows}</table><table class="pi-sum">${sum}</table><div class="pi-words">Amount in words: ${e(inWords(c.total))}</div>${hsn}
@@ -3243,6 +3278,7 @@ function prHtmlReceipt(inv){
   if(c.g){ h+=row("Taxable value",m(c.g.taxable)); c.taxes.forEach(x=>h+=row(e(x.label),m(x.v))); if(c.g.roundOff) h+=row("Round off",(c.g.roundOff>0?"+":"−")+m(Math.abs(c.g.roundOff))); }
   h+=row("TOTAL","₹"+m(c.total),"pr-tot");
   if(c.due){ h+=row("Paid",m(inv.pay.recv)); h+=row("<b>Balance due</b>","<b>"+m(inv.pay.due)+"</b>"); }
+  if(inv.pay && PM_EN[inv.pay.pm]) h+=row("Paid by",PM_EN[inv.pay.pm]);
   if(inv.gst) h+=`<div class="pr-sm">${e(inWords(c.total))}</div>`;
   h+=`<hr>`+(S.cfg.billFooter?`<div class="pr-c">${e(S.cfg.billFooter)}</div>`:"")+`<div class="pr-c">Thank you!</div>`;
   return `<div class="pr">${h}</div>`;
@@ -3412,6 +3448,7 @@ function rpHeroInit(){ const h=$("#rp-hero"); if(!h) return;
         <div class="rph-m"><span>${esc(t("rpCredit"))}</span><b id="rph-cred">₹0</b><i id="rph-credp"></i></div>
         <div class="rph-m warn" title="${esc(t("rpOut"))}"><span>${esc(t("rpOutS"))}</span><b id="rph-out">₹0</b><i id="rph-outp"></i></div>
       </div>
+      <div class="rph-modes" id="rph-modes" hidden></div>
     </div><div class="rph-tip" id="rph-tip"></div>`;
   // tap (phones) or point (laptop) at a part of the split or a day → highlight it and show its numbers
   const pick=(el,tog)=>{ const k=el?el.dataset.k||el.dataset.dk:""; RP.hl = tog && RP.hl===k ? "" : k; rpHl(); };
@@ -3475,6 +3512,10 @@ function rpHero(R){ const h=$("#rp-hero"); if(!h||!R) return; const T=R.totals, 
   const base=Math.max(T.sales||0,R.outstanding||0,R.received||0,R.creditGiven||0,1);
   tweenNum($("#rph-recv"),R.received||0,rsR); tweenNum($("#rph-cred"),R.creditGiven||0,rsR); tweenNum($("#rph-out"),R.outstanding||0,rsR);
   $("#rph-recvp").style.setProperty("--p",(R.received||0)/base*100); $("#rph-credp").style.setProperty("--p",(R.creditGiven||0)/base*100); $("#rph-outp").style.setProperty("--p",(R.outstanding||0)/base*100);
+  // money in by how it was paid (bill page "Paid by" tiles + payment notes); shown once anything is marked
+  { const M=R.modes||{}, order=[["Cash","pmCash"],["UPI","pmUpi"],["Cheque","pmCheque"],["Bank","bankL"],["","pmNone"]], el=$("#rph-modes");
+    const any=Object.keys(M).some(k=>k && M[k]>0);
+    el.hidden=!any; if(any) el.innerHTML=`<span>${esc(t("rpModes"))}</span>`+order.filter(([k])=>M[k]>0).map(([k,l])=>`<span class="c">${esc(k==="Bank"?"Bank":t(l))} <b>${esc(rsR(M[k]))}</b></span>`).join(""); }
   if(RP.hl && !(RP.split||[]).some(x=>x.k===RP.hl) && !(RP.pts||[]).some(x=>"d:"+x.k===RP.hl)) RP.hl="";
   setTimeout(rpHl, anim?680:0);
 }
@@ -3939,6 +3980,7 @@ $("#cust").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault
 $("#cust-mob").value=S.mob; $("#cust-mob").addEventListener("input",e=>{ S.mob=e.target.value; ls.set("rb_mob",S.mob); updateBillTotals(); custLookup(); custXSync(); });
 $("#cust-x").onclick=()=>{ custClear(); toast(t("cuCleared")); };
 $("#pay-seg").addEventListener("click",e=>{ const b=e.target.closest("[data-pay]"); if(b) setPay(b.dataset.pay); });
+$("#pm-row").addEventListener("click",e=>{ const b=e.target.closest("[data-pm]"); if(b) setPm(b.dataset.pm); });
 $("#pay-recv").value=S.recv; $("#pay-recv").addEventListener("input",e=>{ S.recv=e.target.value; ls.set("rb_recv",S.recv); e.target.classList.remove("need"); updateBillTotals(); });
 ["#cust","#cust-mob"].forEach(k=>$(k).addEventListener("input",e=>e.target.classList.remove("need")));
 renderPay();
@@ -4091,7 +4133,7 @@ $("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.cus
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
-$("#bill-clear-yes").onclick=()=>{ S.cash=""; S.custAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
+$("#bill-clear-yes").onclick=()=>{ S.cash=""; S.pm=""; ls.set("rb_pm",""); renderPay(); S.custAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
 
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;
@@ -4866,7 +4908,7 @@ function blcAdd(rec){ try{ const env=rec.env||S.cfg.mode, now=new Date(), due=+r
   const at=prev?new Date(prev.date):now;
   L.unshift({ n:rec.n, date:at.toISOString(), day:dayKey(at), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
     taxable:rec.gst?rec.taxable:null, tax:rec.gst?rec.tax:null, custGstin:rec.custGstin, igst:rec.igst, id:rec.id, row:0, editedAt:"", editedBy:"", edits:0, cost:rec.cost, profit:rec.profit,
-    pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines, _t:Date.now() });
+    paidBy:rec.paidBy||"", pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines, _t:Date.now() });
   ls.set(blocKey(env), L.slice(0,60)); blcBump(); }catch{} }
 /* Keep Past bills fresh in the background: after this phone sends bills or changes one, and when the 25-second check says
  * bills changed on another phone. Several quick bills are batched into one small "what changed" request. Only for phones
@@ -4914,7 +4956,7 @@ function blcRefresh(){
 function blcQuery(C){
   const ids=new Set(C.bills.map(b=>b.id)), pend=(S.billQ||[]).filter(q=>(q.env||"test")===C.env && !ids.has(q.id)).map(q=>{ const d=q.at?new Date(q.at):new Date(), due=+q.due||0;
     return { n:q.n, date:d.toISOString(), day:dayKey(d), customer:q.customer, mobile:q.mobile, total:q.total, items:q.items, gst:q.gst, custGstin:q.custGstin, igst:q.igst, id:q.id, row:0, edits:0,
-      cost:q.cost, profit:q.profit, pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", text:q.text, lines:q.lines, pending:true }; });
+      cost:q.cost, profit:q.profit, paidBy:q.paidBy||"", pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", text:q.text, lines:q.lines, pending:true }; });
   const pids=new Set(pend.map(x=>x.id)), L0=blocGet(C.env), keep=L0.filter(x=>!ids.has(x.id) && Date.now()-(x._t||0)<30*60000);
   if(keep.length!==L0.length) ls.set(blocKey(C.env),keep);                 // the copy has them now (or they're old): drop
   const loc=keep.filter(x=>!pids.has(x.id)).map(x=>({...x, pending:(S.billQ||[]).some(q=>q.id===x.id)}));
@@ -5003,7 +5045,7 @@ function renderBills(){
       html+=`<div class="bl-grp bl-dgrp${dShut?" shut":""}"><button type="button" class="bl-day" data-tg="${esc(k)}" aria-expanded="${!dShut}">${chev}<span class="bl-ml">${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></button><div class="bl-gb">`;
       byM[m].byD[k].forEach(i=>{ const b=billsCache[i], d=b.date?new Date(b.date):null;
         html+=`<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-bi="${i}" data-bid="${esc(b.id||"")}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
+        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}${b.paidBy&&pmLabel(String(b.paidBy).toLowerCase())?` <span class="pill pmp">${esc(pmLabel(String(b.paidBy).toLowerCase()))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
       html+=`</div></div>`;
     });
     html+=`</div></section>`;
@@ -5772,9 +5814,10 @@ const vDateA=d=>{ if(!d) return ""; const x=new Date(d+"T00:00:00"); return x.to
 /* ---------------- Credit (udhaar) ---------------- */
 let billBackFn=null, duesCache=null, duesDirty=false, duesQ="";
 function billBack(){ (billBackFn||openBills)(); }
-function billPayMode(b){ const pays=b.payments||[], atBill=pays.filter(p=>p.at).reduce((x,p)=>x+(+p.a||0),0);
-  if(!b.pay || b.pay==="Paid") return {pay:"paid",recv:""};
-  return atBill>0 ? {pay:"part",recv:String(atBill)} : {pay:"credit",recv:""}; }
+function billPayMode(b){ const pays=b.payments||[], atBill=pays.filter(p=>p.at).reduce((x,p)=>x+(+p.a||0),0), pm=String(b.paidBy||"").toLowerCase();
+  const pmk=PM_KEYS[pm]?pm:"";
+  if(!b.pay || b.pay==="Paid") return {pay:"paid",recv:"",pm:pmk};
+  return atBill>0 ? {pay:"part",recv:String(atBill),pm:pmk} : {pay:"credit",recv:"",pm:""}; }
 function payPill(b){ if(b.pay==="Credit"||b.pay==="Part paid") return ` <span class="pill due">${esc(t("pillDue",rs(b.due)))}</span>`; if(b.pay==="Cleared") return ` <span class="pill cleared">${esc(t("pillCleared"))}</span>`; return ""; }
 function payUpdateText(b){ const later=(b.payments||[]).filter(p=>!p.at); if(!later.length) return "";
   const last=later[later.length-1]; const d=fmtDate(last.d);

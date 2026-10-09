@@ -43,5 +43,10 @@ g2.props.HEALTH_KEY = 'k2'; g2.R("var DELS=0, TR=[{getHandlerFunction:()=>'autoB
 ok(g2.R("retire_('wrong','SHARMA-ABCDEFGH23')").error === 'bad_key' && g2.R("retire_('k2','OTHER')").error === 'bad_key' && g2.R('DELS') === 0, 'retire needs the shop\'s own key and code');
 const rt = g2.R("retire_('k2','SHARMA-ABCDEFGH23')"); g2.R('ensureTriggers_()');
 ok(rt.ok && rt.triggers === 2 && g2.R('TR.length') === 0 && !!g2.props.RETIRED, 'retire: all timed jobs removed, not put back afterwards');
+// Paid by (bill page tiles): stored as Cash / UPI / Cheque; part-paid money at billing carries it as the payment's note
+ok(R("paidBy_('upi')") === 'UPI' && R("paidBy_('CASH')") === 'Cash' && R("paidBy_('check')") === 'Cheque' && R("paidBy_('bitcoin')") === '' && R("paidBy_('')") === '', 'paidBy_: only Cash / UPI / Cheque, anything else = not marked');
+const pcU = R("payCalc_(500, 'part', 200, [], 'Raju', 'UPI')"), pcN = R("payCalc_(500, 'part', 200, [], 'Raju')"), pcP = R("payCalc_(500, 'paid', 0, [], 'Raju', 'Cash')");
+ok(pcU.pays[0].note === 'UPI' && pcU.pays[0].at === 1 && pcU.due === 300 && pcN.pays[0].note === undefined && pcP.status === 'Paid' && pcP.pays.length === 0, 'part paid: the amount taken at billing remembers how it was paid; nothing changes when not marked');
+ok(R("BILL_COLS[BILL_COLS.length - 1]") === 'paidBy', 'Bills tab gains a paidBy column at the end (old rows simply have it empty)');
 ok(g2.locks.n === 0 && g.locks.n === 0, 'all locks released');
 process.exit(fails ? 1 : 0);

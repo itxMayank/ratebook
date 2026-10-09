@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 38;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 39;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -27,7 +27,7 @@ const IMAGES = 'Images';
 let ENV_ = 'live';
 function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
 function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos', 'paidBy'];
 
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due', 'address', 'note', 'updatedAt', 'updatedBy'];
 const CPAD_ = r => { while (r.length < CUST_COLS.length) r.push(''); return r.slice(0, CUST_COLS.length); };   // rows always as wide as the header
@@ -1027,7 +1027,7 @@ function takeBill_(body) {
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
-        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60))), [fyNow, '', '', '', '', str_(b.pos || '', 40)]));
+        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy)]));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       try { refreshDue_(b.mobile); } catch (err) {}
     }
@@ -1102,7 +1102,7 @@ function listBills_(q, limit, opt) {
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B),
-      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || '') });
+      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || '') });
   }
   const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day] || { count: 0, total: 0 }; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)] || { count: 0, total: 0 }; });
   if (dIds) return { bills: out, delta: true, full: true, brev: brev_(), years: Object.keys(years).sort().reverse() };
@@ -1121,7 +1121,7 @@ function getBill_(row, id, billNo) {
   let lines = [];
   try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   return { bill: { text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), gst: r[B.gstBill] === 'Yes',
-    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
+    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
     total: num_(r[B.total]), items: String(r[B.items] || ''), cancelled: r[B.status] === 'Cancelled', cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''),
     cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''),
     editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), editedBy: String(r[B.editedBy] || ''), ...payOut_(r, B) } };
@@ -1151,6 +1151,7 @@ function updateBill_(b, by) {
   r[B.taxable] = b.gst ? num_(b.taxable) : ''; r[B.tax] = b.gst ? num_(b.tax) : '';
   r[B.customerGstin] = str_(b.custGstin, 20); r[B.igst] = b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '';
   if (b.pos !== undefined) r[B.pos] = str_(b.pos || '', 40);
+  if (b.paidBy !== undefined) r[B.paidBy] = b.pay === 'credit' ? '' : paidBy_(b.paidBy);
   r[B.text] = safe(String(b.text || '').slice(0, 45000));
   r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
@@ -1160,7 +1161,7 @@ function updateBill_(b, by) {
   const oldMob = vals[i][B.mobile];
   { const pays = payList_(r[B.payments]), later = pays.filter(p => !p.at), atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
     const mode = b.pay ? b.pay : modeOf_(r[B.payment], pays);
-    const pc = payCalc_(r[B.total], mode, b.pay ? b.received : atBill, later, by);
+    const pc = payCalc_(r[B.total], mode, b.pay ? b.received : atBill, later, by, String(r[B.paidBy] || ''));
     if (pc.status !== 'Paid' && !mob10_(r[B.mobile])) throw new Error('credit_needs_mobile');
     const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
     if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
@@ -1175,6 +1176,8 @@ function updateBill_(b, by) {
  * payments (JSON [{d: ISO date, a: amount, by, at: 1 if received at billing, note}]) and clearedAt (when the last of it was paid).
  */
 function r2_(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+/** How the money at billing was taken (bill page tiles): Cash / UPI / Cheque, or '' when not marked. */
+function paidBy_(v) { const k = String(v || '').trim().toLowerCase(); return k === 'cash' ? 'Cash' : k === 'upi' ? 'UPI' : k === 'cheque' || k === 'check' ? 'Cheque' : ''; }
 function payList_(v) { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function modeOf_(status, pays) {
   const atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
@@ -1182,7 +1185,7 @@ function modeOf_(status, pays) {
   return atBill > 0 ? 'part' : 'credit';
 }
 /** mode: paid | credit | part. received: amount taken at billing (part). later: payments recorded after the bill. */
-function payCalc_(total, mode, received, later, by) {
+function payCalc_(total, mode, received, later, by, note) {
   total = r2_(num_(total)); later = later || [];
   mode = mode === 'credit' || mode === 'part' ? mode : 'paid';
   const laterSum = r2_(later.reduce((x, p) => x + num_(p.a), 0));
@@ -1190,7 +1193,7 @@ function payCalc_(total, mode, received, later, by) {
   atBill = r2_(atBill);
   const paid = r2_(atBill + laterSum), due = r2_(Math.max(0, total - paid));
   const status = due > 0 ? (paid > 0 ? 'Part paid' : 'Credit') : (mode === 'paid' && !later.length ? 'Paid' : 'Cleared');
-  const pays = (atBill > 0 && (mode !== 'paid' || later.length) ? [{ d: new Date().toISOString(), a: atBill, by: by || '', at: 1 }] : []).concat(later);
+  const pays = (atBill > 0 && (mode !== 'paid' || later.length) ? [Object.assign({ d: new Date().toISOString(), a: atBill, by: by || '', at: 1 }, note ? { note: note } : {})] : []).concat(later);
   return { status: status, paid: paid, due: due, pays: pays, clearedAt: status === 'Cleared' ? new Date() : '' };
 }
 function payRow_(pc) { return [pc.status, pc.status === 'Paid' ? '' : pc.paid, pc.status === 'Paid' ? '' : pc.due, pc.pays.length ? JSON.stringify(pc.pays).slice(0, 20000) : '', pc.clearedAt]; }
@@ -1223,7 +1226,7 @@ function listDues_() {
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     c.due = r2_(c.due + due); total = r2_(total + due); count++;
     c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]), items: String(r[B.items] || ''), gst: r[B.gstBill] === 'Yes',
-      edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || '') });
+      edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || '') });
   }
   list.forEach(c => { c.oldest = c.bills.length ? c.bills[0].date : ''; });
   list.sort((x, y) => y.due - x.due);
@@ -1594,19 +1597,21 @@ function report_(body) {
   const byDay = {}, items = {}, rates = {}, hsn = {};
   const g = { b2b: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 }, b2c: { count: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 } };
   const register = [];
-  let received = 0, creditGiven = 0, outstanding = 0;
+  let received = 0, creditGiven = 0, outstanding = 0; const modes = {};   // money that came in during the period, by how it was paid ('' = not marked)
+  const addMode = (k, a) => { k = paidBy_(k) || (String(k || '') === 'Bank' ? 'Bank' : ''); modes[k] = r2_((modes[k] || 0) + num_(a)); };
   if (n > 0) s.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     const day = dayOf(d);
     const st = String(r[B.payment] || '');
     const isCan = r[B.status] === 'Cancelled';
     if (!isCan && (st === 'Credit' || st === 'Part paid')) outstanding = r2_(outstanding + num_(r[B.due]));
-    payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd && (!from || pd >= from) && (!to || pd <= to) && !isCan) received = r2_(received + num_(p.a)); });
+    payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd && (!from || pd >= from) && (!to || pd <= to) && !isCan) { received = r2_(received + num_(p.a)); addMode(p.note, p.a); } });
     if (!day || (from && day < from) || (to && day > to)) return;
     const gst = r[B.gstBill] === 'Yes';
     if (isCan) { T.cancelled++; if (gst) register.push({ date: day, no: num_(r[B.billNo]), fy: String(r[B.fy] || ''), customer: String(r[B.customer] || ''), gstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0, status: 'Cancelled' }); return; }
     const total = num_(r[B.total]);
     T.bills++; T.sales = r2_(T.sales + total);
+    { const atB = (!st || st === 'Paid') ? total : payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0); if (atB > 0) addMode(r[B.paidBy], atB); }
     if (r[B.profit] !== '' && r[B.profit] !== null) { T.profit = r2_(T.profit + num_(r[B.profit])); T.cost = r2_(T.cost + num_(r[B.cost])); T.profitBills++; }
     if ((st === 'Credit' || st === 'Part paid')) { const pays = payList_(r[B.payments]); creditGiven = r2_(creditGiven + total - pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); }
     if (!byDay[day]) byDay[day] = { d: day, sales: 0, bills: 0 };
@@ -1658,7 +1663,7 @@ function report_(body) {
     it.profit = it.costQty ? r2_(it.costAmt - it.cost) : null; return it; }).sort((a, b) => b.amount - a.amount);
   return { report: { from: from, to: to, totals: T, byDay: Object.keys(byDay).sort().map(k => byDay[k]), items: itemList.slice(0, 100), itemCount: itemList.length,
     gst: { b2b: g.b2b, b2c: g.b2c, rates: Object.keys(rates).map(k => rates[k]).sort((a, b) => a.rate - b.rate), hsn: Object.keys(hsn).map(k => hsn[k]) },
-    received: received, creditGiven: r2_(creditGiven), outstanding: outstanding, register: register.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.no - b.no) } };
+    received: received, creditGiven: r2_(creditGiven), outstanding: outstanding, modes: modes, register: register.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.no - b.no) } };
 }
 
 /* ======================= Vendor khata (purchases and payments to suppliers) =======================

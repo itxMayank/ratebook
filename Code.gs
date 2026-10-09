@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 34;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 35;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -59,6 +59,7 @@ function ss_() {
   if (!id) {
     const props = PropertiesService.getScriptProperties();
     id = props.getProperty('SHEET_ID');
+    if (!id && boot_() && boot_().sheetId) { id = String(boot_().sheetId); props.setProperty('SHEET_ID', id); }   // a shop made by the admin Directory
     if (!id) {
       let ss = null;
       try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
@@ -90,8 +91,62 @@ function sheet_(name, headers) {
 }
 
 function out_(obj) {
+  if (T0_ && obj && typeof obj === 'object' && !Array.isArray(obj)) { obj.ms = Date.now() - T0_; perfNote_(obj); }
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+
+/* ---------- this shop's built-in settings ----------
+   A shop made from the admin Directory gets a generated Shop.gs with
+   SHOP_BOOT = {code, sheetId, folderId, vdFolder, vdFolderTest, bkFolder, dirUrl, healthKey, initPin}.
+   The original shop has no Shop.gs: boot_() is null and everything falls back to how it always worked. */
+function boot_() { try { return (typeof SHOP_BOOT !== 'undefined' && SHOP_BOOT) ? SHOP_BOOT : null; } catch (e) { return null; } }
+function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 'main'; }
+
+/* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
+let T0_ = 0, ACT_ = '';
+const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1 };
+const ERR_QUIET_ = { bad_pin: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
+function perfNote_(obj) {
+  if (!ACT_ || PERF_SKIP_[ACT_]) return;
+  try { const c = CacheService.getScriptCache(), now = Date.now();
+    let a = []; try { a = JSON.parse(c.get('PERF') || '[]'); } catch (e) {}
+    a.push([ACT_, obj.ms, now, obj.ok === false ? 0 : 1]); if (a.length > 200) a = a.slice(-200); c.put('PERF', JSON.stringify(a), 21600);
+    if (obj.ok === false && !ERR_QUIET_[String(obj.error || '').split('|')[0]]) {
+      let e = []; try { e = JSON.parse(c.get('ERRS') || '[]'); } catch (x) {}
+      e.push([ACT_, String(obj.error || '').slice(0, 200), now]); if (e.length > 50) e = e.slice(-50); c.put('ERRS', JSON.stringify(e), 21600); }
+  } catch (e) {}
+}
+
+/* ---------- reply cache: answers read-mostly requests from memory instead of re-reading the sheet ----------
+   Safe for money data because every key includes the version that changes on each write (rev / brev_<mode> / vrev_<mode>),
+   versions are bumped AFTER the data is written, and a reply is stored only if its version didn't change while it was built.
+   Big replies are split into pieces with a checksum; anything missing or broken = read the sheet again.
+   Script property NO_CACHE=1 turns this off at once (no deploy needed). */
+const RC_PIECE_ = 30000;   // characters per piece (CacheService allows 100 KB per value; Hindi text is up to 3 bytes a character)
+function rcOff_() { const c = CacheService.getScriptCache(); let v = c.get('NO_CACHE_F');
+  if (v === null) { v = PropertiesService.getScriptProperties().getProperty('NO_CACHE') === '1' ? '1' : '0'; c.put('NO_CACHE_F', v, 300); }
+  return v === '1'; }
+function rcSum_(s) { return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, s, Utilities.Charset.UTF_8)); }
+function rcGet_(key) {
+  if (rcOff_()) return null;
+  try { const c = CacheService.getScriptCache(), head = c.get('rc:' + key); if (!head) return null;
+    const h = JSON.parse(head), keys = []; for (let i = 0; i < h.n; i++) keys.push('rc:' + key + ':' + i);
+    const got = c.getAll(keys); let s = ''; for (let i = 0; i < h.n; i++) { const part = got[keys[i]]; if (part === undefined || part === null) return null; s += part; }
+    if (s.length !== h.len || rcSum_(s) !== h.sum) return null;
+    return JSON.parse(s); } catch (e) { return null; } }
+function rcPut_(key, obj) {
+  if (rcOff_()) return;
+  try { const s = JSON.stringify(obj), c = CacheService.getScriptCache(), parts = {}; let n = 0;
+    for (let i = 0; i < s.length; i += RC_PIECE_) parts['rc:' + key + ':' + (n++)] = s.slice(i, i + RC_PIECE_);
+    if (n > 60) return;   // over ~1.8 MB: don't cache
+    c.putAll(parts, 21600); c.put('rc:' + key, JSON.stringify({ n: n, len: s.length, sum: rcSum_(s) }), 21600); } catch (e) {} }
+/** Cached reply for `name` at version `ver()`: read the version first, build, store only if the version is unchanged. */
+function rcRead_(name, ver, build) {
+  const v1 = ver(), key = name + ':' + SCRIPT_VERSION + ':' + v1;
+  const hit = rcGet_(key); if (hit) return hit;
+  const out = build();
+  try { if (out && out.ok !== false && ver() === v1) rcPut_(key, out); } catch (e) {}
+  return out; }
 
 /* The change counter is read on every phone's 25-second check, so keep it in the short-term cache (saves daily quota). */
 function getRev_() {
@@ -129,10 +184,13 @@ function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200);
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
+  T0_ = Date.now(); ACT_ = String(p.action || '');
   try {
     switch (p.action) {
+      case 'health': return out_(health_(p.key));
+      case 'ping': return out_({ ok: true, shop: shopCode_() });
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test') });
-      case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
+      case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'vpub': return out_(vPub_(p.t));
       case 'vpubprev': return out_(vPubPrev_(p.t));
@@ -153,6 +211,9 @@ function rows_() {
   return { s, values: s.getRange(2, 1, n, COLS.length).getValues() };
 }
 
+/** The price list from the reply cache. Key: price/settings version + both bills versions (bill numbers live in Config and the
+    most-sold order follows bills), so any price change, setting change or bill makes the next read fresh. */
+function listCached_() { return rcRead_('list', () => getRev_() + ':' + brevC_('live') + ':' + brevC_('test'), list_); }
 /** Items without the thumbnail column (photos are fetched separately, only when they changed). */
 function list_() {
   const s = sheet_(ITEMS, COLS);
@@ -377,6 +438,7 @@ function readConfig_() {
   const cfg = {};
   if (n > 0) s.getRange(2, 1, n, 2).getValues().forEach(r => { if (r[0]) cfg[String(r[0])] = r[1]; });
   if (cfg.units) { try { cfg.units = JSON.parse(cfg.units); } catch (err) { delete cfg.units; } }
+  cfg.approveNew = approveOn_(cfg);
   try { cfg.groups = cfg.groups ? JSON.parse(cfg.groups) : []; if (!Array.isArray(cfg.groups)) cfg.groups = []; } catch (err) { cfg.groups = []; }
   cfg.bizType = String(cfg.bizType || '');
   if (cfg.roundTo !== undefined && cfg.roundTo !== '') cfg.roundTo = Number(cfg.roundTo);
@@ -400,10 +462,15 @@ function readConfig_() {
 
 function doPost(e) {
   let body;
+  T0_ = Date.now(); ACT_ = '';
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
+  ACT_ = String(body.action || '');
+  /* A request meant for another shop (wrong saved link, two shops on one phone) is never written here. */
+  if (body.shop && String(body.shop) !== shopCode_()) return out_({ ok: false, error: 'wrong_shop', shop: shopCode_() });
   try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') {      // anyone making a bill can do this (with the shop code if one is set)
+    if (shopPaused_()) return out_({ ok: false, error: 'paused' });   // the phone keeps the bill queued; nothing is lost
     if (!codeOk_(body.k)) { const a0 = body.pin || body.tok ? auth_(body) : { error: 'x' }; if (a0.error) return out_({ ok: false, error: 'need_code' }); }
     const tb = takeBill_(body); try { if (tb && tb.ok !== false) bumpB_(false, body.bill && body.bill.id); } catch (err) {}
     return out_(tb);
@@ -413,6 +480,10 @@ function doPost(e) {
   if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
   if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
   if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs') return out_({ ok: false, error: 'no_test' });
+  if (who.viaPin && approveOn_() && body.action !== 'verify') return out_({ ok: false, error: 'need_signin' });   // new-phone approval: only signed-in phones
+  if (shopPaused_() && !PAUSE_OK_[body.action]) return out_({ ok: false, error: 'paused' });
+  if (body.action === 'boot') {      // app start in one request; read-only, so no lock
+    try { return out_(bootReply_(who, body)); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'vRead' || body.action === 'vCheck') {      // Gemini takes seconds: don't hold the script lock while it reads
     try { const by0 = who.name || str_(body.by, 60);
       if (body.action === 'vRead') return out_({ ok: true, ex: vRead_(body.files) });
@@ -424,8 +495,9 @@ function doPost(e) {
     const by = who.name || str_(body.by, 60);
     let res = {};
     switch (body.action) {
-      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false }, view: viewCode_() };
-        if (body.wantTok && !who.sess) res.tok = sessNew_(who, body); break;
+      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false }, view: viewCode_(), shop: shopCode_() };
+        if (body.wantTok && !who.sess) { const t = sessNew_(who, body); res.tok = t.tok; if (t.pending) res.pending = true; } break;
+      case 'approveSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEdit_(all => Object.keys(all).forEach(k => { if (k.indexOf(id) === 0) delete all[k].p; })); res = listSessions_(who); break; }
       case 'signOut': sessEnd_(k => k === who.sess); res = {}; break;
       case 'listSessions': res = listSessions_(who); break;
       case 'endSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEnd_(k => k.indexOf(id) === 0); res = listSessions_(who); break; }
@@ -439,11 +511,11 @@ function doPost(e) {
       case 'setPin': res = setPin_(String(body.newPin || '')); sessEnd_((k, x) => x.u.indexOf('m:') === 0 && k !== who.sess); break;   // other phones signed in with the old shop PIN
       case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
-      case 'listCustomers': res = listCustomers_(String(body.brev || '')); break;
+      case 'listCustomers': { const have = String(body.brev || ''); res = have && have === brev_() ? { same: true, brev: brev_() } : rcRead_('cust:' + ENV_, brev_, () => listCustomers_('')); break; }
       case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
       case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
-      case 'listDues': res = listDues_(); break;
+      case 'listDues': res = rcRead_('dues:' + ENV_, brev_, listDues_); break;
       case 'recordPayment': res = recordPayment_(body, by); bumpB_(false, body.billId); break;
       case 'undoPayment': res = undoPayment_(body); bumpB_(false, body.billId); break;
       case 'backupInfo': res = backupInfo_(); break;
@@ -459,7 +531,7 @@ function doPost(e) {
       case 'setAccess': res = setAccess_(!!body.on, !!body.regen); break;
       case 'setBackupEmail': res = setBackupEmail_(String(body.email || '')); break;
       case 'vList': res = vList_(); break;
-      case 'vSync': res = vSync_(String(body.vrev || '')); break;
+      case 'vSync': { const have = String(body.vrev || ''); res = have && have === vrev_() ? { same: true, vrev: vrev_() } : rcRead_('vsync:' + ENV_, vrev_, () => vSync_('')); break; }
       case 'vGet': res = vGet_(str_(body.id, 40)); break;
       case 'vSaveVendor': res = vSaveVendor_(body.vendor || {}, by); break;
       case 'vLink': res = vLink_(str_(body.id, 40), !!body.on, !!body.regen); break;
@@ -476,7 +548,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -496,7 +568,7 @@ const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', list
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
-  setMyPrefs: 'staff', signOut: 'staff', listSessions: 'owner', endSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
+  setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
 function salt_() { const p = PropertiesService.getScriptProperties(); let v = p.getProperty('SALT'); if (!v) { v = Utilities.getUuid(); p.setProperty('SALT', v); } return v; }
@@ -511,9 +583,9 @@ function auth_(body) {
   const pin = String(body.pin || '');
   if (pin) {
     const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
-    if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true };
+    if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true };
     const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
-    if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false };
+    if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false, viaPin: true };
   }
   cache.put('fails_' + dev, String(d + 1), FAIL_WINDOW_SEC);
   cache.put('gfails', String(g + 1), 3600);
@@ -540,8 +612,14 @@ function sessEdit_(fn, wait) { const l = LOCKED_ ? null : LockService.getScriptL
     const v = JSON.stringify(all); PropertiesService.getScriptProperties().setProperty('SESS', v); try { CacheService.getScriptCache().put('SESS', v, 21600); } catch (e) {} return true; }
   finally { if (l) l.releaseLock(); } }
 function sessNew_(who, body) { const t = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''), k = tokKey_(t), now = Date.now();
-  if (!sessEdit_(all => { all[k] = { u: who.master ? 'm:' + mkey_(who.name) : who.id, n: who.name, l: str_(body.dl || '', 60), c: now, s: now }; })) throw new Error('busy');
-  return t; }
+  const dev = String(body.dev || '').replace(/[^\w-]/g, '').slice(0, 40), approve = who.role !== 'owner' && approveOn_(); let pending = false;
+  if (!sessEdit_(all => {
+    /* New-phone approval (owner setting): a phone that hasn't had an approved sign-in here waits until the owner approves it.
+       Owners never wait (they are the ones who approve). */
+    if (approve && !Object.keys(all).some(x => !all[x].p && dev && all[x].d === dev)) pending = true;
+    all[k] = { u: who.master ? 'm:' + mkey_(who.name) : who.id, n: who.name, l: str_(body.dl || '', 60), c: now, s: now, d: dev };
+    if (pending) all[k].p = 1; })) throw new Error('busy');
+  return { tok: t, pending: pending }; }
 function sessEnd_(pick) { sessEdit_(all => Object.keys(all).forEach(k => { if (pick(k, all[k])) delete all[k]; })); }
 function sessWho_(tok) { const k = tokKey_(tok), x = sessAll_()[k];
   if (!x || (x.s || x.c || 0) < Date.now() - SESS_DAYS * 864e5) return { error: 'bad_session' };
@@ -549,11 +627,94 @@ function sessWho_(tok) { const k = tokKey_(tok), x = sessAll_()[k];
   if (x.u.indexOf('m:') === 0) who = { name: x.n, role: 'owner', master: true };
   else { const u = users_().filter(y => y.id === x.u && y.active !== false)[0]; if (u) who = { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false }; }
   if (!who) return { error: 'bad_session' };
+  if (x.p) return { error: 'pending' };          // waiting for the owner to approve this phone
   if (Date.now() - (x.s || 0) > 3600e3) sessEdit_(all => { if (all[k]) all[k].s = Date.now(); }, 300);   // last used, at most hourly, never waits long
   who.sess = k; return who; }
 function listSessions_(who) { const all = sessAll_();
-  return { sessions: Object.keys(all).map(k => ({ id: k.slice(0, 12), name: all[k].n, label: all[k].l || '', made: all[k].c, seen: all[k].s, me: k === who.sess, shopPin: all[k].u.indexOf('m:') === 0 }))
+  return { approveNew: approveOn_(), sessions: Object.keys(all).map(k => ({ id: k.slice(0, 12), name: all[k].n, label: all[k].l || '', made: all[k].c, seen: all[k].s, me: k === who.sess, shopPin: all[k].u.indexOf('m:') === 0, pending: !!all[k].p }))
     .sort((a, b) => (b.seen || 0) - (a.seen || 0)) }; }
+
+/* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
+/** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
+const PAUSE_OK_ = { verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
+  recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
+  vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1 };
+/** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
+function shopPaused_() { const b = boot_(); if (!b || !b.dirUrl) return false;
+  const c = CacheService.getScriptCache(); let v = c.get('SHOP_STATUS');
+  if (v === null) { v = 'live';
+    try { const r = UrlFetchApp.fetch(b.dirUrl + '?action=shopStatus&code=' + encodeURIComponent(b.code) + '&key=' + encodeURIComponent(b.healthKey || ''), { muteHttpExceptions: true, followRedirects: true });
+      const j = JSON.parse(r.getContentText()); if (j && j.ok && j.status === 'paused') v = 'paused'; } catch (e) {}
+    c.put('SHOP_STATUS', v, 3600); }
+  return v === 'paused'; }
+/** "New phones need my approval": on by default for shops made by the Directory, off for the original shop until turned on. */
+function approveOn_(cfg) { let v;
+  try { v = (cfg || readConfig_()).approveNew; } catch (e) { return !!boot_(); }   // can't read settings: the shop's default
+  if (v === true || v === false) return v;
+  if (v === '' || v === undefined || v === null) return !!boot_();
+  return String(v).toLowerCase() === 'true'; }
+/** App start in one request: price list (cached), who's signed in, and every version the phone compares. */
+function bootReply_(who, body) {
+  ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_();
+  const L = listCached_();
+  L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); L.view = viewCode_();
+  L.me = { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false };
+  L.bl = brevC_('live'); L.bt = brevC_('test'); L.vl = vrevC_('live'); L.vt = vrevC_('test');
+  return L; }
+/** For the admin dashboard: needs the shop's health key. Counts and timings only, no customer data. Kept 50 s. */
+function health_(key) {
+  const P = PropertiesService.getScriptProperties(), b = boot_();
+  const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
+  if (!want || String(key || '') !== String(want)) return { ok: false, error: 'bad_key' };
+  const c = CacheService.getScriptCache(), hit = c.get('HEALTH'); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
+  out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
+  const ss = ss_(); out.sheetId = ss.getId(); let cells = 0; ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
+  const it = ss.getSheetByName(ITEMS); out.items = it ? Math.max(0, it.getLastRow() - 1) : 0;
+  const st = rcRead_('hstats', () => brevC_('live'), () => {   // real bills today / this month (India time), rebuilt only when bills change
+    const bs = ss.getSheetByName('Bills'), r = { ok: true, today: 0, month: 0, todayAmt: 0, monthAmt: 0, all: 0 }; if (!bs || bs.getLastRow() < 2) return r;
+    const n = bs.getLastRow() - 1, d = bs.getRange(2, 2, n, 4).getValues(), tz = 'Asia/Kolkata', t = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+    r.all = n; d.forEach(x => { const dt = x[0] instanceof Date ? x[0] : new Date(x[0]); if (isNaN(dt)) return; const k = Utilities.formatDate(dt, tz, 'yyyy-MM-dd');
+      if (k === t) { r.today++; r.todayAmt += num_(x[3]); } if (k.slice(0, 7) === t.slice(0, 7)) { r.month++; r.monthAmt += num_(x[3]); } });
+    return r; });
+  out.bills = st;
+  const all = sessAll_(); let ses = 0, pend = 0, fresh = 0; Object.keys(all).forEach(k => { if (all[k].p) pend++; else ses++; if ((all[k].c || 0) > now - 864e5) fresh++; });
+  out.sessions = ses; out.pending = pend; out.newPhones24h = fresh;
+  out.users = users_().filter(u => u.active !== false).length;
+  out.wrongPins = Number(c.get('gfails') || 0);
+  let perf = []; try { perf = JSON.parse(c.get('PERF') || '[]'); } catch (e) {}
+  const by = {}; perf.forEach(p => { (by[p[0]] = by[p[0]] || []).push(p[1]); });
+  const q = (a, f) => { const x = a.slice().sort((m, n2) => m - n2); return x[Math.min(x.length - 1, Math.floor(f * x.length))]; };
+  out.perf = Object.keys(by).map(k => ({ a: k, n: by[k].length, p50: q(by[k], 0.5), p95: q(by[k], 0.95) })).sort((m, n2) => n2.n - m.n);
+  const allMs = perf.map(p => p[1]); out.p50 = allMs.length ? q(allMs, 0.5) : null; out.p95 = allMs.length ? q(allMs, 0.95) : null; out.reqs = perf.length;
+  try { out.errors = JSON.parse(c.get('ERRS') || '[]').slice(-10); } catch (e) { out.errors = []; }
+  try { out.triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction()); } catch (e) { out.triggers = null; }
+  out.paused = shopPaused_(); out.approveNew = approveOn_(); out.noCache = rcOff_();
+  out.backupLast = Number(P.getProperty('BK_LAST') || 0) || null;
+  try { c.put('HEALTH', JSON.stringify(out), 50); } catch (e) {}
+  return out; }
+/**
+ * Run ONCE in the Apps Script editor for a shop made by the admin Directory (Run → setupShop → allow). Safe to run again.
+ * Points the script at its own sheet and folders, sets the starting shop PIN, timed jobs (backups every 4 h, hand-edit check every
+ * 15 min) and makes the first backup. The original shop never needs this (it has no Shop.gs).
+ */
+function setupShop() {
+  const b = boot_(); if (!b) throw new Error('This script has no Shop.gs. Only shops made from the admin Directory use setupShop.');
+  const P = PropertiesService.getScriptProperties(), set = (k, v) => { if (v && !P.getProperty(k)) P.setProperty(k, String(v)); };
+  set('SHEET_ID', b.sheetId); set('PIN', b.initPin); set('BK_FOLDER', b.bkFolder); set('VD_FOLDER_live', b.vdFolder); set('VD_FOLDER_test', b.vdFolderTest); set('HEALTH_KEY', b.healthKey);
+  ['ENV_OK', 'DEDUP_OK', 'FYPFX_OFF'].forEach(k => set(k, '1'));   // a new sheet has nothing old to move or clean
+  sheet_(ITEMS, COLS); sheet_(CONFIG, ['key', 'value']); sheet_(IMAGES, ['id', 'data']);
+  ['live', 'test'].forEach(en => { ENV_ = en; sheet_(tab_('Bills'), BILL_COLS); }); ENV_ = 'live';
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'autoBackup' || t.getHandlerFunction() === 'watchSheet').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('autoBackup').timeBased().everyHours(4).create();
+  ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(15).create();
+  if (b.dirUrl) { try { UrlFetchApp.fetch(b.dirUrl + '?action=ping', { muteHttpExceptions: true }); } catch (e) {} }   // asks for the "connect to an external service" permission now
+  DriveApp.getFolderById(b.folderId || b.bkFolder);   // Drive permission now
+  const bk = backupNow_('first');
+  bump_(); bumpB_(true); vbumpAll_();
+  ['TRIG_OK', 'SHEET_ID', 'HEALTH', 'SHOP_STATUS'].forEach(k => { try { CacheService.getScriptCache().remove(k); } catch (e) {} });
+  Logger.log('Shop ' + b.code + ' is ready. First backup: ' + (bk && bk.name) + '. The admin dashboard will show it as live in a minute.');
+}
 
 /* ---------- per-person settings: test mode, profit, hide buy rates ----------
    Kept with the person (USERS[].prefs), so they follow them to any phone. People who unlock with the shop PIN are kept by
@@ -614,7 +775,7 @@ function ensureTriggers_() {
   const cache = CacheService.getScriptCache();
   if (cache.get('TRIG_OK') === '1') return;
   try {
-    if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(5).create();
+    if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(boot_() ? 15 : 5).create();
     cache.put('TRIG_OK', '1', 21600);
   } catch (err) { cache.put('TRIG_OK', '1', 3600); }   // needs the one-time setupBackups permission; try again in an hour
 }
@@ -761,13 +922,13 @@ function setGroups_(list) {
 }
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, bizType: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, bizType: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1, approveNew: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
     if (!allowed[k]) return;
     let val = k === 'units' ? JSON.stringify(cfg[k]).slice(0, 5000) : str_(cfg[k], 300);
-    if (k === 'showProfit') val = cfg[k] === true || cfg[k] === 'true' ? 'true' : 'false';
+    if (k === 'showProfit' || k === 'approveNew') val = cfg[k] === true || cfg[k] === 'true' ? 'true' : 'false';
     if (k === 'mode') val = cfg[k] === 'live' ? 'live' : 'test';
     if (k === 'fyReset') val = cfg[k] === false || cfg[k] === 'false' ? 'false' : 'true';
     if (k === 'nextBill' || k === 'nextGstBill' || k === 'testNextBill' || k === 'testNextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
@@ -1260,6 +1421,7 @@ function backupFolder_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('BK_FOLDER');
   if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (err) {} }
+  const b = boot_(); if (b && b.bkFolder) { const f = DriveApp.getFolderById(b.bkFolder); props.setProperty('BK_FOLDER', f.getId()); return f; }   // never another shop's folder by name
   const it = DriveApp.getFoldersByName(BACKUP_FOLDER);
   const f = it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
   props.setProperty('BK_FOLDER', f.getId());
@@ -1583,6 +1745,7 @@ function vUseAdv_(A, vendorId, billId) { const G = vOne_(A, vendorId); const b =
 function vUseAdvance_(vendorId, billId) { const A = vAll_(); vUseAdv_(A, vendorId, billId); vbump_(); return vOne_(A, vendorId); }
 function vFolder_() { const key = 'VD_FOLDER_' + ENV_, p = PropertiesService.getScriptProperties(), id = p.getProperty(key);
   if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (err) {} }
+  const b = boot_(), bid = b && (ENV_ === 'test' ? b.vdFolderTest : b.vdFolder); if (bid) { const f = DriveApp.getFolderById(bid); p.setProperty(key, f.getId()); return f; }   // never another shop's folder by name
   const name = VD_FOLDER_NAME + (ENV_ === 'test' ? ' (test)' : ''), it = DriveApp.getFoldersByName(name); const f = it.hasNext() ? it.next() : DriveApp.createFolder(name); p.setProperty(key, f.getId()); return f; }
 function vUpload_(x) { const mime = /^(image\/jpeg|image\/png|application\/pdf)$/.test(String(x.mime)) ? String(x.mime) : 'image/jpeg';
   const data = String(x.data || ''); if (!data || data.length > 14000000) throw new Error('bad_file');

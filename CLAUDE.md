@@ -525,6 +525,8 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 3. Files: the script project, the current sheet (if restored), the original sheet and the shop folder (backups, vendor bills) are permanently deleted through the Drive API (or trashed). Safety: the folder must be inside "Rate Book Shops", other files must be named "Rate Book…", and nothing used by another shop, the Directory sheet, the shops folder or the Directory script is touched.
 4. Its Shops row, Errors rows, `ERRSEEN_<code>` and cached lookup are removed. The Directory and creating shops are unaffected.
 
+**Update shows the old version again (fixed 9 Oct 2026, `SCRIPT_VERSION` 38, `DIR_VERSION` 4):** a shop's `health` reply is remembered for 50 s, and right after an update the old script's remembered reply (old `sv`) came back; `healthAll_` then wrote that older version over the new one on the dashboard. Now the remembered reply is keyed by version (`HEALTH:<sv>`), `ping` returns `sv` and `updateShop_` checks up to 4 times (≈7 s) that the shop runs the new version, and `healthAll_` ignores a lower `sv` within 5 minutes of an update. **Copy shop link** copies only the link; the full message (with the code) is under **Send on WhatsApp** (to the owner's number when filled in).
+
 **Tests:** `tests/directory.test.js` (create, seed, Shop.gs, lookup, lockouts, pause, update keeps link / other files / Shop.gs, automatic rollback), `tests/shops.test.js` (main unchanged, shop link, approval wait, per-shop storage, staff locked to shop, owner switching, queued bill only to its shop, wrong-shop reply ignored), `tests/admin.test.js`.
 
 ## Speed (added 9 Oct 2026, `SCRIPT_VERSION` 35)

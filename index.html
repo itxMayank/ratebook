@@ -1854,7 +1854,7 @@ S.canWrite = !!(S.auth && S.auth.pin);
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=30;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=31;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 const hideBuy=()=>S.hideBuy||S.limited;
@@ -4809,7 +4809,8 @@ function vqAdd(job){ job.jid=vId("j"); job.at=Date.now(); vqSet([...vqGet(),job]
 /** Undo: drop the change if it hasn't been sent yet, else send the opposite change. */
 function vUndo(jid,inverse){ const q=vqGet(); if(q.some(j=>j.jid===jid) && !(vqBusy && q[0].jid===jid)){ vqSet(q.filter(j=>j.jid!==jid)); vRebuild(); vRefreshOpen(); } else if(inverse) vqAdd(inverse); toast(t("vUndone")); }
 let vqBusy=false, vqErr=null, vqTimer=0;
-function vMerge(r){ if(!r || !r.vendor) return; const s=VDB.srv; const i=s.vendors.findIndex(v=>v.id===r.vendor.id); if(i>=0) s.vendors[i]=r.vendor; else s.vendors.push(r.vendor);
+let vMergeN=0;   // counts replies merged from sends, so a vSync that started before one can't overwrite it with older data
+function vMerge(r){ if(!r || !r.vendor) return; vMergeN++; const s=VDB.srv; const i=s.vendors.findIndex(v=>v.id===r.vendor.id); if(i>=0) s.vendors[i]=r.vendor; else s.vendors.push(r.vendor);
   s.entries=s.entries.filter(e=>e.vendorId!==r.vendor.id).concat(r.entries||[]); vdbSave(); }
 const vNetErr=e=>!e || e.code==="offline" || e.code==="http" || e instanceof TypeError || e.name==="TypeError";
 async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite || !can("manager") || !vqGet().length) return; vqBusy=true; vqErr=null; vNoteUpd();
@@ -4843,17 +4844,20 @@ window.addEventListener("online",()=>setTimeout(vqFlush,800));
 let vSyncing=null, vSyncAt=0; const VSCHEMA=2;
 /** Ask the sheet for changes (from other phones). Shows the local copy meanwhile. At most every 8 s unless forced. */
 function vSync(force){ if(vSyncing) return vSyncing; if(!force && Date.now()-vSyncAt<8000 && vSynced()) return Promise.resolve(); vSyncAt=Date.now(); vSyncing=(async()=>{ await vdbInit(); if(!S.canWrite||!can("manager")) return;
-    if(vqGet().length && !force){ vqFlush(); return; }
+    if(vqGet().length) vqFlush();   // send waiting changes, but still fetch: a stuck change must not hide other phones' entries
+    vNoteUpd(); const m0=vMergeN;
     /* A copy saved by an older app/script lacks newer fields (e.g. the line count behind "Items on this bill"), and "nothing
        changed" would keep it forever: send no version until the copy is in the current shape (VSCHEMA). */
-    try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.schema===VSCHEMA?(VDB.srv.vrev||""):""}); if(!r.same){ VDB.srv={vrev:r.vrev,schema:VSCHEMA,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
-    catch(e){ if(e&&e.code==="bad_action"){ /* old script: fall back to the per-vendor calls */ } } })().finally(()=>{ vSyncing=null; }); return vSyncing; }
+    try{ const r=await apiPost0({action:"vSync",vrev:VDB.srv.schema===VSCHEMA?(VDB.srv.vrev||""):""}); if(!r.same){ if(vMergeN!==m0){ setTimeout(()=>vSync(true),0); return; }   /* a send finished meanwhile: this reply may predate it, ask again */
+        VDB.srv={vrev:r.vrev,schema:VSCHEMA,vendors:r.vendors||[],entries:r.entries||[]}; vdbSave(); vRebuild(); vRefreshOpen(); } }
+    catch(e){ if(e&&e.code==="bad_action"){ /* old script: fall back to the per-vendor calls */ } } })().finally(()=>{ vSyncing=null; vNoteUpd(); }); return vSyncing; }
 function vRefreshOpen(){ if($("#sheet").hidden) return; if($("#vl-list")) vRenderList(); else if($("#vd-page") && VD.cur) vRenderVendor(VD.cur,true);
   else if($("#ve-back") && VD.ent && VD.det[VD.ent.v]){ const sc=$("#sheet-body"), st=sc?sc.scrollTop:0; vEntry(VD.ent.v,VD.ent.e); const sc2=$("#sheet-body"); if(sc2) sc2.scrollTop=st; }   /* a bill's screen: "Checking…" turns into the result */
   vNoteUpd(); }
 /** The small "Saving… / waiting to send / photo problem" line. */
 function vNoteUpd(){ const el=$("#vq-note"); if(!el) return; const n=vqGet().filter(j=>!VD.cur||!$("#vd-page")||j.k==="vendor"&&j.v.id===VD.cur||(j.e&&j.e.vendorId===VD.cur)||j.vendorId===VD.cur||(j.k==="rm")).length;
-  if(!n){ el.hidden=true; return; } el.hidden=false; el.classList.toggle("err",!!vqErr);
+  if(!n){ el.classList.remove("err"); if(vSyncing && vSynced()){ el.hidden=false; el.innerHTML=LD("sm")+" "+esc(t("blSyncing")); } else el.hidden=true; return; }   /* fetching other phones' changes */
+  el.hidden=false; el.classList.toggle("err",!!vqErr);
   el.innerHTML = vqErr==="drive_auth" ? esc(t("vDriveAuth")) : navigator.onLine===false ? esc(t("vQueueN",n)) : LD("sm")+" "+esc(t("vSaving",n)); }
 setTimeout(()=>{ if(S.canWrite && can("manager")) vSync(); },5000);   // warm the copy so Vendors opens instantly
 /* ---- bill check (numbers read by Gemini on the script; the sums are done here and in vCheckCalc_ the same way) ---- */
@@ -5734,7 +5738,9 @@ function sync(){
 async function checkRev(){
   if(!apiUrl() || document.hidden) return;
   try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); }
-    const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv)); }
+    const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv));
+    /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
+    const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true); }
   catch{ S.online=false; renderNet(); }
 }
 async function fetchThumbs(){

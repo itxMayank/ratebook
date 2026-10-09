@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 7 October 2026 (bill check handles more bill formats).
+Last updated: 9 October 2026 (vendors sync between phones in the background).
 
 ## Where everything lives
 
@@ -436,6 +436,10 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
     - Script: `AI_T0` limits one reading to ~80 s of model attempts (`ai_slow`), and the rows-only second ask runs only if under 45 s, well inside Apps Script's 6-minute limit.
   - Fixes (8 Oct 2026): a bill's own screen now redraws when its check finishes (`vRefreshOpen` → `vEntry` via `VD.ent`), so "Checking…" turns into the result without going back. The phone's vendor copy carries `schema` (`VSCHEMA` = 2); an older copy is refetched in full instead of getting `{same:true}` forever, which had hidden "Items on this bill" (old copies had no `lines` count). New tab: `Purchases` / `Test Purchases`.
   - Tested with the Mahaveer invoice lines (aluminium containers by pcs vs a packet item, rolls in NOS, a 72 m roll not in the list).
+- **Vendors kept fresh in the background** (9 Oct 2026, `SCRIPT_VERSION` 31 / `NEED_SV` 31). Seen: vendors added on one phone took two refreshes to show on another.
+  - The 25-second `rev` check also returns `vl`/`vt` (vendors version per mode, `vrevC_`, from CacheService). If it differs from the phone's copy, `checkRev` runs `vSync(true)` quietly, so Vendors is already current when opened (also on coming back to the app, which runs `checkRev`). Before, vendor data was only fetched when Vendors opened or 5 s after a fresh start, and an installed app usually resumes instead of starting fresh.
+  - `vSync` no longer skips fetching while the outbox has changes waiting; it starts sending them and fetches anyway, so one stuck change can't hide other phones' entries. If a send's reply is merged while a fetch is in flight (`vMergeN`), the fetch asks again rather than overwrite with older data.
+  - While fetching, the Vendors list and vendor page show "Updating" in the `#vq-note` line.
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 

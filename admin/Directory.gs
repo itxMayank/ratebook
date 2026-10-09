@@ -61,7 +61,13 @@ function lookup_(code, dev) {
   if (Number(c.get(fk) || 0) >= CODE_MAX_FAILS) return { ok: false, error: 'dir_locked' };
   code = String(code || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 40);
   const hit = code && c.get('shop:' + code); if (hit) return JSON.parse(hit);
-  const x = code ? shopGet_(code) : null;
+  let x = code ? shopGet_(code) : null;
+  /* A shop made but not yet seen answering (setupShop just run, dashboard not refreshed): check it now and turn it live if it
+     answers. Not ready yet = say so; it isn't a wrong code, so it doesn't count towards the lockout. */
+  if (x && x.code !== 'main' && x.apiUrl && (x.status === 'needs-auth' || x.status === 'setup')) {
+    const lk = LockService.getScriptLock();
+    if (x.status === 'needs-auth' && x.healthKey && lk.tryLock(10000)) { try { healthAll_(x.code); } finally { lk.releaseLock(); } x = shopGet_(code); }
+    if (!x || x.status !== 'live') return { ok: false, error: 'not_ready' }; }
   if (!x || !x.apiUrl || x.code === 'main' || !(x.status === 'live' || x.status === 'paused')) { c.put(fk, String(Number(c.get(fk) || 0) + 1), 900); return { ok: false, error: 'bad_code' }; }
   const r = { ok: true, code: x.code, api: x.apiUrl, name: x.name, status: x.status }; c.put('shop:' + code, JSON.stringify(r), 600); return r; }
 /** For a shop's own script (its health key): is it paused? */

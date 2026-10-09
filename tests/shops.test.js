@@ -15,6 +15,7 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
       const send = o => r.fulfill({ body: JSON.stringify(o), contentType: 'application/json' });
       if (c === SH) return send({ ok: true, code: SH, api: SH_API, name: 'Sharma Traders', status: 'live' });
       if (c === OT) return send({ ok: true, code: OT, api: 'https://script.google.com/macros/s/OTHER/exec', name: 'Other', status: 'live' });
+      if (c === 'NEWSHOP-ABC') return send({ ok: false, error: 'not_ready' });
       return send({ ok: false, error: 'bad_code' }); });
     await ctx.route('https://script.google.com/**', r => {
       const req = r.request(), u = new URL(req.url()), shop = u.pathname.includes('/SHARMA/') ? SH : u.pathname.includes('/OTHER/') ? OT : 'main';
@@ -49,6 +50,12 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
   ok((await keys(mine)).every(k => !k.includes(':')) && (await keys(mine)).includes('rb_auth'), '1b main shop storage keys unchanged (no prefix)');
   ok(await mine.evaluate(() => T.S.items[0].name) === 'PP Bag (main)', '1c main price list shown');
   ok(await mine.evaluate(() => indexedDB.databases().then(d => d.map(x => x.name).join(','))).then(n => n.includes('ratebook') && !n.includes('ratebook_')), '1d main shop phone database name unchanged');
+
+  // 1e. A link to a shop that isn't set up yet: clear message, the code asked for (not this shop's name), ready to retry
+  const fresh = await phone(null);
+  await fresh.goto('https://rb.test/?shop=NEWSHOP-ABC'); await fresh.waitForTimeout(2000);
+  const fe = await fresh.textContent('#al-err'), fh = await fresh.textContent('.al-shop');
+  ok(/isn't ready yet/.test(fe) && fh.includes('NEWSHOP-ABC') && !fh.includes('Gupta') && await fresh.inputValue('#al-scode') === 'NEWSHOP-ABC', '1e shop not set up yet: says so, shows its code (not the original shop), code ready to retry');
 
   // 2. A new phone opens the Sharma shop link, staff signs in, waits for approval
   state.approve = true;

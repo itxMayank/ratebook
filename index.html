@@ -5780,15 +5780,24 @@ function lockPinUI(msg){ const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.aut
     <button type="button" class="al-link" id="al-other">${esc(t("alOther"))}</button><p class="note" style="margin:0;font-size:12px">${esc(t("alForgot"))}</p></div>`;
   const dots=()=>{ const n=Math.max(pinLen()||4,pin.length); $("#al-dots").innerHTML=Array.from({length:n},(_,i)=>`<i class="${i<pin.length?"on":""}"></i>`).join(""); };
   const wait=()=>{ const left=Math.ceil((LOCK.fails.until-Date.now())/1000); if(left>0){ $("#al-err").textContent=t("alWait",left); return true; } return false; };
+  /* At the signed-in PIN's length, check quietly on the phone: a match opens at once; otherwise keep taking digits
+     (another person's PIN may be longer) until OK. */
+  const quick=async()=>{ if(wait()) return; const A=S.auth||{}, p0=pin; let good=false; try{ good = A.pinH ? (await pinHash(p0,A.pinS))===A.pinH : p0===A.pin; }catch{}
+    if(good && pin===p0){ check(); } };
   const check=async()=>{ if(pin.length<4 || wait()) return; const try_=pin; pin=""; dots();
     const A=S.auth||{}; let good=false; try{ good = A.pinH ? (await pinHash(try_,A.pinS))===A.pinH : try_===A.pin; }catch{}   /* S.auth may have switched to a token meanwhile */
     if(good){ if(A.pin && !A.pinH){ Object.assign(S.auth, await pinCheckSet(try_)); S.auth.pinLen=try_.length; ls.set("rb_auth",S.auth); } afterPinUnlock(); return; }
+    /* Not this person's PIN. Online, ask the sheet: if it's someone's PIN (yours on a phone signed in with the shop PIN, or
+       another person's), switch this phone to them. Wrong PINs are still counted below (and by the sheet). */
+    if(navigator.onLine!==false){ $("#al-err").innerHTML=LD("sm");
+      try{ const j=await apiPost0({action:"verify",tok:"",pin:try_,by:A.by||"",wantTok:true,dl:devLabel()}); await adoptSignIn(j,try_,A.by||""); afterPinUnlock(); return; }
+      catch(e){ $("#al-err").textContent=""; if(e&&e.code==="locked"){ $("#al-err").textContent=t("lockedOut"); return; } } }
     LOCK.fails.n++; if(LOCK.fails.n>=5) LOCK.fails.until=Date.now()+30000*Math.pow(2,LOCK.fails.n-5); ls.set("rb_lockfail",LOCK.fails);
     if(LOCK.fails.n>=10){ LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockPhone(); $("#al-err") && ($("#al-err").textContent=t("alOut")); return; }
     const box=$(".al-box"); box.classList.remove("al-shake"); void box.offsetWidth; box.classList.add("al-shake"); try{ navigator.vibrate&&navigator.vibrate(60); }catch{}
     if(!wait()) $("#al-err").textContent=t("alWrong",10-LOCK.fails.n); };
   $("#al-pad").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; const k=b.dataset.k;
-    if(k==="del") pin=pin.slice(0,-1); else if(k==="ok"){ check(); return; } else if(pin.length<8){ pin+=k; if(pinLen() && pin.length===pinLen()){ dots(); check(); return; } } dots(); };
+    if(k==="del") pin=pin.slice(0,-1); else if(k==="ok"){ check(); return; } else if(pin.length<8){ pin+=k; if(pinLen() && pin.length===pinLen()){ dots(); quick(); return; } } dots(); };
   el.onkeydown=e=>{ if(/^\d$/.test(e.key)){ $(`#al-pad [data-k="${e.key}"]`).click(); } else if(e.key==="Backspace") $('#al-pad [data-k="del"]').click(); else if(e.key==="Enter") $('#al-pad [data-k="ok"]').click(); };
   $("#al-other").onclick=()=>{ if(confirm(t("signOutQ"))) lockPhone(); };
   dots(); wait(); el.tabIndex=-1; el.focus();
@@ -5811,11 +5820,16 @@ function signInUI(msg){ const el=lockEl();
     btnBusy($("#al-go"),true);
     try{ const j=await apiPost0({action:"verify",tok:"",pin,by,wantTok:true,dl:devLabel()}); const me=j.me||{};
       if(!me.personal && !by){ btnBusy($("#al-go"),false); err.textContent=t("needYourName"); $("#al-name").focus(); return; }
-      S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin)};
-      const bio=ls.get("rb_bio_"+S.auth.by,null); if(bio) S.auth.bio=bio;
-      if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; applyPrefs(); afterPinUnlock(); }
+      await adoptSignIn(j,pin,by); afterPinUnlock(); }
     catch(er){ btnBusy($("#al-go"),false); err.textContent=errMsg(er); $("#al-pin").value=""; $("#al-pin").focus(); } };
   setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }
+/** A PIN sign-in worked (sign-in screen, or a different person's PIN typed on the lock screen): this phone is now theirs. */
+async function adoptSignIn(j,pin,by){ const me=j.me||{}, old=S.auth&&S.auth.tok;
+  S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin)};
+  const bio=ls.get("rb_bio_"+S.auth.by,null); if(bio) S.auth.bio=bio;
+  if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; applyPrefs();
+  if(old && old!==S.auth.tok) apiPost0({action:"signOut",tok:old}).catch(()=>{});   // end the previous sign-in on the sheet
+}
 /* Away for LOCK_MS → lock. While away, cover the screen so the phone's app switcher shows nothing. */
 function lockAway(){ if(document.visibilityState==="hidden"){ if(!LOCK.on) ls.set("rb_bgAt",Date.now()); document.documentElement.classList.add("cover"); }
   else { document.documentElement.classList.remove("cover"); const at=+ls.get("rb_bgAt",0); if(!LOCK.on && at && Date.now()-at>LOCK_MS) appLock(); ls.set("rb_bgAt",0); } }

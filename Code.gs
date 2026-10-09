@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 35;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 36;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -104,7 +104,7 @@ function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 
 
 /* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
 let T0_ = 0, ACT_ = '';
-const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1 };
+const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1 };
 const ERR_QUIET_ = { bad_pin: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
 function perfNote_(obj) {
   if (!ACT_ || PERF_SKIP_[ACT_]) return;
@@ -116,6 +116,19 @@ function perfNote_(obj) {
       e.push([ACT_, String(obj.error || '').slice(0, 200), now]); if (e.length > 50) e = e.slice(-50); c.put('ERRS', JSON.stringify(e), 21600); }
   } catch (e) {}
 }
+
+/** Errors on the phones (the app reports its own script errors). Kept in CacheService only (6 h; the Directory copies them into
+ *  its Errors tab whenever it checks health, so they're kept longer there). Never touches the sheet. At most 20 per phone per hour.
+ *  The name is what the phone says; it's for finding the phone, not proof of who it was. */
+function clientErr_(b) {
+  try { const c = CacheService.getScriptCache(), d = String(b.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40) || 'nodev', rk = 'cerr_' + d, n = Number(c.get(rk) || 0);
+    if (n >= 20) return { ok: true, skipped: true }; c.put(rk, String(n + 1), 3600);
+    const s = (v, m) => String(v == null ? '' : v).replace(/[\u0000-\u001f]+/g, ' ').slice(0, m), e = b.e || {};
+    let a = []; try { a = JSON.parse(c.get('CERRS') || '[]'); } catch (x) {}
+    a.push({ t: Date.now(), m: s(e.m, 300), w: s(e.w, 160), st: s(e.st, 500), by: s(b.by, 40), d: d.slice(0, 6), ua: s(e.ua, 90), tab: s(e.tab, 30) });
+    if (a.length > 40) a = a.slice(-40); c.put('CERRS', JSON.stringify(a), 21600);
+  } catch (x) {}
+  return { ok: true }; }
 
 /* ---------- reply cache: answers read-mostly requests from memory instead of re-reading the sheet ----------
    Safe for money data because every key includes the version that changes on each write (rev / brev_<mode> / vrev_<mode>),
@@ -468,6 +481,7 @@ function doPost(e) {
   ACT_ = String(body.action || '');
   /* A request meant for another shop (wrong saved link, two shops on one phone) is never written here. */
   if (body.shop && String(body.shop) !== shopCode_()) return out_({ ok: false, error: 'wrong_shop', shop: shopCode_() });
+  if (body.action === 'clientErr') return out_(clientErr_(body));   // a phone reporting its own error: memory only, no sheet, no lock
   try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') {      // anyone making a bill can do this (with the shop code if one is set)
     if (shopPaused_()) return out_({ ok: false, error: 'paused' });   // the phone keeps the bill queued; nothing is lost
@@ -687,7 +701,8 @@ function health_(key) {
   const q = (a, f) => { const x = a.slice().sort((m, n2) => m - n2); return x[Math.min(x.length - 1, Math.floor(f * x.length))]; };
   out.perf = Object.keys(by).map(k => ({ a: k, n: by[k].length, p50: q(by[k], 0.5), p95: q(by[k], 0.95) })).sort((m, n2) => n2.n - m.n);
   const allMs = perf.map(p => p[1]); out.p50 = allMs.length ? q(allMs, 0.5) : null; out.p95 = allMs.length ? q(allMs, 0.95) : null; out.reqs = perf.length;
-  try { out.errors = JSON.parse(c.get('ERRS') || '[]').slice(-10); } catch (e) { out.errors = []; }
+  try { out.errors = JSON.parse(c.get('ERRS') || '[]').slice(-30); } catch (e) { out.errors = []; }
+  try { out.cerrors = JSON.parse(c.get('CERRS') || '[]'); } catch (e) { out.cerrors = []; }
   try { out.triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction()); } catch (e) { out.triggers = null; }
   out.paused = shopPaused_(); out.approveNew = approveOn_(); out.noCache = rcOff_();
   out.backupLast = Number(P.getProperty('BK_LAST') || 0) || null;

@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (more shops from one app + admin dashboard; speed: open from the phone, reply cache).
+Last updated: 9 October 2026 (more shops from one app + admin dashboard; speed; error log for phones and scripts).
 
 ## Where everything lives
 
@@ -502,6 +502,13 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 3. **Create a shop:** Create shop → open the shop's script → choose `setupShop` → Run → allow → the card turns **live**. Send the shop link (`…/ratebook/?shop=<code>`) and the starting PIN to the owner; they sign in (owner, with their name), change the shop PIN, add staff in Settings → People, approve staff phones, switch to real billing when ready.
 4. **Update scripts:** after merging a `Code.gs` change, Update script on your shop first, check it, then Update all shops. If a shop shows "needs authorising" after an update (new Google permissions), run `setupShop` in it once.
 5. **Pause/resume** for unpaid subscriptions (read-only, nothing lost).
+
+**Errors (added 9 Oct 2026, `SCRIPT_VERSION` 36, `DIR_VERSION` 2)**
+- **Phones:** `errReport()` in `index.html` catches the app's own script errors (`error` / `unhandledrejection`; not the expected `{code}` failures such as offline or wrong PIN, not browser-extension noise, at most 10 different ones per app start) and sends them with `clientErr` to the phone's own shop script, only when that script is version 36+ (older ones check a PIN first and would count it as wrong).
+- **Shop script:** `clientErr_` keeps the last 40 in CacheService `CERRS` (6 h), at most 20 per phone per hour, no PIN, no lock, never the sheet. The name sent is what the phone says. Sheet-side failures stay in `ERRS` as before. `health` returns both (`errors`, `cerrors`).
+- **Directory:** each health check copies new errors (by time, `ERRSEEN_<code>` property) into its sheet's **Errors** tab (`at | shop | kind (sheet/phone) | where | message | who | phone | detail`, last ~3,000 rows). `pullErrors` does this every hour after **`setupErrorLog`** is run once in the editor (needs the `script.scriptapp` scope in `admin/appsscript.json`), so errors are kept even when the dashboard is closed. Admin action `errors {code, days}`; `list` adds `err24` per shop.
+- **Dashboard:** "N errors in 24 h" on each card and an **Errors** button: the log per shop or all, 24 h / 7 / 30 days, phone or sheet, who, phone, screen and details.
+- **Dashboard look:** square corners (`--r:0`) and an Auto / Light / Dark switch (`rbadm_theme`, `data-theme` on `<html>`).
 
 **Tests:** `tests/directory.test.js` (create, seed, Shop.gs, lookup, lockouts, pause, update keeps link / other files / Shop.gs, automatic rollback), `tests/shops.test.js` (main unchanged, shop link, approval wait, per-shop storage, staff locked to shop, owner switching, queued bill only to its shop, wrong-shop reply ignored), `tests/admin.test.js`.
 

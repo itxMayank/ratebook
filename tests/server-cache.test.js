@@ -28,5 +28,14 @@ g2.R("var W=auth_({tok:'" + own.tok + "'})"); g2.R("sessEdit_(all=>Object.keys(a
 ok(!g2.R('auth_({tok:T1})').error, 'after the owner approves: the phone works');
 const t3 = g2.R("sessNew_(auth_({pin:'1111',dev:'phoneA'}),{dev:'phoneA'})"); ok(t3.pending === false, 'same phone signing in again: no second approval');
 ok(g2.R("auth_({pin:'1111'})").viaPin === true, 'PIN-only requests are marked (refused when approval is on, except sign-in)');
-ok(g2.locks.n === 0, 'all locks released');
+// phone errors: kept in memory only, no sign-in needed, at most 20 per phone per hour, shown in health
+const ce = b2 => JSON.parse(R('doPost({postData:{contents:' + JSON.stringify(JSON.stringify(b2)) + '}}).text'));
+const r1 = ce({ action: 'clientErr', shop: 'main', dev: 'phoneZ', by: 'Raju', e: { m: 'x is undefined\u0000', w: 'index.html:10:5', st: 'TypeError'.repeat(200), tab: 'bill' } });
+const ce1 = JSON.parse(g.cache.CERRS)[0];
+ok(r1.ok && ce1.m === 'x is undefined ' && ce1.by === 'Raju' && ce1.st.length === 500 && ce1.tab === 'bill', 'phone error stored (trimmed, cleaned), no PIN needed');
+for (let i = 0; i < 30; i++) ce({ action: 'clientErr', dev: 'phoneZ', e: { m: 'e' + i } });
+ok(JSON.parse(g.cache.CERRS).length === 20, 'at most 20 errors per phone per hour');
+ok(ce({ action: 'clientErr', shop: 'OTHER-1', dev: 'p', e: { m: 'x' } }).error === 'wrong_shop', 'another shop\'s phone errors are refused');
+g.props.HEALTH_KEY = 'hk'; R("ss_=()=>({getId:()=>'s',getSheets:()=>[],getSheetByName:()=>null})"); const hh = R("health_('hk')"); ok(hh.ok && hh.cerrors.length === 20 && Array.isArray(hh.errors), 'health carries phone errors and sheet errors for the Directory');
+ok(g2.locks.n === 0 && g.locks.n === 0, 'all locks released');
 process.exit(fails ? 1 : 0);

@@ -4067,6 +4067,17 @@ function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"|
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
 function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
 /** Request timings on this phone (per shop): Settings → Speed. rev/thumbs aren't kept (they're tiny and constant). */
+/** This phone's own script errors go to the shop's script (memory only there), so they show on the admin dashboard → Errors.
+    Up to 10 different errors per app start; the app's expected failures (offline, wrong PIN…) aren't errors and aren't sent. */
+const ERR_SENT=new Set(); let errN=0;
+function errReport(m,w,st){ try{ m=String(m||"").slice(0,300); w=String(w||""); st=String(st||"");
+  if(!m || /ResizeObserver loop|^Script error\.?$/i.test(m) || /-extension:\/\//.test(w+st)) return;
+  const k=m+"|"+w; if(ERR_SENT.has(k) || ++errN>10) return; ERR_SENT.add(k);
+  if(navigator.onLine===false || !apiUrl() || !(S.sv>=36)) return;   // older scripts would check a PIN first and count it as wrong
+  fetch(apiUrl(),{method:"POST",keepalive:true,redirect:"follow",body:JSON.stringify({action:"clientErr",shop:SHOP.code,dev:DEV,by:(S.auth&&S.auth.by)||"",
+    e:{m,w:w.slice(0,160),st:st.slice(0,500),ua:navigator.userAgent.slice(0,90),tab:S.tab||""}})}).catch(()=>{}); }catch{} }
+window.addEventListener("error",e=>{ if(e && e.message) errReport(e.message,(e.filename||"").split("/").pop().split("?")[0]+":"+e.lineno+":"+e.colno,e.error&&e.error.stack); });
+window.addEventListener("unhandledrejection",e=>{ const r=e&&e.reason; if(!r || (r.code && !r.stack)) return; errReport(r.message||String(r),"promise",r.stack); });
 function perfAdd(action,t0,j){ if(!action || action==="rev" || action==="thumbs") return;
   try{ const a=ls.get("rb_perf",[]); a.push([action,Math.round(performance.now()-t0),j&&typeof j.ms==="number"?j.ms:null,Date.now()]); ls.set("rb_perf",a.slice(-100)); }catch{} }
 /** A reply from a different shop than this phone uses: never applied. The saved link is checked with the Directory again. */

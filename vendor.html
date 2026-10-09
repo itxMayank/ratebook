@@ -111,7 +111,13 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const rs=n=>"₹"+Number(Math.round((+n||0)*100)/100).toLocaleString("en-IN",{maximumFractionDigits:2});
 const dd=d=>d?new Date(d+"T00:00:00").toLocaleDateString(L==="hi"?"hi-IN":"en-IN",{day:"2-digit",month:"short",year:"numeric",numberingSystem:"latn"}):"";
-const api=q=>fetch(API_URL+"?"+new URLSearchParams({...q,t:tok,_:Date.now()}),{cache:"no-store"}).then(r=>r.json());
+/* Links for shops other than the original carry &s=<shop code>; the Directory gives that shop's backend link (keep DIR_URL the same as in index.html). */
+const DIR_URL = "", shopCode=(qs.get("s")||"").toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40);
+let apiBase=null;
+async function base(){ if(apiBase) return apiBase; if(!shopCode || shopCode==="MAIN" || !DIR_URL) return (apiBase=API_URL);
+  const j=await fetch(DIR_URL+"?"+new URLSearchParams({action:"shop",code:shopCode,_:Date.now()}),{cache:"no-store"}).then(r=>r.json());
+  if(!j.ok || !j.api) throw new Error("shop"); return (apiBase=j.api); }
+const api=q=>base().then(b=>fetch(b+"?"+new URLSearchParams({...q,t:tok,_:Date.now()}),{cache:"no-store"})).then(r=>r.json());
 let D=null, tab="ledger", prev={};
 function setLang(l){ L=l; lsSet("rb_vlang",l); document.documentElement.lang=l; if(D){ document.title=(D.shop.name?D.shop.name+" · ":"")+t("title"); render(); } }
 document.documentElement.lang=L; $("#app").innerHTML=`<div class="center"><div class="spin"></div>${t("loading")}</div>`;

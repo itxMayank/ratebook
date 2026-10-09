@@ -1,0 +1,31 @@
+/* admin.html against a stand-in Directory: connect, sign in, live shop cards, create a shop. Run: node tests/admin.test.js */
+const fs = require('fs'), path = require('path');
+const { launch, ok, done, ROOT } = require('./browser');
+const html = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8');
+const DIR = 'https://script.google.com/macros/s/DIRECTORY/exec';
+const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 34, scriptId: 'm', deploymentId: 'd', apiUrl: 'x', editUrl: 'e' }];
+(async () => {
+  const b = await launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 900 } })).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
+  await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
+  await p.route(DIR, r => { const bd = JSON.parse(r.request().postData()); const send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, ...o }) });
+    if (bd.action === 'signIn') return bd.pin === '12345678' ? send({ tok: 'T' }) : send({ ok: false, error: 'bad_pin' });
+    if (bd.tok !== 'T') return send({ ok: false, error: 'bad_session' });
+    if (bd.action === 'list') return send({ shops });
+    if (bd.action === 'latest') return send({ latest: { sv: 35 } });
+    if (bd.action === 'recheck') return send({ health: { main: { ok: true, sv: 34, items: 412, bills: { today: 23, todayAmt: 18450, month: 410, monthAmt: 512000 }, sessions: 4, pending: 1, p50: 640, p95: 2100, lastChange: Date.now() - 120000, backupLast: Date.now() - 3600e3, approveNew: false, triggers: ['autoBackup', 'watchSheet'], errors: [] } } });
+    if (bd.action === 'create') { shops.push({ code: 'SHARMATRAD-ABCDEFGHJK', name: bd.shop.name, status: 'needs-auth', version: 35, editUrl: 'https://script.google.com/d/s/edit', scriptId: 's', deploymentId: 'd2' }); return send({ shop: shops[1], initPin: '482913', shopLink: '?shop=SHARMATRAD-ABCDEFGHJK' }); }
+    return send({}); });
+  await p.goto('https://rb.test/admin.html'); await p.waitForTimeout(300);
+  ok(await p.isVisible('#s-setup'), 'first visit asks for the Directory link');
+  await p.fill('#dir-url', DIR); await p.click('#dir-save'); await p.fill('#pin', '1111'); await p.click('#b-signin'); await p.waitForTimeout(400);
+  ok((await p.textContent('#signin-err')) === 'Wrong PIN.', 'wrong admin PIN refused');
+  await p.fill('#pin', '12345678'); await p.click('#b-signin'); await p.waitForTimeout(900);
+  const card = await p.textContent('#shops');
+  ok(/Gupta Plastics/.test(card) && /23/.test(card) && /₹18,450/.test(card) && /\+1 waiting/.test(card) && /update to v35/.test(card), 'live card: bills today, amount, waiting phones, update available');
+  await p.screenshot({ path: process.env.SHOT || '/tmp/admin.png', fullPage: true });
+  await p.click('#b-new'); await p.fill('#f-new input[name=name]', 'Sharma Traders'); await p.selectOption('#f-new select[name=bizType]', 'kirana'); await p.click('#b-create'); await p.waitForTimeout(900);
+  const dn = await p.textContent('#new-done');
+  ok(/SHARMATRAD-ABCDEFGHJK/.test(dn) && /482913/.test(dn) && /setupShop/.test(dn) && /\?shop=SHARMATRAD-ABCDEFGHJK/.test(dn), 'create: code, starting PIN, the one authorise step and the shop link shown');
+  ok(/needs authorising|One step left/.test(await p.textContent('#shops')), 'new shop card shows the remaining step');
+  await b.close(); done();
+})();

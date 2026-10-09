@@ -1,5 +1,5 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-4';
+const VERSION = 'rb-shell-5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png'];
 
 self.addEventListener('install', e => {
@@ -15,11 +15,29 @@ self.addEventListener('fetch', e => {
   if (url.origin === self.location.origin) {
     const isPage = req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
     if (isPage) {
-      // Network first so updates arrive; fall back to the saved copy when offline.
-      // Only the app itself is saved as the offline copy; other pages (vendor.html, the vendor's statement link) are kept under their own address.
+      // The app page opens from the phone's saved copy at once (no waiting on the network), and a fresh copy is fetched in the
+      // background for next time. If it differs, open pages are told ("rb-update") so they can offer to load it; they never
+      // reload in the middle of a bill. Data (the Google Sheet) never goes through this cache. Other pages (vendor.html, the
+      // vendor's statement link) stay network-first and are kept under their own address.
       const isApp = url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
-      e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(isApp ? './index.html' : req, copy)); return res; })
-        .catch(() => isApp ? caches.match('./index.html').then(r => r || caches.match('./')) : caches.match(req)));
+      if (isApp) {
+        e.respondWith(caches.open(VERSION).then(c => c.match('./index.html').then(hit => {
+          const oldText = hit ? hit.clone().text() : Promise.resolve(null);   // read before the saved copy is handed to the page
+          const net = fetch(url.origin + url.pathname, { cache: 'no-store', credentials: 'same-origin' }).then(async res => {   // a plain fetch (a navigation request can't take options)
+            if (res && res.ok) {
+              const fresh = await res.clone().text(), old = await oldText;
+              await c.put('./index.html', res.clone());
+              if (old !== null && old !== fresh) self.clients.matchAll({ type: 'window' }).then(cs => cs.forEach(cl => cl.postMessage({ type: 'rb-update' })));
+            }
+            return res;
+          });
+          if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
+          return net.catch(() => caches.match('./').then(r => r || Response.error()));
+        })));
+      } else {
+        e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })
+          .catch(() => caches.match(req)));
+      }
     } else {
       e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })));
     }

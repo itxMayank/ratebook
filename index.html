@@ -17,7 +17,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: one-column counter app — sticky header + search, scrolling item list, fixed bottom tabs, bottom sheets for detail/edit. */
 :root{
@@ -1384,6 +1385,11 @@ html.cover body>*{visibility:hidden}
 @keyframes alshake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 .sess-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .sess-row:last-child{border-bottom:0}
+.al-shopbox{display:grid;gap:8px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+#updpill{position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top));z-index:9000;border:0;border-radius:999px;background:var(--ink);color:var(--ink-fg);font:700 14px var(--f-body,inherit);padding:9px 16px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer}
+.sess-row .pill.wait{background:color-mix(in srgb,var(--gold,#b8860b) 22%,transparent);color:var(--fg)}
+.speed-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.speed-row:last-child{border-bottom:0}
 .sess-row small{color:var(--muted);display:block}
 </style>
 </head>
@@ -1577,7 +1583,7 @@ const STR = {
     just:"just now",min:n=>`${n} min ago`,hr:n=>`${n} h ago`,day:n=>`${n} d ago`,billTitle:"Bill",custL:"Customer",
     pickUnit:"Choose unit",otherUnit:"Other unit…",ok:"OK",
     shopName:"Shop name",units:"Units",unitCode:"Unit (e.g. kg)",unitHi:"Hindi (e.g. किलो)",defUnit:"Default unit for new items",rounding:"Round % price changes to",r1:"₹1",r05:"₹0.50",r0:"No rounding",billFooter:"Bill footer",billFooterPh:"Thank you, visit again",
-    thisPhone:"On this phone",hideBuy:"Hide buy rate and margin",hideBuyD:"Use when a customer can see your screen.",meT:"Just for you",meD:n=>`Saved for ${n}, on every phone you use.`,myEnvD:"Your bills are practice bills, kept apart from real ones with their own numbers and credit. Only you are switched: everyone else keeps their own setting.",myEnvOnQ:"Switch to test mode? Your new bills will be practice bills. Other people are not affected.",myEnvOffQ:"Switch to real billing? Your new bills will be real bills. Test bills stay separate.",myLiveNow:"Real billing is on for you.",noTestD:"The owner has turned test mode off for you.",noTestNow:"Test mode is off for you. Switched to real billing.",pplTest:"Can use test mode",pplTestD:"Lets this person switch their own bills to practice bills.",alHello:n=>`Namaste, ${n}`,alPin:"Enter your PIN",alBio:"Unlock with fingerprint / face",alOther:"Use another account",alForgot:"Forgot your PIN? Ask the owner to set a new one, then tap “Use another account”.",alWrong:n=>`Wrong PIN. ${n} more tries, then this phone signs out.`,alWait:s=>`Too many wrong tries. Try again in ${s} s.`,alOut:"Signed out after too many wrong tries. Sign in again with your PIN.",siT:"Sign in",siD:"Your own PIN fills in your name. With the shop PIN, type your name too.",siName:"Your name",siPin:"PIN",siBtn:"Sign in",siNet:"Signing in needs internet.",siGone:"This phone was signed out. Sign in again.",bioAsk:"Unlock with fingerprint or face next time?",bioYes:"Yes, use it",bioNo:"Not now",bioSet:"Fingerprint / face unlock on this phone",bioSetD:"Unlock with one touch instead of typing your PIN.",bioFail:"Fingerprint didn't work. Use your PIN.",signOutBtn:"Sign out of this phone",signOutQ:"Sign out of this phone? Signing in again needs your PIN and internet.",lockNow:"Lock now",lockNowD:n=>`Signed in as ${n}. Locks by itself after 5 minutes away.`,sessT:"Signed-in phones",sessD:"Sign out a phone that's lost or no longer used. It will need a PIN again.",sessOut:"Sign out",sessThis:"this phone",sessUsed:d=>`last used ${d}`,sessShop:"shop PIN",sessNone:"No phones signed in yet.",settingsSaved:"Settings saved for everyone",sharedNote:"These settings apply to everyone using this list.",
+    thisPhone:"On this phone",hideBuy:"Hide buy rate and margin",hideBuyD:"Use when a customer can see your screen.",meT:"Just for you",meD:n=>`Saved for ${n}, on every phone you use.`,myEnvD:"Your bills are practice bills, kept apart from real ones with their own numbers and credit. Only you are switched: everyone else keeps their own setting.",myEnvOnQ:"Switch to test mode? Your new bills will be practice bills. Other people are not affected.",myEnvOffQ:"Switch to real billing? Your new bills will be real bills. Test bills stay separate.",myLiveNow:"Real billing is on for you.",noTestD:"The owner has turned test mode off for you.",noTestNow:"Test mode is off for you. Switched to real billing.",pplTest:"Can use test mode",pplTestD:"Lets this person switch their own bills to practice bills.",alHello:n=>`Namaste, ${n}`,alPin:"Enter your PIN",alBio:"Unlock with fingerprint / face",alOther:"Use another account",alForgot:"Forgot your PIN? Ask the owner to set a new one, then tap “Use another account”.",alWrong:n=>`Wrong PIN. ${n} more tries, then this phone signs out.`,alWait:s=>`Too many wrong tries. Try again in ${s} s.`,alOut:"Signed out after too many wrong tries. Sign in again with your PIN.",siT:"Sign in",siD:"Your own PIN fills in your name. With the shop PIN, type your name too.",siName:"Your name",siPin:"PIN",siBtn:"Sign in",siNet:"Signing in needs internet.",siGone:"This phone was signed out. Sign in again.",bioAsk:"Unlock with fingerprint or face next time?",bioYes:"Yes, use it",bioNo:"Not now",bioSet:"Fingerprint / face unlock on this phone",bioSetD:"Unlock with one touch instead of typing your PIN.",bioFail:"Fingerprint didn't work. Use your PIN.",signOutBtn:"Sign out of this phone",signOutQ:"Sign out of this phone? Signing in again needs your PIN and internet.",lockNow:"Lock now",lockNowD:n=>`Signed in as ${n}. Locks by itself after 5 minutes away.`,sessT:"Signed-in phones",sessD:"Sign out a phone that's lost or no longer used. It will need a PIN again.",sessOut:"Sign out",sessThis:"this phone",sessUsed:d=>`last used ${d}`,sessShop:"shop PIN",sessNone:"No phones signed in yet.",shopL:n=>`Shop: ${n}`,shopOther:"Different shop? Enter its shop code",shopCodePh:"Shop code, e.g. SHARMA-7K3QX9…",shopGoBtn:"Open shop",shopBad:"That shop code didn't work. Check it with the owner.",shopWait:"Too many wrong codes. Try again in 15 minutes.",shopBusy:n=>`This phone belongs to ${n}. Sign out first to use another shop.`,shopSwitch:"Switch shop",shopSwitchT:"Shops on this phone",siNeed:"This shop now needs each phone to be signed in. Sign in again.",pendT:"Waiting for approval",pendD:n=>`The owner of ${n} needs to approve this phone. Ask them to open Settings → Signed-in phones and tap Approve.`,pendCheck:"Check again",pendStill:"Not approved yet.",pausedNote:"This shop is paused. New bills are kept on this phone and sent once it's active again.",apprT:"New phones need my approval",apprD:"A phone signing in for the first time waits until you approve it here. Owners never wait.",apprWait:"Waiting",apprOk:"Approve",speedT:"Speed",speedD:"How long requests took on this phone (typical / slowest), and the sheet's own part.",speedNone:"No requests timed yet.",updReady:"Update ready · Tap to load",updLater:"Finish this bill first; the update loads next time you open the app.",settingsSaved:"Settings saved for everyone",sharedNote:"These settings apply to everyone using this list.",
     cmdPh:"e.g. add 51 micron bag 1kg rates 110 and 120",cmdHelp:"Type or speak a change. You'll see exactly what will happen before anything is saved.",preview:"Show changes",thinking:"Understanding…",stop:"Stop",
     applyN:n=>`Apply ${n}`,nothing:"Couldn't find a change in that. Try: add Toor Dal 1kg rates 120 and 140.",now:"Now",willDel:"Will be removed for everyone",exists:"Already in list, will update it",notFound:"Not in list, will add it",
     opAdd:"Add",opUpdate:"Update",opDelete:"Delete",include:"Include",examples:"Try saying",cmdHintL:"Looks like a change:",cmdHintA:"Preview it",localNote:"Read on this phone (Claude wasn't available).",appliedN:n=>`Applied ${n} changes`,again:"Edit text"
@@ -1600,7 +1606,7 @@ const STR = {
     just:"अभी",min:n=>`${n} मिनट पहले`,hr:n=>`${n} घंटे पहले`,day:n=>`${n} दिन पहले`,billTitle:"बिल",custL:"ग्राहक",
     pickUnit:"इकाई चुनें",otherUnit:"दूसरी इकाई…",ok:"ठीक",
     shopName:"दुकान का नाम",units:"इकाइयाँ",unitCode:"इकाई (जैसे kg)",unitHi:"हिंदी (जैसे किलो)",defUnit:"नए सामान की इकाई",rounding:"% बदलाव को गोल करें",r1:"₹1",r05:"₹0.50",r0:"गोल न करें",billFooter:"बिल के नीचे",billFooterPh:"धन्यवाद, फिर आइए",
-    thisPhone:"इस फ़ोन पर",hideBuy:"ख़रीद रेट और मुनाफ़ा छिपाएँ",hideBuyD:"जब ग्राहक आपकी स्क्रीन देख रहा हो।",meT:"सिर्फ़ आपके लिए",meD:n=>`${n} के लिए सेव, आपके हर फ़ोन पर।`,myEnvD:"आपके बिल अभ्यास के बिल हैं, असली बिलों से अलग, अपने नंबर और उधार के साथ। सिर्फ़ आपका मोड बदलता है: बाकी सब का अपना रहता है।",myEnvOnQ:"टेस्ट मोड चालू करें? आपके नए बिल अभ्यास के बिल होंगे। दूसरों पर कोई असर नहीं।",myEnvOffQ:"असली बिलिंग शुरू करें? आपके नए बिल असली होंगे। टेस्ट बिल अलग रहेंगे।",myLiveNow:"आपके लिए असली बिलिंग चालू है।",noTestD:"मालिक ने आपके लिए टेस्ट मोड बंद किया है।",noTestNow:"आपके लिए टेस्ट मोड बंद है। असली बिलिंग पर बदला।",pplTest:"टेस्ट मोड इस्तेमाल कर सकते हैं",pplTestD:"यह व्यक्ति अपने बिल अभ्यास के बिल बना सकता है।",alHello:n=>`नमस्ते, ${n}`,alPin:"अपना PIN डालें",alBio:"फ़िंगरप्रिंट / चेहरे से खोलें",alOther:"दूसरे नाम से खोलें",alForgot:"PIN भूल गए? मालिक से नया PIN लगवाएँ, फिर “दूसरे नाम से खोलें” दबाएँ।",alWrong:n=>`ग़लत PIN। ${n} बार और, फिर यह फ़ोन साइन आउट हो जाएगा।`,alWait:s=>`बहुत बार ग़लत। ${s} सेकंड बाद फिर कोशिश करें।`,alOut:"बहुत बार ग़लत PIN, साइन आउट हो गया। अपने PIN से फिर साइन इन करें।",siT:"साइन इन",siD:"अपने PIN से आपका नाम अपने आप आ जाता है। दुकान के PIN के साथ अपना नाम भी लिखें।",siName:"आपका नाम",siPin:"PIN",siBtn:"साइन इन",siNet:"साइन इन के लिए इंटरनेट चाहिए।",siGone:"यह फ़ोन साइन आउट कर दिया गया। फिर साइन इन करें।",bioAsk:"अगली बार फ़िंगरप्रिंट या चेहरे से खोलें?",bioYes:"हाँ",bioNo:"अभी नहीं",bioSet:"इस फ़ोन पर फ़िंगरप्रिंट / चेहरे से खोलना",bioSetD:"PIN लिखने की जगह एक टच से खोलें।",bioFail:"फ़िंगरप्रिंट नहीं चला। PIN डालें।",signOutBtn:"इस फ़ोन से साइन आउट",signOutQ:"इस फ़ोन से साइन आउट करें? फिर से साइन इन के लिए PIN और इंटरनेट चाहिए।",lockNow:"अभी लॉक करें",lockNowD:n=>`${n} के नाम से साइन इन। 5 मिनट बाहर रहने पर अपने आप लॉक।`,sessT:"साइन इन किए फ़ोन",sessD:"खोया या बंद फ़ोन साइन आउट करें। उसे फिर PIN चाहिए होगा।",sessOut:"साइन आउट",sessThis:"यह फ़ोन",sessUsed:d=>`आख़िरी बार ${d}`,sessShop:"दुकान का PIN",sessNone:"अभी कोई फ़ोन साइन इन नहीं है।",settingsSaved:"सेटिंग्स सबके लिए सेव हुईं",sharedNote:"ये सेटिंग्स इस लिस्ट के सभी लोगों पर लागू होंगी।",
+    thisPhone:"इस फ़ोन पर",hideBuy:"ख़रीद रेट और मुनाफ़ा छिपाएँ",hideBuyD:"जब ग्राहक आपकी स्क्रीन देख रहा हो।",meT:"सिर्फ़ आपके लिए",meD:n=>`${n} के लिए सेव, आपके हर फ़ोन पर।`,myEnvD:"आपके बिल अभ्यास के बिल हैं, असली बिलों से अलग, अपने नंबर और उधार के साथ। सिर्फ़ आपका मोड बदलता है: बाकी सब का अपना रहता है।",myEnvOnQ:"टेस्ट मोड चालू करें? आपके नए बिल अभ्यास के बिल होंगे। दूसरों पर कोई असर नहीं।",myEnvOffQ:"असली बिलिंग शुरू करें? आपके नए बिल असली होंगे। टेस्ट बिल अलग रहेंगे।",myLiveNow:"आपके लिए असली बिलिंग चालू है।",noTestD:"मालिक ने आपके लिए टेस्ट मोड बंद किया है।",noTestNow:"आपके लिए टेस्ट मोड बंद है। असली बिलिंग पर बदला।",pplTest:"टेस्ट मोड इस्तेमाल कर सकते हैं",pplTestD:"यह व्यक्ति अपने बिल अभ्यास के बिल बना सकता है।",alHello:n=>`नमस्ते, ${n}`,alPin:"अपना PIN डालें",alBio:"फ़िंगरप्रिंट / चेहरे से खोलें",alOther:"दूसरे नाम से खोलें",alForgot:"PIN भूल गए? मालिक से नया PIN लगवाएँ, फिर “दूसरे नाम से खोलें” दबाएँ।",alWrong:n=>`ग़लत PIN। ${n} बार और, फिर यह फ़ोन साइन आउट हो जाएगा।`,alWait:s=>`बहुत बार ग़लत। ${s} सेकंड बाद फिर कोशिश करें।`,alOut:"बहुत बार ग़लत PIN, साइन आउट हो गया। अपने PIN से फिर साइन इन करें।",siT:"साइन इन",siD:"अपने PIN से आपका नाम अपने आप आ जाता है। दुकान के PIN के साथ अपना नाम भी लिखें।",siName:"आपका नाम",siPin:"PIN",siBtn:"साइन इन",siNet:"साइन इन के लिए इंटरनेट चाहिए।",siGone:"यह फ़ोन साइन आउट कर दिया गया। फिर साइन इन करें।",bioAsk:"अगली बार फ़िंगरप्रिंट या चेहरे से खोलें?",bioYes:"हाँ",bioNo:"अभी नहीं",bioSet:"इस फ़ोन पर फ़िंगरप्रिंट / चेहरे से खोलना",bioSetD:"PIN लिखने की जगह एक टच से खोलें।",bioFail:"फ़िंगरप्रिंट नहीं चला। PIN डालें।",signOutBtn:"इस फ़ोन से साइन आउट",signOutQ:"इस फ़ोन से साइन आउट करें? फिर से साइन इन के लिए PIN और इंटरनेट चाहिए।",lockNow:"अभी लॉक करें",lockNowD:n=>`${n} के नाम से साइन इन। 5 मिनट बाहर रहने पर अपने आप लॉक।`,sessT:"साइन इन किए फ़ोन",sessD:"खोया या बंद फ़ोन साइन आउट करें। उसे फिर PIN चाहिए होगा।",sessOut:"साइन आउट",sessThis:"यह फ़ोन",sessUsed:d=>`आख़िरी बार ${d}`,sessShop:"दुकान का PIN",sessNone:"अभी कोई फ़ोन साइन इन नहीं है।",shopL:n=>`दुकान: ${n}`,shopOther:"दूसरी दुकान? उसका शॉप कोड डालें",shopCodePh:"शॉप कोड, जैसे SHARMA-7K3QX9…",shopGoBtn:"दुकान खोलें",shopBad:"यह शॉप कोड नहीं चला। मालिक से जाँचें।",shopWait:"बहुत बार ग़लत कोड। 15 मिनट बाद कोशिश करें।",shopBusy:n=>`यह फ़ोन ${n} का है। दूसरी दुकान के लिए पहले साइन आउट करें।`,shopSwitch:"दुकान बदलें",shopSwitchT:"इस फ़ोन पर दुकानें",siNeed:"इस दुकान में अब हर फ़ोन को साइन इन करना ज़रूरी है। फिर साइन इन करें।",pendT:"मंज़ूरी का इंतज़ार",pendD:n=>`${n} के मालिक को यह फ़ोन मंज़ूर करना होगा। उन्हें Settings → साइन इन किए फ़ोन में Approve दबाने को कहें।`,pendCheck:"फिर देखें",pendStill:"अभी मंज़ूरी नहीं मिली।",pausedNote:"यह दुकान रुकी हुई है। नए बिल इस फ़ोन पर रखे जाएँगे और चालू होते ही भेज दिए जाएँगे।",apprT:"नए फ़ोन के लिए मेरी मंज़ूरी ज़रूरी",apprD:"पहली बार साइन इन करने वाला फ़ोन आपकी मंज़ूरी तक रुका रहेगा। मालिक को इंतज़ार नहीं।",apprWait:"इंतज़ार",apprOk:"मंज़ूर करें",speedT:"स्पीड",speedD:"इस फ़ोन पर अनुरोधों में कितना समय लगा (आम / सबसे धीमा), और शीट का हिस्सा।",speedNone:"अभी कोई अनुरोध नहीं मापा गया।",updReady:"नया अपडेट तैयार · लोड करने के लिए दबाएँ",updLater:"पहले यह बिल पूरा करें; अपडेट अगली बार ऐप खोलने पर आएगा।",settingsSaved:"सेटिंग्स सबके लिए सेव हुईं",sharedNote:"ये सेटिंग्स इस लिस्ट के सभी लोगों पर लागू होंगी।",
     cmdPh:"जैसे: 51 माइक्रोन बैग 1kg जोड़ो रेट 110 और 120",cmdHelp:"बदलाव लिखें या बोलें। सेव करने से पहले आपको साफ़ दिखेगा कि क्या होगा।",preview:"बदलाव दिखाएँ",thinking:"समझ रहे हैं…",stop:"रोकें",
     applyN:n=>`${n} लागू करें`,nothing:"इसमें कोई बदलाव समझ नहीं आया। ऐसे लिखें: तूर दाल 1kg जोड़ो रेट 120 और 140।",now:"अभी",willDel:"सबके लिए हट जाएगा",exists:"लिस्ट में पहले से है, अपडेट होगा",notFound:"लिस्ट में नहीं है, नया जुड़ेगा",
     opAdd:"नया",opUpdate:"अपडेट",opDelete:"हटाएँ",include:"शामिल",examples:"ऐसे बोलें",cmdHintL:"यह बदलाव लगता है:",cmdHintA:"देखें",localNote:"इसी फ़ोन पर समझा गया (Claude उपलब्ध नहीं था)।",appliedN:n=>`${n} बदलाव लागू हुए`,again:"टेक्स्ट बदलें"
@@ -1661,7 +1667,30 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
 
-const ls = { get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}} };
+/* ---------------- Which shop this phone uses ----------------
+ * "main" is the original shop: the fixed API_URL, storage keys and IndexedDB name exactly as before (nothing changes for its phones).
+ * Other shops are reached by a code (a ?shop=CODE link, or typed on the sign-in screen); the Directory (admin/Directory.gs) turns the
+ * code into that shop's backend link. Each shop's data on the phone is kept apart: localStorage keys get "<code>:" in front and the
+ * IndexedDB is "ratebook_<code>". A code is only an address: each shop has its own people, PINs and sign-ins, and a phone signed in
+ * to one shop ignores another shop's link or code until it signs out. Switching shops reloads the app, so nothing in memory crosses. */
+const DIR_URL = "";   // the Rate Book Directory web app link (admin/Directory.gs). Empty: only the original shop.
+const SHOP = (()=>{ let x=null; try{ x=JSON.parse(localStorage.getItem("rb_shop")||"null"); }catch{} return x && x.code && x.code!=="main" && x.api ? x : {code:"main"}; })();
+const SHOP_MAIN = SHOP.code==="main";
+const LS_GLOBAL = new Set(["rb_shop","rb_shops","rb_dev","rb_lang","rb_fz","rb_palette","rb_appear"]);   // per phone, not per shop
+const lsKey = k => SHOP_MAIN || LS_GLOBAL.has(k) ? k : SHOP.code+":"+k;
+const ls = { get(k,d){try{const v=localStorage.getItem(lsKey(k));return v==null?d:JSON.parse(v)}catch{return d}}, set(k,v){try{localStorage.setItem(lsKey(k),JSON.stringify(v))}catch{}} };
+const shopsKnown = ()=>{ try{ const a=JSON.parse(localStorage.getItem("rb_shops")||"[]"); return Array.isArray(a)?a:[]; }catch{ return []; } };
+/** Is this phone signed in to that shop? (its own stored sign-in, read without switching) */
+const shopSignedIn = code => { try{ const a=JSON.parse(localStorage.getItem(code==="main"?"rb_auth":code+":rb_auth")||"null"); return !!(a && (a.tok||a.pin)); }catch{ return false; } };
+function shopRemember(sh){ try{ const a=shopsKnown().filter(x=>x.code!==sh.code); a.unshift({code:sh.code,name:sh.name||"",api:sh.api||""}); localStorage.setItem("rb_shops",JSON.stringify(a.slice(0,10))); }catch{} }
+/** Open another shop: saves it as this phone's shop and reloads (a fresh start, so nothing in memory crosses over). */
+function shopGo(sh){ try{ localStorage.setItem("rb_shop", JSON.stringify(sh.code==="main"?null:{code:sh.code,api:sh.api,name:sh.name||"",at:Date.now()})); }catch{} shopRemember(sh); location.replace(location.pathname); }
+/** Code → that shop's backend link, from the Directory. Wrong codes are counted there (too many = this phone waits). */
+async function dirLookup(code){ if(!DIR_URL) throw {code:"no_dir"};
+  const r=await fetch(DIR_URL+"?"+new URLSearchParams({action:"shop",code,dev:DEV,_:String(Date.now())}),{cache:"no-store",redirect:"follow"});
+  const j=await r.json(); if(!j.ok) throw {code:j.error||"bad_code"}; return {code:j.code||code, api:j.api, name:j.name||"", status:j.status||"live"}; }
+/* The shop code in the link (?shop=CODE), read once at start; the address bar is cleaned so a reload doesn't repeat it. */
+const SHOP_ASK = (()=>{ try{ const q=new URLSearchParams(location.search).get("shop"); if(!q) return ""; history.replaceState(null,"",location.pathname+location.hash); return q.trim().toLowerCase()==="main" ? "main" : q.trim().toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40); }catch{ return ""; } })();
 
 /* Gap-fix strings */
 Object.assign(STR.en,{notAllowed:"Your role can't do this. Ask the owner.",yourNameOpt:"Your name (only with the shop PIN)",roleOwner:"Owner",roleManager:"Manager",roleStaff:"Staff",
@@ -2948,9 +2977,10 @@ async function flushBills(){
   try{
     while(S.billQ.length){
       const rec=S.billQ[0];
-      blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,k:ls.get("rb_view",""),...(S.auth&&S.auth.tok?{tok:S.auth.tok}:{pin:(S.auth&&S.auth.pin)||""}),dev:DEV})});
+      blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,shop:SHOP.code,k:ls.get("rb_view",""),...(S.auth&&S.auth.tok?{tok:S.auth.tok}:{pin:(S.auth&&S.auth.pin)||""}),dev:DEV})});
       const j=await r.json();
-      if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } throw 0; }
+      if(j.shop && j.shop!==SHOP.code){ shopMismatch(); throw 0; }   /* never record a bill in another shop's sheet; it stays queued */
+      if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } if(j.error==="paused") shopPausedNote(); throw 0; }
       S.needCode=false;
       if(j.renumbered){ { const li=ls.get("rb_lastinv",null); if(li && String(li.no)===String(j.renumbered.from) && S.lastBill && S.lastBill.n===rec.n){ li.no=String(j.renumbered.to); ls.set("rb_lastinv",li); } }
         if(S.lastBill && S.lastBill.n===rec.n){ S.lastBill.n=j.renumbered.to; ls.set("rb_lastbill",S.lastBill); }
@@ -3374,10 +3404,19 @@ async function loadOwnerCards(){
   catch(e){ const b=$("#ppl-body"); if(b) b.innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
   apiPost({action:"listSessions"}).then(renderSessions).catch(()=>{ const b=$("#sess-body"); if(b) b.innerHTML=`<p class="note">${esc(t("oldScript"))}</p>`; });
 }
+/** Settings → Speed: this phone's request timings per action: typical (median) / slowest (95th), and the sheet's own share. */
+function speedHTML(){ const a=ls.get("rb_perf",[]); if(!a.length) return `<p class="note" style="margin:0">${esc(t("speedNone"))}</p>`;
+  const by={}; a.forEach(x=>{ (by[x[0]]=by[x[0]]||[]).push(x); });
+  const q=(v,f)=>{ const y=v.slice().sort((m,n)=>m-n); return y[Math.min(y.length-1,Math.floor(f*y.length))]; }, sec=ms=>ms==null?"—":(ms/1000).toFixed(ms<10000?1:0)+" s";
+  return Object.keys(by).sort((m,n)=>by[n].length-by[m].length).slice(0,8).map(k=>{ const tot=by[k].map(x=>x[1]), srv=by[k].map(x=>x[2]).filter(x=>x!=null);
+    return `<div class="speed-row"><span>${esc(k)} <small style="color:var(--muted)">×${by[k].length}</small></span><b class="num">${sec(q(tot,.5))} / ${sec(q(tot,.95))}</b><small class="num" style="color:var(--muted)">${srv.length?"sheet "+sec(q(srv,.5)):""}</small></div>`; }).join(""); }
 /** Owner: every signed-in phone, newest use first; sign any of them out. */
 function renderSessions(j){ const box=$("#sess-body"); if(!box) return; const L=(j&&j.sessions)||[];
-  box.innerHTML=L.length?L.map(x=>`<div class="sess-row"><div><b>${esc(x.name)}</b>${x.me?` <span class="pill">${esc(t("sessThis"))}</span>`:""}${x.shopPin?` <span class="pill">${esc(t("sessShop"))}</span>`:""}<small>${esc(x.label||"—")} · ${esc(t("sessUsed",x.seen?fmtDT(new Date(x.seen)):"—"))}</small></div>${x.me?"":`<button type="button" class="btn ghost sm" data-sess="${esc(x.id)}">${esc(t("sessOut"))}</button>`}</div>`).join("")
-    :`<p class="note" style="margin:0">${esc(t("sessNone"))}</p>`;
+  const appr=j&&j.approveNew!==undefined?`<label class="switch"><span><b>${esc(t("apprT"))}</b><br><span class="note">${esc(t("apprD"))}</span></span><input type="checkbox" id="sess-appr" ${j.approveNew?"checked":""}></label>`:"";
+  box.innerHTML=appr+(L.length?L.map(x=>`<div class="sess-row"><div><b>${esc(x.name)}</b>${x.me?` <span class="pill">${esc(t("sessThis"))}</span>`:""}${x.shopPin?` <span class="pill">${esc(t("sessShop"))}</span>`:""}${x.pending?` <span class="pill wait">${esc(t("apprWait"))}</span>`:""}<small>${esc(x.label||"—")} · ${esc(t("sessUsed",x.seen?fmtDT(new Date(x.seen)):"—"))}</small></div>${x.me?"":`<div class="row-btns" style="gap:6px">${x.pending?`<button type="button" class="btn primary sm" data-sessok="${esc(x.id)}">${esc(t("apprOk"))}</button>`:""}<button type="button" class="btn ghost sm" data-sess="${esc(x.id)}">${esc(t("sessOut"))}</button></div>`}</div>`).join("")
+    :`<p class="note" style="margin:0">${esc(t("sessNone"))}</p>`);
+  const ap=$("#sess-appr"); if(ap) ap.onchange=async()=>{ const v=ap.checked; ap.disabled=true; try{ await write({action:"setConfig",config:{approveNew:v}}); }catch{ ap.checked=!v; } finally{ ap.disabled=false; } };
+  box.querySelectorAll("[data-sessok]").forEach(b=>b.onclick=async()=>{ btnBusy(b,true); try{ renderSessions(await apiPost({action:"approveSession",id:b.dataset.sessok})); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } });
   box.querySelectorAll("[data-sess]").forEach(b=>b.onclick=async()=>{ btnBusy(b,true); try{ renderSessions(await apiPost({action:"endSession",id:b.dataset.sess})); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } }); }
 function renderPeople(){
   const box=$("#ppl-body"); if(!box) return; const list=pplCache||[];
@@ -3446,13 +3485,17 @@ async function refreshMe(j){
   if(meChecked || !S.canWrite) return; meChecked=true;
   try{ const old=S.auth.pin && !S.auth.tok, r=await apiPost({action:"verify",by:(S.auth&&S.auth.by)||"",...(old?{wantTok:true,dl:devLabel()}:{})}); const me=r.me||{};
     if(old && r.tok){ const pin=S.auth.pin, chk=await pinCheckSet(pin); S.auth={...S.auth,...chk,tok:r.tok,pinLen:pin.length,personal:!!me.personal}; delete S.auth.pin; ls.set("rb_auth",S.auth); }
+    applyMe(r,j);
+  }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); }
+}
+/** Use who-am-I from the sheet (verify, or the boot reply): role, name, own settings, shop code. */
+function applyMe(r,j){ const me=r.me||{}; if(!S.auth) return;
     const role=me.role||"owner", name=me.personal?me.name:S.auth.by; const changed=role!==S.auth.role || name!==S.auth.by;
     const P0=JSON.stringify(myPrefs())+(S.auth.testOk!==false);
     S.auth={...S.auth,role,by:name}; if(me.prefs) S.auth.prefs=me.prefs; if(me.testOk!==undefined) S.auth.testOk=me.testOk!==false; ls.set("rb_auth",S.auth);
     const prefsChanged=JSON.stringify(myPrefs())+(S.auth.testOk!==false)!==P0;
     const hadCode=ls.get("rb_view",""); if(r.view && r.view!==hadCode){ ls.set("rb_view",r.view); if(j&&j.limited){ S.rev=null; sync(); return; } }
     if(prefsChanged) applyPrefs(); else if(changed) renderAll();
-  }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); }
 }
 function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
@@ -4019,24 +4062,42 @@ async function processImage(file){ const im=await loadImg(file); return { thumb:
 function pickImage(){ return new Promise(res=>{ const f=$("#file"); f.value=""; f.onchange=()=>res(f.files[0]||null); f.click(); }); }
 
 /* ---------------- Talking to the Google Sheet ---------------- */
-function apiUrl(){ return API_URL || ls.get("rb_api",""); }
+function apiUrl(){ return SHOP_MAIN ? (API_URL || ls.get("rb_api","")) : SHOP.api; }
 function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
 function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
+/** Request timings on this phone (per shop): Settings → Speed. rev/thumbs aren't kept (they're tiny and constant). */
+function perfAdd(action,t0,j){ if(!action || action==="rev" || action==="thumbs") return;
+  try{ const a=ls.get("rb_perf",[]); a.push([action,Math.round(performance.now()-t0),j&&typeof j.ms==="number"?j.ms:null,Date.now()]); ls.set("rb_perf",a.slice(-100)); }catch{} }
+/** A reply from a different shop than this phone uses: never applied. The saved link is checked with the Directory again. */
+function shopMismatch(){ if(SHOP_MAIN || !DIR_URL) return; dirLookup(SHOP.code).then(sh=>{ if(sh.api && sh.api!==SHOP.api){ SHOP.api=sh.api; try{ localStorage.setItem("rb_shop",JSON.stringify({...SHOP,at:Date.now()})); }catch{} } }).catch(()=>{}); }
 async function apiGet0(params){
+  const t0=performance.now();
   const u=apiUrl()+"?"+new URLSearchParams({...params,...(params.action==="list"&&params.k===undefined?{k:ls.get("rb_view","")}:{}),_:String(Date.now())});
   const r=await fetch(u,{cache:"no-store",redirect:"follow"});
   if(!r.ok) throw {code:"http"};
-  const j=await r.json(); if(!j.ok) throw {code:j.error||"server"}; return j;
+  const j=await r.json(); perfAdd(params.action,t0,j);
+  if(j.shop && j.shop!==SHOP.code){ shopMismatch(); throw {code:"wrong_shop"}; }
+  if(!j.ok) throw {code:j.error||"server"}; return j;
 }
 async function apiPost0(body){
   if(navigator.onLine===false) throw {code:"offline"};
   const a=S.auth||{};
-  const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({...(a.tok?{tok:a.tok}:{pin:a.pin}),by:a.by||"",env:S.cfg.mode,dev:DEV,k:ls.get("rb_view",""),...body})});
+  const t0=performance.now();
+  const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({...(a.tok?{tok:a.tok}:{pin:a.pin}),by:a.by||"",env:S.cfg.mode,dev:DEV,k:ls.get("rb_view",""),shop:SHOP.code,...body})});
   if(!r.ok) throw {code:"http"};
-  const j=await r.json(); if(!j.ok){ if(j.error==="no_test") setTimeout(noTestNow,0); if(j.error==="bad_session" && a.tok && S.auth && S.auth.tok===a.tok) setTimeout(()=>signedOut("siGone"),0); throw {code:j.error||"server"}; } return j;
+  const j=await r.json(); perfAdd(body&&body.action,t0,j);
+  if(j.shop && j.shop!==SHOP.code){ shopMismatch(); throw {code:"wrong_shop"}; }
+  if(!j.ok){ const c=j.error;
+    if(c==="no_test") setTimeout(noTestNow,0);
+    if(c==="bad_session" && a.tok && S.auth && S.auth.tok===a.tok) setTimeout(()=>signedOut("siGone"),0);
+    if(c==="pending" && a.tok && S.auth && S.auth.tok===a.tok && !S.auth.pending){ S.auth={...S.auth,pending:true}; ls.set("rb_auth",S.auth); setTimeout(()=>appLock(),0); }
+    if(c==="need_signin" && a.pin && !a.tok) setTimeout(()=>signedOut("siNeed"),0);
+    if(c==="paused") shopPausedNote();
+    throw {code:c||"server"}; }
+  return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
 let chain=Promise.resolve();
 function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
 let resyncT; function resyncSoon(){ clearTimeout(resyncT); resyncT=setTimeout(sync,1500); }
@@ -4057,7 +4118,7 @@ const byName=()=> (S.auth&&S.auth.by)||"";
 
 /* Local thumbnail store (IndexedDB) so pictures don't download every time. */
 const idb=(()=>{ let dbp=null;
-  function open(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{ try{ const r=indexedDB.open("ratebook",1); r.onupgradeneeded=()=>{ r.result.createObjectStore("thumbs"); r.result.createObjectStore("images"); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); return dbp; }
+  function open(){ if(dbp) return dbp; dbp=new Promise((res,rej)=>{ try{ const r=indexedDB.open(SHOP_MAIN?"ratebook":"ratebook_"+SHOP.code,1); r.onupgradeneeded=()=>{ r.result.createObjectStore("thumbs"); r.result.createObjectStore("images"); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); return dbp; }
   function run(store,mode,fn){ return open().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(store,mode); const req=fn(tx.objectStore(store)); tx.oncomplete=()=>res(req&&("result" in req)?req.result:undefined); tx.onerror=()=>rej(tx.error); })); }
   return { get:(s,k)=>run(s,"readonly",st=>st.get(k)).catch(()=>undefined), set:(s,k,v)=>run(s,"readwrite",st=>st.put(v,k)).catch(()=>{}), del:(s,k)=>run(s,"readwrite",st=>st.delete(k)).catch(()=>{}),
     all:s=>open().then(db=>new Promise((res)=>{ const out={}; const tx=db.transaction(s,"readonly"); const c=tx.objectStore(s).openCursor(); c.onsuccess=()=>{ const cur=c.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } }; tx.oncomplete=()=>res(out); tx.onerror=()=>res(out); })).catch(()=>({})) };
@@ -4356,6 +4417,7 @@ function openSettings(){
         <div class="field"><label for="cf-dhsn">${esc(t("defHsn"))}</label><input id="cf-dhsn" class="num" inputmode="numeric" maxlength="10" value="${esc(c.defaultHsn)}" ${w?"":"disabled"}></div></div>
     </div>
     ${w?`<div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
+    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("speedT"))}</h3><p class="note" style="margin:0">${esc(t("speedD"))}</p><div id="speed-body">${speedHTML()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("sessT"))}</h3><p class="note" style="margin:0">${esc(t("sessD"))}</p><div id="sess-body">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>`:""}
     ${w?`<div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`:""}
@@ -5464,7 +5526,7 @@ async function itemBuysInto(id,el){ if(!el) return; VD.buys=VD.buys||{}; try{ co
   catch{ el.remove(); } }
 /* ---- share: statement PDF / vendor link / WhatsApp ---- */
 function vLinkSet(id,r){ const sv=VDB.srv.vendors.find(v=>v.id===id); if(sv){ sv.token=r.token; sv.linkOn=r.linkOn; vdbSave(); } vRebuild(); }
-function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok); }
+function vLinkUrl(tok){ const b=location.href.split("#")[0].split("?")[0].replace(/[^/]*$/,""); return b+"vendor.html?t="+encodeURIComponent(tok)+(SHOP_MAIN?"":"&s="+encodeURIComponent(SHOP.code)); }
 function vShareSheet(id){ const D=VD.det[id]; if(!D) return; const v=D.vendor, c=D.calc;
   const fy=curFY(), fyStart=`20${fy.slice(2,4)}-04-01`, wa=v.mobile?`https://wa.me/${normMobile(v.mobile)||""}`:"";
   const balTxt=c.balance>0?vMoney(c.balance):c.balance<0?t("vAdvance")+" "+vMoney(-c.balance):t("vSettled");
@@ -5805,17 +5867,56 @@ function lockInert(on){ for(const c of document.body.children){ if(c.id!=="applo
 /** Lock the app (or show sign-in when nobody is signed in on this phone). */
 function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false;
   if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
-  if(S.canWrite && (S.auth.pinH || S.auth.pin || S.auth.bio)) lockPinUI(msg); else signInUI(msg); }
-function appUnlock(){ LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
+  if(S.canWrite && S.auth.pending) pendingUI(msg); else if(S.canWrite && (S.auth.pinH || S.auth.pin || S.auth.bio)) lockPinUI(msg); else signInUI(msg); }
+/** Signed in, but the owner hasn't approved this phone yet: nothing opens; checks again every 15 s. */
+function pendingUI(msg){ const el=lockEl(); let tm=0;
+  el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg);font-weight:700">${esc(t("pendT"))}</div><p class="note" style="margin:0">${esc(t("pendD",S.cfg.shopName||"this shop"))}</p>
+    <button type="button" class="al-bio" id="al-pchk">${esc(t("pendCheck"))}</button><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div><button type="button" class="al-link" id="al-other">${esc(t("alOther"))}</button></div>`;
+  const check=async(quiet)=>{ if(!$("#al-pchk")) return; clearTimeout(tm);
+    try{ await apiPost0({action:"verify"}); S.auth={...S.auth}; delete S.auth.pending; ls.set("rb_auth",S.auth); bootTried=false; sync(); afterPinUnlock(); return; }
+    catch(e){ if(!quiet && $("#al-err")) $("#al-err").textContent=errMsg(e); }
+    tm=setTimeout(()=>check(true),15000); };
+  $("#al-pchk").onclick=()=>check(false); $("#al-other").onclick=()=>{ if(confirm(t("signOutQ"))) lockPhone(); };
+  tm=setTimeout(()=>check(true),15000); }
+function appUnlock(){ if(S.canWrite) shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
   document.documentElement.classList.remove("locked"); renderAll(); if(S.pendShare) setTimeout(askSent,400); }
 /** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
 function signedOut(msgKey){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }
-function lockHead(){ return `<div class="al-shop">${esc(S.cfg.shopName||"Rate Book")}</div>`; }
+function lockHead(){ return `<div class="al-shop">${esc(S.cfg.shopName||(SHOP_MAIN?"":SHOP.name)||"Rate Book")}</div>`; }
+/** "Switch shop": only on a phone that is already signed in to more than one shop (e.g. the admin supporting a shop). */
+function shopSwitchList(){ const here=SHOP.code, L=shopsKnown().filter(x=>x.code!==here && shopSignedIn(x.code)); return L; }
+function shopSwitchHTML(){ const L=shopSwitchList(); if(!L.length) return "";
+  return `<div class="al-shopbox"><b style="font-size:13px;color:var(--muted)">${esc(t("shopSwitchT"))}</b>${L.map(x=>`<button type="button" class="btn ghost" data-shopgo="${esc(x.code)}">${esc(t("shopSwitch"))}: ${esc(x.name||x.code)}</button>`).join("")}</div>`; }
+/** "Different shop? Enter its shop code": on the sign-in screen, and on the lock screen for owners only (the admin supporting a
+    shop keeps this sign-in; the other shop still needs its own PIN). Staff phones never see it while signed in. */
+function shopCodeHTML(signin){ if(!DIR_URL || (!signin && myRole()!=="owner")) return "";
+  return `<div class="al-shopbox"><button type="button" class="al-link" id="al-shopq">${esc(t("shopOther"))}</button>
+    <form class="al-form" id="al-sf" hidden novalidate><input id="al-scode" placeholder="${esc(t("shopCodePh"))}" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="40">
+    <button type="submit" class="btn ghost" id="al-sgo">${esc(t("shopGoBtn"))}</button></form></div>`; }
+function shopCodeWire(){ if(!$("#al-shopq")) return;
+  $("#al-shopq").onclick=()=>{ $("#al-sf").hidden=false; $("#al-shopq").hidden=true; $("#al-scode").focus(); };
+  $("#al-sf").onsubmit=async e=>{ e.preventDefault(); const code=$("#al-scode").value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,""), err=$("#al-err"); if(!code) return;
+    if(navigator.onLine===false){ err.textContent=t("siNet"); return; } btnBusy($("#al-sgo"),true);
+    try{ const sh=code==="MAIN"?{code:"main"}:await dirLookup(code); if(sh.code===SHOP.code){ btnBusy($("#al-sgo"),false); $("#al-sf").hidden=true; return; } shopGo(sh); }
+    catch(er){ btnBusy($("#al-sgo"),false); err.textContent=errMsg(er); } }; }
+function shopSwitchWire(){ document.querySelectorAll("#applock [data-shopgo]").forEach(b=>b.onclick=()=>{ const x=shopsKnown().find(y=>y.code===b.dataset.shopgo); if(x) shopGo(x); }); }
+/** Paused shop (subscription): say so once per app start; bills stay queued on the phone, nothing is lost. */
+let pausedSaid=false; function shopPausedNote(){ if(pausedSaid) return; pausedSaid=true; S.paused=true; setTimeout(()=>toast(t("pausedNote")),300); }
+/** The shop link (?shop=CODE): honoured only when this phone isn't signed in to another shop (or already holds a sign-in there). */
+async function shopFromLink(){ if(!SHOP_ASK || SHOP_ASK===SHOP.code) return "";
+  if(S.canWrite && !shopSignedIn(SHOP_ASK) && myRole()!=="owner") return t("shopBusy", S.cfg.shopName||SHOP.name||"another shop");   // staff phones stay in their shop
+  if(SHOP_ASK==="main"){ shopGo({code:"main"}); return ""; }
+  try{ const known=shopsKnown().find(x=>x.code===SHOP_ASK && x.api); shopGo(known && shopSignedIn(SHOP_ASK) ? known : await dirLookup(SHOP_ASK)); return ""; }
+  catch(e){ return errMsg(e); } }
+/** Non-main shops: re-check the backend link with the Directory once a day (in case it moved); learn if the shop is paused. */
+function shopRefresh(){ if(SHOP_MAIN || !DIR_URL || Date.now()-(+SHOP.at||0)<864e5) return;
+  dirLookup(SHOP.code).then(sh=>{ if(sh.api) SHOP.api=sh.api; SHOP.name=sh.name||SHOP.name; SHOP.at=Date.now(); try{ localStorage.setItem("rb_shop",JSON.stringify(SHOP)); }catch{} shopRemember(SHOP); if(sh.status==="paused") shopPausedNote(); }).catch(()=>{}); }
 function lockPinUI(msg){ const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.auth.pinLen||(S.auth.pin||"").length))||0; let pin="";
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-av">${esc((a.by||"?").charAt(0).toUpperCase())}</div><div class="al-hi">${esc(t("alHello",a.by||""))}</div>
     <div id="al-biobox"></div><div class="al-hi" id="al-lbl">${esc(t("alPin"))}</div><div class="al-dots" id="al-dots"></div><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div>
     <div class="al-pad" id="al-pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-k="${n}">${n}</button>`).join("")}<button type="button" data-k="del" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" class="al-ok" data-k="ok">OK</button></div>
-    <button type="button" class="al-link" id="al-other">${esc(t("alOther"))}</button><p class="note" style="margin:0;font-size:12px">${esc(t("alForgot"))}</p></div>`;
+    <button type="button" class="al-link" id="al-other">${esc(t("alOther"))}</button><p class="note" style="margin:0;font-size:12px">${esc(t("alForgot"))}</p>${shopSwitchHTML()}${shopCodeHTML()}</div>`;
+  shopSwitchWire(); shopCodeWire();
   const dots=()=>{ const n=Math.max(pinLen()||4,pin.length); $("#al-dots").innerHTML=Array.from({length:n},(_,i)=>`<i class="${i<pin.length?"on":""}"></i>`).join(""); };
   const wait=()=>{ const left=Math.ceil((LOCK.fails.until-Date.now())/1000); if(left>0){ $("#al-err").textContent=t("alWait",left); return true; } return false; };
   /* At the signed-in PIN's length, check quietly on the phone: a match opens at once; otherwise keep taking digits
@@ -5843,7 +5944,8 @@ function lockPinUI(msg){ const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.aut
     const go=async()=>{ try{ await bioCheck(); appUnlock(); }catch{ const er=$("#al-err"); if(er && LOCK.on) er.textContent=t("bioFail"); } };
     $("#al-bio").onclick=go; if(!/iPhone|iPad/.test(navigator.userAgent) && document.visibilityState==="visible") go(); }); }
 /** After a PIN unlock: offer fingerprint once per person per phone, then open. */
-async function afterPinUnlock(){ const a=S.auth; if(a.bio || ls.get("rb_bio_no_"+(a.by||""),false) || !(await bioAvail())){ appUnlock(); return; }
+async function afterPinUnlock(){ const a=S.auth; if(a && a.pending){ pendingUI(); return; }
+  shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); if(a.bio || ls.get("rb_bio_no_"+(a.by||""),false) || !(await bioAvail())){ appUnlock(); return; }
   const el=lockEl(); el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg)">${esc(t("bioAsk"))}</div>
     <button type="button" class="al-bio" id="al-by">${esc(t("bioYes"))}</button><button type="button" class="al-link" id="al-bn">${esc(t("bioNo"))}</button><div class="al-err" id="al-err"></div></div>`;
   $("#al-by").onclick=async()=>{ try{ await bioRegister(); appUnlock(); }catch{ $("#al-err").textContent=t("bioFail"); setTimeout(appUnlock,1200); } };
@@ -5852,7 +5954,9 @@ function signInUI(msg){ const el=lockEl();
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg);font-weight:700">${esc(t("siT"))}</div><p class="note" style="margin:0">${esc(t("siD"))}</p>
     <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="name" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
     <input id="al-pin" type="password" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="current-password" enterkeyhint="go" aria-label="${esc(t("siPin"))}">
-    <button type="submit" class="btn primary" id="al-go">${esc(t("siBtn"))}</button></form><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div></div>`;
+    <button type="submit" class="btn primary" id="al-go">${esc(t("siBtn"))}</button></form><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div>
+    ${shopSwitchHTML()}${shopCodeHTML(true)}</div>`;
+  shopSwitchWire(); shopCodeWire();
   $("#al-f").onsubmit=async e=>{ e.preventDefault(); const by=$("#al-name").value.trim(), pin=$("#al-pin").value.trim(), err=$("#al-err");
     if(!/^\d{4,8}$/.test(pin)){ $("#al-pin").focus(); return; } if(navigator.onLine===false){ err.textContent=t("siNet"); return; }
     btnBusy($("#al-go"),true);
@@ -5863,7 +5967,7 @@ function signInUI(msg){ const el=lockEl();
   setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }
 /** A PIN sign-in worked (sign-in screen, or a different person's PIN typed on the lock screen): this phone is now theirs. */
 async function adoptSignIn(j,pin,by){ const me=j.me||{}, old=S.auth&&S.auth.tok;
-  S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin)};
+  S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin), ...(j.pending?{pending:true}:{})};
   const bio=ls.get("rb_bio_"+S.auth.by,null); if(bio) S.auth.bio=bio;
   if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; applyPrefs();
   if(old && old!==S.auth.tok) apiPost0({action:"signOut",tok:old}).catch(()=>{});   // end the previous sign-in on the sheet
@@ -5915,12 +6019,18 @@ function applyItems(list){
   S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true;
 }
 function saveCache(){ ls.set("rb_cache",{ pop:S.pop||null, items:S.items.filter(x=>!String(x.id).startsWith("tmp_")).map(x=>{ const y={...x}; delete y.pending; return y; }), cfg:S.cfg, rev:S.rev, at:S.lastSync }); }
-let syncing=null;
+let syncing=null, bootTried=false;
 function sync(){
   if(!apiUrl()) return Promise.resolve();
   if(syncing) return syncing;
   syncing=(async()=>{
-    try{ const j=await apiGet({action:"list"}); S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; if(j.pop && typeof j.pop==="object") S.pop=j.pop; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); refreshMe(j); }
+    try{ let j=null;
+      /* First load after start, signed in: price list + who's signed in + versions in one request (older scripts: two). */
+      if(!bootTried && S.canWrite && S.auth && S.auth.tok && !S.auth.pending){ bootTried=true;
+        try{ j=await netTrack(apiPost0({action:"boot"})); if(!j || !Array.isArray(j.items) || !j.config) j=null; }   /* only a real price list counts; anything else: the normal request */
+        catch(e){ if(e && (e.code==="bad_session"||e.code==="pending"||e.code==="need_signin"||e.code==="wrong_shop")) throw e; j=null; } }
+      if(!j) j=await apiGet({action:"list"});
+      S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; if(j.pop && typeof j.pop==="object") S.pop=j.pop; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); if(j.me){ meChecked=true; applyMe({me:j.me,view:j.view},j); } else refreshMe(j); }
     catch{ S.online=false; renderNet(); }
     finally{ syncing=null; }
   })();
@@ -5984,7 +6094,25 @@ function renderInstall(){
 async function doInstall(){ if(installEvt){ installEvt.prompt(); try{ await installEvt.userChoice; }catch{} installEvt=null; renderInstall(); } else if(isIOS){ ls.set("rb_inst_x",false); setTab("items"); } }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-inst]")) doInstall(); else if(e.target.closest("[data-instx]")){ ls.set("rb_inst_x",true); renderInstall(); } });
 $("#t-install").onclick=doInstall;
-if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+  /* A newer app was saved in the background (sw.js): it loads by itself on the next open. While locked with no bill in progress
+     it loads now; otherwise a small "Update ready" pill offers it. Never reloads in the middle of a bill. */
+  const updReady=()=>{ const busy=()=>S.bill.length>0 || !!S.editing || !$("#sheet").hidden;
+    if(LOCK.on && !busy()){ location.reload(); return; }
+    let el=$("#updpill"); if(!el){ el=document.createElement("button"); el.id="updpill"; el.type="button"; document.body.appendChild(el); }
+    el.textContent=t("updReady"); el.onclick=()=>{ if(busy()){ toast(t("updLater")); return; } location.reload(); }; };
+  navigator.serviceWorker.addEventListener("message",e=>{ if(e.data && e.data.type==="rb-update") updReady(); });
+  /* Also check directly (a message can arrive before the page listens): remember which saved copy this page started from, and
+     look again shortly after (the background fetch) and whenever the app comes back to the screen. */
+  if(window.caches && window.DOMParser){
+    /* Fingerprint of a page's code: its inline scripts and styles (they never change while the app runs). This page's own vs the
+       saved copy's: different = a newer app is saved. */
+    const fp=doc=>{ let h=2166136261; const x=[...doc.querySelectorAll("script:not([src]),style")].map(e=>e.textContent).join("\u0001");
+      for(let i=0;i<x.length;i++){ h^=x.charCodeAt(i); h=Math.imul(h,16777619); } return x.length+":"+(h>>>0); };
+    const mine=fp(document); let said=false;
+    const look=()=>{ if(said) return; caches.match("./index.html").then(r=>r?r.text():"").then(x=>{ if(!x) return; const other=fp(new DOMParser().parseFromString(x,"text/html")); if(other!==mine){ said=true; updReady(); } }).catch(()=>{}); };
+    [3000,10000,30000].forEach(ms=>setTimeout(look,ms)); document.addEventListener("visibilitychange",()=>{ if(!document.hidden) look(); }); }
+}
 
 /* ---------------- Start ---------------- */
 async function boot(){
@@ -5994,6 +6122,7 @@ async function boot(){
   if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
   applyLang(); renderBadge();
   appLock();   // every fresh open: unlock (or sign in) first
+  shopFromLink().then(m=>{ if(m && LOCK.on){ const er=$("#al-err"); if(er) er.textContent=m; } }); shopRefresh();
   S.thumbs=await idb.all("thumbs"); if(S.loaded) renderList();
   if(apiUrl()) sync();
   if(S.pendShare) setTimeout(askSent,1200);   // the app was closed while a shared bill waited for confirmation

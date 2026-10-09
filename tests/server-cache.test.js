@@ -1,0 +1,32 @@
+/* Reply cache and shop rules in Code.gs (no Google needed). Run: node tests/server-cache.test.js */
+const { gas } = require('./gas-mock');
+const path = require('path'), CODE = path.join(__dirname, '..', 'Code.gs');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+const g = gas([CODE]); const R = g.R;
+R("var BUILDS=0, VER='1'; var build=()=>{BUILDS++; return {ok:true, v:VER, txt:'शुगर '.repeat(20000)};}");
+let a = R("rcRead_('t', ()=>VER, build)"), b = R("rcRead_('t', ()=>VER, build)");
+ok(R('BUILDS') === 1 && b.v === '1' && b.txt.length === a.txt.length, 'same version: second read comes from the cache (big Hindi reply in pieces)');
+R("VER='2'"); const c = R("rcRead_('t', ()=>VER, build)"); ok(R('BUILDS') === 2 && c.v === '2', 'after a write (new version): read is fresh');
+R("BUILDS=0; var V=10; var bump=()=>{ V++; return {ok:true,v:V}; }"); R("rcRead_('race', ()=>String(V), ()=>{ BUILDS++; const o={ok:true,v:V}; V++; return o; })");
+R("rcRead_('race', ()=>String(V), ()=>{ BUILDS++; return {ok:true,v:V}; })"); ok(R('BUILDS') === 2, 'version changed while building: not stored (next read builds again)');
+const keys = Object.keys(g.cache).filter(k => /^rc:t:\d+:2:\d+$/.test(k));
+g.cache[keys[0]] = g.cache[keys[0]].slice(0, -5) + 'XXXXX'; R("BUILDS=0; VER='2'"); R("rcRead_('t', ()=>VER, build)"); ok(R('BUILDS') === 1, 'a damaged piece is detected (checksum): read is fresh');
+delete g.cache[keys[1]]; R("BUILDS=0"); R("rcRead_('t', ()=>'3', build)"); R("rcRead_('t', ()=>'3', build)"); ok(R('BUILDS') === 1, 'missing piece: fresh read, then cached again');
+g.props.NO_CACHE = '1'; delete g.cache.NO_CACHE_F; R("BUILDS=0"); R("rcRead_('t', ()=>'3', build)"); R("rcRead_('t', ()=>'3', build)"); ok(R('BUILDS') === 2, 'NO_CACHE=1: every read goes to the sheet'); delete g.props.NO_CACHE; delete g.cache.NO_CACHE_F;
+R("BUILDS=0"); R("rcRead_('e', ()=>'1', ()=>{BUILDS++; return {ok:false,error:'x'};})"); R("rcRead_('e', ()=>'1', ()=>{BUILDS++; return {ok:false,error:'x'};})"); ok(R('BUILDS') === 2, 'errors are never cached');
+// shop identity and approval
+ok(R('shopCode_()') === 'main' && R('boot_()') === null, 'original shop: no Shop.gs, code "main"');
+const out = JSON.parse(R("doPost({postData:{contents:JSON.stringify({action:'verify',shop:'OTHER-1234567890',pin:'1'})}}).text")); ok(out.error === 'wrong_shop', 'a request meant for another shop is refused before anything else');
+ok(R("approveOn_({approveNew:''})") === false && R("approveOn_({approveNew:'true'})") === true, 'approval: off by default for the original shop, owner can turn it on');
+const g2 = gas([CODE], {}); g2.R("var SHOP_BOOT={code:'SHARMA-ABCDEFGH23', sheetId:'s1'}");
+ok(g2.R('shopCode_()') === 'SHARMA-ABCDEFGH23' && g2.R("approveOn_({approveNew:''})") === true, 'Directory-made shop: its own code, approval on by default');
+g2.props.PIN = '9999'; g2.R("saveUser_({name:'Staff',pin:'1111',role:'staff'})"); g2.R("readConfig_=()=>({approveNew:true})");
+const t1 = g2.R("sessNew_(auth_({pin:'1111',dev:'phoneA'}),{dev:'phoneA'})"); g2.R('var T1=' + JSON.stringify(t1.tok));
+ok(t1.pending === true && g2.R('auth_({tok:T1})').error === 'pending', 'staff on a new phone: waits for the owner');
+const own = g2.R("sessNew_(auth_({pin:'9999',by:'Owner',dev:'phoneO'}),{dev:'phoneO'})"); ok(own.pending === false, 'owner never waits');
+g2.R("var W=auth_({tok:'" + own.tok + "'})"); g2.R("sessEdit_(all=>Object.keys(all).forEach(k=>{ if(all[k].d==='phoneA') delete all[k].p; }))");
+ok(!g2.R('auth_({tok:T1})').error, 'after the owner approves: the phone works');
+const t3 = g2.R("sessNew_(auth_({pin:'1111',dev:'phoneA'}),{dev:'phoneA'})"); ok(t3.pending === false, 'same phone signing in again: no second approval');
+ok(g2.R("auth_({pin:'1111'})").viaPin === true, 'PIN-only requests are marked (refused when approval is on, except sign-in)');
+ok(g2.locks.n === 0, 'all locks released');
+process.exit(fails ? 1 : 0);

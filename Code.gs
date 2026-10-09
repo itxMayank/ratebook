@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 31;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 32;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -118,7 +118,7 @@ function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('br
 function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
-function onEdit(e) { try { bump_(); bumpB_(true); } catch (err) {} }
+function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) {} }
 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
@@ -442,7 +442,7 @@ function doPost(e) {
       case 'undoPayment': res = undoPayment_(body); bumpB_(false, body.billId); break;
       case 'backupInfo': res = backupInfo_(); break;
       case 'backupNow': res = { backup: backupNow_('manual') , info: backupInfo_() }; break;
-      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), by); bumpB_(true); break;
+      case 'restoreBackup': res = restoreBackup_(String(body.id || ''), by); bumpB_(true); vbumpAll_(); break;
       case 'cancelBill': res = cancelBill_(body, by, true); bumpB_(false, body.id); break;
       case 'restoreBill': res = cancelBill_(body, by, false); bumpB_(false, body.id); break;
       case 'report': res = report_(body); break;
@@ -470,7 +470,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer'].indexOf(body.action) < 0) bump_();
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -562,8 +562,10 @@ function ensureTriggers_() {
 }
 function watchSheet() {
   const changed = DriveApp.getFileById(ss_().getId()).getLastUpdated().getTime();
-  const rev = Number(PropertiesService.getScriptProperties().getProperty('rev') || 0);
-  if (changed > rev + 15000) { bump_(); bumpB_(true); }     // edited by hand after the app's last change
+  const P = PropertiesService.getScriptProperties();
+  // the app's last write of any kind (prices, bills or vendors); a newer Drive time means someone edited the sheet by hand
+  const last = Math.max.apply(null, ['rev', 'brev_live', 'brev_test', 'vrev_live', 'vrev_test'].map(k => Number(P.getProperty(k) || 0)));
+  if (changed > last + 15000) { bump_(); bumpB_(true); vbumpAll_(); }
 }
 
 /* ---------- financial year (April–March, India) ---------- */
@@ -1461,6 +1463,8 @@ function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedge
   return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => vEntryOut_(r)) }; }
 function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); try { CacheService.getScriptCache().put('vrev_' + ENV_, v, 21600); } catch (e) {} return v; }
 function vrev_() { return vrevC_(ENV_); }
+/** Hand edit or restore: vendors in both modes may have changed. */
+function vbumpAll_() { const v = String(Date.now()), P = PropertiesService.getScriptProperties(); ['live', 'test'].forEach(en => { P.setProperty('vrev_' + en, v); try { CacheService.getScriptCache().put('vrev_' + en, v, 21600); } catch (e) {} }); }
 /** Vendors version for one mode (cache first, so the 25-second rev check from every phone costs no Properties quota). */
 function vrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + en) || '0'; c.put('vrev_' + en, v, 21600); } return v; }
 /** Everything for this mode, or {same:true} when the phone's copy is current (no sheet read at all). */

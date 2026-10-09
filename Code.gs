@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 30;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 31;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -131,7 +131,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   try {
     switch (p.action) {
-      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test') });
+      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test') });
       case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = list_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'vpub': return out_(vPub_(p.t));
@@ -1460,7 +1460,9 @@ function vCalc_(v, entries) {
 function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedger', VLED_COLS);
   return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => vEntryOut_(r)) }; }
 function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); try { CacheService.getScriptCache().put('vrev_' + ENV_, v, 21600); } catch (e) {} return v; }
-function vrev_() { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + ENV_); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + ENV_) || '0'; c.put('vrev_' + ENV_, v, 21600); } return v; }
+function vrev_() { return vrevC_(ENV_); }
+/** Vendors version for one mode (cache first, so the 25-second rev check from every phone costs no Properties quota). */
+function vrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + en) || '0'; c.put('vrev_' + en, v, 21600); } return v; }
 /** Everything for this mode, or {same:true} when the phone's copy is current (no sheet read at all). */
 function vSync_(have) { const v = vrev_(); if (have && String(have) === v) return { same: true, vrev: v };
   const A = vAll_(); return { vrev: v, vendors: A.vendors.map(vVendorOut_), entries: A.entries }; }

@@ -2406,7 +2406,7 @@ function openGroups(){
     <datalist id="gr-cats">${allGroups().map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
     <div class="grp-head"><span>${esc(t("catField"))}</span><span>${esc(t("akaField"))}</span></div><div class="grp-list" id="gr-body"></div>
     <p class="note" id="gr-prog"></p>`;
-  openSheet(t("grpT"), body, `<button class="btn ghost" id="gr-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="gr-save"></button>`, {full:true});
+  sheetKey("groups"), openSheet(t("grpT"), body, `<button class="btn ghost" id="gr-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="gr-save"></button>`, {full:true});
   const tb=$("#gr-body");
   const upd=()=>{ const n=changed().length, b=$("#gr-save"); b.textContent=n?t("grpSaveN",n):t("grpNone"); b.disabled=!n; };
   const draw=()=>{ tb.innerHTML=rows().map(it=>{ const sug=!it.cat && !(ed[it.id]&&ed[it.id].cat!==undefined) && guessCat(it.name);
@@ -2432,12 +2432,12 @@ function openGroups(){
   drawMan();
   tb.addEventListener("input",e=>{ const id=e.target.dataset.gid; if(!id) return; (ed[id]=ed[id]||{})[e.target.dataset.k]=e.target.value; e.target.classList.remove("sugg"); upd(); });
   $("#gr-only").onchange=e=>{ onlyEmpty=e.target.checked; draw(); };
-  $("#gr-cancel").onclick=closeSheet;
+  $("#gr-cancel").onclick=sheetCancel;
   $("#gr-save").onclick=async()=>{ if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
     const recs=changed().map(it=>({id:it.id, base:it.updatedAt, cat:normCat(val(it,"cat")), aliases:aliasList(val(it,"aliases")).join(", ")}));
     if(!recs.length) return; $("#gr-save").disabled=true;
     try{ for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#gr-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
-      closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
+      if(SHEET_STK.length) sheetBack(); else closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
     catch{ const b=$("#gr-save"); if(b) b.disabled=false; } };
   draw();
 }
@@ -3252,7 +3252,7 @@ function openReports(){
   if(!can("manager")){ toast(t("notAllowed")); return; }
   RP.k="today"; RP.open=""; RP.allItems=false;   // always opens on Today
   const chips=[["today","rpToday"],["yest","rpYest"],["week","rpWeek"],["month","rpMonth"],["lastMonth","rpLastMonth"],["fy","rpFy"],["lastFy","rpLastFy"],["custom","rpCustom"]];
-  openSheet(t("repT"), `<div class="rp">
+  sheetKey("reports"), openSheet(t("repT"), `<div class="rp">
     <div class="fchips" id="rp-chips">${chips.map(([k,l])=>`<button type="button" class="fchip" data-rp="${k}" aria-pressed="${RP.k===k}">${esc(t(l))}</button>`).join("")}</div>
     <div class="rp-custom" id="rp-custom" ${RP.k==="custom"?"":"hidden"}><label>${esc(t("rpFrom"))} <input type="date" id="rp-from"></label><label>${esc(t("rpTo"))} <input type="date" id="rp-to"></label><button type="button" class="btn primary sm" id="rp-go">${esc(t("rpShow"))}</button></div>
     <div id="rp-body">${ldBlock()}</div></div>`, "", {full:true});
@@ -3393,7 +3393,7 @@ function openPerson(u){
     ${u?`<div><button type="button" class="btn danger" id="pp-remove">${esc(t("pplRemove"))}</button></div>`:""}</div>`,
     `<button class="btn ghost" id="pp-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="pp-save">${esc(t("save"))}</button>`);
   $("#pp-roles").onclick=e=>{ const b=e.target.closest("[data-role]"); if(!b) return; role=b.dataset.role; $("#pp-roles").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
-  $("#pp-cancel").onclick=()=>openSettings();
+  $("#pp-cancel").onclick=sheetBack;
   $("#pp-save").onclick=async()=>{ const name=$("#pp-name").value.trim(), pin=$("#pp-pin").value.trim(), err=$("#pp-err");
     if(!name){ err.textContent=t("needYourName"); return; } if((!u||pin) && !/^\d{4,8}$/.test(pin)){ err.textContent=t("pplPin"); return; }
     const b=$("#pp-save"); btnBusy(b,true);
@@ -3883,22 +3883,54 @@ $("#bill-clear-yes").onclick=()=>{ S.cash=""; S.custAuto=""; S.custQ=""; showCus
 
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;
-function openSheet(title,body,foot,{full=false,onClose=null}={}){
+/* ---- Sheet back-stack ----
+ * Opening a screen while another is showing puts the current one on SHEET_STK: its live DOM (so its buttons keep working),
+ * footer, title, classes, scroll position and onClose. ← / Back / Cancel (sheetBack) put it back exactly as it was.
+ * A parent screen opens with a key (sheetKey("settings") just before openSheet): opening a key that's already on the stack
+ * (e.g. openSettings() after saving a person) goes back to that level with fresh content and the same scroll position, and
+ * a key that's already showing just redraws in place. A legacy "*-back" button click counts as going back, so the parent it
+ * re-opens replaces the current level instead of stacking. ✕ (closeSheet) clears everything. */
+let SHEET_STK=[], sheetCurKey="", sheetKeyNext="", sheetGoingBack=0, sheetNo=0;
+const sheetKey=k=>{ sheetKeyNext=String(k); };
+function sheetSnap(){ const b=$("#sheet-body"), f=$("#sheet-foot"), sh=$("#sheet"), x={key:sheetCurKey, title:$("#sheet-title").textContent, scroll:b.scrollTop, cls:sh.className, footHidden:f.hidden, onClose:sheetOnClose, body:document.createDocumentFragment(), foot:document.createDocumentFragment()};
+  while(b.firstChild) x.body.appendChild(b.firstChild); while(f.firstChild) x.foot.appendChild(f.firstChild); return x; }
+/** Hold a scroll position while the screen's content finishes loading (cards that fill in a moment later). Stops on a touch. */
+function sheetKeepScroll(y){ const b=$("#sheet-body"), t0=Date.now(); let stop=false; const halt=()=>{ stop=true; };
+  b.addEventListener("touchstart",halt,{once:true,passive:true}); b.addEventListener("wheel",halt,{once:true,passive:true});
+  const step=()=>{ if(stop || Date.now()-t0>1500) return; if(Math.abs(b.scrollTop-y)>2 && b.scrollHeight-b.clientHeight>0) b.scrollTop=y; requestAnimationFrame(step); }; step(); }
+/** One level back (exactly as it was), or close when nothing is under this screen. */
+function sheetBack(){ const prev=SHEET_STK.pop(); if(!prev){ closeSheet(); return; }
+  const b=$("#sheet-body"), f=$("#sheet-foot"), sh=$("#sheet");
+  b.replaceChildren(prev.body); f.replaceChildren(prev.foot); f.hidden=prev.footHidden; $("#sheet-title").textContent=prev.title;
+  sh.className=prev.cls; sheetCurKey=prev.key; sheetOnClose=prev.onClose; b.scrollTop=prev.scroll; sheetKeepScroll(prev.scroll); sheetNavSync(); }
+/** Cancel on a screen: back one level if there is one, else close. */
+const sheetCancel=()=>sheetBack();
+function openSheet(title,body,foot,{full=false,onClose=null,key=""}={}){
+  const sh0=$("#sheet"), open=!sh0.hidden && sh0.classList.contains("on"); key=key||sheetKeyNext||("s"+(++sheetNo)); sheetKeyNext=""; let keep=0;
+  if(!open) SHEET_STK=[];
+  else if(key===sheetCurKey) keep=$("#sheet-body").scrollTop;                       // the same screen redrawn: stay where you were
+  else { const i=SHEET_STK.findIndex(x=>x.key===key);
+    if(i>=0){ keep=SHEET_STK[i].scroll; SHEET_STK=SHEET_STK.slice(0,i); }           // back to a screen further down, fresh
+    else if(!(sheetGoingBack && Date.now()-sheetGoingBack<2000)) SHEET_STK.push(sheetSnap()); }   // a new screen on top
+  sheetGoingBack=0; sheetCurKey=key;
   $("#sheet").classList.remove("hero-mode");
   $("#sheet-title").textContent=title; $("#sheet-body").innerHTML=body;
   const f=$("#sheet-foot"); f.innerHTML=foot||""; f.hidden=!foot;
   const sh=$("#sheet"), sc=$("#scrim"); sh.classList.toggle("full",full); sh.hidden=false; sc.hidden=false;
   requestAnimationFrame(()=>{ sh.classList.add("on"); sc.classList.add("on"); });
-  $("#sheet-body").scrollTop=0; sheetOnClose=onClose;
+  $("#sheet-body").scrollTop=0; sheetOnClose=onClose; if(keep) sheetKeepScroll(keep);
+  sheetNavSync();
 }
-function closeSheet(){ if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
+function closeSheet(){ SHEET_STK=[]; sheetCurKey=""; if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
 /* Sheet navigation. A sheet showing an inner screen (a bill opened from All bills, a customer from Credit, a vendor's bill …)
    has a "*-back" button in its body. The header ← (left, next to the title), a tap outside and the phone's Back go up ONE
    level through it. ✕ (right) always closes the whole sheet in one tap, from any depth. On inner screens ✕ shows a small
    "all" tag so it reads as "close all". The body's own "← Back" pill is hidden; the header ← replaces it. */
 function sheetSubBack(){ return [...document.querySelectorAll('#sheet-body button[id$="-back"]')].find(b=>b.offsetParent!==null && !b.disabled); }
-function sheetStep(){ const b=sheetSubBack(); if(b) b.click(); else closeSheet(); }
-function sheetNavSync(){ const sub=!!sheetSubBack(), sh=$("#sheet"); sh.classList.toggle("has-sub",sub); $("#sheet-back").hidden=!sub;
+function sheetStep(){ const b=sheetSubBack(); if(b) b.click(); else sheetBack(); }
+/* a screen's own "← …" back button (clicked by the user, the header ← or the phone's Back) means "going back" */
+$("#sheet-body").addEventListener("click",e=>{ if(e.target.closest('button[id$="-back"]')) sheetGoingBack=Date.now(); },true);
+function sheetNavSync(){ const sub=!!sheetSubBack() || SHEET_STK.length>0, sh=$("#sheet"); sh.classList.toggle("has-sub",sub); $("#sheet-back").hidden=!sub;
   $("#sheet-close").setAttribute("aria-label", sub?t("closeAll"):t("close")); }
 $("#sheet-close").onclick=closeSheet; $("#sheet-back").onclick=sheetStep; $("#scrim").onclick=sheetStep;
 { let q=0; new MutationObserver(()=>{ if(q) return; q=requestAnimationFrame(()=>{ q=0; sheetNavSync(); }); }).observe($("#sheet-body"),{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","style","class"]}); }
@@ -3947,7 +3979,7 @@ async function openDetail(id){
     ${can("manager")&&!hideBuy()?`<div class="d-buys" id="d-buys" hidden></div>`:""}
     <div class="qtyrow"><div class="step"><button id="dq-dec">−</button><input id="dq" class="num" inputmode="decimal" value="1"><button id="dq-inc">+</button></div><span class="note">${esc(unitL(it.unit))}</span>${inB?`<span class="note">· ${esc(t("inBill"))}: ${fmtN(inB)}</span>`:""}</div>`;
   const foot=`${can("manager")?`<button class="btn ghost" id="d-edit">${esc(t("edit"))}</button>`:""}<button class="btn primary" id="d-add">${esc(t("addToBill"))}</button>`;
-  openSheet(itemTitle(it), body, foot);
+  sheetKey("item:"+id), openSheet(itemTitle(it), body, foot);
   $("#sheet").classList.toggle("hero-mode", !!it.imgV);
   $("#dq-dec").onclick=()=>{ const v=Math.max(0.25,(toNum($("#dq").value)||1)-1); $("#dq").value=v; };
   $("#dq-inc").onclick=()=>{ $("#dq").value=(toNum($("#dq").value)||0)+1; };
@@ -4138,7 +4170,7 @@ function openEdit(id,prefill=""){
   $("#ef-catnew-ok").onclick=addNew; $("#ef-catnew-in").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addNew(); } });
   $("#ef-name").addEventListener("input",autoCat);
   if(!catTouched) autoCat(); else drawCats();
-  $("#ef-cancel").onclick=closeSheet;
+  $("#ef-cancel").onclick=sheetCancel;
   $("#ef").onsubmit=e=>{ e.preventDefault(); $("#ef-save").click(); };
   ["ef-name","ef-buy"].forEach((k,i)=>$("#"+k).addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $(i?"#ef-sell":"#ef-buy").focus(); } }));
   if(it){
@@ -4222,7 +4254,7 @@ function openBulkAdd(){
   tb.addEventListener("click",e=>{ const b=e.target.closest("[data-ur]"); if(b) onUnitBtn(b,v=>{ rows[+b.dataset.ur].unit=v; }); });
   $("#ba-row").onclick=()=>{ rows.push(blank()); draw(); $(`#ba-n-${rows.length-1}`)?.focus(); };
   $("#ba-parse").onclick=()=>{ const p=parseLines($("#ba-txt").value); if(!p.length) return; rows=[...rows.filter(r=>r.name.trim()),...p]; $("#ba-txt").value=""; $("#ba-paste").open=false; draw(); };
-  $("#ba-cancel").onclick=closeSheet;
+  $("#ba-cancel").onclick=sheetCancel;
   $("#ba-save").onclick=async()=>{
     const v=valid(); if(!v.length) return; if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
     $("#ba-save").disabled=true; $("#ba-prog").textContent=t("saving");
@@ -4268,7 +4300,7 @@ function openBulkEdit(){
     const targets = sel.size ? [...sel].map(id=>S.byId.get(id)).filter(Boolean) : visible();
     targets.forEach(it=>{ (which==="both"?["buy","sell"]:[which]).forEach(f=>{ setChange(it.id,f,roundPrice((+val(it,f)||0)*(1+p/100))); }); });
     draw(); };
-  $("#be-cancel").onclick=closeSheet;
+  $("#be-cancel").onclick=sheetCancel;
   $("#be-save").onclick=()=>{ if(!changes.size) return; if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
     const recs=[...changes].map(([id,ch])=>({id,...ch})); const n=recs.length; const snapshot=S.items.map(x=>({...x}));
     closeSheet(); toast(t("saving"));
@@ -4326,7 +4358,7 @@ function openSettings(){
     ${me?"":`<div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
       <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label></div>`}
     <div class="err" id="cf-err" role="alert"></div>`;
-  openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
+  sheetKey("settings"), openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
   const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
   drawUnits();
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
@@ -4358,7 +4390,7 @@ function openSettings(){
   $("#cf-uadd").onclick=()=>{ const code=$("#cf-ucode").value.trim(), hi=$("#cf-uhi").value.trim(); if(!code) return; if(c.units.some(u=>u.code.toLowerCase()===code.toLowerCase())){ $("#cf-ucode").value=""; return; } c.units.push({code,hi}); $("#cf-ucode").value=""; $("#cf-uhi").value=""; drawUnits(); };
   $("#cf-def").onclick=async e=>{ const btn=e.currentTarget; const saved=S.cfg.units; S.cfg.units=c.units; const v=await pickUnit(btn.dataset.unit); S.cfg.units=saved; if(v){ c.defaultUnit=v; btn.dataset.unit=v; btn.querySelector("span").textContent=v; if(!c.units.some(u=>u.code===v)){ c.units.push({code:v,hi:""}); drawUnits(); } } };
   $("#cf-round").addEventListener("click",e=>{ const b=e.target.closest("[data-r]"); if(!b) return; c.roundTo=+b.dataset.r; $("#cf-round").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
-  $("#cf-cancel").onclick=closeSheet;
+  $("#cf-cancel").onclick=sheetCancel;
   $("#cf-pin").onclick=async()=>{ const p1=$("#cf-p1").value.trim(), p2=$("#cf-p2").value.trim(), er=$("#cf-perr");
     if(!/^\d{4,8}$/.test(p1)){ er.textContent=t("pinRule"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); if(S.auth.tok){ if(!S.auth.personal) S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; } else S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
@@ -4411,7 +4443,7 @@ function openBackups(){
       <div class="bk-acts"><a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(t("bkOpen"))} ↗</a><button type="button" class="btn ghost sm" data-bkr="${i}">${esc(t("bkRestore"))}</button></div>
       <div class="confirm" id="bkc-${i}" hidden><span>${esc(t("bkRestoreQ",fmtDT(x.date)))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" data-bky="${i}">${esc(t("bkRestoreYes"))}</button><button type="button" class="btn ghost" data-bkn="${i}">${esc(t("cancel"))}</button></div></div>
     </div>`).join("")||`<p class="note">${esc(t("bkNone"))}</p>`}</div></div>`;
-  openSheet(t("bkListT"), body, "", {full:true});
+  sheetKey("backups"), openSheet(t("bkListT"), body, "", {full:true});
   $("#bkl-back").onclick=()=>openSettings();
   $("#sheet-body").addEventListener("click",async e=>{
     const r=e.target.closest("[data-bkr]"), n=e.target.closest("[data-bkn]"), y=e.target.closest("[data-bky]");
@@ -4438,7 +4470,7 @@ function openCmd(prefill="",auto=false){
   openSheet(t("cmdTitle"), body, `<button class="btn ghost" id="cmd-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cmd-go">${esc(t("preview"))}</button>`, {full:true, onClose:()=>{ cmdCtl?.abort(); cmdCtl=null; dictStop(); }});
   const ta=$("#cmd-text");
   $("#cmd-ex").addEventListener("click",e=>{ const b=e.target.closest("[data-ex]"); if(b){ ta.value=b.dataset.ex; ta.focus(); } });
-  $("#cmd-cancel").onclick=closeSheet;
+  $("#cmd-cancel").onclick=sheetCancel;
   $("#cmd-mic").onclick=e=>{ if(dict.on){ dictStop(); return; } dictStart(e.currentTarget, ta.value.trim(), txt=>{ ta.value=txt; ta.scrollTop=ta.scrollHeight; }, ()=>{ $("#cmd-tip").hidden=false; ta.focus(); }); };
   $("#cmd-go").onclick=()=>runCmd();
   if(auto && prefill) runCmd(); else setTimeout(()=>ta.focus(),260);
@@ -4558,7 +4590,7 @@ function openBills(){
       </div>
     </div>
     <div class="bills-list" id="bl-list">${skelCards(5,true)}</div>`;
-  openSheet(t("pastBills"), body, "", {full:true});
+  sheetKey("bills"), openSheet(t("pastBills"), body, "", {full:true});
   let tm; $("#bl-q").addEventListener("input",e=>{ clearTimeout(tm); tm=setTimeout(()=>{ BL.q=e.target.value; loadBills(); },120); });
   const sync=()=>{ $("#bl-yc").classList.toggle("on",!!BL.year); $("#bl-dc").classList.toggle("on",!!BL.date); $("#bl-dl").textContent=BL.date?dayLabel(BL.date):t("blDate"); $("#bl-clr").hidden=!(BL.year||BL.date||BL.f);
     document.querySelectorAll("[data-blf]").forEach(b=>{ b.setAttribute("aria-pressed",String(BL.f===b.dataset.blf)); b.classList.toggle("on",BL.f===b.dataset.blf); }); };
@@ -4747,7 +4779,7 @@ function linesFromItems(b){
 async function showBill(b){
   if(!b) return;
   if(b.row && (b.text===undefined || Date.now()-(b._at||0)>30000)){   // read the sheet's latest copy (other phones may have changed it)
-    openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
+    sheetKey("bill:"+(b.id||b.n)), openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
     try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
       ["edits","fy","igst","custGstin","pos","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // always the sheet's latest: payments, cancel and edits made on other phones   // the saved values, so an edit keeps GST details and knows the edit count
       if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile; }
@@ -4773,7 +4805,7 @@ async function showBill(b){
         <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn danger" id="bd-cy">${esc(t("cancelYes"))}</button><button type="button" class="btn ghost" id="bd-cn">${esc(t("cancel"))}</button></div></div>`):""}
     <div class="confirm" id="bd-rq" hidden><span>${esc(t("repeatQ"))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="bd-ry">${esc(t("repeatBill"))}</button><button type="button" class="btn ghost" id="bd-rn">${esc(t("cancel"))}</button></div></div>
   </div>`;
-  openSheet(`${b.gst?"GST ":""}${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, body, "", {full:true});
+  sheetKey("bill:"+(b.id||b.n)), openSheet(`${b.gst?"GST ":""}${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, body, "", {full:true});
   const upd=()=>{ const m=$("#bd-mob").value; const bad=normMobile(m)===null; $("#bd-err").textContent=bad?t("mobBad"):""; $("#bd-wa").href=billWa(text,bad?"":m); };
   $("#bd-mob").addEventListener("input",upd); upd();
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
@@ -5052,7 +5084,7 @@ function vBalLabel(v){ if(v.balance>0) return {lab:t("vYouOwe"), amt:vMoney(v.ba
 function openVendors(){
   if(!can("manager")){ toast(t("vNoAccess")); return; }
   billBackFn=null;
-  openSheet(t("vTitle"), `<div id="vl-list"><div class="vl-top skel" style="height:96px"></div>${skelCards(4,true)}</div>`, "", {full:true});
+  sheetKey("vendors"), openSheet(t("vTitle"), `<div id="vl-list"><div class="vl-top skel" style="height:96px"></div>${skelCards(4,true)}</div>`, "", {full:true});
   vdbInit().then(()=>{ if(vSynced() || vqGet().length) vRenderList();
     vSync().then(()=>{ const b=$("#vl-list"); if(!b) return; if(vSynced() || vqGet().length) vRenderList(); else b.innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; }); });
 }
@@ -5074,7 +5106,7 @@ function vRenderList(){
 }
 function openVendor(id){ VD.cur=id; VD.tab=VD.tab||"ledger";
   const name=(VD.det[id]&&VD.det[id].vendor.name) || ((VD.list&&VD.list.vendors.find(v=>v.id===id))||{}).name || "";
-  openSheet(name||t("vTitle"), `<div id="vd-page"><button type="button" class="btn ghost bl-back" id="vd-back">← ${esc(t("vTitle"))}</button><div id="vd-body">${VD.det[id]?"":`<div class="vl-top skel" style="height:140px"></div>${skelCards(4,true)}`}</div></div>`, "", {full:true});
+  sheetKey("vendor:"+id), openSheet(name||t("vTitle"), `<div id="vd-page"><button type="button" class="btn ghost bl-back" id="vd-back">← ${esc(t("vTitle"))}</button><div id="vd-body">${VD.det[id]?"":`<div class="vl-top skel" style="height:140px"></div>${skelCards(4,true)}`}</div></div>`, "", {full:true});
   $("#vd-back").onclick=()=>openVendors();
   vdbInit().then(()=>{ if(VD.det[id]) vRenderVendor(id); vSync(); });
 }
@@ -5295,7 +5327,7 @@ function vEntry(vendorId,eid){ const D=VD.det[vendorId]; if(!D) return; const c=
   const used=e&&e.type!=="bill"?Object.values(e.alloc||{}).reduce((s,a)=>s+(+a||0),0):0, adv=e&&e.type!=="bill"?Math.round((e.amount-used)*100)/100:0;
   const hist=e&&e.history&&e.history.length?e.history.slice().reverse().map(h=>`<div class="vkv"><span>${esc(fmtDate(h.at))} · ${esc(h.by||"")}</span><span>${esc(t("vh_"+h.act))}${h.old&&h.old.amount!=null?` (${esc(t("vWas",vMoney(h.old.amount)))})`:""}</span></div>`).join(""):"";
   const photos=e&&e.photos?e.photos:[];
-  openSheet(name, `<div class="vent"><button type="button" class="btn ghost bl-back" id="ve-back">← ${esc(D.vendor.name)}</button>
+  sheetKey("vent:"+eid), openSheet(name, `<div class="vent"><button type="button" class="btn ghost bl-back" id="ve-back">← ${esc(D.vendor.name)}</button>
     <div class="vent-head"><b class="num ${!e||e.type==="bill"?"plus":"minus"}">${vMoney(isOpen?D.vendor.opening:e.amount)}</b><span>${esc(vDate(isOpen?D.vendor.openingDate:e.date))}${e&&e.billNo?` · ${esc(t("vBillNo"))} ${esc(e.billNo)}`:""}</span>${bill?`<span class="vr-st">${vStatusPill(bill)}${bill.due>0?` <b class="num">${esc(t("vDueAmt",vMoney(bill.due)))}</b>`:""}${bill.dueDate&&bill.due>0?` · ${esc(bill.overdue?t("vOverdueBy",vDays(bill.dueDate)):t("vDueOn",vDate(bill.dueDate)))}`:""}</span>`:""}</div>
     ${photos.length?`<div class="vent-ph">${photos.map((p,i)=>`<button type="button" class="vph-t big" data-vv="${i}">${p.m==="application/pdf"?`<span class="vph-pdf">PDF</span>`:`<span class="vph-img" data-vthumb="${esc(p.f)}"></span>`}</button>`).join("")}</div>`:""}
     ${e&&e.type==="bill"&&(e.photos||[]).length?vCheckBox(e):""}
@@ -5540,7 +5572,7 @@ function custFill(c){ if(S.editing && !S.editing.fresh){ toast(t("cuFinishEdit")
 const CU={q:"",sort:"recent",lim:150};
 async function openCustomers(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
-  openSheet(t("cuT"), `<div id="cu-page"><div class="bl-bar"><input id="cu-q" type="search" placeholder="${esc(t("cuSearch"))}" autocomplete="off" value="${esc(CU.q)}">
+  sheetKey("customers"), openSheet(t("cuT"), `<div id="cu-page"><div class="bl-bar"><input id="cu-q" type="search" placeholder="${esc(t("cuSearch"))}" autocomplete="off" value="${esc(CU.q)}">
       <div class="bl-chips" id="cu-sort">${["recent","top","due","az"].map(k=>`<button type="button" class="chip" data-cs="${k}" aria-pressed="${CU.sort===k}">${esc(t("cuSort_"+k))}</button>`).join("")}</div></div>
     <p class="note" id="cu-sum" style="margin:2px 2px 8px"></p><div id="cu-list">${skelCards(5,true)}</div></div>`, "", {full:true});
   $("#cu-q").oninput=e=>{ CU.q=e.target.value; CU.lim=150; cuRender(); };
@@ -5564,7 +5596,7 @@ function cuRender(){ const el=$("#cu-list"); if(!el) return; const L=cuAll(), du
 async function openCustomer(mob){ const c=custIndex().find(x=>x.mob===mob)||{mob,name:"",gstin:"",count:0,total:0,due:0,addr:"",note:""};
   const m=normMobile(mob), title=c.name||("+91 "+mob);
   const stat=(k,v,cls)=>`<div class="cu-stat"><span>${esc(k)}</span><b class="num${cls?" "+cls:""}">${v}</b></div>`;
-  openSheet(title, `<div class="cu-page" style="display:grid;gap:12px"><div><button type="button" class="btn ghost" id="cu-back">← ${esc(t("cuT"))}</button></div>
+  sheetKey("cust:"+mob), openSheet(title, `<div class="cu-page" style="display:grid;gap:12px"><div><button type="button" class="btn ghost" id="cu-back">← ${esc(t("cuT"))}</button></div>
     <div class="cu-card"><div class="cu-top"><div class="cu-av">${esc((c.name||"#").trim().charAt(0).toUpperCase())}</div><div style="min-width:0"><b class="cu-name">${esc(c.name||t("cuNoName"))}</b><span class="cu-mob num">+91 ${esc(mob.slice(0,5)+" "+mob.slice(5))}</span></div>
       <span class="cu-acts">${can("manager")?`<button type="button" class="iconbtn" id="cu-edit" aria-label="${esc(t("edit"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>`:""}${m?`<a class="iconbtn" href="${esc(telHref(mob))}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a><a class="iconbtn" target="_blank" rel="noopener" href="https://wa.me/${esc(m)}" aria-label="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg></a>`:""}</span></div>
       ${c.gstin||c.addr||c.note?`<div class="cu-info">${c.gstin?`<div class="vkv"><span>GSTIN</span><b class="num">${esc(c.gstin)}</b></div>`:""}${c.addr?`<div class="vkv"><span>${esc(t("cuAddr"))}</span><span class="cu-txt">${esc(c.addr)}</span></div>`:""}${c.note?`<div class="vkv"><span>🔒 ${esc(t("cuNote"))}</span><span class="cu-txt">${esc(c.note)}</span></div>`:""}</div>`:""}
@@ -5575,7 +5607,7 @@ async function openCustomer(mob){ const c=custIndex().find(x=>x.mob===mob)||{mob
   $("#cu-back").onclick=()=>openCustomers();
   $("#cu-bill").onclick=()=>{ if(custFill(c)){ closeSheet(); setTab("bill"); toast(t("cuOnBill",c.name||mob)); } };
   if($("#cu-edit")) $("#cu-edit").onclick=()=>cuEdit(c);
-  if($("#cu-credit")) $("#cu-credit").onclick=async()=>{ openSheet(t("duesT"), ldBlock(), "", {full:true}); try{ await loadDues(); }catch{} const d=(duesCache&&duesCache.customers||[]).find(x=>custKey(x.mobile)===mob); if(d) openDueCustomer(d); else openDues(); };
+  if($("#cu-credit")) $("#cu-credit").onclick=async()=>{ sheetKey("duec:"+mob), openSheet(t("duesT"), ldBlock(), "", {full:true}); try{ await loadDues(); }catch{} const d=(duesCache&&duesCache.customers||[]).find(x=>custKey(x.mobile)===mob); if(d) openDueCustomer(d); else openDues(); };
   cuBills(mob);
 }
 /** This customer's bills: from the phone's copy of Past bills (refreshed first if it's old), newest first. */
@@ -5613,7 +5645,7 @@ function cuEdit(c){
 }
 async function openDues(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
-  openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
+  sheetKey("dues"), openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
   const have=await duesLocal(); if(have){ duesCache=have; duesShow(); }   // the saved list at once; the fresh one replaces it below
   try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el && !have) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
   duesShow();
@@ -5659,15 +5691,15 @@ function openDueCustomer(c){
     </div>
     <div class="bills-list" style="margin-top:0">${c.bills.map((b,i)=>`<button type="button" class="billcard" data-db="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(b.n)} · ${esc(fmtShort(b.date))}</b><span class="amt num" style="color:var(--danger)">${rs(b.due)}</span>
       <span class="meta2">${esc(t("ofTotal",rs(b.paid),rs(b.total)))}${payPill(b)}</span></button>`).join("")}</div></div>`;
-  openSheet(c.name||c.mobile||t("duesT"), body, "", {full:true});
-  $("#dc-back").onclick=()=>{ if(duesDirty) openDues(); else { openSheet(t("duesT"), `<div id="du-body"></div>`, "", {full:true}); renderDues(); } };
+  sheetKey("duec:"+(c.mobile||c.name)), openSheet(c.name||c.mobile||t("duesT"), body, "", {full:true});
+  $("#dc-back").onclick=()=>{ if(duesDirty) openDues(); else { sheetKey("dues"), openSheet(t("duesT"), `<div id="du-body"></div>`, "", {full:true}); renderDues(); } };
   $("#dc-pay").onclick=()=>openRecordPay(c);
   $("#sheet-body").querySelectorAll("[data-db]").forEach(el=>el.onclick=()=>{ const b=c.bills[+el.dataset.db]; billBackFn=()=>backToCustomer(c); showBill({...b, customer:c.name, mobile:c.mobile}); });
 }
 /** Record money received: for one bill (c.bill) or across the customer's open bills, oldest first. */
 async function backToCustomer(c){
   if(!duesDirty){ openDueCustomer(c); return; }
-  openSheet(c.name||t("duesT"), ldBlock(), "", {full:true});
+  sheetKey("duec:"+(c.mobile||c.name)), openSheet(c.name||t("duesT"), ldBlock(), "", {full:true});
   try{ await loadDues(); }catch{}
   const again=(duesCache&&duesCache.customers||[]).find(x=>x.mobile===c.mobile && (x.mobile || x.name===c.name)); if(again) openDueCustomer(again); else openDues();
 }
@@ -5724,12 +5756,12 @@ function openToHindi(){
   tb.addEventListener("change",e=>{ const id=e.target.dataset.sel; if(id){ e.target.checked?sel.add(id):sel.delete(id); upd(); } });
   $("#th-all").onchange=e=>{ data.forEach(r=>e.target.checked?sel.add(r.it.id):sel.delete(r.it.id)); draw(); };
   $("#th-only").onchange=e=>{ onlyMissing=e.target.checked; data=rows(); sel.clear(); data.forEach(r=>sel.add(r.it.id)); draw(); };
-  $("#th-cancel").onclick=closeSheet;
+  $("#th-cancel").onclick=sheetCancel;
   $("#th-save").onclick=async()=>{ if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
     const recs=[...sel].map(id=>{ const it=S.byId.get(id); const v=(edits[id]??toHindi(it.name)).trim(); return v && v!==it.nameHi ? {id, nameHi:v} : null; }).filter(Boolean);
     if(!recs.length) return; $("#th-save").disabled=true;
     try{ for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#th-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
-      closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
+      if(SHEET_STK.length) sheetBack(); else closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
     catch{ const b=$("#th-save"); if(b) b.disabled=false; } };
   draw();
 }

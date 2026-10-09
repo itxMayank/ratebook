@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Rate Book Admin</title>
+<link rel="icon" href="favicon.png">
+<style>
+:root{--bg:#F1F2F4;--surface:#fff;--surface-2:#EEF0F3;--fg:#16171A;--muted:#6E727A;--line:#E3E5E9;--ink:#16171A;--ink-fg:#fff;--good:#1E7B4B;--warn:#A15C07;--bad:#B3261E;--r:16px;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1012;--surface:#18191C;--surface-2:#222327;--fg:#F2F2F3;--muted:#A1A4AB;--line:#2C2E33;--ink:#F2F2F3;--ink-fg:#111;--good:#5BC28A;--warn:#E3A44A;--bad:#F08A80;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:17px;margin:0 0 10px}
+.muted{color:var(--muted)}.small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+button,.btn{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:999px;padding:8px 14px;font:600 14px inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button.primary,.btn.primary{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+button.danger{color:var(--bad)}
+button[disabled]{opacity:.5;cursor:default}
+input,select,textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:12px;padding:10px 12px;font:15px inherit}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.form{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:var(--surface-2)}
+.pill.live{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.pill.paused,.pill.needs-auth,.pill.setup{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.stat{background:var(--surface-2);border-radius:12px;padding:8px 10px}.stat b{display:block;font-size:17px}.stat span{font-size:12px;color:var(--muted)}
+.err{color:var(--bad);font-size:14px;min-height:18px}
+.note{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:14px}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all}
+.ld{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--fg);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="row" style="justify-content:space-between"><div><h1>Rate Book Admin</h1><div class="muted small" id="sub">Shops, health and updates</div></div>
+    <div class="row" id="topbtns" hidden><button id="b-refresh">Refresh</button><button id="b-new" class="primary">+ Create shop</button><button id="b-out">Sign out</button></div></div>
+
+  <section class="card" id="s-setup" hidden>
+    <h2>Connect to the Directory</h2>
+    <p class="muted small">Paste the Directory web app link (Apps Script → Deploy → Manage deployments → Web app URL). It's saved on this computer only.</p>
+    <div class="row"><input id="dir-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1;min-width:260px"><button class="primary" id="dir-save">Save</button></div>
+  </section>
+
+  <section class="card" id="s-signin" hidden>
+    <h2>Sign in</h2>
+    <form id="f-signin" class="row"><input id="pin" type="password" inputmode="numeric" placeholder="Admin PIN" autocomplete="current-password" style="max-width:240px"><button class="primary" id="b-signin">Sign in</button><button type="button" id="b-chgdir">Change Directory link</button></form>
+    <div class="err" id="signin-err"></div>
+  </section>
+
+  <section id="s-app" hidden>
+    <div class="card row" style="justify-content:space-between"><div><b>Latest app script on GitHub:</b> <span id="latest" class="mono">…</span> <span class="muted small" id="checked"></span></div>
+      <div class="row"><button id="b-updall">Update all shops</button><button id="b-reg">Register my shop</button></div></div>
+    <div class="err" id="app-err"></div>
+
+    <section class="card" id="s-new" hidden>
+      <h2>Create a shop</h2>
+      <form id="f-new" class="form">
+        <label>Shop name<input name="name" required maxlength="60" placeholder="Sharma Traders"></label>
+        <label>Owner name<input name="owner" maxlength="60"></label>
+        <label>Owner phone<input name="phone" inputmode="tel" maxlength="20"></label>
+        <label>Type of business<select name="bizType"><option value="">—</option><option value="plastics">Plastics / packaging</option><option value="kirana">Kirana</option><option value="stationery">Stationery</option><option value="hardware">Hardware</option><option value="other">Other</option></select></label>
+        <label>State code (e.g. 27)<input name="state" maxlength="2" inputmode="numeric"></label>
+        <label>GSTIN (optional)<input name="gstin" maxlength="15" style="text-transform:uppercase"></label>
+        <label style="grid-column:1/-1">Address (optional)<input name="address" maxlength="200"></label>
+        <div class="row" style="grid-column:1/-1"><button class="primary" id="b-create">Create shop</button><button type="button" id="b-cancelnew">Cancel</button><span class="muted small">Makes the folder, the sheet with starting settings, and the shop's own script (about 20–40 s).</span></div>
+      </form>
+      <div class="err" id="new-err"></div>
+      <div id="new-done" class="note" hidden></div>
+    </section>
+
+    <section class="card" id="s-reg" hidden>
+      <h2>Register my shop (the original one)</h2>
+      <p class="muted small">Once, so the dashboard can show its health and update it. In its Apps Script project: <b>Project Settings → IDs → Script ID</b>, and <b>Deploy → Manage deployments → Deployment ID</b>.</p>
+      <form id="f-reg" class="form">
+        <label>Shop name<input name="name" maxlength="60"></label>
+        <label style="grid-column:1/-1">Web app link<input name="apiUrl" required placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label>Script ID<input name="scriptId" required></label>
+        <label>Deployment ID<input name="deploymentId" required></label>
+        <div class="row" style="grid-column:1/-1"><button class="primary">Register</button><button type="button" id="b-cancelreg">Cancel</button></div>
+      </form>
+      <div class="err" id="reg-err"></div><div id="reg-done" class="note" hidden></div>
+    </section>
+
+    <div class="grid" id="shops"></div>
+  </section>
+</main>
+<script>
+(() => {
+"use strict";
+const DIR_URL = "";   // the Rate Book Directory web app link; if empty, paste it once on this page
+const $ = s => document.querySelector(s), esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem("rbadm_" + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem("rbadm_" + k, JSON.stringify(v)); } catch {} } };
+const DEV = store.get("dev", "") || (() => { const d = Math.random().toString(36).slice(2, 12); store.set("dev", d); return d; })();
+const dirUrl = () => store.get("dir", "") || DIR_URL;
+const appBase = location.href.split("#")[0].split("?")[0].replace(/[^/]*$/, "");
+let shops = [], health = {}, latest = null, timer = 0;
+async function call(body) {
+  const r = await fetch(dirUrl(), { method: "POST", redirect: "follow", body: JSON.stringify({ tok: store.get("tok", ""), dev: DEV, ...body }) });
+  const j = await r.json(); if (!j.ok) { if (j.error === "bad_session") { store.set("tok", ""); show(); } throw new Error(j.error || "failed"); } return j; }
+const errText = e => { const m = String(e && e.message || e);
+  if (m.startsWith("script_api_off")) return "The Apps Script API isn't on yet. Turn it on at script.google.com/home/usersettings, and in the linked Google Cloud project (APIs & Services → Apps Script API → Enable). " + m.split("|").slice(1).join(" ");
+  if (m === "bad_pin") return "Wrong PIN."; if (m === "locked") return "Too many wrong PINs. Wait 15 minutes.";
+  if (m.startsWith("rolled_back")) return m.split("|")[1]; if (m.startsWith("github")) return "Couldn't read Code.gs from GitHub (" + m + ").";
+  return m; };
+const ago = t => { if (!t) return "—"; const s = (Date.now() - t) / 1000; return s < 90 ? "just now" : s < 3600 ? Math.round(s / 60) + " min ago" : s < 86400 ? Math.round(s / 3600) + " h ago" : Math.round(s / 86400) + " d ago"; };
+const rs = n => "₹" + Math.round(+n || 0).toLocaleString("en-IN");
+const sec = ms => ms == null ? "—" : (ms / 1000).toFixed(1) + " s";
+
+function show() {
+  const hasDir = !!dirUrl(), signed = !!store.get("tok", "");
+  $("#s-setup").hidden = hasDir; $("#s-signin").hidden = !hasDir || signed; $("#s-app").hidden = !signed; $("#topbtns").hidden = !signed;
+  if (signed) { load(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) loadHealth(); }, 60000); }
+}
+$("#dir-save").onclick = () => { const u = $("#dir-url").value.trim(); if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) { alert("That doesn't look like an Apps Script web app link (…/exec)."); return; } store.set("dir", u); show(); };
+$("#b-chgdir").onclick = () => { store.set("dir", ""); $("#dir-url").value = dirUrl(); show(); };
+$("#f-signin").onsubmit = async e => { e.preventDefault(); $("#signin-err").textContent = ""; $("#b-signin").disabled = true;
+  try { const j = await call({ action: "signIn", pin: $("#pin").value.trim() }); store.set("tok", j.tok); $("#pin").value = ""; show(); }
+  catch (er) { $("#signin-err").textContent = errText(er); } finally { $("#b-signin").disabled = false; } };
+$("#b-out").onclick = async () => { try { await call({ action: "signOut" }); } catch {} store.set("tok", ""); show(); };
+$("#b-refresh").onclick = () => load();
+$("#b-new").onclick = () => { $("#s-new").hidden = false; $("#new-done").hidden = true; $("#f-new").hidden = false; $("#s-new").scrollIntoView({ behavior: "smooth" }); };
+$("#b-cancelnew").onclick = () => { $("#s-new").hidden = true; };
+$("#b-reg").onclick = () => { $("#s-reg").hidden = false; const m = shops.find(x => x.code === "main"); const f = $("#f-reg"); if (m) { f.name.value = m.name || ""; f.apiUrl.value = m.apiUrl || ""; f.scriptId.value = m.scriptId || ""; f.deploymentId.value = m.deploymentId || ""; } $("#s-reg").scrollIntoView({ behavior: "smooth" }); };
+$("#b-cancelreg").onclick = () => { $("#s-reg").hidden = true; };
+
+async function load() {
+  $("#app-err").textContent = "";
+  try { const j = await call({ action: "list" }); shops = j.shops || []; render(); loadHealth(); }
+  catch (e) { $("#app-err").textContent = errText(e); }
+  try { latest = (await call({ action: "latest" })).latest; $("#latest").textContent = "version " + latest.sv; $("#checked").textContent = "(main branch)"; render(); } catch (e) { $("#latest").textContent = "couldn't check"; }
+}
+async function loadHealth() { try { health = (await call({ action: "recheck" })).health || {}; const j = await call({ action: "list" }); shops = j.shops || shops; render(); } catch (e) { $("#app-err").textContent = errText(e); } }
+
+function render() {
+  const order = { main: 0 }; const list = shops.slice().sort((a, b) => (a.code === "main" ? -1 : b.code === "main" ? 1 : (b.createdAt || 0) - (a.createdAt || 0)));
+  $("#shops").innerHTML = list.map(x => card(x, health[x.code])).join("") || `<div class="card muted">No shops yet. Register your own shop, then create one.</div>`;
+  document.querySelectorAll("[data-act]").forEach(b => b.onclick = () => act(b.dataset.act, b.dataset.code));
+}
+function card(x, h) {
+  const ok = h && h.ok, st = x.status || "", old = latest && x.version && Number(x.version) < Number(latest.sv);
+  const pill = !h ? `<span class="pill">checking…</span>` : ok ? `<span class="pill ${esc(st)}">${esc(st === "live" ? (h.paused ? "paused" : "live") : st)}</span>` : `<span class="pill bad">${esc(h.error === "needs_auth" || st === "needs-auth" ? "needs authorising" : (h.error || "unreachable"))}</span>`;
+  const link = x.code === "main" ? appBase : appBase + "?shop=" + encodeURIComponent(x.code);
+  const b = ok && h.bills || {};
+  return `<div class="card">
+    <div class="row" style="justify-content:space-between"><div><b style="font-size:16px">${esc(x.name || x.code)}</b> ${pill}<div class="mono muted">${esc(x.code)}</div></div>
+      <div class="small muted" style="text-align:right">script v${esc(x.version || (ok ? h.sv : "?"))}${old ? ` · <b style="color:var(--warn)">update to v${esc(latest.sv)}</b>` : ""}<br>${esc(x.owner || "")} ${esc(x.phone || "")}</div></div>
+    ${st === "needs-auth" ? `<div class="note" style="margin-top:10px"><b>One step left:</b> <a href="${esc(x.editUrl)}" target="_blank" rel="noopener">open the shop's script</a>, choose <b>setupShop</b> in the toolbar, press <b>Run</b> and allow. It turns live here by itself.</div>` : ""}
+    ${ok ? `<div class="stats"><div class="stat"><b>${b.today || 0}</b><span>bills today · ${rs(b.todayAmt)}</span></div><div class="stat"><b>${b.month || 0}</b><span>this month · ${rs(b.monthAmt)}</span></div><div class="stat"><b>${h.items || 0}</b><span>items</span></div>
+      <div class="stat"><b>${h.sessions || 0}${h.pending ? ` <small style="color:var(--warn)">+${h.pending} waiting</small>` : ""}</b><span>phones signed in</span></div><div class="stat"><b>${sec(h.p50)} / ${sec(h.p95)}</b><span>sheet time (typical / slow)</span></div><div class="stat"><b>${ago(h.lastChange)}</b><span>last change</span></div></div>
+      <div class="small muted">Backup ${ago(h.backupLast)} · ${h.newPhones24h || 0} new phone(s) in 24 h · ${h.wrongPins || 0} wrong PIN(s) this hour · approval ${h.approveNew ? "on" : "off"}${h.noCache ? " · cache OFF" : ""}${h.triggers ? " · jobs: " + esc(h.triggers.join(", ") || "none") : ""}</div>
+      ${(h.errors || []).length ? `<div class="small" style="color:var(--bad);margin-top:6px">Last error: ${esc(h.errors[h.errors.length - 1][0])} – ${esc(h.errors[h.errors.length - 1][1])} (${ago(h.errors[h.errors.length - 1][2])})</div>` : ""}` : ""}
+    ${x.notes ? `<div class="small muted" style="margin-top:6px">${esc(x.notes)}</div>` : ""}
+    <div class="row" style="margin-top:10px">
+      ${x.code !== "main" ? `<button data-act="share" data-code="${esc(x.code)}">Copy shop link</button>` : ""}
+      ${x.sheetUrl ? `<a class="btn" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">Sheet</a>` : ""}${x.folderUrl ? `<a class="btn" href="${esc(x.folderUrl)}" target="_blank" rel="noopener">Folder</a>` : ""}${x.editUrl ? `<a class="btn" href="${esc(x.editUrl)}" target="_blank" rel="noopener">Script</a>` : ""}
+      ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(x.code)}" ${old ? `class="primary"` : ""}>Update script</button>` : ""}
+      ${x.code !== "main" && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(x.code)}" class="${st === "paused" ? "" : "danger"}">${st === "paused" ? "Resume" : "Pause"}</button>` : ""}
+      <button data-act="notes" data-code="${esc(x.code)}">Notes / plan</button>
+    </div><div class="err" id="err-${esc(x.code)}"></div></div>`;
+}
+async function act(a, code) {
+  const x = shops.find(y => y.code === code), er = document.getElementById("err-" + code); if (er) er.textContent = "";
+  try {
+    if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
+      try { await navigator.clipboard.writeText(msg); alert("Copied:\n\n" + msg); } catch { prompt("Copy this:", msg); } return; }
+    if (a === "pause" || a === "resume") { if (a === "pause" && !confirm(`Pause ${x.name}? Its phones can still view and collect payments, but can't make new bills (they stay queued on the phones).`)) return;
+      await call({ action: "setStatus", code, status: a === "pause" ? "paused" : "live" }); await load(); return; }
+    if (a === "notes") { const notes = prompt("Notes", x.notes || ""); if (notes === null) return; const plan = prompt("Plan (e.g. Shop yearly)", x.plan || ""); if (plan === null) return;
+      const paid = prompt("Paid until (YYYY-MM-DD)", x.paidUntil ? new Date(x.paidUntil).toISOString().slice(0, 10) : ""); if (paid === null) return;
+      await call({ action: "setNotes", code, notes, plan, paidUntil: paid ? Date.parse(paid) || "" : "" }); await load(); return; }
+    if (a === "update") { if (!confirm(`Update ${x.name}'s script to the latest version? Its link stays the same; if it doesn't answer afterwards, the previous version is put back.`)) return;
+      if (er) er.innerHTML = `<span class="ld"></span> Updating…`; const j = await call({ action: "update", code }); if (er) er.textContent = ""; alert(`${x.name} is on script version ${j.sv}.`); await load(); return; }
+  } catch (e) { if (er) er.textContent = errText(e); else alert(errText(e)); }
+}
+$("#b-updall").onclick = async () => {
+  const list = shops.filter(x => x.scriptId && x.deploymentId).sort((a, b) => (a.code === "main" ? -1 : b.code === "main" ? 1 : 0));
+  if (!list.length || !confirm(`Update ${list.length} shop script(s) to the latest version? Your shop goes first; if any shop fails, the rest stop.`)) return;
+  for (const x of list) { const er = document.getElementById("err-" + x.code); if (er) er.innerHTML = `<span class="ld"></span> Updating…`;
+    try { await call({ action: "update", code: x.code }); if (er) er.textContent = "Updated."; } catch (e) { if (er) er.textContent = errText(e); alert(`Stopped at ${x.name}: ${errText(e)}`); break; } }
+  load(); };
+$("#f-new").onsubmit = async e => { e.preventDefault(); const f = e.target, btn = $("#b-create"); $("#new-err").textContent = ""; btn.disabled = true; btn.innerHTML = `<span class="ld"></span> Creating…`;
+  const shop = { name: f.name.value.trim(), owner: f.owner.value.trim(), phone: f.phone.value.trim(), bizType: f.bizType.value, state: f.state.value.trim(), gstin: f.gstin.value.trim().toUpperCase(), address: f.address.value.trim(), dirUrl: dirUrl() };
+  try { const j = await call({ action: "create", shop }); const link = appBase + "?shop=" + encodeURIComponent(j.shop.code);
+    f.hidden = true; const d = $("#new-done"); d.hidden = false;
+    d.innerHTML = `<b>${esc(j.shop.name)}</b> is made. Shop code <code>${esc(j.shop.code)}</code><br><br><b>1.</b> <a href="${esc(j.shop.editUrl)}" target="_blank" rel="noopener">Open the shop's script</a> → choose <b>setupShop</b> → <b>Run</b> → allow. (Google asks once for every new script.)<br>
+      <b>2.</b> Starting shop PIN: <code>${esc(j.initPin)}</code> (owner, with their name). Ask the owner to change it in Settings after the first sign-in, and add their staff in Settings → People.<br>
+      <b>3.</b> Shop link for every phone: <code>${esc(link)}</code><br><span class="muted small">New phones need the owner's approval (Settings → Signed-in phones). The shop starts in test mode for practice.</span>`;
+    f.reset(); await load(); }
+  catch (er) { $("#new-err").textContent = errText(er); } finally { btn.disabled = false; btn.textContent = "Create shop"; } };
+$("#f-reg").onsubmit = async e => { e.preventDefault(); const f = e.target; $("#reg-err").textContent = "";
+  try { const j = await call({ action: "register", name: f.name.value.trim(), apiUrl: f.apiUrl.value.trim(), scriptId: f.scriptId.value.trim(), deploymentId: f.deploymentId.value.trim() });
+    const d = $("#reg-done"); d.hidden = false;
+    d.innerHTML = `Registered. One last step so its health shows here: in your shop's Apps Script project open <b>Project Settings → Script properties → Add script property</b>: name <code>HEALTH_KEY</code>, value <code>${esc(j.healthKey)}</code>, then Save. (Your shop keeps running as before.)`;
+    await load(); } catch (er) { $("#reg-err").textContent = errText(er); } };
+$("#dir-url").value = dirUrl();
+show();
+})();
+</script>
+</body>
+</html>

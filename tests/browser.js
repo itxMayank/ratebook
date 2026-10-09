@@ -10,11 +10,11 @@ function appHtml(expose = 'S,LOCK,appLock,appUnlock,apiPost0,flushBills,sync,sho
     .replace('const DIR_URL = "";', `const DIR_URL = "${DIR}";`)
     .replace('boot();\n})();\n</script>', `boot();\nwindow.T={${expose}};\n})();\n</script>`);
 }
+const exe = process.env.CHROME || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);
 async function launch() {
-  const exe = process.env.CHROME || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);
   return pw.chromium.launch(exe ? { executablePath: exe } : {});
 }
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const done = () => process.exit(fails ? 1 : 0);
-module.exports = { pw, appHtml, launch, ok, done, MAIN_API, DIR, ROOT };
+module.exports = { pw, appHtml, launch, ok, done, MAIN_API, DIR, ROOT, exe };

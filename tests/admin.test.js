@@ -5,7 +5,7 @@ const html = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8').replace(/con
 const DIR = 'https://script.google.com/macros/s/DIRECTORY/exec';
 const state = {}; const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 34, err24: 2, scriptId: 'm', deploymentId: 'd', apiUrl: 'x', editUrl: 'e' }];
 (async () => {
-  const b = await launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 900 } })).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
+  const b = await launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] })).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await p.route(DIR, r => { const bd = JSON.parse(r.request().postData()); const send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, ...o }) });
     if (bd.action === 'signIn') return bd.pin === '12345678' ? send({ tok: 'T' }) : send({ ok: false, error: 'bad_pin' });
@@ -36,6 +36,9 @@ const state = {}; const shops = [{ code: 'main', name: 'Gupta Plastics', status:
   const dn = await p.textContent('#new-done');
   ok(/SHARMATRAD-ABCDEFGHJK/.test(dn) && /482913/.test(dn) && /setupShop/.test(dn) && /\?shop=SHARMATRAD-ABCDEFGHJK/.test(dn), 'create: code, starting PIN, the one authorise step and the shop link shown');
   ok(/needs authorising|One step left/.test(await p.textContent('#shops')), 'new shop card shows the remaining step');
+  await p.click('[data-act=share][data-code=SHARMATRAD-ABCDEFGHJK]'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => navigator.clipboard.readText()) === 'https://rb.test/?shop=SHARMATRAD-ABCDEFGHJK', 'Copy shop link copies only the link');
+  ok(!!(await p.$('[data-act=wa][data-code=SHARMATRAD-ABCDEFGHJK]')), 'the full message goes through Send on WhatsApp instead');
   ok(!(await p.$('[data-act=delete][data-code=main]')), 'no delete button on your own shop');
   p.on('dialog', d => d.accept());
   await p.click('[data-act=delete][data-code=SHARMATRAD-ABCDEFGHJK]'); await p.waitForTimeout(200);

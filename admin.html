@@ -216,7 +216,7 @@ function card(x, h) {
     <div class="small" style="margin-top:6px">${x.err24 ? `<a class="errlink" data-act="errors" data-code="${esc(x.code)}">${x.err24} error${x.err24 > 1 ? "s" : ""} in 24 h</a>` : `<span class="muted">No errors in 24 h · </span><a class="muted" style="cursor:pointer;text-decoration:underline" data-act="errors" data-code="${esc(x.code)}">error log</a>`}</div>
     ${x.notes ? `<div class="small muted" style="margin-top:6px">${esc(x.notes)}</div>` : ""}
     <div class="row" style="margin-top:10px">
-      ${x.code !== "main" ? `<button data-act="share" data-code="${esc(x.code)}">Copy shop link</button>` : ""}
+      ${x.code !== "main" ? `<button data-act="share" data-code="${esc(x.code)}">Copy shop link</button><button data-act="wa" data-code="${esc(x.code)}">Send on WhatsApp</button>` : ""}
       ${x.sheetUrl ? `<a class="btn" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">Sheet</a>` : ""}${x.folderUrl ? `<a class="btn" href="${esc(x.folderUrl)}" target="_blank" rel="noopener">Folder</a>` : ""}${x.editUrl ? `<a class="btn" href="${esc(x.editUrl)}" target="_blank" rel="noopener">Script</a>` : ""}
       ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(x.code)}" ${old ? `class="primary"` : ""}>Update script</button>` : ""}
       ${x.code !== "main" && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(x.code)}" class="${st === "paused" ? "" : "danger"}">${st === "paused" ? "Resume" : "Pause"}</button>` : ""}
@@ -229,8 +229,10 @@ async function act(a, code) {
   try {
     if (a === "errors") { openErrors(code); return; }
     if (a === "delete") { openDelete(x); return; }
-    if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
-      try { await navigator.clipboard.writeText(msg); alert("Copied:\n\n" + msg); } catch { prompt("Copy this:", msg); } return; }
+    if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code);   // just the link
+      try { await navigator.clipboard.writeText(link); if (er) { er.style.color = "var(--good)"; er.textContent = "Link copied: " + link; setTimeout(() => { er.textContent = ""; er.style.color = ""; }, 4000); } } catch { prompt("Copy this link:", link); } return; }
+    if (a === "wa") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
+      const ph = String(x.phone || "").replace(/\D/g, "").slice(-10); window.open("https://wa.me/" + (ph.length === 10 ? "91" + ph : "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener"); return; }
     if (a === "pause" || a === "resume") { if (a === "pause" && !confirm(`Pause ${x.name}? Its phones can still view and collect payments, but can't make new bills (they stay queued on the phones).`)) return;
       await call({ action: "setStatus", code, status: a === "pause" ? "paused" : "live" }); await load(); return; }
     if (a === "notes") { const notes = prompt("Notes", x.notes || ""); if (notes === null) return; const plan = prompt("Plan (e.g. Shop yearly)", x.plan || ""); if (plan === null) return;

@@ -19,7 +19,7 @@ const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => 
 let retireReply = null, driveDeleted = [];
 const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 // --- Apps Script API + GitHub + shop endpoints ---
-const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [], hx = {};
+const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
   if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
@@ -38,7 +38,7 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
   if (url.startsWith('https://www.googleapis.com/drive/v3/files/') && m === 'delete') { const id = decodeURIComponent(url.split('/files/')[1].split('?')[0]); if (!files[id]) return respond(404, '');
     const rm = i => { driveDeleted.push(i); delete files[i]; Object.values(files).filter(f => f.parent === i).forEach(f => rm(f.id)); }; rm(id); return respond(204, ''); }
   if (/action=retire/.test(url)) return respond(200, retireReply || { ok: true, triggers: 2, sheetId: '' });
-  if (/action=ping/.test(url)) return respond(200, shopAlive ? { ok: true } : '<html>error</html>');
+  if (/action=ping/.test(url)) { pings++; const v = pingSvs.length ? pingSvs.shift() : null; return respond(200, shopAlive ? (v ? { ok: true, sv: v } : { ok: true }) : '<html>error</html>'); }
   if (/action=list/.test(url)) return respond(200, { ok: true, config: { units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'पीस' }], defaultUnit: 'kg', defaultHsn: '3923' } });
   if (/action=health/.test(url)) return respond(200, authed ? Object.assign({ ok: true, sv: 35 }, /MAIN/.test(url) ? hx : {}) : '<html>Authorisation needed</html>');
   return respond(404, ''); }
@@ -88,8 +88,13 @@ post({ tok, action: 'setStatus', code: cr.shop.code, status: 'live' });
 projects.mainscr = { files: [{ name: 'appsscript', type: 'JSON', source: '{"timeZone":"Asia/Kolkata","webapp":{"executeAs":"USER_DEPLOYING","access":"ANYONE_ANONYMOUS"}}' }, { name: 'Main', type: 'SERVER_JS', source: 'const SCRIPT_VERSION = 34;' }, { name: 'Notes', type: 'SERVER_JS', source: '// mine' }], versions: 7, deps: { maindep: 7 } };
 const up = post({ tok, action: 'update', code: 'main' });
 ok(up.ok && projects.mainscr.files.length === 3 && projects.mainscr.files.find(f => f.name === 'Main').source === CODE && projects.mainscr.files.find(f => f.name === 'Notes').source === '// mine' && projects.mainscr.deps.maindep === 8, 'update main: code replaced in its own file, other files kept, same deployment moved to the new version');
-shopAlive = false; const bad = post({ tok, action: 'update', code: 'main' });
-ok(!bad.ok && /rolled_back/.test(bad.error) && projects.mainscr.deps.maindep === 8, 'shop not answering after an update: previous version put back automatically');
+const SV = Number(CODE.match(/const SCRIPT_VERSION = (\d+)/)[1]);
+post({ tok, action: 'recheck' });   // the shop still answers health with its old remembered reply (sv 35)
+ok(post({ tok, action: 'list' }).shops.find(x => x.code === 'main').version === SV, 'just after an update, an old remembered health reply does not pull the version back');
+pings = 0; pingSvs = [SV - 1, SV - 1, SV]; const upW = post({ tok, action: 'update', code: 'main' });
+ok(upW.ok && pings === 3, 'update waits until the shop answers on the new version (' + pings + ' checks)');
+const depNow = projects.mainscr.deps.maindep; shopAlive = false; const bad = post({ tok, action: 'update', code: 'main' });
+ok(!bad.ok && /rolled_back/.test(bad.error) && projects.mainscr.deps.maindep === depNow, 'shop not answering after an update: previous version put back automatically');
 shopAlive = true;
 const up2 = post({ tok, action: 'update', code: cr.shop.code }); const sg = projects[cr.shop.scriptId].files.find(f => f.name === 'Shop').source;
 ok(up2.ok && JSON.parse(sg.match(/SHOP_BOOT = (\{[\s\S]*?\});/)[1]).sheetId === sid, 'update a made shop: its Shop.gs (sheet, folders, keys) is kept');

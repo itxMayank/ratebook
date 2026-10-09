@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, index.html, vendor.html.
  */
-const DIR_VERSION = 3;
+const DIR_VERSION = 4;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -160,6 +160,10 @@ function healthAll_(onlyCode) {
     out[x.code] = h; try { errLog_(x.code, h); } catch (e) {}
     if (h && h.ok) { delete h.errors; delete h.cerrors; }   // the dashboard reads them from the Errors tab
     /* A new shop becomes live as soon as its script answers (after setupShop was run). */
+    /* Just after an update, a shop on an older script can still answer health with its old remembered reply (kept 50 s), so a
+       lower version within 5 minutes of an update doesn't overwrite the new one. */
+    const justUpdated = Number(x.lastUpdate) > Date.now() - 300000, older = h && h.sv && Number(h.sv) < Number(x.version);
+    if (h && h.ok && older && justUpdated) h.sv = Number(x.version);
     if (h && h.ok && x.status === 'needs-auth') { x.status = 'live'; x.version = h.sv; shopSave_(x); }
     else if (h && h.ok && h.sv && Number(x.version) !== Number(h.sv)) { x.version = h.sv; shopSave_(x); } });
   return out; }
@@ -302,8 +306,11 @@ function updateShop_(code, ref) {
   const cfg = v => ({ deploymentConfig: { versionNumber: v, manifestFileName: 'appsscript', description: 'Rate Book ' + sv } });
   api_('put', '/' + x.scriptId + '/deployments/' + x.deploymentId, cfg(ver.versionNumber));
   /* Check the shop still answers on its link; if not, put the previous version back (the shop keeps running). */
-  Utilities.sleep(1500);
-  let alive = false; try { const r = UrlFetchApp.fetch(x.apiUrl + '?action=ping&_=' + Date.now(), { muteHttpExceptions: true }); alive = /"ok":true/.test(r.getContentText()); } catch (e) {}
+  /* Check the shop answers on its link, and (scripts from v38 on) that it runs the new version; a new version can take a moment to start. */
+  let alive = false, runs = null;
+  for (let i = 0; i < 4 && !(alive && (runs === null || runs >= sv)); i++) { Utilities.sleep(i ? 2000 : 1500);
+    try { const r = UrlFetchApp.fetch(x.apiUrl + '?action=ping&_=' + Date.now(), { muteHttpExceptions: true }), t = r.getContentText(); alive = /"ok":true/.test(t);
+      const m = t.match(/"sv":(\d+)/); runs = m ? Number(m[1]) : null; } catch (e) {} }
   if (!alive && prevVer) { api_('put', '/' + x.scriptId + '/deployments/' + x.deploymentId, cfg(prevVer)); throw new Error('rolled_back|The shop did not answer after the update, so its previous version was put back. If the script needs new permissions, open it and run setupShop (or any function) once, then update again.'); }
   x.version = sv; x.lastUpdate = Date.now(); shopSave_(x);
   return { shop: pub_(x), sv: sv, versionNumber: ver.versionNumber }; }

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 37;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 38;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -201,7 +201,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'health': return out_(health_(p.key));
-      case 'ping': return out_({ ok: true, shop: shopCode_() });
+      case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test') });
       case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
@@ -691,7 +691,7 @@ function health_(key) {
   const P = PropertiesService.getScriptProperties(), b = boot_();
   const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
   if (!want || String(key || '') !== String(want)) return { ok: false, error: 'bad_key' };
-  const c = CacheService.getScriptCache(), hit = c.get('HEALTH'); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION, hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
   const ss = ss_(); out.sheetId = ss.getId(); let cells = 0; ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
@@ -717,7 +717,7 @@ function health_(key) {
   try { out.triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction()); } catch (e) { out.triggers = null; }
   out.paused = shopPaused_(); out.approveNew = approveOn_(); out.noCache = rcOff_();
   out.backupLast = Number(P.getProperty('BK_LAST') || 0) || null;
-  try { c.put('HEALTH', JSON.stringify(out), 50); } catch (e) {}
+  try { c.put(HK, JSON.stringify(out), 50); } catch (e) {}
   return out; }
 /**
  * Run ONCE in the Apps Script editor for a shop made by the admin Directory (Run → setupShop → allow). Safe to run again.
@@ -738,7 +738,7 @@ function setupShop() {
   DriveApp.getFolderById(b.folderId || b.bkFolder);   // Drive permission now
   const bk = backupNow_('first');
   bump_(); bumpB_(true); vbumpAll_();
-  ['TRIG_OK', 'SHEET_ID', 'HEALTH', 'SHOP_STATUS'].forEach(k => { try { CacheService.getScriptCache().remove(k); } catch (e) {} });
+  ['TRIG_OK', 'SHEET_ID', 'HEALTH', 'HEALTH:' + SCRIPT_VERSION, 'SHOP_STATUS'].forEach(k => { try { CacheService.getScriptCache().remove(k); } catch (e) {} });
   Logger.log('Shop ' + b.code + ' is ready. First backup: ' + (bk && bk.name) + '. The admin dashboard will show it as live in a minute.');
 }
 

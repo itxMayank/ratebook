@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 39;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 40;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -696,13 +696,17 @@ function health_(key) {
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
   const ss = ss_(); out.sheetId = ss.getId(); let cells = 0; ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
   const it = ss.getSheetByName(ITEMS); out.items = it ? Math.max(0, it.getLastRow() - 1) : 0;
-  const st = rcRead_('hstats', () => brevC_('live'), () => {   // real bills today / this month (India time), rebuilt only when bills change
-    const bs = ss.getSheetByName('Bills'), r = { ok: true, today: 0, month: 0, todayAmt: 0, monthAmt: 0, all: 0 }; if (!bs || bs.getLastRow() < 2) return r;
-    const n = bs.getLastRow() - 1, d = bs.getRange(2, 2, n, 4).getValues(), tz = 'Asia/Kolkata', t = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
-    r.all = n; d.forEach(x => { const dt = x[0] instanceof Date ? x[0] : new Date(x[0]); if (isNaN(dt)) return; const k = Utilities.formatDate(dt, tz, 'yyyy-MM-dd');
-      if (k === t) { r.today++; r.todayAmt += num_(x[3]); } if (k.slice(0, 7) === t.slice(0, 7)) { r.month++; r.monthAmt += num_(x[3]); } });
+  /* Bills today / this month (India time) for real bills and, separately, test bills (new shops start in test mode). Cancelled bills
+     don't count. Rebuilt only when that mode's bills change or the day changes. */
+  const tz = 'Asia/Kolkata', today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd'), B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const stats = (tabName, env) => rcRead_('hstats:' + env, () => brevC_(env) + ':' + today, () => {
+    const bs = ss.getSheetByName(tabName), r = { ok: true, today: 0, month: 0, todayAmt: 0, monthAmt: 0, all: 0 }; if (!bs || bs.getLastRow() < 2) return r;
+    const n = bs.getLastRow() - 1, d = bs.getRange(2, 2, n, 4).getValues(), stc = bs.getLastColumn() > B.status ? bs.getRange(2, B.status + 1, n, 1).getValues() : null;
+    d.forEach((x, i) => { if (stc && stc[i][0] === 'Cancelled') return; r.all++; const dt = x[0] instanceof Date ? x[0] : new Date(x[0]); if (isNaN(dt)) return; const k = Utilities.formatDate(dt, tz, 'yyyy-MM-dd');
+      if (k === today) { r.today++; r.todayAmt += num_(x[3]); } if (k.slice(0, 7) === today.slice(0, 7)) { r.month++; r.monthAmt += num_(x[3]); } });
     return r; });
-  out.bills = st;
+  out.bills = stats('Bills', 'live'); out.tbills = stats('Test Bills', 'test');
+  try { out.mode = readConfig_().mode === 'live' ? 'live' : 'test'; } catch (e) {}
   const all = sessAll_(); let ses = 0, pend = 0, fresh = 0; Object.keys(all).forEach(k => { if (all[k].p) pend++; else ses++; if ((all[k].c || 0) > now - 864e5) fresh++; });
   out.sessions = ses; out.pending = pend; out.newPhones24h = fresh;
   out.users = users_().filter(u => u.active !== false).length;

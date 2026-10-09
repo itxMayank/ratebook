@@ -16,7 +16,7 @@ const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => 
   getFileById: id => ({ moveTo: f => { (files[id] = files[id] || { id }).parent = f.getId(); } }) };
 const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 // --- Apps Script API + GitHub + shop endpoints ---
-const projects = {}; let apiOn = true, shopAlive = true, log = [];
+const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
   if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
@@ -33,7 +33,7 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
     if (p[1] === 'deployments' && m === 'put') { pr.deps[p[2]] = body.deploymentConfig.versionNumber; return respond(200, {}); } }
   if (/action=ping/.test(url)) return respond(200, shopAlive ? { ok: true } : '<html>error</html>');
   if (/action=list/.test(url)) return respond(200, { ok: true, config: { units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'पीस' }], defaultUnit: 'kg', defaultHsn: '3923' } });
-  if (/action=health/.test(url)) return respond(200, { ok: true, sv: 35 });
+  if (/action=health/.test(url)) return respond(200, authed ? { ok: true, sv: 35 } : '<html>Authorisation needed</html>');
   return respond(404, ''); }
 const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp, SpreadsheetApp, UrlFetchApp: { fetch, fetchAll: rs => rs.map(r => fetch(r.url, r)) },
   ScriptApp: { getOAuthToken: () => 'tok', getScriptId: () => 'dirscript', getService: () => ({ getUrl: () => 'https://dir/exec' }) } });
@@ -58,8 +58,12 @@ ok(boot.code === cr.shop.code && boot.sheetId === sid && boot.vdFolder && boot.b
 ok(pr.files.find(f => f.name === 'Code').source === CODE && /ANYONE_ANONYMOUS/.test(pr.files.find(f => f.name === 'appsscript').source), 'script: latest Code.gs from GitHub + web-app settings');
 ok(Object.values(files).filter(f => f.folder && f.parent === Object.values(files).find(x => x.name === cr.shop.name + ' (' + cr.shop.code + ')').id).length === 3, 'folder with vendor bills / test / backups');
 // lookup by code
-ok(get({ action: 'shop', code: cr.shop.code }).error === 'bad_code', 'not usable by phones until authorised (setupShop run)');
-post({ tok, action: 'recheck' });   // health answers → live
+ok(Array.from({ length: 12 }, () => get({ action: 'shop', code: cr.shop.code, dev: 'p0' }).error).every(e => e === 'not_ready'), 'before setupShop: phones are told "not ready yet" (not "wrong code")');
+ok(get({ action: 'shop', code: 'NOPE-1', dev: 'p0' }).error === 'bad_code', '"not ready" answers never count towards the wrong-code lockout');
+authed = true;   // setupShop run; nobody refreshed the dashboard
+const lk0 = get({ action: 'shop', code: cr.shop.code, dev: 'p3' });
+ok(lk0.ok && lk0.status === 'live' && R('shopGet_(' + JSON.stringify(cr.shop.code) + ').status') === 'live', 'once its script answers, the shop link works at once and the shop turns live by itself');
+post({ tok, action: 'recheck' });
 const lk = get({ action: 'shop', code: cr.shop.code.toLowerCase(), dev: 'p1' });
 ok(lk.ok && lk.api === cr.shop.apiUrl && lk.name === 'Sharma Traders' && Object.keys(lk).sort().join() === 'code,ms,name,ok,status' .split(',').concat('api').sort().join(), 'after authorising: code → link (only link, name, status)');
 ok(get({ action: 'shop', code: 'main' }).error === 'bad_code', 'the original shop is never handed out by code');

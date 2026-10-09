@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 36;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 37;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -202,6 +202,7 @@ function doGet(e) {
     switch (p.action) {
       case 'health': return out_(health_(p.key));
       case 'ping': return out_({ ok: true, shop: shopCode_() });
+      case 'retire': return out_(retire_(p.key, p.code));
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test') });
       case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
@@ -676,6 +677,16 @@ function bootReply_(who, body) {
   L.bl = brevC_('live'); L.bt = brevC_('test'); L.vl = vrevC_('live'); L.vt = vrevC_('test');
   return L; }
 /** For the admin dashboard: needs the shop's health key. Counts and timings only, no customer data. Kept 50 s. */
+/** The admin Directory deleting this shop: remove this script's timed jobs first (backups, hand-edit check) so nothing runs
+ *  against files that are about to go. Only for Directory-made shops (never the original shop), with this shop's own key and code. */
+function retire_(key, code) {
+  const b = boot_(); if (!b) return { ok: false, error: 'not_a_shop' };
+  const P = PropertiesService.getScriptProperties(), want = P.getProperty('HEALTH_KEY') || b.healthKey || '';
+  if (!want || String(key || '') !== String(want) || String(code || '') !== String(b.code)) return { ok: false, error: 'bad_key' };
+  let n = 0; try { ScriptApp.getProjectTriggers().forEach(t => { ScriptApp.deleteTrigger(t); n++; }); } catch (e) { return { ok: false, error: 'triggers|' + (e && e.message) }; }
+  P.setProperty('RETIRED', String(Date.now())); CacheService.getScriptCache().remove('TRIG_OK');
+  return { ok: true, triggers: n, sheetId: P.getProperty('SHEET_ID') || b.sheetId || '' }; }
+
 function health_(key) {
   const P = PropertiesService.getScriptProperties(), b = boot_();
   const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
@@ -789,6 +800,7 @@ function codeOk_(k) { const c = viewCode_(); return !c || String(k || '').toUppe
 function ensureTriggers_() {
   const cache = CacheService.getScriptCache();
   if (cache.get('TRIG_OK') === '1') return;
+  if (PropertiesService.getScriptProperties().getProperty('RETIRED')) return;   // shop being deleted: never put its jobs back
   try {
     if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(boot_() ? 15 : 5).create();
     cache.put('TRIG_OK', '1', 21600);

@@ -97,6 +97,16 @@ a.errlink{color:var(--bad);font-weight:700;cursor:pointer;text-decoration:underl
       <div class="err" id="reg-err"></div><div id="reg-done" class="note" hidden></div>
     </section>
 
+    <section class="card" id="s-del" hidden style="border-color:var(--bad)">
+      <h2 style="color:var(--bad)">Delete <span id="del-name"></span></h2>
+      <p class="small">This removes everything of this shop: its timed jobs (backups, checks), its link (phones can't open it any more), its script, its sheet with all items, bills and customers, its backups and vendor-bill files. The Directory and the dashboard stay, and you can create new shops as before. Your own shop can't be deleted here.</p>
+      <form id="f-del" class="form" style="grid-template-columns:1fr">
+        <label>Type the shop code <b class="mono" id="del-code"></b> to confirm<input id="del-in" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        <label style="display:flex;gap:8px;align-items:flex-start;color:var(--fg)"><input type="checkbox" id="del-perm" checked style="width:auto;margin-top:3px"><span>Delete permanently now (frees the space straight away; <b>can't be undone</b>). Untick to move the files to the Drive Trash instead (Google empties it after 30 days).</span></label>
+        <div class="row"><button class="primary" id="b-del" style="background:var(--bad);border-color:var(--bad)" disabled>Delete shop</button><button type="button" id="b-cancel-del">Cancel</button></div>
+      </form>
+      <div class="err" id="del-err"></div><div id="del-done" class="note" hidden></div>
+    </section>
     <section class="card" id="s-errs" hidden>
       <div class="row" style="justify-content:space-between"><h2 style="margin:0">Errors</h2><button type="button" id="b-closeerrs">Close</button></div>
       <p class="muted small">Sheet = the shop's script refused or failed a request. Phone = the app hit an error on someone's phone (the name is the one signed in on that phone). Kept 30 days.</p>
@@ -121,6 +131,7 @@ async function call(body) {
   const j = await r.json(); if (!j.ok) { if (j.error === "bad_session") { store.set("tok", ""); show(); } throw new Error(j.error || "failed"); } return j; }
 const errText = e => { const m = String(e && e.message || e);
   if (m.startsWith("script_api_off")) return "The Apps Script API isn't on yet. Turn it on at script.google.com/home/usersettings, and in the linked Google Cloud project (APIs & Services → Apps Script API → Enable). " + m.split("|").slice(1).join(" ");
+  if (m === "confirm_code") return "The code typed doesn't match this shop's code."; if (m === "no_shop") return "That shop isn't in the Directory (or it's your own shop, which can't be deleted here).";
   if (m === "bad_pin") return "Wrong PIN."; if (m === "locked") return "Too many wrong PINs. Wait 15 minutes.";
   if (m.startsWith("rolled_back")) return m.split("|")[1]; if (m.startsWith("github")) return "Couldn't read Code.gs from GitHub (" + m + ").";
   return m; };
@@ -131,6 +142,19 @@ const sec = ms => ms == null ? "—" : (ms / 1000).toFixed(1) + " s";
 function theme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; store.set("theme", t || "");
   document.querySelectorAll("#theme button").forEach(b => b.classList.toggle("on", b.dataset.th === (t || ""))); }
 document.querySelectorAll("#theme button").forEach(b => b.onclick = () => theme(b.dataset.th)); theme(store.get("theme", ""));
+let delShop = null;
+function openDelete(x) { delShop = x; $("#del-name").textContent = x.name || x.code; $("#del-code").textContent = x.code; $("#del-in").value = ""; $("#del-perm").checked = true;
+  $("#b-del").disabled = true; $("#del-err").textContent = ""; $("#del-done").hidden = true; $("#f-del").hidden = false; $("#s-del").hidden = false; $("#s-del").scrollIntoView({ behavior: "smooth" }); $("#del-in").focus(); }
+$("#del-in").oninput = () => { $("#b-del").disabled = !delShop || $("#del-in").value.trim().toUpperCase() !== delShop.code.toUpperCase(); };
+$("#b-cancel-del").onclick = () => { $("#s-del").hidden = true; delShop = null; };
+$("#f-del").onsubmit = async e => { e.preventDefault(); const x = delShop, btn = $("#b-del"); if (!x || btn.disabled) return; const perm = $("#del-perm").checked;
+  if (perm && !confirm(`Permanently delete ${x.name || x.code} and all its data? This can't be undone.`)) return;
+  $("#del-err").textContent = ""; btn.disabled = true; btn.innerHTML = `<span class="ld"></span> Deleting…`;
+  try { const j = await call({ action: "deleteShop", code: x.code, confirm: $("#del-in").value.trim(), permanent: perm });
+    $("#f-del").hidden = true; const d = $("#del-done"); d.hidden = false;
+    d.innerHTML = `<b>${esc(x.name || x.code)} is deleted.</b><ul style="margin:6px 0 0;padding-left:18px">${(j.steps || []).map(t => `<li>${esc(t)}</li>`).join("")}${(j.warn || []).map(t => `<li style="color:var(--warn)">${esc(t)}</li>`).join("")}</ul>`;
+    delShop = null; await load(); }
+  catch (er) { $("#del-err").textContent = errText(er); } finally { btn.textContent = "Delete shop"; } };
 let errDays = 7;
 async function openErrors(code) {
   const sel = $("#e-shop"); sel.innerHTML = `<option value="">All shops</option>` + shops.map(x => `<option value="${esc(x.code)}">${esc(x.name || x.code)}</option>`).join(""); sel.value = code || "";
@@ -197,12 +221,14 @@ function card(x, h) {
       ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(x.code)}" ${old ? `class="primary"` : ""}>Update script</button>` : ""}
       ${x.code !== "main" && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(x.code)}" class="${st === "paused" ? "" : "danger"}">${st === "paused" ? "Resume" : "Pause"}</button>` : ""}
       <button data-act="notes" data-code="${esc(x.code)}">Notes / plan</button>
+      ${x.code !== "main" ? `<button data-act="delete" data-code="${esc(x.code)}" class="danger">Delete shop</button>` : ""}
     </div><div class="err" id="err-${esc(x.code)}"></div></div>`;
 }
 async function act(a, code) {
   const x = shops.find(y => y.code === code), er = document.getElementById("err-" + code); if (er) er.textContent = "";
   try {
     if (a === "errors") { openErrors(code); return; }
+    if (a === "delete") { openDelete(x); return; }
     if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
       try { await navigator.clipboard.writeText(msg); alert("Copied:\n\n" + msg); } catch { prompt("Copy this:", msg); } return; }
     if (a === "pause" || a === "resume") { if (a === "pause" && !confirm(`Pause ${x.name}? Its phones can still view and collect payments, but can't make new bills (they stay queued on the phones).`)) return;

@@ -37,5 +37,11 @@ for (let i = 0; i < 30; i++) ce({ action: 'clientErr', dev: 'phoneZ', e: { m: 'e
 ok(JSON.parse(g.cache.CERRS).length === 20, 'at most 20 errors per phone per hour');
 ok(ce({ action: 'clientErr', shop: 'OTHER-1', dev: 'p', e: { m: 'x' } }).error === 'wrong_shop', 'another shop\'s phone errors are refused');
 g.props.HEALTH_KEY = 'hk'; R("ss_=()=>({getId:()=>'s',getSheets:()=>[],getSheetByName:()=>null})"); const hh = R("health_('hk')"); ok(hh.ok && hh.cerrors.length === 20 && Array.isArray(hh.errors), 'health carries phone errors and sheet errors for the Directory');
+// retire (Directory deleting a shop): only made shops, only with their own key + code; jobs removed and never put back
+ok(R("retire_('hk','main')").error === 'not_a_shop', 'the original shop can never be retired');
+g2.props.HEALTH_KEY = 'k2'; g2.R("var DELS=0, TR=[{getHandlerFunction:()=>'autoBackup'},{getHandlerFunction:()=>'watchSheet'}]; ScriptApp.getProjectTriggers=()=>TR.slice(); ScriptApp.deleteTrigger=t=>{ DELS++; TR=TR.filter(x=>x!==t); }; ScriptApp.newTrigger=()=>{ throw new Error('should not add'); }");
+ok(g2.R("retire_('wrong','SHARMA-ABCDEFGH23')").error === 'bad_key' && g2.R("retire_('k2','OTHER')").error === 'bad_key' && g2.R('DELS') === 0, 'retire needs the shop\'s own key and code');
+const rt = g2.R("retire_('k2','SHARMA-ABCDEFGH23')"); g2.R('ensureTriggers_()');
+ok(rt.ok && rt.triggers === 2 && g2.R('TR.length') === 0 && !!g2.props.RETIRED, 'retire: all timed jobs removed, not put back afterwards');
 ok(g2.locks.n === 0 && g.locks.n === 0, 'all locks released');
 process.exit(fails ? 1 : 0);

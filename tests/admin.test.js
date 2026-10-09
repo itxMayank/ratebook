@@ -1,7 +1,7 @@
 /* admin.html against a stand-in Directory: connect, sign in, live shop cards, create a shop. Run: node tests/admin.test.js */
 const fs = require('fs'), path = require('path');
 const { launch, ok, done, ROOT } = require('./browser');
-const html = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8').replace(/const DIR_URL = "[^"]*";/, 'const DIR_URL = "";');
 const DIR = 'https://script.google.com/macros/s/DIRECTORY/exec';
 const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 34, scriptId: 'm', deploymentId: 'd', apiUrl: 'x', editUrl: 'e' }];
 (async () => {

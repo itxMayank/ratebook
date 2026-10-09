@@ -7,7 +7,7 @@ const MAIN_API = 'https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHc
 const DIR = 'https://dir.test/exec';
 function appHtml(expose = 'S,LOCK,appLock,appUnlock,apiPost0,flushBills,sync,shopsKnown') {
   return fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')
-    .replace('const DIR_URL = "";', `const DIR_URL = "${DIR}";`)
+    .replace(/const DIR_URL = "[^"]*";/, `const DIR_URL = "${DIR}";`)
     .replace('boot();\n})();\n</script>', `boot();\nwindow.T={${expose}};\n})();\n</script>`);
 }
 const exe = process.env.CHROME || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);

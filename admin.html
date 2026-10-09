@@ -95,7 +95,7 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13p
 <script>
 (() => {
 "use strict";
-const DIR_URL = "";   // the Rate Book Directory web app link; if empty, paste it once on this page
+const DIR_URL = "https://script.google.com/macros/s/AKfycbwFArKraCzF-asuI-8RI5NBGNUbmcmAp0lz1H1G98TqtZNWOlfp3L5hE-vY86vxC99K/exec";   // the Rate Book Directory web app link; if empty, paste it once on this page
 const $ = s => document.querySelector(s), esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = { get(k, d) { try { const v = localStorage.getItem("rbadm_" + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem("rbadm_" + k, JSON.stringify(v)); } catch {} } };
 const DEV = store.get("dev", "") || (() => { const d = Math.random().toString(36).slice(2, 12); store.set("dev", d); return d; })();

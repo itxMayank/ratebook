@@ -1673,7 +1673,7 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
  * code into that shop's backend link. Each shop's data on the phone is kept apart: localStorage keys get "<code>:" in front and the
  * IndexedDB is "ratebook_<code>". A code is only an address: each shop has its own people, PINs and sign-ins, and a phone signed in
  * to one shop ignores another shop's link or code until it signs out. Switching shops reloads the app, so nothing in memory crosses. */
-const DIR_URL = "";   // the Rate Book Directory web app link (admin/Directory.gs). Empty: only the original shop.
+const DIR_URL = "https://script.google.com/macros/s/AKfycbwFArKraCzF-asuI-8RI5NBGNUbmcmAp0lz1H1G98TqtZNWOlfp3L5hE-vY86vxC99K/exec";   // the Rate Book Directory web app link (admin/Directory.gs). Empty: only the original shop.
 const SHOP = (()=>{ let x=null; try{ x=JSON.parse(localStorage.getItem("rb_shop")||"null"); }catch{} return x && x.code && x.code!=="main" && x.api ? x : {code:"main"}; })();
 const SHOP_MAIN = SHOP.code==="main";
 const LS_GLOBAL = new Set(["rb_shop","rb_shops","rb_dev","rb_lang","rb_fz","rb_palette","rb_appear"]);   // per phone, not per shop

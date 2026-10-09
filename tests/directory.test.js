@@ -16,7 +16,7 @@ const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => 
   getFileById: id => ({ moveTo: f => { (files[id] = files[id] || { id }).parent = f.getId(); } }) };
 const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 // --- Apps Script API + GitHub + shop endpoints ---
-const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [];
+const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [], hx = {};
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
   if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
@@ -33,7 +33,7 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
     if (p[1] === 'deployments' && m === 'put') { pr.deps[p[2]] = body.deploymentConfig.versionNumber; return respond(200, {}); } }
   if (/action=ping/.test(url)) return respond(200, shopAlive ? { ok: true } : '<html>error</html>');
   if (/action=list/.test(url)) return respond(200, { ok: true, config: { units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'पीस' }], defaultUnit: 'kg', defaultHsn: '3923' } });
-  if (/action=health/.test(url)) return respond(200, authed ? { ok: true, sv: 35 } : '<html>Authorisation needed</html>');
+  if (/action=health/.test(url)) return respond(200, authed ? Object.assign({ ok: true, sv: 35 }, /MAIN/.test(url) ? hx : {}) : '<html>Authorisation needed</html>');
   return respond(404, ''); }
 const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp, SpreadsheetApp, UrlFetchApp: { fetch, fetchAll: rs => rs.map(r => fetch(r.url, r)) },
   ScriptApp: { getOAuthToken: () => 'tok', getScriptId: () => 'dirscript', getService: () => ({ getUrl: () => 'https://dir/exec' }) } });
@@ -81,6 +81,14 @@ ok(!bad.ok && /rolled_back/.test(bad.error) && projects.mainscr.deps.maindep ===
 shopAlive = true;
 const up2 = post({ tok, action: 'update', code: cr.shop.code }); const sg = projects[cr.shop.scriptId].files.find(f => f.name === 'Shop').source;
 ok(up2.ok && JSON.parse(sg.match(/SHOP_BOOT = (\{[\s\S]*?\});/)[1]).sheetId === sid, 'update a made shop: its Shop.gs (sheet, folders, keys) is kept');
+// error log: new errors copied into the Directory's Errors tab once, listed per shop, counted on the card
+const now = Date.now(); hx = { errors: [['takeBill', 'Exception: timed out', now - 5000]], cerrors: [{ t: now - 3000, m: 'x is undefined', w: 'index.html:10:5', by: 'Raju', d: 'k3x9ab', ua: 'Android', tab: 'bill', st: 'TypeError at stepQty' }] };
+const rc = post({ tok, action: 'recheck' }); post({ tok, action: 'recheck' });
+const er = post({ tok, action: 'errors', code: 'main', days: 7 }).errors, lst = post({ tok, action: 'list' }).shops;
+ok(er.length === 2 && er[0].kind === 'phone' && er[0].who === 'Raju' && /screen: bill/.test(er[0].detail) && er[1].kind === 'sheet' && er[1].where === 'takeBill', 'errors: sheet + phone errors kept in the Directory (once, newest first, with who / where)');
+ok(lst.find(x => x.code === 'main').err24 === 2 && lst.find(x => x.code === cr.shop.code).err24 === 0 && !rc.health.main.errors && !rc.health.main.cerrors, 'error count per shop on the card; raw error lists not sent with health');
+hx.cerrors.push({ t: now - 1000, m: 'second', w: 'promise' }); post({ tok, action: 'recheck' });
+ok(post({ tok, action: 'errors', code: 'main' }).errors.length === 3, 'only new errors are added on the next check');
 apiOn = false; const off = post({ tok, action: 'create', shop: { name: 'X' } }); ok(!off.ok && /^script_api_off/.test(off.error), 'Apps Script API off: a clear message (and the folder/sheet are recorded on the dashboard)');
 ok(g.locks.n === 0, 'locks released');
 process.exit(fails ? 1 : 0);

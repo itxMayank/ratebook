@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, index.html, vendor.html.
  */
-const DIR_VERSION = 1;
+const DIR_VERSION = 2;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -42,6 +42,34 @@ function shopGet_(code) { code = String(code || '').toUpperCase(); return shops_
 function shopSave_(o) { const s = shopsSheet_(), row = SHOP_COLS.map(k => o[k] === undefined || o[k] === null ? '' : (typeof o[k] === 'string' ? str_(o[k], 500) : o[k]));
   if (o._row) s.getRange(o._row, 1, 1, SHOP_COLS.length).setValues([row]); else s.appendRow(row);
   CacheService.getScriptCache().remove('shop:' + String(o.code).toUpperCase()); }
+
+/* ---------- error log: every shop's sheet-script errors and phone errors, kept here for 30 days ----------
+ * A shop keeps its errors in memory for 6 hours only; the Directory copies the new ones into its "Errors" tab whenever it checks
+ * that shop's health (the dashboard every minute while open, and pullErrors every hour once setupErrorLog has been run). */
+const ERR_COLS = ['at', 'shop', 'kind', 'where', 'message', 'who', 'phone', 'detail'];
+function errSheet_() { const ss = dss_(); let s = ss.getSheetByName('Errors');
+  if (!s) { s = ss.insertSheet('Errors'); s.getRange(1, 1, 1, ERR_COLS.length).setValues([ERR_COLS]).setFontWeight('bold'); s.setFrozenRows(1); }
+  return s; }
+function errLog_(code, h) {
+  if (!h || !h.ok) return; const P = P_(), k = 'ERRSEEN_' + code, seen = Number(P.getProperty(k) || 0); let top = seen; const rows = [];
+  (h.errors || []).forEach(e => { const t = Number(e[2]) || 0; if (t > seen) { rows.push([new Date(t), code, 'sheet', str_(e[0], 60), str_(e[1], 300), '', '', '']); top = Math.max(top, t); } });
+  (h.cerrors || []).forEach(e => { const t = Number(e.t) || 0; if (t > seen) { rows.push([new Date(t), code, 'phone', str_(e.w, 160), str_(e.m, 300), str_(e.by, 40), str_([e.d, e.ua].filter(Boolean).join(' · '), 120), str_([e.tab ? 'screen: ' + e.tab : '', e.st].filter(Boolean).join(' | '), 600)]); top = Math.max(top, t); } });
+  if (!rows.length) return; rows.sort((a, b) => a[0] - b[0]);
+  const s = errSheet_(); s.getRange(s.getLastRow() + 1, 1, rows.length, ERR_COLS.length).setValues(rows); P.setProperty(k, String(top));
+  const old = s.getLastRow() - 1 - 3000; if (old > 500) s.deleteRows(2, old); }
+function errList_(code, days) {
+  const s = errSheet_(), n = s.getLastRow() - 1; if (n < 1) return [];
+  const from = Date.now() - (Number(days) || 7) * 864e5, out = [];
+  s.getRange(2, 1, n, ERR_COLS.length).getValues().forEach(r => { const t = r[0] instanceof Date ? r[0].getTime() : Number(r[0]) || 0;
+    if (t >= from && (!code || r[1] === code)) out.push({ t, shop: r[1], kind: r[2], where: r[3], m: r[4], who: r[5], phone: r[6], detail: r[7] }); });
+  return out.sort((a, b) => b.t - a.t).slice(0, 300); }
+function errCounts_() { const c = {}, day = Date.now() - 864e5; try { errList_('', 1).forEach(e => { if (e.t >= day) c[e.shop] = (c[e.shop] || 0) + 1; }); } catch (e) {} return c; }
+/** Hourly (after setupErrorLog): copy every shop's new errors before they expire from the shop's memory. */
+function pullErrors() { const lk = LockService.getScriptLock(); if (!lk.tryLock(20000)) return; try { healthAll_(); } finally { lk.releaseLock(); } }
+/** Run once in the editor (allow): checks every shop each hour so errors are kept even when the dashboard isn't open. */
+function setupErrorLog() {
+  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'pullErrors')) ScriptApp.newTrigger('pullErrors').timeBased().everyHours(1).create();
+  errSheet_(); pullErrors(); Logger.log('Error log: on. Every shop is checked each hour; errors are in the Directory sheet, tab Errors.'); }
 
 /* ---------- public: code → link ---------- */
 function doGet(e) {
@@ -75,7 +103,7 @@ function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || St
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
-const ADMIN_ACTIONS = { signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1 };
+const ADMIN_ACTIONS = { errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1 };
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
@@ -86,7 +114,8 @@ function doPost(e) {
   try { lock.waitLock(30000);
     switch (b.action) {
       case 'signOut': adminSessEnd_(b.tok); return out_({ ok: true });
-      case 'list': return out_({ ok: true, shops: shops_().map(pub_) });
+      case 'list': { const ec = errCounts_(); return out_({ ok: true, shops: shops_().map(x => Object.assign(pub_(x), { err24: ec[x.code] || 0 })) }); }
+      case 'errors': return out_({ ok: true, errors: errList_(b.code ? String(b.code) : '', b.days) });
       case 'health': return out_({ ok: true, health: healthAll_(b.code) });
       case 'latest': return out_({ ok: true, latest: latestVersion_(b.ref) });
       case 'create': return out_(Object.assign({ ok: true }, createShop_(b.shop || {}, b.ref)));
@@ -127,7 +156,8 @@ function healthAll_(onlyCode) {
   list.forEach((x, i) => { const r = res[i]; let h = null;
     try { const code = r && r.getResponseCode(), txt = r ? r.getContentText() : ''; h = /^\s*\{/.test(txt) ? JSON.parse(txt) : { ok: false, error: code === 200 ? 'needs_auth' : 'http_' + code }; }
     catch (e) { h = { ok: false, error: 'unreachable' }; }
-    out[x.code] = h;
+    out[x.code] = h; try { errLog_(x.code, h); } catch (e) {}
+    if (h && h.ok) { delete h.errors; delete h.cerrors; }   // the dashboard reads them from the Errors tab
     /* A new shop becomes live as soon as its script answers (after setupShop was run). */
     if (h && h.ok && x.status === 'needs-auth') { x.status = 'live'; x.version = h.sv; shopSave_(x); }
     else if (h && h.ok && h.sv && Number(x.version) !== Number(h.sv)) { x.version = h.sv; shopSave_(x); } });

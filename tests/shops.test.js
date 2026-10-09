@@ -9,7 +9,7 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
 (async () => {
   const b = await launch();
   async function phone(init) {
-    const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
+    const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => { if (!state.quiet) console.log('PAGEERR', e.message); });
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://dir.test/**', r => { const u = new URL(r.request().url()), c = u.searchParams.get('code'); state.log.push('DIR ' + c);
       const send = o => r.fulfill({ body: JSON.stringify(o), contentType: 'application/json' });
@@ -22,14 +22,14 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
       const send = o => r.fulfill({ body: JSON.stringify({ shop: state.wrongShop && shop === SH ? 'X' : shop, ...o }), contentType: 'application/json' });
       if (req.method() === 'GET') { const a = u.searchParams.get('action'); state.log.push(shop + ' GET ' + a);
         if (a === 'rev') return send({ ok: true, rev: '1', bl: '0', bt: '0', vl: '0', vt: '0' });
-        return send({ ok: true, rev: '1', items: items(shop), config: { shopName: shop === 'main' ? 'Gupta Plastics' : 'Sharma Traders', mode: 'live' }, sv: 35 }); }
+        return send({ ok: true, rev: '1', items: items(shop), config: { shopName: shop === 'main' ? 'Gupta Plastics' : 'Sharma Traders', mode: 'live' }, sv: state.sv || 36 }); }
       const bd = JSON.parse(req.postData()); state.log.push(shop + ' POST ' + bd.action + ' shop=' + bd.shop + (bd.bill ? ' bill=' + bd.bill.id : ''));
       if (bd.shop && bd.shop !== shop) return send({ ok: false, error: 'wrong_shop' });
       let me = bd.tok ? state.toks[bd.tok] : (people[shop] || {})[bd.pin];
       if (!me) return send({ ok: false, error: bd.tok ? 'bad_session' : 'bad_pin' });
       if (bd.tok && state.pend[bd.tok]) return send({ ok: false, error: 'pending' });
       if (bd.action === 'takeBill') return state.blockSH && shop === SH ? r.fulfill({ status: 500, body: 'down' }) : send({ ok: true, n: bd.n });
-      if (bd.action === 'boot') return send({ ok: true, rev: '1', items: items(shop), config: { shopName: shop === 'main' ? 'Gupta Plastics' : 'Sharma Traders', mode: 'live' }, sv: 35, me: { ...me, prefs: {} } });
+      if (bd.action === 'boot') return send({ ok: true, rev: '1', items: items(shop), config: { shopName: shop === 'main' ? 'Gupta Plastics' : 'Sharma Traders', mode: 'live' }, sv: state.sv || 36, me: { ...me, prefs: {} } });
       if (bd.action === 'verify') { const res = { ok: true, me: { ...me, prefs: {} } };
         if (bd.wantTok && !bd.tok) { const t = shop + '-tok' + (++state.n); state.toks[t] = { ...me, shop }; res.tok = t; if (state.approve && me.role !== 'owner') { state.pend[t] = 1; res.pending = true; } }
         return send(res); }
@@ -50,6 +50,12 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
   ok((await keys(mine)).every(k => !k.includes(':')) && (await keys(mine)).includes('rb_auth'), '1b main shop storage keys unchanged (no prefix)');
   ok(await mine.evaluate(() => T.S.items[0].name) === 'PP Bag (main)', '1c main price list shown');
   ok(await mine.evaluate(() => indexedDB.databases().then(d => d.map(x => x.name).join(','))).then(n => n.includes('ratebook') && !n.includes('ratebook_')), '1d main shop phone database name unchanged');
+
+  // 1f. A script error on the phone is reported to its own shop's script (once); the app's expected failures are not
+  state.quiet = true; state.log = []; await mine.evaluate(() => { const f = () => { null.qty; }; setTimeout(f, 0); setTimeout(f, 0); Promise.reject({ code: 'offline' }); }); await mine.waitForTimeout(700); state.quiet = false;
+  ok(state.log.filter(l => l.startsWith('main POST clientErr')).length === 1, '1f a phone error goes to the shop\'s own script, once; "offline" is not an error');
+  state.quiet = true; state.log = []; await mine.evaluate(() => { T.S.sv = 35; setTimeout(() => { null.zz; }, 0); }); await mine.waitForTimeout(500); state.quiet = false;
+  ok(!state.log.some(l => l.includes('clientErr')), '1g an older shop script is never sent error reports (it would count them as wrong PINs)');
 
   // 1e. A link to a shop that isn't set up yet: clear message, the code asked for (not this shop's name), ready to retry
   const fresh = await phone(null);

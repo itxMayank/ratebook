@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
+<script>try{const t=JSON.parse(localStorage.getItem("rbadm_theme")||'""');if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch{}</script>
 <link rel="icon" href="favicon.png">
 <style>
-:root{--bg:#F1F2F4;--surface:#fff;--surface-2:#EEF0F3;--fg:#16171A;--muted:#6E727A;--line:#E3E5E9;--ink:#16171A;--ink-fg:#fff;--good:#1E7B4B;--warn:#A15C07;--bad:#B3261E;--r:16px;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0F1012;--surface:#18191C;--surface-2:#222327;--fg:#F2F2F3;--muted:#A1A4AB;--line:#2C2E33;--ink:#F2F2F3;--ink-fg:#111;--good:#5BC28A;--warn:#E3A44A;--bad:#F08A80;color-scheme:dark}}
+:root{--bg:#F1F2F4;--surface:#fff;--surface-2:#EEF0F3;--fg:#16171A;--muted:#6E727A;--line:#DADDE2;--ink:#16171A;--ink-fg:#fff;--good:#1E7B4B;--warn:#A15C07;--bad:#B3261E;--r:0;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1012;--surface:#18191C;--surface-2:#222327;--fg:#F2F2F3;--muted:#A1A4AB;--line:#33353A;--ink:#F2F2F3;--ink-fg:#111;--good:#5BC28A;--warn:#E3A44A;--bad:#F08A80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1012;--surface:#18191C;--surface-2:#222327;--fg:#F2F2F3;--muted:#A1A4AB;--line:#33353A;--ink:#F2F2F3;--ink-fg:#111;--good:#5BC28A;--warn:#E3A44A;--bad:#F08A80;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
@@ -17,31 +19,37 @@ h1{font-size:22px;margin:4px 0 2px}h2{font-size:17px;margin:0 0 10px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
-button,.btn{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:999px;padding:8px 14px;font:600 14px inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button,.btn{appearance:none;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:var(--r);padding:8px 14px;font-family:inherit;font-size:14px;font-weight:600;line-height:1.2;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 button.primary,.btn.primary{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
 button.danger{color:var(--bad)}
 button[disabled]{opacity:.5;cursor:default}
-input,select,textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:12px;padding:10px 12px;font:15px inherit}
+input,select,textarea{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:var(--r);padding:10px 12px;font-family:inherit;font-size:15px}
 label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .form{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;background:var(--surface-2)}
+.pill{display:inline-block;border-radius:var(--r);padding:2px 10px;font-size:12px;font-weight:700;background:var(--surface-2)}
 .pill.live{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .pill.paused,.pill.needs-auth,.pill.setup{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
 .pill.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.stat{background:var(--surface-2);border-radius:12px;padding:8px 10px}.stat b{display:block;font-size:17px}.stat span{font-size:12px;color:var(--muted)}
+.stat{background:var(--surface-2);border-radius:var(--r);padding:8px 10px}.stat b{display:block;font-size:17px}.stat span{font-size:12px;color:var(--muted)}
 .err{color:var(--bad);font-size:14px;min-height:18px}
-.note{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:14px}
+.note{background:var(--surface-2);border-radius:var(--r);padding:10px 12px;font-size:14px}
 code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all}
 .ld{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--fg);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 [hidden]{display:none!important}
+.seg{display:inline-flex;border:1px solid var(--line)}.seg button{border:0;border-right:1px solid var(--line);background:var(--surface);padding:6px 10px;font-weight:600;font-size:13px}.seg button:last-child{border-right:0}.seg button.on{background:var(--ink);color:var(--ink-fg)}
+.errs{display:grid;gap:0;border:1px solid var(--line)}.erow{padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px}.erow:last-child{border-bottom:0}
+.erow .k{display:inline-block;padding:1px 6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;background:var(--surface-2)}.erow .k.phone{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}.erow .k.sheet{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.erow details{margin-top:4px}.erow summary{cursor:pointer;color:var(--muted);font-size:13px}.erow pre{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:6px 0 0;background:var(--surface-2);padding:8px}
+a.errlink{color:var(--bad);font-weight:700;cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
 <main>
   <div class="row" style="justify-content:space-between"><div><h1>Rate Book Admin</h1><div class="muted small" id="sub">Shops, health and updates</div></div>
-    <div class="row" id="topbtns" hidden><button id="b-refresh">Refresh</button><button id="b-new" class="primary">+ Create shop</button><button id="b-out">Sign out</button></div></div>
+    <div class="row"><div class="seg" id="theme" role="group" aria-label="Theme"><button data-th="">Auto</button><button data-th="light">Light</button><button data-th="dark">Dark</button></div>
+    <div class="row" id="topbtns" hidden><button id="b-errs">Errors</button><button id="b-refresh">Refresh</button><button id="b-new" class="primary">+ Create shop</button><button id="b-out">Sign out</button></div></div></div>
 
   <section class="card" id="s-setup" hidden>
     <h2>Connect to the Directory</h2>
@@ -89,6 +97,12 @@ code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13p
       <div class="err" id="reg-err"></div><div id="reg-done" class="note" hidden></div>
     </section>
 
+    <section class="card" id="s-errs" hidden>
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Errors</h2><button type="button" id="b-closeerrs">Close</button></div>
+      <p class="muted small">Sheet = the shop's script refused or failed a request. Phone = the app hit an error on someone's phone (the name is the one signed in on that phone). Kept 30 days.</p>
+      <div class="row" style="margin-bottom:10px"><select id="e-shop" style="max-width:260px"></select><div class="seg" id="e-days"><button data-d="1">24 h</button><button data-d="7" class="on">7 days</button><button data-d="30">30 days</button></div></div>
+      <div id="e-list"></div>
+    </section>
     <div class="grid" id="shops"></div>
   </section>
 </main>
@@ -113,6 +127,24 @@ const errText = e => { const m = String(e && e.message || e);
 const ago = t => { if (!t) return "—"; const s = (Date.now() - t) / 1000; return s < 90 ? "just now" : s < 3600 ? Math.round(s / 60) + " min ago" : s < 86400 ? Math.round(s / 3600) + " h ago" : Math.round(s / 86400) + " d ago"; };
 const rs = n => "₹" + Math.round(+n || 0).toLocaleString("en-IN");
 const sec = ms => ms == null ? "—" : (ms / 1000).toFixed(1) + " s";
+
+function theme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; store.set("theme", t || "");
+  document.querySelectorAll("#theme button").forEach(b => b.classList.toggle("on", b.dataset.th === (t || ""))); }
+document.querySelectorAll("#theme button").forEach(b => b.onclick = () => theme(b.dataset.th)); theme(store.get("theme", ""));
+let errDays = 7;
+async function openErrors(code) {
+  const sel = $("#e-shop"); sel.innerHTML = `<option value="">All shops</option>` + shops.map(x => `<option value="${esc(x.code)}">${esc(x.name || x.code)}</option>`).join(""); sel.value = code || "";
+  $("#s-errs").hidden = false; $("#s-errs").scrollIntoView({ behavior: "smooth" }); loadErrors(); }
+async function loadErrors() {
+  const box = $("#e-list"), code = $("#e-shop").value; box.innerHTML = `<span class="ld"></span> Loading…`;
+  document.querySelectorAll("#e-days button").forEach(b => b.classList.toggle("on", +b.dataset.d === errDays));
+  try { const L = (await call({ action: "errors", code, days: errDays })).errors || [], nm = c => (shops.find(x => x.code === c) || {}).name || c;
+    box.innerHTML = L.length ? `<div class="errs">${L.map(e => `<div class="erow"><div class="row" style="justify-content:space-between"><span><span class="k ${esc(e.kind)}">${esc(e.kind)}</span> <b>${esc(nm(e.shop))}</b> · <span class="mono">${esc(e.where)}</span></span><span class="small muted">${esc(new Date(e.t).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }))} · ${ago(e.t)}</span></div>
+      <div style="margin-top:4px">${esc(e.m)}</div>${e.who || e.phone ? `<div class="small muted">${esc([e.who, e.phone].filter(Boolean).join(" · "))}</div>` : ""}${e.detail ? `<details><summary>Details</summary><pre>${esc(e.detail)}</pre></details>` : ""}</div>`).join("")}</div>`
+      : `<div class="note">No errors in this period. 👍</div>`; }
+  catch (er) { box.innerHTML = `<div class="err">${esc(errText(er))}</div>`; } }
+$("#b-errs").onclick = () => openErrors(""); $("#b-closeerrs").onclick = () => { $("#s-errs").hidden = true; };
+$("#e-shop").onchange = loadErrors; document.querySelectorAll("#e-days button").forEach(b => b.onclick = () => { errDays = +b.dataset.d; loadErrors(); });
 
 function show() {
   const hasDir = !!dirUrl(), signed = !!store.get("tok", "");
@@ -156,7 +188,8 @@ function card(x, h) {
     ${ok ? `<div class="stats"><div class="stat"><b>${b.today || 0}</b><span>bills today · ${rs(b.todayAmt)}</span></div><div class="stat"><b>${b.month || 0}</b><span>this month · ${rs(b.monthAmt)}</span></div><div class="stat"><b>${h.items || 0}</b><span>items</span></div>
       <div class="stat"><b>${h.sessions || 0}${h.pending ? ` <small style="color:var(--warn)">+${h.pending} waiting</small>` : ""}</b><span>phones signed in</span></div><div class="stat"><b>${sec(h.p50)} / ${sec(h.p95)}</b><span>sheet time (typical / slow)</span></div><div class="stat"><b>${ago(h.lastChange)}</b><span>last change</span></div></div>
       <div class="small muted">Backup ${ago(h.backupLast)} · ${h.newPhones24h || 0} new phone(s) in 24 h · ${h.wrongPins || 0} wrong PIN(s) this hour · approval ${h.approveNew ? "on" : "off"}${h.noCache ? " · cache OFF" : ""}${h.triggers ? " · jobs: " + esc(h.triggers.join(", ") || "none") : ""}</div>
-      ${(h.errors || []).length ? `<div class="small" style="color:var(--bad);margin-top:6px">Last error: ${esc(h.errors[h.errors.length - 1][0])} – ${esc(h.errors[h.errors.length - 1][1])} (${ago(h.errors[h.errors.length - 1][2])})</div>` : ""}` : ""}
+` : ""}
+    <div class="small" style="margin-top:6px">${x.err24 ? `<a class="errlink" data-act="errors" data-code="${esc(x.code)}">${x.err24} error${x.err24 > 1 ? "s" : ""} in 24 h</a>` : `<span class="muted">No errors in 24 h · </span><a class="muted" style="cursor:pointer;text-decoration:underline" data-act="errors" data-code="${esc(x.code)}">error log</a>`}</div>
     ${x.notes ? `<div class="small muted" style="margin-top:6px">${esc(x.notes)}</div>` : ""}
     <div class="row" style="margin-top:10px">
       ${x.code !== "main" ? `<button data-act="share" data-code="${esc(x.code)}">Copy shop link</button>` : ""}
@@ -169,6 +202,7 @@ function card(x, h) {
 async function act(a, code) {
   const x = shops.find(y => y.code === code), er = document.getElementById("err-" + code); if (er) er.textContent = "";
   try {
+    if (a === "errors") { openErrors(code); return; }
     if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
       try { await navigator.clipboard.writeText(msg); alert("Copied:\n\n" + msg); } catch { prompt("Copy this:", msg); } return; }
     if (a === "pause" || a === "resume") { if (a === "pause" && !confirm(`Pause ${x.name}? Its phones can still view and collect payments, but can't make new bills (they stay queued on the phones).`)) return;

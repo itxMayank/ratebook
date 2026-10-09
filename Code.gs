@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 32;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 33;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -412,6 +412,7 @@ function doPost(e) {
   if (who.error) return out_({ ok: false, error: who.error });
   if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
   if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
+  if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs') return out_({ ok: false, error: 'no_test' });
   if (body.action === 'vRead' || body.action === 'vCheck') {      // Gemini takes seconds: don't hold the script lock while it reads
     try { const by0 = who.name || str_(body.by, 60);
       if (body.action === 'vRead') return out_({ ok: true, ex: vRead_(body.files) });
@@ -423,7 +424,8 @@ function doPost(e) {
     const by = who.name || str_(body.by, 60);
     let res = {};
     switch (body.action) {
-      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master }, view: viewCode_() }; break;
+      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false }, view: viewCode_() }; break;
+      case 'setMyPrefs': res = setMyPrefs_(who, body.prefs || {}); break;
       case 'upsert': res = upsert_(body.items || [], by); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
@@ -470,7 +472,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -490,7 +492,7 @@ const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', list
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
-  listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
+  setMyPrefs: 'staff', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
 function salt_() { const p = PropertiesService.getScriptProperties(); let v = p.getProperty('SALT'); if (!v) { v = Utilities.getUuid(); p.setProperty('SALT', v); } return v; }
@@ -505,7 +507,7 @@ function auth_(body) {
     const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
     if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true };
     const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
-    if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id };
+    if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false };
   }
   cache.put('fails_' + dev, String(d + 1), FAIL_WINDOW_SEC);
   cache.put('gfails', String(g + 1), 3600);
@@ -514,7 +516,26 @@ function auth_(body) {
 /** Kept for older callers: 'ok' or an error code. */
 function checkPin_(pin) { const a = auth_({ pin: pin }); return a.error || 'ok'; }
 
-function listUsers_() { return { users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false })) }; }
+function listUsers_() { return { users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false, testOk: u.testOk !== false })) }; }
+
+/* ---------- per-person settings: test mode, profit, hide buy rates ----------
+   Kept with the person (USERS[].prefs), so they follow them to any phone. People who unlock with the shop PIN are kept by
+   name in MPREFS. A setting not set falls back to the shop's (Config mode / showProfit) or the phone's (hide buy). */
+function prefsClean_(p) { const o = {}; p = p || {};
+  if (p.mode === 'live' || p.mode === 'test') o.mode = p.mode;
+  if (typeof p.showProfit === 'boolean') o.showProfit = p.showProfit;
+  if (typeof p.hideBuy === 'boolean') o.hideBuy = p.hideBuy;
+  return o; }
+function mprefs_() { try { const o = JSON.parse(PropertiesService.getScriptProperties().getProperty('MPREFS') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+function mkey_(name) { return String(name || '').trim().toLowerCase().slice(0, 60) || '-'; }
+function prefsOf_(who) { if (who.master) return prefsClean_(mprefs_()[mkey_(who.name)]); const u = users_().filter(x => x.id === who.id)[0]; return prefsClean_(u && u.prefs); }
+function setMyPrefs_(who, p) {
+  const next = Object.assign(prefsOf_(who), prefsClean_(p));
+  if (next.mode === 'test' && who.testOk === false) next.mode = 'live';
+  if (ROLE_RANK[who.role] < ROLE_RANK.manager) delete next.showProfit;     // profit is for managers and the owner
+  if (who.master) { const m = mprefs_(); m[mkey_(who.name)] = next; PropertiesService.getScriptProperties().setProperty('MPREFS', JSON.stringify(m)); }
+  else { const list = users_(), u = list.filter(x => x.id === who.id)[0]; if (u) { u.prefs = next; saveUsers_(list); } }
+  return { prefs: next, testOk: who.testOk !== false }; }
 function saveUser_(u) {
   const list = users_();
   const name = str_(u.name || '', 40).trim(); if (!name) throw new Error('need_name');
@@ -529,8 +550,8 @@ function saveUser_(u) {
     if (pin === real || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
     if (x) x.h = h;
   }
-  if (x) { x.name = name; x.role = role; x.active = u.active !== false; }
-  else { list.push({ id: Utilities.getUuid().slice(0, 8), name: name, h: hashPin_(pin), role: role, active: true }); }
+  if (x) { x.name = name; x.role = role; x.active = u.active !== false; x.testOk = u.testOk !== false; if (x.testOk === false && x.prefs && x.prefs.mode === 'test') x.prefs.mode = 'live'; }
+  else { list.push({ id: Utilities.getUuid().slice(0, 8), name: name, h: hashPin_(pin), role: role, active: true, testOk: u.testOk !== false }); }
   saveUsers_(list);
   return listUsers_();
 }

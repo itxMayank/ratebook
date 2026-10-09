@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (no data missed between phones).
+Last updated: 9 October 2026 (per-person settings: test mode, profit, hide buy).
 
 ## Where everything lives
 
@@ -131,7 +131,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
 
 ## Test mode and real mode (added 3 Oct 2026)
 
-- **Shared setting** `mode` in Config: `test` (the default) or `live`. It's the first card in Settings, a switch with a confirm step. It changes every phone (they pick it up on the next sync, and `switchEnv()` starts a clean bill).
+- **Per person since 9 Oct 2026** (see "Per-person settings" below). Config `mode` (`test` default / `live`) is now only the shop's default for anyone who hasn't chosen, and for locked phones. `switchEnv()` starts a clean bill whenever the mode in use changes.
 - **Separate data per mode:**
   - Real: `Bills`, `BillHistory`, `Customers`. Test: `Test Bills`, `Test BillHistory`, `Test Customers`.
   - Bill numbers: real uses `nextBill`/`nextGstBill`, test uses `testNextBill`/`testNextGstBill`.
@@ -447,6 +447,15 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - When the bills version changes, `billsChangedBg()` refreshes the phone's customers list (if it keeps one) and, while Credit is open, the Credit list (redrawn in place, search focus kept). `lastBv` skips the first check after the app opens: those lists refresh when opened anyway.
   - **Credit opens instantly**: the last list is kept in IndexedDB (`dues:<mode>`, `duesLocal()`), shown at once, then replaced by the fresh one (`duesShow()`).
   - Vendor changes waiting on a phone are retried by every 25-second check (they used to wait for Vendors to open or a 20 s retry after a failure). The item screen's "Bought" cache (`VD.buys`) clears when vendor data changes.
+
+## Per-person settings (added 9 Oct 2026, `SCRIPT_VERSION` 33 / `NEED_SV` 33)
+
+Part 1 of the security plan (next: sign-in tokens, then a lock screen with fingerprint/PIN on every open and after 5 min in the background).
+- **Settings → "Just for you"** (top card, any signed-in person): **Test mode** (with a confirm step), **Profit on past bills** (managers and owner only) and **Hide buy rate and margin**. Saved on the sheet with the person, so they follow them to any phone. The old shop-wide test switch and shared profit switch are gone from Settings.
+- **Storage:** `USERS[].prefs = {mode, showProfit, hideBuy}`; people who unlock with the shop PIN are kept by lowercase name in script property `MPREFS`. `setMyPrefs` (POST, staff+, doesn't bump `rev`) merges and returns `{prefs, testOk}`; `verify` returns `me.prefs` and `me.testOk`.
+- **Owner control:** Settings → People → a person → **Can use test mode** (`USERS[].testOk`, default on). Turning it off moves that person to real billing. The server refuses their test-mode requests with `no_test` (except `verify`/`setMyPrefs`); the app then switches them to real billing with a message (`noTestNow`).
+- **App:** prefs live in `rb_auth` (`S.auth.prefs`, `S.auth.testOk`) so they work offline. `applyConfig` keeps the shop's values as `S.cfg.shopMode` / `S.cfg.shopProfit` and sets `S.cfg.mode` / `S.cfg.showProfit` to the person's choice, else the shop's. `S.hideBuy` = the person's choice, else this phone's `rb_hidebuy`. `applyPrefs()` re-works all three (via `switchEnv`) after unlocking, locking, a change in Settings, or new values from `verify` at app start.
+- Every request already carried `env`, and every per-mode list (bills, customers, credit, vendors, bill numbers) is already keyed by mode, so two people in different modes on the same sheet don't mix.
 
 ## Gap fixes: security, correctness, GST, roles, reports (added 4 Oct 2026)
 

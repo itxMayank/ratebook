@@ -309,6 +309,17 @@ function updateShop_(code, ref) {
   return { shop: pub_(x), sv: sv, versionNumber: ver.versionNumber }; }
 function bootOf_(src) { const m = String(src || '').match(/const SHOP_BOOT = (\{[\s\S]*?\});/); if (!m) return null; try { return JSON.parse(m[1]); } catch (e) { return null; } }
 
+/* ---------- forgot the admin PIN (Run in the editor) ----------
+ * The PIN is kept only as a salted hash, so it can't be shown again. This makes a new one and changes nothing else:
+ * shops, the Directory sheet, links and the error log stay. Every dashboard is signed out (sign in again with the new PIN),
+ * and the "too many wrong PINs" wait is cleared. Only someone who can open this script in Google can do this. */
+function newAdminPin() {
+  const P = P_(); if (!P.getProperty('DIR_SALT')) P.setProperty('DIR_SALT', Utilities.getUuid());
+  const pin = String(10000000 + Math.floor(Math.random() * 90000000)); P.setProperty('ADMIN_PIN_H', hash_(pin)); P.deleteProperty('ADMIN_SESS');
+  try { CacheService.getScriptCache().remove('afail_all'); } catch (e) {}
+  Logger.log('NEW ADMIN PIN: ' + pin + '   (write it down; every dashboard was signed out, sign in again with this PIN)');
+  return pin; }
+
 /* ---------- one-time setup (Run in the editor) ---------- */
 function setupDirectory() {
   const P = P_(); if (!P.getProperty('DIR_SALT')) P.setProperty('DIR_SALT', Utilities.getUuid());

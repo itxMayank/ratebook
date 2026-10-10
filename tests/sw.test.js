@@ -34,5 +34,10 @@ srv.listen(0, async () => {
   const p2 = await ctx.newPage(); await p2.goto(URL0); await p2.waitForTimeout(1500);
   ok(await p.evaluate(() => window.__ver) === v0 && await p.evaluate(() => !!document.querySelector('#updpill')), 'mid-bill: no reload, an "Update ready" pill is shown instead');
   ok(await p.evaluate(() => T.S.bill.length) === 1, 'the bill in progress is untouched');
+  await p.evaluate(() => { document.querySelector('#toast').textContent = 'Saved'; document.querySelector('#toast').classList.add('on'); }); await p.waitForTimeout(500);
+  const ov = await p.evaluate(() => { const a = document.querySelector('#updpill').getBoundingClientRect(), b = document.querySelector('#toast').getBoundingClientRect(); return !(a.right < b.left || b.right < a.left || a.bottom < b.top || b.bottom < a.top); });
+  ok(!ov, 'the pill and a notice (toast) never cover each other');
+  await p.click('#updpill'); await p.waitForFunction(() => window.__ver === 3, null, { timeout: 8000 }).catch(() => {});
+  ok(await p.evaluate(() => window.__ver) === 3 && await p.evaluate(() => JSON.parse(localStorage.rb_bill || '[]').length) === 1, 'tapping the pill loads the update even mid-bill, and the bill in progress is still there');
   await b.close(); srv.close(); done();
 });

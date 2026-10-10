@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 40;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 41;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -738,6 +738,7 @@ function setupShop() {
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'autoBackup' || t.getHandlerFunction() === 'watchSheet').forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('autoBackup').timeBased().everyHours(4).create();
   ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(15).create();
+  editTrigger_();
   if (b.dirUrl) { try { UrlFetchApp.fetch(b.dirUrl + '?action=ping', { muteHttpExceptions: true }); } catch (e) {} }   // asks for the "connect to an external service" permission now
   DriveApp.getFolderById(b.folderId || b.bkFolder);   // Drive permission now
   const bk = backupNow_('first');
@@ -807,8 +808,30 @@ function ensureTriggers_() {
   if (PropertiesService.getScriptProperties().getProperty('RETIRED')) return;   // shop being deleted: never put its jobs back
   try {
     if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(boot_() ? 15 : 5).create();
+    editTrigger_();
     cache.put('TRIG_OK', '1', 21600);
   } catch (err) { cache.put('TRIG_OK', '1', 3600); }   // needs the one-time setupBackups permission; try again in an hour
+}
+/* An edit trigger on the sheet itself: it fires for every hand edit (never for the script's own writes), so a hand edit is
+   noticed even when an app save lands right after it (watchSheet alone compares only Drive's latest time, which that save hides).
+   Re-made when the sheet changes (backup restore). */
+function editTrigger_() {
+  const P = PropertiesService.getScriptProperties(), id = ss_().getId();
+  const have = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'onSheetEdit');
+  if (have.length && P.getProperty('EDIT_TRIG') === id) return;
+  have.forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('onSheetEdit').forSpreadsheet(id).onEdit().create();
+  P.setProperty('EDIT_TRIG', id);
+}
+/** Hand edit: tell phones to re-read only what that tab feeds (prices + settings, bills, or vendors). */
+function onSheetEdit(e) {
+  try {
+    const n = String(e && e.range ? e.range.getSheet().getName() : '').replace(/^Test /, '');
+    if (/^(Bills|BillHistory|Customers)$/.test(n)) bumpB_(true);
+    else if (/^(Vendors|VendorLedger|VendorDocs|Purchases)$/.test(n)) vbumpAll_();
+    else { bump_(); if (n !== ITEMS && n !== CONFIG && n !== IMAGES) { bumpB_(true); vbumpAll_(); } }
+    popReset_();
+  } catch (err) {}
 }
 function watchSheet() {
   const changed = DriveApp.getFileById(ss_().getId()).getLastUpdated().getTime();
@@ -1527,6 +1550,7 @@ function restoreBackup_(id, by) {
     const props = PropertiesService.getScriptProperties();
     props.setProperty('SHEET_ID', fresh.getId());
     CacheService.getScriptCache().put('SHEET_ID', fresh.getId(), 21600);
+    try { editTrigger_(); } catch (e) { CacheService.getScriptCache().remove('TRIG_OK'); }   // hand edits are watched on the restored copy
     props.setProperty('BK_RESTORED_AT', new Date().toISOString());
     props.setProperty('BK_RESTORED_FROM', 'the backup of ' + f.name.slice(BACKUP_PREFIX.length) + (by ? ' · by ' + by : ''));
     props.setProperty('BK_SRC_TIME', String(fresh.getLastUpdated().getTime()));

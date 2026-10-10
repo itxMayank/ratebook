@@ -466,6 +466,9 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
   - **Credit opens instantly**: the last list is kept in IndexedDB (`dues:<mode>`, `duesLocal()`), shown at once, then replaced by the fresh one (`duesShow()`).
   - Vendor changes waiting on a phone are retried by every 25-second check (they used to wait for Vendors to open or a 20 s retry after a failure). The item screen's "Bought" cache (`VD.buys`) clears when vendor data changes.
 
+- **Move vendors from test to real mode** (10 Oct 2026, `SCRIPT_VERSION` 42 / `NEED_SV` unchanged; owner only). For vendors added in test mode by mistake. Vendors screen (test mode, owner) → "Made these in test mode by mistake? Move to real mode" (`#vl-move` → `vMoveUI`): a warning card (what moves; a shared link changes), every test vendor with a tick box (all ticked, entry count, balance), **Move N vendors** → a final `confirm()` → `vToLive {ids}`. Refused while vendor changes are still waiting to send (`vqGet()`), since they'd land in test mode.
+  - Script `vToLive_(ids, by)` (inside doPost's lock): copies each chosen vendor row (new `l…` link token, link on/off kept), all its `VendorLedger` entries (bills, payments, returns, notes, readings, checks, applied), `VendorDocs` rows and `Purchases` rows into the real tabs **first**, moves the photo/PDF files to the real-mode Drive folder (they open by id either way; failures are counted, not fatal), then deletes only the copied rows from the test tabs (bottom-up, in blocks) and bumps both modes' vendor versions (`vbumpAll_`). A vendor id already in real mode is skipped and listed. Running it twice moves nothing. Tests: `tests/vtolive.test.js` (server, fake sheet), `tests/vtolive.app.test.js` (screen).
+
 ## Per-person settings (added 9 Oct 2026, `SCRIPT_VERSION` 33 / `NEED_SV` 33)
 
 Part 1 of the security plan; parts 2–3 (sign-in tokens, lock screen) are in the next section.

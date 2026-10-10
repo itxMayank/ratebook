@@ -558,7 +558,8 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   - Settings → Search bar: the two buttons share the row.
   - **✕ in the search box** clears the word with the keyboard open (it's in the pointerdown guard, so focus stays in the box). Before, the tap moved focus away, the keyboard started closing, the bar slid down and the tap missed.
   - **Settings → "Best match in search results": Next to search bar (default) / At the top** (`rb_sres`, `html.sres-top`; shown only when the search bar is at the bottom). At the top = results run top-down and the page scrolls to the first one.
-- Tests: `tests/bottomsearch.test.js`; `tests/paidby.test.js` updated for the folded cash row.
+  - **Scrolling many results:** the Prices list jumps to the best match only when the search text changes (`renderList.lastQ`), not on every redraw (photos arriving, a sync), which used to pull you back while scrolling. The Bill results panel (`#rise`) no longer uses `justify-content:flex-end` (results that overflowed at the top couldn't be scrolled to); the results get `margin-top:auto` and the panel starts scrolled to the best match (`renderBillSearch.lastQ`).
+- Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 

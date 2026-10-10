@@ -1488,8 +1488,8 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot.sres-top body.qtyp.qhas[data-tab="items"] #list{flex-direction:column}
   html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
   /* typing on Bill: the results panel rises from the search */
-  html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;justify-content:flex-end;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
-  html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:0}
+  html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
+  html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:auto 0 0;flex:none}
   html.sbot.sres-top #rise #bill-search-results{flex-direction:column}
   html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
   html.locked.sbot #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
@@ -2635,7 +2635,9 @@ function renderList(){
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
-  if(q && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));   // best match next to the search (or at the top, Settings)
+  /* jump to the best match only when the search text changes, never on a redraw (photos arriving, a sync), so scrolling the results isn't pulled back */
+  if(q && q!==renderList.lastQ && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));
+  renderList.lastQ=q;   // best match next to the search (or at the top, Settings)
   more.innerHTML = shown.length && res.length>S.limit ? `<button class="more" data-act="more">${esc(t("showMore",Math.min(40,res.length-S.limit)))}</button>` : "";
 }
 function renderFilters(){
@@ -3791,6 +3793,8 @@ function applyMe(r,j){ const me=r.me||{}; if(!S.auth) return;
 }
 function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
+  if(q!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
+  renderBillSearch.lastQ=q;
   if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
   const {res}=runSearch(q);
   /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,

@@ -6,8 +6,8 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   .map((n, i) => ({ id: 'i' + i, name: n, unit: 'pc', buy: 10 + i, sell: 14 + i }));
 (async () => {
   const b = await launch();
-  async function phone(w, h, init) {
-    const ctx = await b.newContext({ viewport: { width: w, height: h } }); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
+  async function phone(w, h, init, mob) {
+    const ctx = await b.newContext({ viewport: { width: w, height: h }, ...(mob ? { isMobile: true, hasTouch: true } : {}) }); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Gupta Plastics', mode: 'live', nextBill: 5 }, sv: 41, bl: '0', bt: '0', vl: '0', vt: '0', me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
     await p.addInitScript(x => { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); if (x) localStorage.setItem('rb_spos', JSON.stringify(x)); }, init || '');
@@ -41,6 +41,22 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   const q = await phone(390, 844, 'top');
   ok(await q.evaluate(() => document.querySelector('#searchbox').closest('header') !== null && document.querySelector('#dock').hidden), 'Settings "Top": search stays in the header like before');
   await q.context().close();
+  // the dock lines up with the tab bar; Settings buttons share their row
+  const m = await phone(390, 844, '', true);
+  d = await rect(m, '#dock'); const t2 = await m.$eval('nav.tabs', e => { const r = e.getBoundingClientRect(); return [r.left, r.right]; });
+  const dl = await m.$eval('#dock', e => { const r = e.getBoundingClientRect(); return [r.left, r.right]; });
+  ok(Math.abs(dl[0] - t2[0]) < 2 && Math.abs(dl[1] - t2[1]) < 2, 'the search row is exactly as wide as the tab bar');
+  // keyboard opens (the app shrinks above it), then closes with the phone's Back: the search box is left, the tab bar comes back
+  await m.focus('#q'); await m.setViewportSize({ width: 390, height: 520 }); await m.waitForTimeout(300);
+  d = await rect(m, '#dock');
+  ok(await m.evaluate(() => document.documentElement.classList.contains('kbo')) && Math.abs(520 - d.bottom - 8) < 3 && !(await rect(m, 'nav.tabs')).vis, 'keyboard open: the search sits on it (no page jump), tab bar steps aside');
+  await m.keyboard.type('bag'); await m.waitForTimeout(400);
+  const before = await rect(m, '#dock'); await m.mouse.wheel(0, -300); await m.waitForTimeout(200); await m.mouse.wheel(0, 200); await m.waitForTimeout(300);
+  const after = await rect(m, '#dock');
+  ok(Math.abs(before.bottom - after.bottom) < 1, 'scrolling the results: the search bar stays still');
+  await m.setViewportSize({ width: 390, height: 844 }); await m.waitForTimeout(400);
+  ok(await m.evaluate(() => document.activeElement.id !== 'q' && !document.body.classList.contains('qtyp')) && (await rect(m, 'nav.tabs')).vis, 'keyboard closed with Back: search box let go, tab bar is back');
+  await m.context().close();
   const lap = await phone(1280, 800);
   ok(await lap.evaluate(() => document.querySelector('#searchbox').closest('header') !== null && !document.documentElement.classList.contains('sbot')), 'laptop: unchanged, search in the header');
   await b.close(); done();

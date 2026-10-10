@@ -3,7 +3,7 @@
 <head>
 <script>document.documentElement.classList.add("locked")</script>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Rate Book</title>
 <meta name="description" content="Shop price list and quick bills">
 <meta name="theme-color" content="#8C2331">
@@ -1460,7 +1460,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
    nearest the thumb. Positions come from dockPos() (measured), so text sizes and the keyboard can't misplace it. ---- */
 #dock,#rise{display:none}
 @media (max-width:1023px){
-  html.sbot #dock{position:fixed;left:12px;right:12px;bottom:var(--dockb,86px);z-index:32;display:flex;gap:10px;align-items:center;transition:bottom .18s ease}
+  html.sbot #dock{position:fixed;left:12px;right:12px;bottom:var(--dockb,86px);z-index:32;display:flex;gap:10px;align-items:center}
   html.sbot #dock[hidden]{display:none}
   html.sbot #dock .search{flex:1;min-width:0;zoom:var(--fz,1);box-shadow:0 6px 22px rgba(16,16,24,.16),0 0 0 1px var(--line)}
   html.sbot #dock .search[hidden]{display:none}
@@ -1475,7 +1475,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot body.typing.qe .tabs,html.sbot body.typing.qe .fab,html.sbot body.qtyp .tabs,html.sbot body.qtyp #dock .fab{display:none}
   html.sbot body.qtyp::after{display:none}
   /* Bill: the total card is pinned above the tab bar; the search floats just above it */
-  html.sbot body[data-tab="bill"] #view-bill .total{position:fixed;left:calc(12px / var(--fz,1));right:calc(12px / var(--fz,1));bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1));margin:0;z-index:31}
+  html.sbot body[data-tab="bill"] #view-bill .total{position:fixed;left:calc(var(--tabl,12px) / var(--fz,1));right:calc(var(--tabr,12px) / var(--fz,1));bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1));margin:0;z-index:31}
   html.sbot body.qtyp #view-bill .total{display:none}
   /* typing in another box (customer, qty, rate, cash): the dock steps aside and the total card rides on the keyboard */
   html.sbot body.typing:not(.qtyp) #dock{display:none}
@@ -3820,7 +3820,17 @@ function renderAll(){
 
 /* ---------------- Keyboard handling ---------------- */
 const vv=window.visualViewport, root=document.documentElement;
-function vvSet(){ if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); try{ dockPos(); }catch{} }
+/* Keyboard open? The visible height drops well below the tallest seen at this width (Chrome's address bar alone moves it
+   ~60 px). When it closes while a box is still focused (Android Back closes the keyboard but keeps the cursor), leave the box so
+   the tab bar, Add and total come back. Touch screens only (a laptop window being resized isn't a keyboard). */
+let kbBaseH=0, kbBaseW=0, kbWas=false; const coarse=window.matchMedia?matchMedia("(pointer:coarse)"):{matches:false};
+function kbTrack(){ const w=window.innerWidth, h=vv?vv.height:window.innerHeight;
+  if(w!==kbBaseW){ kbBaseW=w; kbBaseH=0; } kbBaseH=Math.max(kbBaseH,window.innerHeight,h);
+  const open=coarse.matches && kbBaseH-h>150; document.documentElement.classList.toggle("kbo",open);
+  if(kbWas && !open){ const a=document.activeElement; if(a && a.matches && a.matches("input:not([type=checkbox]):not([type=file]):not([readonly]),textarea") && !a.closest("#sheet,#picker,#applock")) a.blur(); }
+  kbWas=open; }
+window.addEventListener("resize",kbTrack);
+function vvSet(){ kbTrack(); if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); try{ dockPos(); }catch{} }
 if(vv){ vv.addEventListener("resize",vvSet); vv.addEventListener("scroll",vvSet); vvSet(); }
 /* ---------------- Back button (installed app / Android) ----------------
  * One extra history entry acts as a guard. Each Back press: close what's open, else step back inside a sheet,
@@ -3859,7 +3869,11 @@ function dockPos(){ if(!root.classList.contains("sbot")) return;
   if(qf) b=kb+8;
   else if(S.tab==="bill" && !$("#bill-total").hidden){ const r=$("#bill-total").getBoundingClientRect(); b=r.height?H-r.top+8:96; }
   else { const r=$("nav.tabs").getBoundingClientRect(); b=r.height?H-r.top+10:14; }
+  { const tr=$("nav.tabs").getBoundingClientRect(); if(tr.width>0){ root.style.setProperty("--tabl",Math.round(tr.left)+"px"); root.style.setProperty("--tabr",Math.round(window.innerWidth-tr.right)+"px"); } }   // total card as wide as the tab bar
   b=Math.max(8,Math.round(b)); dock.style.bottom=b+"px";
+  { const W=window.innerWidth, ref=(S.tab==="bill" && !$("#bill-total").hidden && !qf) ? $("#bill-total").getBoundingClientRect() : $("nav.tabs").getBoundingClientRect();
+    if(ref.width>0){ dockPos.l=Math.round(ref.left); dockPos.r=Math.round(W-ref.right); }
+    dock.style.left=(dockPos.l??12)+"px"; dock.style.right=(dockPos.r??12)+"px"; }
   root.style.setProperty("--docktop",(b+(dock.offsetHeight||56))+"px");
   const hd=$("header.top"), th=hd?Math.round(hd.getBoundingClientRect().bottom):80; root.style.setProperty("--toph",th+"px");
   root.style.setProperty("--risemin",Math.max(120,H-th-(b+(dock.offsetHeight||56))-18)+"px"); }
@@ -4723,7 +4737,7 @@ function openSettings(){
       <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("tsizeD"))}</p>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("sposT"))}</h3>
-      <div class="appear" id="cf-spos" role="group">${["bottom","top"].map(k=>`<button type="button" data-spos="${k}" aria-pressed="${sposNow()===k}">${esc(t(k==="bottom"?"sposB":"sposTop"))}</button>`).join("")}</div>
+      <div class="appear" id="cf-spos" role="group" style="grid-template-columns:1fr 1fr">${["bottom","top"].map(k=>`<button type="button" data-spos="${k}" aria-pressed="${sposNow()===k}">${esc(t(k==="bottom"?"sposB":"sposTop"))}</button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("sposD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>

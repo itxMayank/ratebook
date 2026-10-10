@@ -551,6 +551,11 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
 - **Tidy top:** the "Prices up to date · Refresh" bar now shows only when offline or a sync failed; otherwise a small "· updated 12:46 pm ↻" sits in the "16 items" line (`#meta-sync`, tap = refresh).
 - **Cash given row folded by default:** a small "Cash given?" link under the total (`#cash-open`) opens `#cashrow`; it stays open on this phone until closed (`rb_cashopen`; "Hide cash" closes and clears it). Also on the laptop.
 - **Update pill** sits above the dock (`--docktop`).
+- **Fixes after trying it on a Samsung (10 Oct 2026):**
+  - The viewport meta has `interactive-widget=resizes-content`: Chrome shrinks the app above the keyboard instead of sliding the whole page up (before, focusing the bottom search pushed the page up, and the bar jumped around while scrolling results because the keyboard offset changed with the address bar). Browsers that ignore it (iPhone) still use `--kb`.
+  - `kbTrack()` notices the keyboard opening/closing (visible height vs the tallest seen at this width, touch screens only; `html.kbo`). When it closes with a box still focused (Android Back), the box is let go, so the tab bar, Add and total card come back (before, they stayed hidden until you tapped an empty spot).
+  - The search row, the total card (`--tabl` / `--tabr`) and the tab bar are the same width.
+  - Settings → Search bar: the two buttons share the row.
 - Tests: `tests/bottomsearch.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)

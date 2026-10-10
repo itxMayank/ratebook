@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 41;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 42;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -550,6 +550,7 @@ function doPost(e) {
       case 'vGet': res = vGet_(str_(body.id, 40)); break;
       case 'vSaveVendor': res = vSaveVendor_(body.vendor || {}, by); break;
       case 'vLink': res = vLink_(str_(body.id, 40), !!body.on, !!body.regen); break;
+      case 'vToLive': res = vToLive_((body.ids || []).map(x => str_(x, 40)), by); break;
       case 'vSave': res = vSave_(body.entry || {}, by); break;
       case 'vRemove': res = vRemove_(str_(body.id, 40), body.on !== false, by); break;
       case 'vUseAdvance': res = vUseAdvance_(str_(body.vendorId, 40), str_(body.billId, 60)); break;
@@ -581,7 +582,7 @@ function doPost(e) {
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
-  setConfig: 'owner', setPin: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
+  setConfig: 'owner', setPin: 'owner', vToLive: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
   setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
@@ -1757,6 +1758,41 @@ function vList_() { const A = vAll_(); const by = {}; A.entries.forEach(e => (by
   const list = A.vendors.map(r => { const v = vVendorOut_(r); delete v.token; const c = vCalc_(v, by[v.id] || []); delete c.bills; return Object.assign(v, c); });
   return { vendors: list, owe: Math.round(list.reduce((s, v) => s + Math.max(0, v.balance), 0) * 100) / 100 }; }
 function vGet_(id) { return vOne_(vAll_(), id); }
+/** Owner: move vendors that were made in test mode by mistake to real mode, with everything they have: the vendor row, all ledger
+ *  entries (bills, payments, returns, checks, readings), their bill photos/PDFs (rows in VendorDocs, and the files themselves
+ *  into the real-mode Drive folder), and their purchase rows. They are removed from the test tabs, so nothing exists twice.
+ *  The vendor's link gets a new token (a test token can only open test data). Runs inside doPost's script lock. */
+function vToLive_(ids, by) {
+  const want = {}; (ids || []).forEach(id => { if (id) want[String(id)] = 1; }); if (!Object.keys(want).length) throw new Error('nothing_chosen');
+  const keep = ENV_, toRows = (cols, list) => list.map(o => cols.map(k => { const v = o[k] === undefined || o[k] === null ? '' : o[k]; return VTXT_[k] && v !== '' && !String(v).startsWith("'") ? "'" + v : v; }));
+  const append = (s, cols, list) => { if (list.length) s.getRange(s.getLastRow() + 1, 1, list.length, cols.length).setValues(toRows(cols, list)); };
+  const drop = (s, rows) => { const rs = rows.map(r => r._r).sort((a, b) => b - a); let i = 0;   // delete from the bottom, in blocks of neighbouring rows
+    while (i < rs.length) { let j = i; while (j + 1 < rs.length && rs[j + 1] === rs[j] - 1) j++; s.deleteRows(rs[j], j - i + 1); i = j + 1; } };
+  try {
+    ENV_ = 'test';
+    const TV = vtab_('Vendors', VEND_COLS), TL = vtab_('VendorLedger', VLED_COLS), TD = vtab_('VendorDocs', VDOC_COLS), TP = vtab_('Purchases', PUR_COLS);
+    ENV_ = 'live';
+    const LV = vtab_('Vendors', VEND_COLS), LL = vtab_('VendorLedger', VLED_COLS), LD = vtab_('VendorDocs', VDOC_COLS), LP = vtab_('Purchases', PUR_COLS);
+    const liveV = {}, liveE = {}; LV.rows.forEach(r => liveV[String(r.id)] = 1); LL.rows.forEach(r => liveE[String(r.id)] = 1);
+    const vend = TV.rows.filter(r => want[String(r.id)]), skipped = [];
+    const go = vend.filter(r => { if (liveV[String(r.id)]) { skipped.push(String(r.name)); return false; } return true; });
+    const goIds = {}; go.forEach(r => goIds[String(r.id)] = 1);
+    const ents = TL.rows.filter(r => goIds[String(r.vendorId)]).filter(r => !liveE[String(r.id)]);
+    const docs = TD.rows.filter(r => goIds[String(r.vendorId)]), purs = TP.rows.filter(r => goIds[String(r.vendorId)]);
+    // write to real mode first (new link token per vendor), then remove from test: a failure half-way can't lose anything
+    append(LV.s, VEND_COLS, go.map(r => Object.assign({}, r, { token: vToken_(), updatedAt: Date.now(), by: by })));
+    append(LL.s, VLED_COLS, ents); append(LD.s, VDOC_COLS, docs); append(LP.s, PUR_COLS, purs);
+    // the files themselves go to the real-mode folder (they open by id either way, so a failure here only leaves them where they were)
+    let files = 0, fileFail = 0; const fids = {};
+    ents.forEach(e => vjson_(e.photos, []).forEach(ph => { if (ph && ph.f) fids[String(ph.f)] = 1; })); docs.forEach(d => { if (d.fileId) fids[String(d.fileId)] = 1; });
+    if (Object.keys(fids).length) { let dest = null; try { dest = vFolder_(); } catch (e) {}
+      Object.keys(fids).forEach(f => { try { if (dest) { DriveApp.getFileById(f).moveTo(dest); files++; } } catch (e) { fileFail++; } }); }
+    ENV_ = 'test';
+    drop(TP.s, purs); drop(TD.s, docs); drop(TL.s, ents); drop(TV.s, go);   // only what was copied
+    vbumpAll_();
+    return { moved: go.length, names: go.map(r => String(r.name)), entries: ents.length, photos: Object.keys(fids).length, files, fileFail, purchases: purs.length, skipped };
+  } finally { ENV_ = keep; }
+}
 function vToken_() { return (ENV_ === 'test' ? 't' : 'l') + Utilities.getUuid().replace(/-/g, '').slice(0, 22); }
 function vSaveVendor_(x, by) { const A = vAll_(), V = A.V, now = Date.now();
   const name = str_(x.name, 80).trim(); if (!name) throw new Error('need_name');

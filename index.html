@@ -4,6 +4,8 @@
 <script>document.documentElement.classList.add("locked")</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<script>/* iPhone/iPad: Safari zooms the page when a box under 16px gets focus; maximum-scale stops that (pinch zoom still works on iOS) */
+if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)){ const m=document.querySelector('meta[name=viewport]'); if(m) m.content+=",maximum-scale=1"; }</script>
 <title>Rate Book</title>
 <meta name="description" content="Shop price list and quick bills">
 <meta name="theme-color" content="#8C2331">
@@ -1488,7 +1490,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot.sres-top body.qtyp.qhas[data-tab="items"] #list{flex-direction:column}
   html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
   /* typing on Bill: the results panel rises from the search */
-  html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
+  html.sbot body.qtyp[data-tab="bill"] #rise.on{display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--risetop,var(--toph,80px));bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
   html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:auto 0 0;flex:none}
   html.sbot.sres-top #rise #bill-search-results{flex-direction:column}
   html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
@@ -1514,7 +1516,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .total .ts1 #bill-sum.xlong{font-size:17px}
 .total .ts2{grid-area:chips;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;white-space:nowrap}
 .total .ts2::-webkit-scrollbar{display:none}
-.total .ts2:not(:has(> :not([hidden]))){display:none}
+.total .ts2.empty{display:none}
 .total .ts2 > *{flex:none;margin:0}
 .total .ts2 .duechip{height:26px;display:inline-flex;align-items:center;padding:0 10px;font-size:12px;border-radius:999px}
 .total .ts2 .profit,.total .ts2 .cash-open{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;border:0;background:var(--surface-2);color:var(--muted);font:600 12.5px var(--f-body,inherit);text-decoration:none;cursor:pointer}
@@ -1532,6 +1534,17 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.fz-big .total .ts1 #bill-sum.xlong{font-size:15px}
   html.fz-big .total #bill-done{padding:0 12px}
 }
+/* Move vendors from test to real mode (owner) */
+.vmove-link{display:flex;align-items:center;gap:6px;margin:18px auto 6px;border:0;background:none;color:var(--muted);font:600 13px var(--f-body,inherit);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.vm-warn{background:color-mix(in srgb,var(--gold,#b7791f) 14%,transparent);border-radius:14px;padding:12px 14px;margin:10px 0 12px;display:grid;gap:6px}
+.vm-warn p,.vm-done p{margin:0;font-size:14px;line-height:1.4}
+.vm-all{display:flex;align-items:center;gap:10px;font-weight:600;padding:6px 2px}
+.vm-list{display:grid;gap:8px;margin-bottom:10px}
+.vm-row{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer}
+.vm-row input,.vm-all input{width:20px;height:20px;flex:none}
+.vm-n{flex:1;min-width:0;display:grid}.vm-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vm-n small{color:var(--muted)}
+.vm-b{flex:none;font-size:13px;color:var(--muted)}
+.vm-done{display:grid;gap:8px;margin-top:10px}.vm-done b{font-size:17px;color:var(--good)}
 </style>
 </head>
 <body>
@@ -2003,8 +2016,8 @@ Object.assign(STR.hi,{backExit:"बाहर जाने के लिए फ�
 Object.assign(STR.en,{themeT:"Theme (this phone)",thInk:"Ink",thMaroon:"Maroon",thForest:"Forest",thIndigo:"Indigo",thSaffron:"Saffron",appearT:"Appearance",apAuto:"Auto",apLight:"Light",apDark:"Dark",appearD:"Auto follows the phone's light or dark setting."});
 Object.assign(STR.hi,{themeT:"थीम (इस फ़ोन पर)",thInk:"काला",thMaroon:"मैरून",thForest:"हरा",thIndigo:"नीला",thSaffron:"केसरिया",appearT:"रूप",apAuto:"अपने-आप",apLight:"हल्का",apDark:"गहरा",appearD:"“अपने-आप” फ़ोन की लाइट/डार्क सेटिंग के हिसाब से चलेगा।"});
 /* Text size strings */
-Object.assign(STR.en,{sposT:"Search bar (this phone)",sposB:"Bottom",sposTop:"Top",sposD:"Bottom is easier to reach with your thumb.",sresT:"Best match in search results",sresNear:"Next to search bar",sresTop:"At the top",sresD:"Where the closest match shows while you type.",cashOpen:"Cash given?",cashClose:"Hide cash",syncedAt:tm=>`updated ${tm}`,tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
-Object.assign(STR.hi,{sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",sresT:"सबसे सही नतीजा",sresNear:"सर्च बार के पास",sresTop:"सबसे ऊपर",sresD:"टाइप करते समय सबसे मिलता नतीजा कहाँ दिखे।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
+Object.assign(STR.en,{vmLink:"Made these in test mode by mistake? Move to real mode",vmT:"Move vendors to real mode",vmWarnT:"This moves real data out of test mode",vmWarnD:"The ticked vendors move to real mode with everything they have: bills, payments, returns, notes, bill photos and PDFs, bill checks and purchase history. They will no longer be in test mode.",vmWarnLink:"If you shared a vendor's link, it changes: send them the new one from the vendor's Share screen.",vmAll:n=>`All vendors (${n})`,vmCount:n=>n===1?"1 entry":`${n} entries`,vmGo:n=>n===1?"Move 1 vendor":`Move ${n} vendors`,vmConfirm:n=>`Move ${n} vendor${n===1?"":"s"} and all their bills, payments and photos to real mode?\n\nThey will be removed from test mode. This can't be undone from the app.`,vmWait:"Some vendor changes are still being sent. Wait a moment and tap Move again.",vmDone:n=>n===1?"1 vendor moved to real mode":`${n} vendors moved to real mode`,vmDoneD:(e,p,u)=>`${e} ${e===1?"entry":"entries"}, ${p} bill ${p===1?"photo":"photos"} and ${u} purchase ${u===1?"line":"lines"} moved with them.`,vmFileFail:n=>`${n} photo file(s) couldn't be moved to the real-mode folder; they still open as before.`,vmSkipped:s=>`Already in real mode, not moved: ${s}`,vmSee:"To see them, switch to real billing: Settings → Just for you → Test mode off.",vmOpenSet:"Open Settings",vmOldScript:"Update the sheet script first (dashboard → Update script), then try again.",sposT:"Search bar (this phone)",sposB:"Bottom",sposTop:"Top",sposD:"Bottom is easier to reach with your thumb.",sresT:"Best match in search results",sresNear:"Next to search bar",sresTop:"At the top",sresD:"Where the closest match shows while you type.",cashOpen:"Cash given?",cashClose:"Hide cash",syncedAt:tm=>`updated ${tm}`,tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
+Object.assign(STR.hi,{vmLink:"ग़लती से टेस्ट मोड में बनाए? असली मोड में ले जाएँ",vmT:"सप्लायर असली मोड में ले जाएँ",vmWarnT:"यह असली डेटा टेस्ट मोड से हटा देगा",vmWarnD:"चुने हुए सप्लायर अपनी सारी जानकारी के साथ असली मोड में चले जाएँगे: बिल, भुगतान, वापसी, नोट, बिल की फ़ोटो और PDF, बिल जाँच और ख़रीद का इतिहास। वे टेस्ट मोड में नहीं रहेंगे।",vmWarnLink:"अगर आपने किसी सप्लायर को लिंक भेजा था, तो वह बदल जाएगा: सप्लायर की शेयर स्क्रीन से नया लिंक भेजें।",vmAll:n=>`सभी सप्लायर (${n})`,vmCount:n=>`${n} एंट्री`,vmGo:n=>`${n} सप्लायर ले जाएँ`,vmConfirm:n=>`${n} सप्लायर और उनके सारे बिल, भुगतान और फ़ोटो असली मोड में ले जाएँ?\n\nवे टेस्ट मोड से हट जाएँगे। ऐप से इसे वापस नहीं किया जा सकता।`,vmWait:"कुछ बदलाव अभी भेजे जा रहे हैं। थोड़ा रुककर फिर दबाएँ।",vmDone:n=>`${n} सप्लायर असली मोड में चले गए`,vmDoneD:(e,p,u)=>`उनके साथ ${e} एंट्री, ${p} बिल फ़ोटो और ${u} ख़रीद लाइनें भी गईं।`,vmFileFail:n=>`${n} फ़ोटो फ़ाइल असली फ़ोल्डर में नहीं जा सकीं; वे पहले जैसी खुलेंगी।`,vmSkipped:s=>`पहले से असली मोड में, नहीं ले गए: ${s}`,vmSee:"देखने के लिए असली बिलिंग चालू करें: Settings → सिर्फ़ आपके लिए → टेस्ट मोड बंद।",vmOpenSet:"Settings खोलें",vmOldScript:"पहले शीट स्क्रिप्ट अपडेट करें (डैशबोर्ड → Update script), फिर दोबारा कोशिश करें।",sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",sresT:"सबसे सही नतीजा",sresNear:"सर्च बार के पास",sresTop:"सबसे ऊपर",sresD:"टाइप करते समय सबसे मिलता नतीजा कहाँ दिखे।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
 /* Refresh strings */
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
@@ -2863,9 +2876,11 @@ function updateBillTotals(){ try{ custXSync(); }catch{}
     gs.innerHTML=`<div><span>${esc(t("taxable"))}</span><b>${rs2(g.taxable)}</b></div>`+g.rows.map(r=>`<div><span>${esc(r.label)}</span><b>${rs2(r.v)}</b></div>`).join("")+(g.roundOff?`<div><span>${esc(t("roundOff"))}</span><b>${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}</b></div>`:"")+`<div class="inwords">${esc(inWords(g.total))}</div>`;
     $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
+  tsSync();
   { const bs=$("#bill-sum"), n=bs.textContent.length; bs.classList.toggle("long",n>=9 && n<11); bs.classList.toggle("xlong",n>=11); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   { const p=payInfo(billTotal()), dc=$("#bill-duechip"); dc.hidden = p.mode==="paid" || !S.bill.length; dc.textContent=t("dueAmt",rs(p.due));
+  tsSync();
     $("#pay-due").textContent = S.pay==="part" ? t("dueAmt",rs(p.due)) : ""; }
   renderCash(); renderHeld();
   $("#bill-wa").href=waLink();
@@ -3129,7 +3144,7 @@ function renderCash(){
   const row=$("#cashrow"); if(!row) return;
   const due=cashDue(), can_=S.bill.length>0 && due>0, open=can_ && (ls.get("rb_cashopen",false) || !!S.cash), show=open;
   const co=$("#cash-open"); if(co){ co.hidden=!can_; co.setAttribute("aria-expanded",String(open)); co.querySelector("span").textContent=t(open?"cashClose":"cashOpen"); }
-  row.hidden=!show; if(!show) return;
+  row.hidden=!show; tsSync(); if(!show) return;
   const inp=$("#cash-in"); if(document.activeElement!==inp) inp.value=S.cash||"";
   const g=parseFloat(S.cash), chips=$("#cash-chips"), res=$("#cash-res");
   if(!(g>0)){ res.hidden=true; chips.hidden=false; chips.innerHTML=cashNotes(due).map(v=>`<button type="button" data-cash="${v}">${rs(v)}</button>`).join(""); return; }
@@ -3141,6 +3156,8 @@ function renderCash(){
   const key=d+"|"+g; if(res.dataset.k!==key){ res.dataset.k=key; res.innerHTML=pill+`<button type="button" class="x" id="cash-x" aria-label="${esc(t("clearX"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`; }
 }
 function setCash(v){ S.cash=v; renderCash(); }
+/** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
+function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 $("#cash-open").onclick=()=>{ const open=$("#cash-open").getAttribute("aria-expanded")==="true";
   if(open){ ls.set("rb_cashopen",false); S.cash=""; $("#cash-in").value=""; renderCash(); }
   else { ls.set("rb_cashopen",true); renderCash(); } };
@@ -3828,7 +3845,9 @@ function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
   if(q!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
   renderBillSearch.lastQ=q;
-  if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
+  const riseOn=on=>{ const r=$("#rise"); if(r) r.classList.toggle("on",on); };   // (a class, not :has(), so older iPhones show it too)
+  if(S.tab!=="bill"||!q){ box.innerHTML=""; riseOn(false); return; }
+  riseOn(true);
   const {res}=runSearch(q);
   /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,
      and shows what's already in the bill when the same item is searched again. */
@@ -3916,6 +3935,7 @@ function dockPos(){ if(!root.classList.contains("sbot")) return;
     dock.style.left=(dockPos.l??12)+"px"; dock.style.right=(dockPos.r??12)+"px"; }
   root.style.setProperty("--docktop",(b+(dock.offsetHeight||56))+"px");
   const hd=$("header.top"), th=hd?Math.round(hd.getBoundingClientRect().bottom):80; root.style.setProperty("--toph",th+"px");
+  { const vt=vv?Math.round(vv.offsetTop):0; root.style.setProperty("--risetop",Math.max(th,vt+8)+"px"); }
   root.style.setProperty("--risemin",Math.max(120,H-th-(b+(dock.offsetHeight||56))-18)+"px"); }
 window.addEventListener("resize",()=>dockPos());
 /* While searching from the bottom bar, tapping a result's buttons (or a Bill-tab result row) keeps the focus in the search box, so
@@ -5559,11 +5579,43 @@ function vRenderList(){
     ${all.length>4||q?`<input type="search" id="vl-q" placeholder="${esc(t("vSearchPh"))}" value="${esc(VD.q)}" autocomplete="off">`:""}
     ${all.length?`<div class="fchips vl-chips">${["all","owe","overdue","settled"].filter(k=>k==="all"||cnt[k]).map(k=>`<button type="button" class="fchip" data-vchip="${k}" aria-pressed="${VD.chip===k}">${esc(t("vc_"+k))}${k!=="all"?`<span class="n">${cnt[k]}</span>`:""}</button>`).join("")}</div>`:""}
     <div class="vl-cards">${list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}${v.flagged?` <span class="pill chk bad">⚠ ${v.flagged}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
-      || `<div class="empty" style="padding:24px 8px"><h2>${esc(t(all.length?"vNoMatch":"vEmptyT"))}</h2>${all.length?"":`<p>${esc(t("vEmptyD"))}</p>`}</div>`}</div>`;
+      || `<div class="empty" style="padding:24px 8px"><h2>${esc(t(all.length?"vNoMatch":"vEmptyT"))}</h2>${all.length?"":`<p>${esc(t("vEmptyD"))}</p>`}</div>`}</div>
+    ${S.cfg.mode==="test" && can("owner") && all.length ? `<button type="button" class="vmove-link" id="vl-move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>${esc(t("vmLink"))}</button>`:""}`;
+  { const mv=$("#vl-move"); if(mv) mv.onclick=vMoveUI; }
   $("#vl-bill").onclick=()=>vForm("bill",null); $("#vl-pay").onclick=()=>vForm("pay",null); $("#vl-new").onclick=()=>vVendorForm(null);
   const qi=$("#vl-q"); if(qi) qi.oninput=e=>{ VD.q=e.target.value; const pos=e.target.selectionStart; vRenderList(); const n=$("#vl-q"); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } };
   box.querySelectorAll("[data-vchip]").forEach(b=>b.onclick=()=>{ VD.chip=b.dataset.vchip; vRenderList(); });
   box.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>openVendor(b.dataset.vid)); vNoteUpd();
+}
+/* Owner, test mode: move vendors made here by mistake to real mode, with everything they have (server vToLive). */
+function vMoveUI(){ if(!can("owner") || S.cfg.mode!=="test" || !VD.list) return;
+  const vs=VD.list.vendors.slice().sort((a,b)=>a.name.localeCompare(b.name)), ents=(VDB.srv.entries||[]);
+  const cnt=id=>ents.filter(e=>e.vendorId===id && !e.removed).length;
+  sheetKey("vmove"), openSheet(t("vmT"), `<div id="vm-page"><button type="button" class="btn ghost bl-back" id="vm-back">← ${esc(t("vTitle"))}</button>
+    <div class="vm-warn"><b>${esc(t("vmWarnT"))}</b><p>${esc(t("vmWarnD"))}</p><p>${esc(t("vmWarnLink"))}</p></div>
+    <label class="vm-all"><input type="checkbox" id="vm-all" checked> ${esc(t("vmAll",vs.length))}</label>
+    <div class="vm-list">${vs.map(v=>`<label class="vm-row"><input type="checkbox" data-vm="${esc(v.id)}" checked><span class="vm-n"><b>${esc(v.name)}</b><small>${esc(t("vmCount",cnt(v.id)))}</small></span><span class="vm-b num">${esc(vBalLabel(v).lab)} ${esc(vBalLabel(v).amt)}</span></label>`).join("")}</div>
+    <div class="err" id="vm-err" role="alert"></div></div>`,
+    `<button type="button" class="btn ghost" id="vm-cancel">${esc(t("cancel"))}</button><button type="button" class="btn danger" id="vm-go"></button>`, {full:true});
+  const picked=()=>[...document.querySelectorAll("#vm-page [data-vm]")].filter(c=>c.checked).map(c=>c.dataset.vm);
+  const sync=()=>{ const n=picked().length; $("#vm-go").textContent=t("vmGo",n); $("#vm-go").disabled=!n; $("#vm-all").checked=n===vs.length; };
+  $("#vm-back").onclick=()=>openVendors(); $("#vm-cancel").onclick=()=>openVendors();
+  $("#vm-all").onchange=e=>{ document.querySelectorAll("#vm-page [data-vm]").forEach(c=>c.checked=e.target.checked); sync(); };
+  document.querySelectorAll("#vm-page [data-vm]").forEach(c=>c.onchange=sync); sync();
+  $("#vm-go").onclick=async()=>{ const ids=picked(); if(!ids.length) return; const err=$("#vm-err"); err.textContent="";
+    if(vqGet().length){ vqFlush(); err.textContent=t("vmWait"); return; }   // changes still being sent would land in test mode
+    if(navigator.onLine===false){ err.textContent=t("siNet"); return; }
+    if(!confirm(t("vmConfirm",ids.length))) return;
+    const b=$("#vm-go"); btnBusy(b,true);
+    try{ const r=await apiPost({action:"vToLive",ids});
+      await vSync(true);
+      openSheet(t("vmT"), `<div id="vm-page"><button type="button" class="btn ghost bl-back" id="vm-back">← ${esc(t("vTitle"))}</button>
+        <div class="vm-done"><b>✓ ${esc(t("vmDone",r.moved))}</b><p>${esc((r.names||[]).join(", "))}</p><p>${esc(t("vmDoneD",r.entries||0,r.photos||0,r.purchases||0))}</p>
+        ${r.fileFail?`<p class="note">${esc(t("vmFileFail",r.fileFail))}</p>`:""}${(r.skipped||[]).length?`<p class="err">${esc(t("vmSkipped",r.skipped.join(", ")))}</p>`:""}
+        <p>${esc(t("vmSee"))}</p></div></div>`,
+        `<button type="button" class="btn ghost" id="vm-close">${esc(t("vTitle"))}</button><button type="button" class="btn primary" id="vm-set">${esc(t("vmOpenSet"))}</button>`, {full:true});
+      $("#vm-back").onclick=$("#vm-close").onclick=()=>openVendors(); $("#vm-set").onclick=()=>{ closeSheet(); openSettings(); };
+    }catch(e){ btnBusy(b,false); err.textContent = e&&e.code==="bad_action" ? t("vmOldScript") : errMsg(e); } };
 }
 function openVendor(id){ VD.cur=id; VD.tab=VD.tab||"ledger";
   const name=(VD.det[id]&&VD.det[id].vendor.name) || ((VD.list&&VD.list.vendors.find(v=>v.id===id))||{}).name || "";

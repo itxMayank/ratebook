@@ -47,7 +47,7 @@ const base = [N('n2', 'bill', { amount: 1180, billNo: 'M-77', entryId: 'e1', ext
   ok((await p.getAttribute('#nslide', 'class')) === 'on' && /Bill M-77 fully paid/.test(await p.textContent('#nslide')) && (await p.textContent('#nbadge')) === '1', 'new notice from another phone: slides in, badge 1');
   if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT + '/n3.png' });
   // switch "Bill fully paid" off in Settings
-  await p.evaluate(() => T.openSettings()); await p.waitForTimeout(500);
+  await p.evaluate(() => T.openSettings()); await p.waitForTimeout(500); await p.click('details[data-cg="me"] summary'); await p.waitForTimeout(300);
   ok(!!(await p.$('#cf-noti [data-nk="paid"]')), 'Settings → Just for you: notification kinds');
   if (process.env.SHOT) { await p.evaluate(() => document.querySelector('#cf-noti').scrollIntoView({ block: 'center' })); await p.screenshot({ path: process.env.SHOT + '/n4.png' }); }
   await p.click('#cf-noti [data-nk="paid"]'); await p.waitForTimeout(600);

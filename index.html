@@ -1485,16 +1485,19 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot body.qtyp.qhas[data-tab="items"] main{padding-bottom:0}
   html.sbot body.qtyp.qhas[data-tab="items"] #view-items{display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:0;min-height:calc(var(--risemin,300px) / var(--fz,1))}
   html.sbot body.qtyp.qhas[data-tab="items"] #list{display:flex;flex-direction:column-reverse}
+  html.sbot.sres-top body.qtyp.qhas[data-tab="items"] #list{flex-direction:column}
   html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
   /* typing on Bill: the results panel rises from the search */
   html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;justify-content:flex-end;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
   html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:0}
+  html.sbot.sres-top #rise #bill-search-results{flex-direction:column}
   html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
   html.locked.sbot #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 }
 /* "Cash given?" link under the total; the cash row opens from it and stays open on this phone until closed */
 .cash-open{border:0;background:none;padding:2px 0 0;color:var(--muted);font:600 12.5px var(--f-body,inherit);text-decoration:underline;text-underline-offset:3px;cursor:pointer;display:block;text-align:left}
 .cash-open[hidden]{display:none}
+.cf-sres-w{display:grid;gap:8px}.cf-sres-w[hidden]{display:none}
 .cash-open[aria-expanded="true"]{color:var(--accent)}
 .netsync{border:0;background:none;color:var(--muted);font:inherit;padding:0 0 0 6px;cursor:pointer}
 </style>
@@ -1968,8 +1971,8 @@ Object.assign(STR.hi,{backExit:"बाहर जाने के लिए फ�
 Object.assign(STR.en,{themeT:"Theme (this phone)",thInk:"Ink",thMaroon:"Maroon",thForest:"Forest",thIndigo:"Indigo",thSaffron:"Saffron",appearT:"Appearance",apAuto:"Auto",apLight:"Light",apDark:"Dark",appearD:"Auto follows the phone's light or dark setting."});
 Object.assign(STR.hi,{themeT:"थीम (इस फ़ोन पर)",thInk:"काला",thMaroon:"मैरून",thForest:"हरा",thIndigo:"नीला",thSaffron:"केसरिया",appearT:"रूप",apAuto:"अपने-आप",apLight:"हल्का",apDark:"गहरा",appearD:"“अपने-आप” फ़ोन की लाइट/डार्क सेटिंग के हिसाब से चलेगा।"});
 /* Text size strings */
-Object.assign(STR.en,{sposT:"Search bar (this phone)",sposB:"Bottom",sposTop:"Top",sposD:"Bottom is easier to reach with your thumb.",cashOpen:"Cash given?",cashClose:"Hide cash",syncedAt:tm=>`updated ${tm}`,tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
-Object.assign(STR.hi,{sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
+Object.assign(STR.en,{sposT:"Search bar (this phone)",sposB:"Bottom",sposTop:"Top",sposD:"Bottom is easier to reach with your thumb.",sresT:"Best match in search results",sresNear:"Next to search bar",sresTop:"At the top",sresD:"Where the closest match shows while you type.",cashOpen:"Cash given?",cashClose:"Hide cash",syncedAt:tm=>`updated ${tm}`,tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
+Object.assign(STR.hi,{sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",sresT:"सबसे सही नतीजा",sresNear:"सर्च बार के पास",sresTop:"सबसे ऊपर",sresD:"टाइप करते समय सबसे मिलता नतीजा कहाँ दिखे।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
 /* Refresh strings */
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
@@ -2632,7 +2635,7 @@ function renderList(){
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
-  if(q && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));   // best match sits just above the search
+  if(q && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));   // best match next to the search (or at the top, Settings)
   more.innerHTML = shown.length && res.length>S.limit ? `<button class="more" data-act="more">${esc(t("showMore",Math.min(40,res.length-S.limit)))}</button>` : "";
 }
 function renderFilters(){
@@ -3859,7 +3862,7 @@ window.addEventListener("popstate",()=>{
 const sposNow=()=>ls.get("rb_spos","bottom")==="top"?"top":"bottom";
 const SBOT=()=>!DESK() && sposNow()==="bottom";
 function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fab=$("#fab"), rise=$("#rise"), bsr=$("#bill-search-results");
-  root.classList.toggle("sbot",on);
+  root.classList.toggle("sbot",on); root.classList.toggle("sres-top",ls.get("rb_sres","near")==="top");
   if(on){ if(sb.parentNode!==dock){ dock.appendChild(sb); dock.appendChild(fab); } if(bsr.parentNode!==rise) rise.appendChild(bsr); }
   else { if(sb.parentNode===dock){ $("header.top").insertBefore(sb,$("#mictip")); document.body.insertBefore(fab,rise); } if(bsr.parentNode===rise) $("#view-bill").insertBefore(bsr,$("#heldrow")); }
   dock.hidden=!on; dockPos(); }
@@ -3881,7 +3884,7 @@ window.addEventListener("resize",()=>dockPos());
 /* While searching from the bottom bar, tapping a result's buttons (or a Bill-tab result row) keeps the focus in the search box, so
    the keyboard and the results stay put and the tap lands where it was aimed; several items can be added in a row. */
 ["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(!root.classList.contains("sbot") || !document.body.classList.contains("qtyp")) return;
-  if(e.target.closest && e.target.closest("#rise .mini, #list [data-add], #list [data-decid], #list .mstep")) e.preventDefault(); },true));
+  if(e.target.closest && e.target.closest("#rise .mini, #list [data-add], #list [data-decid], #list .mstep, #dock #q-clear")) e.preventDefault(); },true));
 if(window.ResizeObserver){ const ro=new ResizeObserver(()=>dockPos()); ["#bill-total","nav.tabs","header.top","#dock"].forEach(s=>{ const e=document.querySelector(s); if(e) ro.observe(e); }); }
 /* Laptop / desktop: the bill stays open on the right, so there is no separate Bill tab. */
 const deskMQ=window.matchMedia("(min-width:1024px)");
@@ -4738,7 +4741,10 @@ function openSettings(){
       <p class="note" style="margin:0">${esc(t("tsizeD"))}</p>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("sposT"))}</h3>
       <div class="appear" id="cf-spos" role="group" style="grid-template-columns:1fr 1fr">${["bottom","top"].map(k=>`<button type="button" data-spos="${k}" aria-pressed="${sposNow()===k}">${esc(t(k==="bottom"?"sposB":"sposTop"))}</button>`).join("")}</div>
-      <p class="note" style="margin:0">${esc(t("sposD"))}</p></div>
+      <p class="note" style="margin:0">${esc(t("sposD"))}</p>
+      <div id="cf-sres-w" class="cf-sres-w" ${sposNow()==="bottom"?"":"hidden"}><h3 style="margin:6px 0 0;font-size:14px">${esc(t("sresT"))}</h3>
+      <div class="appear" id="cf-sres" role="group" style="grid-template-columns:1fr 1fr">${["near","top"].map(k=>`<button type="button" data-sres="${k}" aria-pressed="${ls.get("rb_sres","near")===k}">${esc(t(k==="near"?"sresNear":"sresTop"))}</button>`).join("")}</div>
+      <p class="note" style="margin:0">${esc(t("sresD"))}</p></div></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
@@ -4780,7 +4786,8 @@ function openSettings(){
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   renderPrCfg(); renderAiCfg(); $("#cf-groups").onclick=()=>openGroups();
-  $("#cf-spos").onclick=e=>{ const b=e.target.closest("[data-spos]"); if(!b) return; ls.set("rb_spos",b.dataset.spos); $("#cf-spos").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); placeSearch(); };
+  $("#cf-spos").onclick=e=>{ const b=e.target.closest("[data-spos]"); if(!b) return; ls.set("rb_spos",b.dataset.spos); $("#cf-spos").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); $("#cf-sres-w").hidden=b.dataset.spos!=="bottom"; placeSearch(); };
+  $("#cf-sres").onclick=e=>{ const b=e.target.closest("[data-sres]"); if(!b) return; ls.set("rb_sres",b.dataset.sres); $("#cf-sres").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); placeSearch(); };
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   /* Just for you: saved with the person on the sheet (follows them to any phone); without signing in, hide-buy stays per phone */
   const mySet=async(el,p,undo)=>{ el.disabled=true; $("#cf-meerr").textContent="";

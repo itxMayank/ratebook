@@ -556,6 +556,8 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   - `kbTrack()` notices the keyboard opening/closing (visible height vs the tallest seen at this width, touch screens only; `html.kbo`). When it closes with a box still focused (Android Back), the box is let go, so the tab bar, Add and total card come back (before, they stayed hidden until you tapped an empty spot).
   - The search row, the total card (`--tabl` / `--tabr`) and the tab bar are the same width.
   - Settings → Search bar: the two buttons share the row.
+  - **✕ in the search box** clears the word with the keyboard open (it's in the pointerdown guard, so focus stays in the box). Before, the tap moved focus away, the keyboard started closing, the bar slid down and the tap missed.
+  - **Settings → "Best match in search results": Next to search bar (default) / At the top** (`rb_sres`, `html.sres-top`; shown only when the search bar is at the bottom). At the top = results run top-down and the page scrolls to the first one.
 - Tests: `tests/bottomsearch.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)

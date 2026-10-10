@@ -25,6 +25,8 @@ const vendors = Array.from({ length: 30 }, (_, i) => ({ id: 'v' + i, name: 'Vend
   const backBtn = () => p.evaluate(() => !document.querySelector('#sheet-back').hidden);
   // Settings: scroll to People, edit Sanjay
   await p.evaluate(() => T.openSettings()); await p.waitForTimeout(800);
+  ok(await p.evaluate(() => [...document.querySelectorAll('details.cg')].every(d => !d.open)), 'Settings opens with every group closed');
+  await p.click('details[data-cg="ppl"] summary'); await p.waitForTimeout(300);
   await p.evaluate(() => document.querySelector('[data-ppl="u1"]').scrollIntoView({ block: 'center' })); await p.waitForTimeout(200);
   const y0 = await sc(); ok(y0 > 300, `Settings scrolled down to People (scroll ${y0})`);
   await p.click('[data-ppl="u1"]'); await p.waitForTimeout(300);
@@ -44,7 +46,7 @@ const vendors = Array.from({ length: 30 }, (_, i) => ({ id: 'v' + i, name: 'Vend
   await p.click('[data-ppl="u1"]'); await p.waitForTimeout(300); await p.click('#sheet-close'); await p.waitForTimeout(400);
   ok(await p.evaluate(() => document.querySelector('#sheet').hidden), '✕ closes everything');
   await p.evaluate(() => T.openSettings()); await p.waitForTimeout(500); ok(!(await backBtn()), 'Settings opened fresh from Tools: no ← (nothing under it)');
-  await p.click('#cf-groups'); await p.waitForTimeout(400); await p.click('#gr-cancel'); await p.waitForTimeout(300);
+  await p.click('details[data-cg="items"] summary'); await p.waitForTimeout(200); await p.click('#cf-groups'); await p.waitForTimeout(400); await p.click('#gr-cancel'); await p.waitForTimeout(300);
   ok(await title() === 'Settings', 'Groups → Cancel goes back to Settings (used to close everything)');
   await p.click('#sheet-close'); await p.waitForTimeout(400);
   // Vendors: scroll the list, open one, back

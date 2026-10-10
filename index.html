@@ -1545,6 +1545,29 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .vm-n{flex:1;min-width:0;display:grid}.vm-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vm-n small{color:var(--muted)}
 .vm-b{flex:none;font-size:13px;color:var(--muted)}
 .vm-done{display:grid;gap:8px;margin-top:10px}.vm-done b{font-size:17px;color:var(--good)}
+/* Settings groups (collapsible cards) */
+.cg-lbl{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:18px 4px 8px}
+.cg-lbl:first-child{margin-top:4px}
+details.cg{border:1.5px solid var(--line);border-radius:18px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+details.cg>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;min-height:64px;-webkit-tap-highlight-color:transparent}
+details.cg>summary::-webkit-details-marker{display:none}
+details.cg>summary:active{background:var(--surface-2)}
+.cg-ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink)}
+.cg-ic svg{width:20px;height:20px}
+.cg-t{flex:1;min-width:0;display:grid;gap:2px}
+.cg-t b{font-size:16px;font-weight:700;line-height:1.25}
+.cg-s{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cg-chev{flex:none;width:20px;height:20px;color:var(--muted);transition:transform .2s ease}
+details.cg[open]>summary .cg-chev{transform:rotate(180deg)}
+details.cg[open]>summary{border-bottom:1px solid var(--line)}
+details.cg[open]>summary .cg-ic{background:var(--ink);color:var(--ink-fg)}
+.cg-b{padding:2px 14px 6px}
+.cg-b h3{font-size:15px}
+.cg-b>.cfg-sec:last-child,.cg-b>div:last-child>.cfg-sec:last-child{border-bottom:0}
+.cg-b #cf-pr>h3:first-child,.cg-b #cf-ai>h3:first-child,.cg-b .cg-hide{display:none}
+details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
+@media (prefers-reduced-motion:reduce){.cg-chev{transition:none}}
+@media (min-width:1024px){details.cg>summary:hover{background:var(--surface-2)}}
 /* vendor notifications: bell, list, slide-in card */
 .nbell{position:relative;color:var(--fg)}
 .nbell svg{width:21px;height:21px}
@@ -2054,6 +2077,8 @@ Object.assign(STR.hi,{vmLink:"ग़लती से टेस्ट मोड �
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
 Object.assign(STR.en,{nT:"Notifications",nBell:"Notifications",nEmpty:"No updates yet. New vendors, vendor bills and payments will show here.",nHidden:n=>`${n} hidden by your settings`,nToday:"Today",nYest:"Yesterday",nBy:n=>`by ${n}`,nNewVendor:v=>`New vendor: ${v}`,nOpenBal:a=>`Opening balance ${a}`,nCredit:d=>`${d} days credit`,nBill:(a,v)=>`Bill ${a} from ${v}`,nBillNo:n=>`Bill ${n}`,nDue:d=>`due ${d}`,nPay:(a,v)=>`Paid ${a} to ${v}`,nAdj:(a,v)=>`Return ${a} to ${v}`,nFor:s=>`for bill ${s}`,nPaid:n=>n?`Bill ${n} fully paid`:"Bill fully paid",nOpening:"Opening balance",nRmBill:(a,v)=>`Bill ${a} removed · ${v}`,nRmPay:(a,v)=>`Payment ${a} removed · ${v}`,nRmAdj:(a,v)=>`Return ${a} removed · ${v}`,nCheck:(n,v)=>`Check bill${n?" "+n:""} from ${v}`,nIssues:n=>n===1?"1 calculation issue found":`${n} calculation issues found`,nMove:n=>n===1?"1 vendor moved to real mode":`${n} vendors moved to real mode`,nMore:n=>`${n} new updates`,nView:"View",nSetT:"Vendor notifications",nSetD:"Shown on the bell for you. Tap to turn a kind off.",nk_vendor:"New vendor",nk_bill:"Bills",nk_pay:"Payments",nk_paid:"Bill fully paid",nk_rm:"Removed",nk_check:"Bill check issues",nk_move:"Moved from test"});
 Object.assign(STR.hi,{nT:"सूचनाएँ",nBell:"सूचनाएँ",nEmpty:"अभी कोई सूचना नहीं। नए सप्लायर, सप्लायर के बिल और भुगतान यहाँ दिखेंगे।",nHidden:n=>`${n} आपकी सेटिंग से छिपी`,nToday:"आज",nYest:"कल",nBy:n=>`${n} ने किया`,nNewVendor:v=>`नया सप्लायर: ${v}`,nOpenBal:a=>`पुराना बकाया ${a}`,nCredit:d=>`${d} दिन उधार`,nBill:(a,v)=>`${v} का बिल ${a}`,nBillNo:n=>`बिल ${n}`,nDue:d=>`देय ${d}`,nPay:(a,v)=>`${v} को ${a} दिए`,nAdj:(a,v)=>`${v} को ${a} का माल वापस`,nFor:s=>`बिल ${s} के लिए`,nPaid:n=>n?`बिल ${n} पूरा चुका`:"बिल पूरा चुका",nOpening:"पुराना बकाया",nRmBill:(a,v)=>`बिल ${a} हटाया · ${v}`,nRmPay:(a,v)=>`भुगतान ${a} हटाया · ${v}`,nRmAdj:(a,v)=>`वापसी ${a} हटाई · ${v}`,nCheck:(n,v)=>`${v} का बिल${n?" "+n:""} जाँचें`,nIssues:n=>`हिसाब में ${n} गड़बड़ी`,nMove:n=>`${n} सप्लायर असली मोड में ले जाए गए`,nMore:n=>`${n} नई सूचनाएँ`,nView:"देखें",nSetT:"सप्लायर की सूचनाएँ",nSetD:"आपकी घंटी पर दिखेंगी। किसी को बंद करने के लिए दबाएँ।",nk_vendor:"नया सप्लायर",nk_bill:"बिल",nk_pay:"भुगतान",nk_paid:"बिल पूरा चुका",nk_rm:"हटाया",nk_check:"बिल जाँच में गड़बड़ी",nk_move:"टेस्ट से लाए"});
+Object.assign(STR.en,{cgYou:"You and this phone",cgShopL:"Shop · for everyone",cgOwnerL:"Owner",cgLook:"Display & search",cgPr:"Printer",cgShop:"Shop details",cgBills:"Bill numbers",cgItems:"Items & units",cgPpl:"People & security",cgPplD:"PINs, signed-in phones, shop code",cgBkD:"Copies in Google Drive, restore",cgSpeedD:"How fast the sheet answers",cgTest:"Test mode",cgReal:"Real billing",cgSBot:"search at bottom",cgSTop:"search at top",cgAuto:"prints after Done",cgNoGst:"no GSTIN",cgNext:n=>`Next bill ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>n===1?"1 unit":`${n} units`});
+Object.assign(STR.hi,{cgYou:"आप और यह फ़ोन",cgShopL:"दुकान · सबके लिए",cgOwnerL:"मालिक",cgLook:"दिखावट और सर्च",cgPr:"प्रिंटर",cgShop:"दुकान की जानकारी",cgBills:"बिल नंबर",cgItems:"आइटम और यूनिट",cgPpl:"लोग और सुरक्षा",cgPplD:"PIN, साइन-इन फ़ोन, दुकान का कोड",cgBkD:"Google Drive में कॉपी, वापस लाना",cgSpeedD:"शीट कितनी जल्दी जवाब देती है",cgTest:"टेस्ट मोड",cgReal:"असली बिलिंग",cgSBot:"सर्च नीचे",cgSTop:"सर्च ऊपर",cgAuto:"Done के बाद प्रिंट",cgNoGst:"GSTIN नहीं",cgNext:n=>`अगला बिल ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>`${n} यूनिट`});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
 /* Backup strings */
 Object.assign(STR.en,{bkT:"Backups",bkNow:"Back up now",bkAutoOn:"Automatic every 4 hours",bkLast:d=>`last ${d}`,bkCopies:n=>`${n} cop${n===1?"y":"ies"} kept`,bkNone:"No backups yet.",
@@ -4815,10 +4840,35 @@ function openBulkEdit(){
 }
 
 /* ---------------- Settings ---------------- */
+/* Settings in groups: each is a card that opens and closes. All closed when Settings opens; the ones opened stay open while
+   you go into a screen inside (a person, Groups) and come back, until Settings is closed. */
+const CG_OPEN=new Set();
+const CG_IC={user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',phone:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',printer:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',store:'<path d="M3 9 4.5 4h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/>',receipt:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',tag:'<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>',cloud:'<path d="M17.5 19a4.5 4.5 0 1 0-1-8.9A6 6 0 0 0 5 12a4 4 0 0 0 1 7.9z"/>',gauge:'<path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>'};
+function cg(key,ic,title,sum,inner){ if(!String(inner).trim()) return "";
+  return `<details class="cg" data-cg="${key}" ${CG_OPEN.has(key)?"open":""}><summary><span class="cg-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CG_IC[ic]||""}</svg></span><span class="cg-t"><b>${esc(title)}</b><small class="cg-s">${esc(sum||"")}</small></span><svg class="cg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="cg-b">${inner}</div></details>`; }
+const cgJ=a=>a.filter(Boolean).join(" · "), cgCap=x=>x?x[0].toUpperCase()+x.slice(1):"";
+const cgSumMe=()=>cgJ([byName(), myRole()?t("role"+cgCap(myRole())):"", S.canWrite?t(S.cfg.mode==="test"?"cgTest":"cgReal"):""]);
+const cgSumLook=()=>cgJ([t("ts"+(TSIZES.indexOf(fzNow())+1)), t("th"+cgCap(palNow())), t("ap"+cgCap(appearNow())), t(sposNow()==="bottom"?"cgSBot":"cgSTop")]);
+const cgSumPr=()=>{ const P=prGet(); return cgJ([t("prP"+P.paper), P.auto?t("cgAuto"):""]); };
+const cgSumShop=c=>cgJ([c.shopName, c.shopGstin?"GSTIN "+c.shopGstin:t("cgNoGst")]);
+const cgSumBills=c=>cgJ([t("cgNext",c.nextBill), t("cgNextG",c.nextGstBill), t(+c.roundTo===1?"r1":+c.roundTo===0.5?"r05":"r0")]);
+const cgSumItems=c=>cgJ([t("cgUnits",c.units.length), t("grpCount",allGroups().length)]);
+const cgSumAi=()=>t(S.cfg.aiOn?"aiOnL":"aiOffL");
+function cgSync(){ const f={me:cgSumMe,look:cgSumLook,pr:cgSumPr,ai:cgSumAi};
+  Object.keys(f).forEach(k=>{ const el=document.querySelector(`#sheet-body details.cg[data-cg="${k}"] .cg-s`); if(el) el.textContent=f[k](); }); }
+function cgWire(){ $("#sheet-body").querySelectorAll("details.cg").forEach(d=>{
+  const sm=d.querySelector("summary"); sm.addEventListener("click",()=>{ d.__user=Date.now(); });
+  d.addEventListener("toggle",()=>{ const k=d.dataset.cg; if(d.open) CG_OPEN.add(k); else CG_OPEN.delete(k);
+    if(d.open && Date.now()-(d.__user||0)<800) setTimeout(()=>{ const r=d.getBoundingClientRect(), h=(window.visualViewport||{}).height||innerHeight; if(r.bottom>h-90) sm.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); },60); });
+  d.addEventListener("click",()=>setTimeout(cgSync,80)); d.addEventListener("change",()=>setTimeout(cgSync,80)); }); }
+function cgFocus(sel){ const el=$(sel); if(!el) return; const d=el.closest("details"); if(d) d.open=true; el.scrollIntoView({block:"center"}); el.focus(); }
 function openSettings(){
   const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:seriesNext(false), nextGstBill:seriesNext(true), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
   const w=can("owner"), me=S.canWrite, test=S.cfg.mode==="test";
+  if($("#sheet").hidden || (sheetCurKey!=="settings" && !SHEET_STK.some(x=>x.key==="settings"))) CG_OPEN.clear();
   const body=`
+    <div class="cg-lbl">${esc(t("cgYou"))}</div>
+${cg("me","user",t("meT"),cgSumMe(),`
     ${me?`<div class="cfg-sec" style="display:grid;gap:10px" id="cf-me"><div><h3 style="margin:0">${esc(t("meT"))}</h3><p class="note" style="margin:2px 0 0">${esc(t("meD",S.auth.by||""))}</p></div>
       <div class="env-sec${test?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(myTestOk()?t("myEnvD"):t("noTestD"))}</span></span><input type="checkbox" id="cf-env" ${test?"checked":""} ${myTestOk()||test?"":"disabled"}></label>
         <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
@@ -4828,6 +4878,9 @@ function openSettings(){
       <div id="cf-bio"></div>
       <div><button type="button" class="btn ghost" id="cf-signout">${esc(t("signOutBtn"))}</button></div>
       <div class="err" id="cf-meerr" role="alert"></div></div>`:""}
+    ${me?"":`<div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
+      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label></div>`}`)}
+${cg("look","phone",t("cgLook"),cgSumLook(),`
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("tsizeT"))}</h3>
       <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
       <p class="note" style="margin:0">${esc(t("tsizeD"))}</p>
@@ -4841,18 +4894,12 @@ function openSettings(){
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
       <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
-      <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>
-    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-pr"></div>
-    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-ai"></div>
-    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>
-    <p class="note" style="margin:0">${esc(t("sharedNote"))}</p>
+      <p class="note" style="margin:0">${esc(t("appearD"))}</p></div>`)}
+${cg("pr","printer",t("cgPr"),cgSumPr(),`
+    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-pr"></div>`)}
+    ${can("manager")?`<div class="cg-lbl">${esc(t("cgShopL"))}</div>`:""}
+${can("manager")?cg("shop","store",t("cgShop"),cgSumShop(c),`
     <div class="cfg-sec"><div class="field"><label for="cf-shop">${esc(t("shopName"))}</label><input id="cf-shop" value="${esc(c.shopName)}" ${w?"":"disabled"}></div></div>
-    <div class="cfg-sec"><h3>${esc(t("units"))}</h3><div class="unit-chips" id="cf-units"></div>
-      ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
-    <div class="cfg-sec"><div class="field"><label>${esc(t("defUnit"))}</label>${unitBtnHTML("cf-def",c.defaultUnit,w?"":"disabled")}</div></div>
-    <div class="cfg-sec"><h3>${esc(t("rounding"))}</h3><div class="seg" id="cf-round">${[[1,"r1"],[0.5,"r05"],[0,"r0"]].map(([v,k])=>`<button type="button" data-r="${v}" aria-pressed="${+c.roundTo===v}" ${w?"":"disabled"}>${esc(t(k))}</button>`).join("")}</div></div>
-    <div class="cfg-sec"><h3>${esc(t("billNoT"))}</h3><div class="two"><div class="field"><label for="cf-bill">${esc(t("nextBillL"))}</label><input id="cf-bill" class="num" inputmode="numeric" value="${c.nextBill}" ${w?"":"disabled"}></div>
-      <div class="field"><label for="cf-gbill">${esc(t("nextGstBillL"))}</label><input id="cf-gbill" class="num" inputmode="numeric" value="${c.nextGstBill}" ${w?"":"disabled"}></div></div><p class="note" style="margin:0">${esc(t("nextBillD"))}${S.cfg.mode==="test"?` ${esc(t("envNumsNote"))}`:""}</p></div>
     <div class="cfg-sec"><h3>${esc(t("gstSet"))}</h3>
       <div class="field"><label for="cf-gstin">${esc(t("shopGstin"))}</label><input id="cf-gstin" value="${esc(c.shopGstin)}" maxlength="15" style="text-transform:uppercase" autocomplete="off" ${w?"":"disabled"}></div>
       <div class="field"><label for="cf-addr">${esc(t("shopAddress"))}</label><input id="cf-addr" value="${esc(c.shopAddress)}" maxlength="200" ${w?"":"disabled"}></div>
@@ -4861,17 +4908,31 @@ function openSettings(){
       <div class="two"><div class="field"><label for="cf-dgst">${esc(t("defGst"))}</label><input id="cf-dgst" class="num" inputmode="decimal" value="${esc(c.defaultGst)}" ${w?"":"disabled"}></div>
         <div class="field"><label for="cf-dhsn">${esc(t("defHsn"))}</label><input id="cf-dhsn" class="num" inputmode="numeric" maxlength="10" value="${esc(c.defaultHsn)}" ${w?"":"disabled"}></div></div>
     </div>
-    ${w?`<div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
-    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("speedT"))}</h3><p class="note" style="margin:0">${esc(t("speedD"))}</p><div id="speed-body">${speedHTML()}</div></div>
+    <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>`):""}
+${can("manager")?cg("bills","receipt",t("cgBills"),cgSumBills(c),`
+    <div class="cfg-sec"><h3>${esc(t("billNoT"))}</h3><div class="two"><div class="field"><label for="cf-bill">${esc(t("nextBillL"))}</label><input id="cf-bill" class="num" inputmode="numeric" value="${c.nextBill}" ${w?"":"disabled"}></div>
+      <div class="field"><label for="cf-gbill">${esc(t("nextGstBillL"))}</label><input id="cf-gbill" class="num" inputmode="numeric" value="${c.nextGstBill}" ${w?"":"disabled"}></div></div><p class="note" style="margin:0">${esc(t("nextBillD"))}${S.cfg.mode==="test"?` ${esc(t("envNumsNote"))}`:""}</p></div>
+    <div class="cfg-sec"><h3>${esc(t("rounding"))}</h3><div class="seg" id="cf-round">${[[1,"r1"],[0.5,"r05"],[0,"r0"]].map(([v,k])=>`<button type="button" data-r="${v}" aria-pressed="${+c.roundTo===v}" ${w?"":"disabled"}>${esc(t(k))}</button>`).join("")}</div></div>`):""}
+${can("manager")?cg("items","tag",t("cgItems"),cgSumItems(c),`
+    <div class="cfg-sec"><h3>${esc(t("units"))}</h3><div class="unit-chips" id="cf-units"></div>
+      ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
+    <div class="cfg-sec"><div class="field"><label>${esc(t("defUnit"))}</label>${unitBtnHTML("cf-def",c.defaultUnit,w?"":"disabled")}</div></div>
+    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>`):""}
+${can("manager")?cg("ai","scan",t("aiT"),cgSumAi(),`
+    <div class="cfg-sec" style="display:grid;gap:8px" id="cf-ai"></div>`):""}
+    ${w?`<div class="cg-lbl">${esc(t("cgOwnerL"))}</div>`:""}
+${w?cg("ppl","users",t("cgPpl"),t("cgPplD"),`
+    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("sessT"))}</h3><p class="note" style="margin:0">${esc(t("sessD"))}</p><div id="sess-body">${ldBlock()}</div></div>
-    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>`:""}
-    ${w?`<div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`:""}
-    <div class="cfg-sec"><div class="field"><label for="cf-foot">${esc(t("billFooter"))}</label><input id="cf-foot" value="${esc(c.billFooter)}" placeholder="${esc(t("billFooterPh"))}" ${w?"":"disabled"}></div></div>
-    ${w?`<div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`:""}
-    ${me?"":`<div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
-      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label></div>`}
+    <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>
+    <div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`):""}
+${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
+    <div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`):""}
+${w?cg("speed","gauge",t("speedT"),t("cgSpeedD"),`
+    <div class="cfg-sec bk-sec"><h3 style="margin:0" class="cg-hide">${esc(t("speedT"))}</h3><p class="note" style="margin:0">${esc(t("speedD"))}</p><div id="speed-body">${speedHTML()}</div></div>`):""}
     <div class="err" id="cf-err" role="alert"></div>`;
   sheetKey("settings"), openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
+  cgWire();
   const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
   drawUnits();
   $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
@@ -4916,10 +4977,10 @@ function openSettings(){
   if($("#cf-bk")) loadBackupCard();
   if($("#ppl-body")) loadOwnerCards();
   $("#cf-save").onclick=async()=>{ const btn=$("#cf-save"); btn.disabled=true;
-    const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-bill").focus(); return; }
-    const ngb=Math.floor(toNum($("#cf-gbill").value)); if(!(ngb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); $("#cf-gbill").focus(); return; }
-    const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); $("#cf-gstin").focus(); return; }
-    const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; $("#cf-dgst").focus(); return; }
+    const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); cgFocus("#cf-bill"); return; }
+    const ngb=Math.floor(toNum($("#cf-gbill").value)); if(!(ngb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); cgFocus("#cf-gbill"); return; }
+    const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); cgFocus("#cf-gstin"); return; }
+    const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; cgFocus("#cf-dgst"); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
     const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };

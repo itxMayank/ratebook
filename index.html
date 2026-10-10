@@ -1545,12 +1545,43 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .vm-n{flex:1;min-width:0;display:grid}.vm-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vm-n small{color:var(--muted)}
 .vm-b{flex:none;font-size:13px;color:var(--muted)}
 .vm-done{display:grid;gap:8px;margin-top:10px}.vm-done b{font-size:17px;color:var(--good)}
+/* vendor notifications: bell, list, slide-in card */
+.nbell{position:relative;color:var(--fg)}
+.nbell svg{width:21px;height:21px}
+.nbadge{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#d92d20;color:#fff;font:700 11px/18px var(--font,inherit);text-align:center;box-shadow:0 0 0 2px var(--bg)}
+.nbell.ring svg{animation:nring .6s ease 2}
+@keyframes nring{0%,100%{transform:rotate(0)}25%{transform:rotate(14deg)}75%{transform:rotate(-14deg)}}
+.n-top{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:6px}
+.n-top .note{margin:0}
+.n-day{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 2px 6px}
+.nrow{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:16px;padding:12px;margin-bottom:8px;color:inherit;font:inherit}
+.nrow.unread{border-color:var(--accent);background:var(--accent-soft)}
+.n-ic{flex:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2)}
+.n-ic svg{width:19px;height:19px}
+.n-ic.k-bill{background:#e8f0fe;color:#1a56c4}.n-ic.k-pay,.n-ic.k-adj{background:#fff4e5;color:#a14b07}.n-ic.k-paid{background:#e6f6ec;color:#1b7a3d}
+.n-ic.k-rm{background:#f2f2f2;color:#666}.n-ic.k-check{background:#fdecec;color:#b42318}.n-ic.k-vendor{background:#f1ecfd;color:#5b3cc4}.n-ic.k-move{background:#e7f6f8;color:#0b6b78}
+.n-mid{flex:1;min-width:0;display:grid;gap:2px}
+.n-mid b{font-weight:700;line-height:1.3}
+.n-mid small{color:var(--muted);line-height:1.35}
+.n-r{flex:none;display:grid;justify-items:end;gap:6px;font-size:12px;color:var(--muted)}
+.n-dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.n-empty{text-align:center;color:var(--muted);padding:36px 12px}
+.n-empty svg{width:40px;height:40px;opacity:.5;display:block;margin:0 auto 8px}
+.n-offs{display:flex;flex-wrap:wrap;gap:6px}
+.n-offs button{border:1.5px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600}
+.n-offs button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+#nslide{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:70;max-width:440px;margin:0 auto;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--fg);border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.18);border:1px solid var(--line);transform:translateY(calc(-100% - 30px));opacity:0;transition:transform .35s cubic-bezier(.2,1.3,.4,1),opacity .25s;pointer-events:none;text-align:left;font:inherit;zoom:var(--fz)}
+#nslide.on{transform:none;opacity:1;pointer-events:auto}
+#nslide .n-mid b{font-size:14px}
+#nslide .n-x{flex:none;border:0;background:none;color:var(--muted);font-size:18px;padding:4px}
+@media (prefers-reduced-motion:reduce){#nslide{transition:opacity .2s}.nbell.ring svg{animation:none}}
 </style>
 </head>
 <body>
 <header class="top">
   <div class="bar">
     <h1 class="brand"><span class="hello" id="hello"></span><span id="shopname">Rate Book</span><span class="envbadge" id="envbadge" hidden>TEST</span><small id="count" class="num"></small></h1>
+    <button class="iconbtn nbell" id="nbell" hidden aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge num" id="nbadge" hidden></span></button>
     <button class="iconbtn" id="cmd-open" aria-label="Change by typing or speaking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg></button>
     <div class="lang" role="group" aria-label="Language">
       <button id="lang-en" aria-pressed="true">EN</button>
@@ -1713,6 +1744,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   </div>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<button type="button" id="nslide" aria-live="polite"></button>
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
@@ -2020,6 +2052,8 @@ Object.assign(STR.en,{vmLink:"Made these in test mode by mistake? Move to real m
 Object.assign(STR.hi,{vmLink:"ग़लती से टेस्ट मोड में बनाए? असली मोड में ले जाएँ",vmT:"सप्लायर असली मोड में ले जाएँ",vmWarnT:"यह असली डेटा टेस्ट मोड से हटा देगा",vmWarnD:"चुने हुए सप्लायर अपनी सारी जानकारी के साथ असली मोड में चले जाएँगे: बिल, भुगतान, वापसी, नोट, बिल की फ़ोटो और PDF, बिल जाँच और ख़रीद का इतिहास। वे टेस्ट मोड में नहीं रहेंगे।",vmWarnLink:"अगर आपने किसी सप्लायर को लिंक भेजा था, तो वह बदल जाएगा: सप्लायर की शेयर स्क्रीन से नया लिंक भेजें।",vmAll:n=>`सभी सप्लायर (${n})`,vmCount:n=>`${n} एंट्री`,vmGo:n=>`${n} सप्लायर ले जाएँ`,vmConfirm:n=>`${n} सप्लायर और उनके सारे बिल, भुगतान और फ़ोटो असली मोड में ले जाएँ?\n\nवे टेस्ट मोड से हट जाएँगे। ऐप से इसे वापस नहीं किया जा सकता।`,vmWait:"कुछ बदलाव अभी भेजे जा रहे हैं। थोड़ा रुककर फिर दबाएँ।",vmDone:n=>`${n} सप्लायर असली मोड में चले गए`,vmDoneD:(e,p,u)=>`उनके साथ ${e} एंट्री, ${p} बिल फ़ोटो और ${u} ख़रीद लाइनें भी गईं।`,vmFileFail:n=>`${n} फ़ोटो फ़ाइल असली फ़ोल्डर में नहीं जा सकीं; वे पहले जैसी खुलेंगी।`,vmSkipped:s=>`पहले से असली मोड में, नहीं ले गए: ${s}`,vmSee:"देखने के लिए असली बिलिंग चालू करें: Settings → सिर्फ़ आपके लिए → टेस्ट मोड बंद।",vmOpenSet:"Settings खोलें",vmOldScript:"पहले शीट स्क्रिप्ट अपडेट करें (डैशबोर्ड → Update script), फिर दोबारा कोशिश करें।",sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",sresT:"सबसे सही नतीजा",sresNear:"सर्च बार के पास",sresTop:"सबसे ऊपर",sresD:"टाइप करते समय सबसे मिलता नतीजा कहाँ दिखे।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
 /* Refresh strings */
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
+Object.assign(STR.en,{nT:"Notifications",nBell:"Notifications",nEmpty:"No updates yet. New vendors, vendor bills and payments will show here.",nHidden:n=>`${n} hidden by your settings`,nToday:"Today",nYest:"Yesterday",nBy:n=>`by ${n}`,nNewVendor:v=>`New vendor: ${v}`,nOpenBal:a=>`Opening balance ${a}`,nCredit:d=>`${d} days credit`,nBill:(a,v)=>`Bill ${a} from ${v}`,nBillNo:n=>`Bill ${n}`,nDue:d=>`due ${d}`,nPay:(a,v)=>`Paid ${a} to ${v}`,nAdj:(a,v)=>`Return ${a} to ${v}`,nFor:s=>`for bill ${s}`,nPaid:n=>n?`Bill ${n} fully paid`:"Bill fully paid",nOpening:"Opening balance",nRmBill:(a,v)=>`Bill ${a} removed · ${v}`,nRmPay:(a,v)=>`Payment ${a} removed · ${v}`,nRmAdj:(a,v)=>`Return ${a} removed · ${v}`,nCheck:(n,v)=>`Check bill${n?" "+n:""} from ${v}`,nIssues:n=>n===1?"1 calculation issue found":`${n} calculation issues found`,nMove:n=>n===1?"1 vendor moved to real mode":`${n} vendors moved to real mode`,nMore:n=>`${n} new updates`,nView:"View",nSetT:"Vendor notifications",nSetD:"Shown on the bell for you. Tap to turn a kind off.",nk_vendor:"New vendor",nk_bill:"Bills",nk_pay:"Payments",nk_paid:"Bill fully paid",nk_rm:"Removed",nk_check:"Bill check issues",nk_move:"Moved from test"});
+Object.assign(STR.hi,{nT:"सूचनाएँ",nBell:"सूचनाएँ",nEmpty:"अभी कोई सूचना नहीं। नए सप्लायर, सप्लायर के बिल और भुगतान यहाँ दिखेंगे।",nHidden:n=>`${n} आपकी सेटिंग से छिपी`,nToday:"आज",nYest:"कल",nBy:n=>`${n} ने किया`,nNewVendor:v=>`नया सप्लायर: ${v}`,nOpenBal:a=>`पुराना बकाया ${a}`,nCredit:d=>`${d} दिन उधार`,nBill:(a,v)=>`${v} का बिल ${a}`,nBillNo:n=>`बिल ${n}`,nDue:d=>`देय ${d}`,nPay:(a,v)=>`${v} को ${a} दिए`,nAdj:(a,v)=>`${v} को ${a} का माल वापस`,nFor:s=>`बिल ${s} के लिए`,nPaid:n=>n?`बिल ${n} पूरा चुका`:"बिल पूरा चुका",nOpening:"पुराना बकाया",nRmBill:(a,v)=>`बिल ${a} हटाया · ${v}`,nRmPay:(a,v)=>`भुगतान ${a} हटाया · ${v}`,nRmAdj:(a,v)=>`वापसी ${a} हटाई · ${v}`,nCheck:(n,v)=>`${v} का बिल${n?" "+n:""} जाँचें`,nIssues:n=>`हिसाब में ${n} गड़बड़ी`,nMove:n=>`${n} सप्लायर असली मोड में ले जाए गए`,nMore:n=>`${n} नई सूचनाएँ`,nView:"देखें",nSetT:"सप्लायर की सूचनाएँ",nSetD:"आपकी घंटी पर दिखेंगी। किसी को बंद करने के लिए दबाएँ।",nk_vendor:"नया सप्लायर",nk_bill:"बिल",nk_pay:"भुगतान",nk_paid:"बिल पूरा चुका",nk_rm:"हटाया",nk_check:"बिल जाँच में गड़बड़ी",nk_move:"टेस्ट से लाए"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
 /* Backup strings */
 Object.assign(STR.en,{bkT:"Backups",bkNow:"Back up now",bkAutoOn:"Automatic every 4 hours",bkLast:d=>`last ${d}`,bkCopies:n=>`${n} cop${n===1?"y":"ies"} kept`,bkNone:"No backups yet.",
@@ -2644,7 +2678,7 @@ function catsInUse(){ const m=new Map(); S.items.forEach(it=>{ if(it.cat) m.set(
 function renderHeader(){
   $("#shopname").textContent = S.cfg.shopName || (S.lang==="hi"?"रेट बुक":"Rate Book");
   $("#count").textContent = S.loaded && S.items.length ? " · "+t("items",S.items.length) : "";
-  $("#cmd-open").hidden = !can("manager");
+  $("#cmd-open").hidden = !can("manager"); nBadge();
   const nm=byName(); $("#hello").textContent = nm ? t("helloName",nm) : t("hello");
 }
 function renderList(){
@@ -4789,6 +4823,7 @@ function openSettings(){
       <div class="env-sec${test?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(myTestOk()?t("myEnvD"):t("noTestD"))}</span></span><input type="checkbox" id="cf-env" ${test?"checked":""} ${myTestOk()||test?"":"disabled"}></label>
         <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
       ${can("manager")?`<label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-myprofit" ${S.cfg.showProfit?"checked":""}></label>`:""}
+      ${nSetHTML()}
       <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>
       <div id="cf-bio"></div>
       <div><button type="button" class="btn ghost" id="cf-signout">${esc(t("signOutBtn"))}</button></div>
@@ -4857,6 +4892,10 @@ function openSettings(){
     $("#cf-bioon").onchange=async e=>{ const on=e.target.checked;
       if(on){ try{ await bioRegister(); }catch{ e.target.checked=false; $("#cf-meerr").textContent=t("bioFail"); } }
       else { delete S.auth.bio; ls.set("rb_auth",S.auth); ls.set("rb_bio_"+(S.auth.by||""),null); ls.set("rb_bio_no_"+(S.auth.by||""),true); } }; });
+  if($("#cf-noti")) $("#cf-noti").onclick=e=>{ const b=e.target.closest("[data-nk]"); if(!b) return; const box=$("#cf-noti .n-offs"), was=[...box.querySelectorAll("[data-nk]")].map(x=>[x,x.getAttribute("aria-pressed")]);
+    b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"));
+    const noff=[...box.querySelectorAll('[data-nk][aria-pressed="false"]')].map(x=>x.dataset.nk);
+    mySet(box,{noff},()=>was.forEach(([x,v])=>x.setAttribute("aria-pressed",v))).then(()=>{ nBadge(); if($("#n-list")) nRenderList(false); }); };
   if($("#cf-myprofit")) $("#cf-myprofit").onchange=e=>{ const v=e.target.checked; mySet(e.target,{showProfit:v},()=>{ e.target.checked=!v; }); };
   if($("#cf-env")){
     const env=$("#cf-env"), box=$("#cf-envc");
@@ -6503,7 +6542,8 @@ async function checkRev(){
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
     if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
     if(vqGet().length && !vqBusy) vqFlush();
-    const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true); }
+    const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true);
+    nCheck(j); }
   catch{ S.online=false; renderNet(); }
 }
 async function fetchThumbs(){
@@ -6527,6 +6567,76 @@ window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); }
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkRev(); });
 setInterval(checkRev,25000);
+
+/* ---------------- Notifications (vendors; owner + managers) ----------------
+   The sheet writes a notice when a vendor / bill / payment is saved (Code.gs notice_). The 25-second rev check carries the
+   notices version (nl / nt); when it changes the phone fetches the list. Read state is per person on the sheet; kinds a
+   person switched off (prefs.noff) are left out of the bell and the list. Kept on the phone per mode, so the badge shows offline. */
+const NT={env:"",nrev:"",list:null,busy:false,again:false};
+const NKINDS=["vendor","bill","pay","paid","rm","check","move"];
+const nOn=()=>S.canWrite && can("manager") && !(S.sv>0 && S.sv<43);
+const nOff=()=>(S.auth&&S.auth.prefs&&S.auth.prefs.noff)||[];
+const nShown=n=>{ const off=nOff(); return off.indexOf(n.kind==="adj"?"pay":n.kind)<0; };
+function nLoad(){ if(NT.env===S.cfg.mode) return; const c=ls.get(envKey("rb_notes"),null); NT.env=S.cfg.mode; NT.nrev=c&&c.nrev||""; NT.list=c&&Array.isArray(c.list)?c.list:null; }
+function nSave(){ ls.set(envKey("rb_notes"),{nrev:NT.nrev,list:(NT.list||[]).slice(0,100)}); }
+function nUnread(){ return (NT.list||[]).filter(n=>!n.read && nShown(n)).length; }
+function nBadge(){ const b=$("#nbell"); if(!b) return; const on=nOn(); b.hidden=!on; if(!on) return; nLoad();
+  const k=nUnread(), el=$("#nbadge"); el.hidden=!k; el.textContent=k>99?"99+":String(k); b.setAttribute("aria-label",t("nBell")+(k?` (${k})`:"")); }
+async function nSync(){ if(!nOn()) return; if(NT.busy){ NT.again=true; return; } NT.busy=true; nLoad(); const env=S.cfg.mode;
+  try{ const j=await apiPost0({action:"notices"}); if(env!==S.cfg.mode || !Array.isArray(j.list)) return;
+    const had=NT.list, known=new Set((had||[]).map(n=>n.id));
+    NT.list=j.list; NT.nrev=String(j.nrev||""); nSave(); nBadge();
+    if(had){ const fresh=j.list.filter(n=>!known.has(n.id) && !n.read && nShown(n)); if(fresh.length) nSlide(fresh); }
+    if($("#n-list")) nRenderList(false); }
+  catch{} finally{ NT.busy=false; if(NT.again){ NT.again=false; setTimeout(nSync,200); } } }
+function nCheck(j){ if(!nOn()) return; nLoad(); const v=S.cfg.mode==="live"?j.nl:j.nt; if(v!==undefined && String(v)!==String(NT.nrev)) nSync(); }
+const N_IC={vendor:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',bill:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',pay:'<path d="M7 17 17 7M8 7h9v9"/>',adj:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-2"/>',paid:'<path d="M20 6 9 17l-5-5"/>',rm:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',check:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',move:'<path d="M5 12h14M13 6l6 6-6 6"/>'};
+const nIcon=k=>`<span class="n-ic k-${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${N_IC[k]||N_IC.bill}</svg></span>`;
+function nText(n){ const x=n.extra||{}, v=n.vname||"", a=n.amount!=null?vMoney(n.amount):"", by=n.by?t("nBy",n.by):"", J=a=>a.filter(Boolean).join(" · ");
+  const bno=n.billNo==="Opening"?t("nOpening"):n.billNo;
+  switch(n.kind){
+    case "vendor": return {b:t("nNewVendor",v), s:J([+n.amount?t("nOpenBal",a):"", +x.days?t("nCredit",x.days):"", by])};
+    case "bill": return {b:t("nBill",a,v), s:J([n.billNo?t("nBillNo",n.billNo):"", x.due?t("nDue",vDate(x.due)):"", by])};
+    case "pay": return {b:t("nPay",a,v), s:J([x.mode?t("vm_"+String(x.mode).toLowerCase()):"", x.bills&&x.bills.length?t("nFor",x.bills.map(s=>s==="Opening"?t("nOpening"):s).join(", ")):"", by])};
+    case "adj": return {b:t("nAdj",a,v), s:by};
+    case "paid": return {b:t("nPaid",n.billNo==="Opening"?"":n.billNo), s:J([n.billNo==="Opening"?t("nOpening"):"", v, a, by])};
+    case "rm": return {b:t(x.type==="bill"?"nRmBill":x.type==="adj"?"nRmAdj":"nRmPay",a,v), s:J([bno?t("nBillNo",bno):"", by])};
+    case "check": return {b:t("nCheck",n.billNo,v), s:J([x.n?t("nIssues",x.n):"", a])};
+    case "move": return {b:t("nMove",x.n||0), s:J([(x.names||[]).join(", "), by])};
+  } return {b:v, s:by}; }
+const nTime=at=>{ const d=new Date(at); return Date.now()-at<86400000 && d.toDateString()===new Date().toDateString() && Date.now()-at<3600000 ? ago(at) : d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
+function nDay(at){ const d=new Date(at), now=new Date(), y=new Date(now); y.setDate(now.getDate()-1);
+  return d.toDateString()===now.toDateString()?t("nToday"):d.toDateString()===y.toDateString()?t("nYest"):d.toLocaleDateString("en-IN",{weekday:"short",day:"2-digit",month:"short"}); }
+let nSlideT;
+function nSlide(fresh){ const el=$("#nslide"); if(!el || !nOn() || document.documentElement.classList.contains("locked")) return;
+  const n=fresh[0], x=fresh.length>1?{b:t("nMore",fresh.length),s:nText(n).b}:nText(n);
+  el.innerHTML=`${nIcon(fresh.length>1?"bill":n.kind)}<span class="n-mid"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></span><span class="n-x" aria-hidden="true">✕</span>`;
+  el.dataset.id=fresh.length>1?"":n.id; el.classList.add("on");
+  const b=$("#nbell"); b.classList.remove("ring"); void b.offsetWidth; if(!matchMedia("(prefers-reduced-motion: reduce)").matches) b.classList.add("ring");
+  clearTimeout(nSlideT); nSlideT=setTimeout(()=>el.classList.remove("on"),6000); }
+$("#nslide").onclick=e=>{ const el=$("#nslide"); el.classList.remove("on"); if(e.target.closest(".n-x")) return; const n=(NT.list||[]).find(x=>x.id===el.dataset.id); if(n){ nGo(n); nMark([n.id]); } else openNotices(); };
+async function nMark(ids){ (NT.list||[]).forEach(n=>{ if(!ids||ids.indexOf(n.id)>=0) n.read=true; }); nSave(); nBadge();
+  try{ const j=await apiPost0(ids?{action:"noticeRead",ids}:{action:"noticeRead",all:true}); if(Array.isArray(j.list)){ const loc={}; (NT.list||[]).forEach(n=>{ if(n.read) loc[n.id]=1; }); NT.list=j.list.map(n=>loc[n.id]?{...n,read:true}:n); NT.nrev=String(j.nrev||NT.nrev); nSave(); nBadge(); } }catch{} }
+function nGo(n){
+  if(n.kind==="move" || !n.vendorId){ openVendors(); return; }
+  vdbInit().then(()=>{ const D=VD.det[n.vendorId]; openVendor(n.vendorId);
+    if(D && n.entryId && n.kind!=="rm" && D.entries.some(e=>e.id===n.entryId)) vEntry(n.vendorId,n.entryId); }); }
+function nRenderList(fresh){ const box=$("#n-list"); if(!box) return; nLoad();
+  const all=NT.list||[], L=all.filter(nShown), hid=all.length-L.length, keep=box.__unread||new Set();
+  if(fresh){ L.forEach(n=>{ if(!n.read) keep.add(n.id); }); box.__unread=keep; }
+  if(NT.list===null){ box.innerHTML=skelCards(4,true); return; }
+  let day="", h="";
+  L.forEach(n=>{ const d=nDay(n.at); if(d!==day){ day=d; h+=`<div class="n-day">${esc(d)}</div>`; } const x=nText(n), un=keep.has(n.id);
+    h+=`<button type="button" class="nrow${un?" unread":""}" data-nid="${esc(n.id)}">${nIcon(n.kind)}<span class="n-mid"><b>${esc(x.b)}</b>${x.s?`<small>${esc(x.s)}</small>`:""}</span><span class="n-r"><span class="num">${esc(nTime(n.at))}</span>${un?`<span class="n-dot"></span>`:""}</span></button>`; });
+  box.innerHTML=(h||`<div class="n-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${esc(t("nEmpty"))}</div>`)+(hid?`<p class="note" style="text-align:center">${esc(t("nHidden",hid))}</p>`:""); }
+function openNotices(){ if(!nOn()) return; nLoad();
+  sheetKey("notices"), openSheet(t("nT"),`<div id="n-list"></div>`,"",{full:true});
+  nRenderList(true); $("#n-list").onclick=e=>{ const b=e.target.closest("[data-nid]"); if(!b) return; const n=(NT.list||[]).find(x=>x.id===b.dataset.nid); if(n) nGo(n); };
+  if(nUnread()) nMark(null); nSync(); }
+$("#nbell").onclick=()=>openNotices();
+setTimeout(()=>nSync(),6000);   // once after start (the rev check covers the rest)
+function nSetHTML(){ if(!nOn()) return ""; const off=nOff();
+  return `<div style="display:grid;gap:8px" id="cf-noti"><div><b>${esc(t("nSetT"))}</b><br><span class="note">${esc(t("nSetD"))}</span></div><div class="n-offs">${NKINDS.map(k=>`<button type="button" data-nk="${k}" aria-pressed="${off.indexOf(k)<0}">${esc(t("nk_"+k))}</button>`).join("")}</div></div>`; }
 
 /* ---------------- Install to home screen ---------------- */
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);

@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 9 October 2026 (more shops from one app + admin dashboard; speed; error log for phones and scripts).
+Last updated: 10 October 2026 (vendor notifications in the app; earlier: more shops from one app + admin dashboard; speed; error log).
 
 ## Where everything lives
 
@@ -468,6 +468,24 @@ What the shop owes its suppliers. Tools → **Vendors** (owner + manager; server
 
 - **Move vendors from test to real mode** (10 Oct 2026, `SCRIPT_VERSION` 42 / `NEED_SV` unchanged; owner only). For vendors added in test mode by mistake. Vendors screen (test mode, owner) → "Made these in test mode by mistake? Move to real mode" (`#vl-move` → `vMoveUI`): a warning card (what moves; a shared link changes), every test vendor with a tick box (all ticked, entry count, balance), **Move N vendors** → a final `confirm()` → `vToLive {ids}`. Refused while vendor changes are still waiting to send (`vqGet()`), since they'd land in test mode.
   - Script `vToLive_(ids, by)` (inside doPost's lock): copies each chosen vendor row (new `l…` link token, link on/off kept), all its `VendorLedger` entries (bills, payments, returns, notes, readings, checks, applied), `VendorDocs` rows and `Purchases` rows into the real tabs **first**, moves the photo/PDF files to the real-mode Drive folder (they open by id either way; failures are counted, not fatal), then deletes only the copied rows from the test tabs (bottom-up, in blocks) and bumps both modes' vendor versions (`vbumpAll_`). A vendor id already in real mode is skipped and listed. Running it twice moves nothing. Tests: `tests/vtolive.test.js` (server, fake sheet), `tests/vtolive.app.test.js` (screen).
+
+## Vendor notifications in the app (added 10 Oct 2026, `SCRIPT_VERSION` 43 / `NEED_SV` unchanged)
+
+For the owner and managers only (staff see nothing). In-app only for now; Chrome/Safari push (Web Push with VAPID, no Firebase) is the planned next step.
+- **What notifies** (written by the script at the moment the change is saved, so a change sent later from an offline phone still notifies; an offline resend of the same entry doesn't notify twice):
+  - `vendor`: new vendor (opening balance, credit days). Edits don't notify.
+  - `bill`: new vendor bill (amount, bill no., due date).
+  - `pay` / `adj`: new payment / return (mode, which bills it covers).
+  - `paid`: a bill (or the opening balance) became fully paid, from a payment, using the advance or an edit (`vClearedNotes_` compares bill status before/after).
+  - `rm`: a bill, payment or return removed. Small edits don't notify.
+  - `check`: the bill check newly finds calculation issues (`vCheckNote_`; not again while it stays flagged, not when marked OK).
+  - `move`: vendors moved from test to real mode (written in real mode).
+- **Sheet:** tab `Notices` / `Test Notices` (`NOTE_COLS`: `id | at | kind | vendorId | entryId | vname | amount | billNo | extra (JSON) | by | read (JSON list of lower-case names)`), trimmed to the last 500 once over 600. `notice_()` never stops a save (errors swallowed). The person who made the change has it as read.
+- **Sync:** notices version `nrev_<mode>` (property + cache, `nbump_` / `nrevC_`), returned by the 25-second `rev` check as `nl` / `nt`. When it differs, the phone calls `notices` (manager+, last 100, newest first, `read` for the asking person). `noticeRead {ids | all}` marks them read for that person only. Neither bumps the price-list `rev`; both work while the shop is paused.
+- **App:** a bell (`#nbell`) left of the wand with a red unread count (`#nbadge`), shown only for owner/manager on script 43+. The list (`openNotices`, sheet key `notices`) is grouped Today / Yesterday / date; unread rows are tinted for that view, and opening it marks all read. Tapping a row opens the vendor (or the bill, `nGo`); "moved" opens Vendors. A notice arriving from another phone slides in at the top (`#nslide`, 6 s, tap = open it) and the bell rings once (reduced motion respected); never over the lock screen. The phone keeps the list per mode (`rb_notes`, via `envKey`), so the badge shows at once and offline. One fetch ~6 s after start.
+- **Per person:** Settings → Just for you → **Vendor notifications**: a chip per kind (on = dark); off kinds go in `prefs.noff` (`setMyPrefs`, `prefsClean_` keeps only known kinds) and are left out of the bell and the list ("N hidden by your settings"). "Payments" covers returns too.
+- Text is built on the phone in its language (`nText`, strings `n*` in EN/HI).
+- Tests: `tests/notices.test.js` (server, fake sheet), `tests/notices.app.test.js` (bell, list, slide-in, settings, roles).
 
 ## Per-person settings (added 9 Oct 2026, `SCRIPT_VERSION` 33 / `NEED_SV` 33)
 

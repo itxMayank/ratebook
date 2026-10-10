@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 42;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 43;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -203,7 +203,7 @@ function doGet(e) {
       case 'health': return out_(health_(p.key));
       case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
-      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test') });
+      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test') });
       case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
       case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
       case 'vpub': return out_(vPub_(p.t));
@@ -551,9 +551,11 @@ function doPost(e) {
       case 'vSaveVendor': res = vSaveVendor_(body.vendor || {}, by); break;
       case 'vLink': res = vLink_(str_(body.id, 40), !!body.on, !!body.regen); break;
       case 'vToLive': res = vToLive_((body.ids || []).map(x => str_(x, 40)), by); break;
+      case 'notices': res = notices_(who); break;
+      case 'noticeRead': res = noticeRead_(who, body.all ? null : (body.ids || []).map(x => str_(x, 40))); break;
       case 'vSave': res = vSave_(body.entry || {}, by); break;
       case 'vRemove': res = vRemove_(str_(body.id, 40), body.on !== false, by); break;
-      case 'vUseAdvance': res = vUseAdvance_(str_(body.vendorId, 40), str_(body.billId, 60)); break;
+      case 'vUseAdvance': res = vUseAdvance_(str_(body.vendorId, 40), str_(body.billId, 60), by); break;
       case 'vUpload': res = vUpload_(body); break;
       case 'vPreviews': res = vPreviews_(body.ids); break;
       case 'vFile': res = vFile_(str_(body.f, 80)); break;
@@ -564,7 +566,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -582,7 +584,7 @@ function doPost(e) {
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
-  setConfig: 'owner', setPin: 'owner', vToLive: 'owner', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
+  setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
   setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
@@ -654,7 +656,7 @@ function listSessions_(who) { const all = sessAll_();
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
 const PAUSE_OK_ = { verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
-  vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1 };
+  vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
 function shopPaused_() { const b = boot_(); if (!b || !b.dirUrl) return false;
   const c = CacheService.getScriptCache(); let v = c.get('SHOP_STATUS');
@@ -755,6 +757,7 @@ function prefsClean_(p) { const o = {}; p = p || {};
   if (p.mode === 'live' || p.mode === 'test') o.mode = p.mode;
   if (typeof p.showProfit === 'boolean') o.showProfit = p.showProfit;
   if (typeof p.hideBuy === 'boolean') o.hideBuy = p.hideBuy;
+  if (Array.isArray(p.noff)) o.noff = p.noff.map(k => String(k).slice(0, 12)).filter(k => NOTE_KINDS_[k]).slice(0, 12);
   return o; }
 function mprefs_() { try { const o = JSON.parse(PropertiesService.getScriptProperties().getProperty('MPREFS') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
 function mkey_(name) { return String(name || '').trim().toLowerCase().slice(0, 60) || '-'; }
@@ -1789,6 +1792,7 @@ function vToLive_(ids, by) {
       Object.keys(fids).forEach(f => { try { if (dest) { DriveApp.getFileById(f).moveTo(dest); files++; } } catch (e) { fileFail++; } }); }
     ENV_ = 'test';
     drop(TP.s, purs); drop(TD.s, docs); drop(TL.s, ents); drop(TV.s, go);   // only what was copied
+    if (go.length) { ENV_ = 'live'; notice_('move', { amount: '', vname: '', extra: { n: go.length, names: go.map(r => String(r.name)).slice(0, 8), entries: ents.length, photos: Object.keys(fids).length }, by: by }); }
     vbumpAll_();
     return { moved: go.length, names: go.map(r => String(r.name)), entries: ents.length, photos: Object.keys(fids).length, files, fileFail, purchases: purs.length, skipped };
   } finally { ENV_ = keep; }
@@ -1801,7 +1805,9 @@ function vSaveVendor_(x, by) { const A = vAll_(), V = A.V, now = Date.now();
     r = { id: str_(x.id, 40) || ('v' + Utilities.getUuid().replace(/-/g, '').slice(0, 12)), createdAt: now, token: vToken_(), linkOn: '1' }; A.vendors.push(r); }
   r.name = name; r.mobile = str_(x.mobile, 20); r.gstin = str_(x.gstin, 15).toUpperCase(); r.address = str_(x.address, 200); r.creditDays = Math.max(0, Math.min(365, Math.floor(num_(x.creditDays)) || 0));
   r.opening = num_(x.opening) || 0; r.openingDate = vday_(x.openingDate) || r.openingDate || vday_(new Date()); r.note = str_(x.note, 300); r.updatedAt = now; r.by = by; if (x.removed !== undefined) r.removed = x.removed ? '1' : '';
-  vwrite_(V.s, VEND_COLS, r); vbump_(); return vOne_(A, r.id); }
+  const isNew = !r._r; vwrite_(V.s, VEND_COLS, r);
+  if (isNew) notice_('vendor', { vendorId: r.id, vname: name, amount: r.opening || '', extra: { mobile: r.mobile, days: r.creditDays }, by: by });
+  vbump_(); return vOne_(A, r.id); }
 function vLink_(id, on, regen) { const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_vendor');
   if (regen || !r.token) r.token = vToken_(); r.linkOn = on ? '1' : ''; r.updatedAt = Date.now(); vwrite_(V.s, VEND_COLS, r); vbump_(); return { token: String(r.token), linkOn: !!on }; }
 function vAllocClean_(alloc, billIds, amount) { const out = {}; let left = num_(amount);
@@ -1825,12 +1831,20 @@ function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
     const old = {}; ['date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'alloc', 'photos'].forEach(k => { if (String(r[k]) !== String(fields[k])) old[k] = r[k]; });
     if (Object.keys(old).length) { const h = vjson_(r.history, []); h.push({ at: now, by: by, act: 'edit', old: old }); r.history = JSON.stringify(h.slice(-20)).slice(0, 40000); }
     Object.assign(r, fields); r.editedAt = now; r.editedBy = by; }
-  else { r = Object.assign({ id: str_(x.id, 40) || ('e' + Utilities.getUuid().replace(/-/g, '').slice(0, 14)), by: by, at: now, history: '[]' }, fields); }
+  const wasNew = !r, oldSt = r ? (vjson_(r.check, {}) || {}).st : '';
+  if (!r) { r = Object.assign({ id: str_(x.id, 40) || ('e' + Utilities.getUuid().replace(/-/g, '').slice(0, 14)), by: by, at: now, history: '[]' }, fields); }
   vwrite_(L.s, VLED_COLS, r); if (!r._r) r._r = L.s.getLastRow(); vSet_(A, r);
   if (type === 'bill' && x.useAdvance) vUseAdv_(A, G.vendor.id, String(r.id));
-  vbump_(); return vOne_(A, G.vendor.id); }
+  const G2 = vOne_(A, G.vendor.id);
+  if (wasNew) notice_(type, { vendorId: G.vendor.id, entryId: r.id, vname: G.vendor.name, amount: amount, billNo: fields.billNo,
+    extra: type === 'bill' ? { due: (G2.calc.bills.find(b => b.id === String(r.id)) || {}).dueDate || '' } : { mode: fields.mode, bills: Object.keys(vjson_(fields.alloc, {})).map(id => vBillNo_(G2, id)).filter(Boolean).slice(0, 6) }, by: by });
+  vClearedNotes_(G, G2, by);
+  if (type === 'bill') vCheckNote_(r, oldSt, G.vendor, by);
+  vbump_(); return G2; }
 function vRemove_(id, on, by) { const A = vAll_(), L = A.L; const r = L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
+  const was = String(r.removed) === '1';
   r.removed = on ? '1' : ''; const h = vjson_(r.history, []); h.push({ at: Date.now(), by: by, act: on ? 'remove' : 'restore' }); r.history = JSON.stringify(h.slice(-20)); vwrite_(L.s, VLED_COLS, r); vSet_(A, r);
+  if (on && !was) { const v = A.vendors.find(o => String(o.id) === String(r.vendorId)) || {}; notice_('rm', { vendorId: r.vendorId, entryId: r.id, vname: v.name, amount: num_(r.amount), billNo: String(r.billNo || ''), extra: { type: String(r.type) }, by: by }); }
   vbump_(); return vOne_(A, r.vendorId); }
 /** Use the vendor's advance (unallocated payments, oldest first) against one bill. */
 function vUseAdv_(A, vendorId, billId) { const G = vOne_(A, vendorId); const b = G.calc.bills.find(x => x.id === billId); if (!b || b.due <= 0) return;
@@ -1838,7 +1852,7 @@ function vUseAdv_(A, vendorId, billId) { const G = vOne_(A, vendorId); const b =
   G.entries.filter(e => !e.removed && e.type !== 'bill').forEach(e => { if (need <= 0) return;
     const used = Object.keys(e.alloc).reduce((s, k) => s + num_(e.alloc[k]), 0), free = Math.round((e.amount - used) * 100) / 100; if (free <= 0) return;
     const a = Math.min(free, need); const r = A.L.rows.find(o => String(o.id) === e.id); const al = vjson_(r.alloc, {}); al[billId] = Math.round(((num_(al[billId]) || 0) + a) * 100) / 100; r.alloc = JSON.stringify(al); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); need -= a; }); }
-function vUseAdvance_(vendorId, billId) { const A = vAll_(); vUseAdv_(A, vendorId, billId); vbump_(); return vOne_(A, vendorId); }
+function vUseAdvance_(vendorId, billId, by) { const A = vAll_(), G = vOne_(A, vendorId); vUseAdv_(A, vendorId, billId); const G2 = vOne_(A, vendorId); vClearedNotes_(G, G2, by); vbump_(); return G2; }
 function vFolder_() { const key = 'VD_FOLDER_' + ENV_, p = PropertiesService.getScriptProperties(), id = p.getProperty(key);
   if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (err) {} }
   const b = boot_(), bid = b && (ENV_ === 'test' ? b.vdFolderTest : b.vdFolder); if (bid) { const f = DriveApp.getFolderById(bid); p.setProperty(key, f.getId()); return f; }   // never another shop's folder by name
@@ -2004,10 +2018,47 @@ function vCheck_(id, by) { let A = vAll_(); let e = A.entries.find(x => x.id ===
     const old = vjson_(r.ex, null), q = x => !x || !x.readable ? 0 : (x.total != null ? 4 : 0) + (x.sub != null ? 1 : 0) + Math.min(3, ((x.lines || []).filter(l => l.a != null).length));
     let kept = false; if (old && old.readable && (err || q(ex) < q(old))) { ex = vExSafe_(old); err = ''; kept = true; }
     const chk = err ? { st: 'error', err: err } : vCheckCalc_(ex, num_(r.amount)); chk.at = Date.now(); chk.by = by; if (kept) chk.kept = 1; if (ex && ex.model) chk.m = ex.model;
-    if (ex) r.ex = JSON.stringify(ex).slice(0, 45000); r.check = JSON.stringify(chk); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+    const oldSt = (vjson_(r.check, {}) || {}).st;
+    if (ex) r.ex = JSON.stringify(ex).slice(0, 45000); r.check = JSON.stringify(chk); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r);
+    vCheckNote_(r, oldSt, A.vendors.find(o => String(o.id) === String(r.vendorId)) || {}, by); vbump_(); return vOne_(A, r.vendorId); }
   finally { lock.releaseLock(); } }
 function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => String(o.id) === String(id)); if (!r) throw new Error('no_entry');
   const c = vjson_(r.check, {}); if (on) c.ack = { by: by, at: Date.now() }; else delete c.ack; r.check = JSON.stringify(c); vwrite_(A.L.s, VLED_COLS, r); vSet_(A, r); vbump_(); return vOne_(A, r.vendorId); }
+/* ======================= Notifications (vendors, for the owner and managers) =======================
+ * Written at the moment a vendor change is saved (so a change sent later from an offline phone still notifies), one tab per
+ * mode (Notices / Test Notices), last ~500 kept. Phones learn of new ones from the 25-second rev check (nl / nt = notices
+ * version) and fetch them with `notices`; read state is per person (lower-case name in `read`). Text is built on the phone in
+ * its own language from these fields. A notice never stops a save (errors are swallowed). */
+const NOTE_COLS = ['id', 'at', 'kind', 'vendorId', 'entryId', 'vname', 'amount', 'billNo', 'extra', 'by', 'read'];
+const NOTE_KINDS_ = { vendor: 1, bill: 1, pay: 1, adj: 1, paid: 1, rm: 1, check: 1, move: 1 };
+function nrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('nrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('nrev_' + en) || '0'; c.put('nrev_' + en, v, 21600); } return v; }
+function nbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('nrev_' + ENV_, v); try { CacheService.getScriptCache().put('nrev_' + ENV_, v, 21600); } catch (e) {} return v; }
+function notice_(kind, o) {
+  try { const s = sheet_(tab_('Notices'), NOTE_COLS);
+    s.appendRow(NOTE_COLS.map(k => k === 'id' ? 'n' + Utilities.getUuid().replace(/-/g, '').slice(0, 12) : k === 'at' ? Date.now() : k === 'kind' ? kind
+      : k === 'extra' ? JSON.stringify(o.extra || {}).slice(0, 2000) : k === 'read' ? JSON.stringify(o.by ? [mkey_(o.by)] : []) : k === 'vname' ? str_(o.vname, 80) : k === 'billNo' ? (o.billNo ? "'" + str_(o.billNo, 40) : '') : (o[k] == null ? '' : o[k])));
+    const n = s.getLastRow() - 1; if (n > 600) s.deleteRows(2, n - 500);
+    nbump_(); } catch (e) {} }
+function vBillNo_(G, id) { const b = G.calc.bills.find(x => x.id === id); return b ? (b.opening ? 'Opening' : String(b.billNo || '')) || '—' : ''; }
+/** Bills that a payment / advance / edit just cleared. */
+function vClearedNotes_(G, G2, by) { const was = {}; G.calc.bills.forEach(b => was[b.id] = b.status);
+  G2.calc.bills.filter(b => b.status === 'paid' && was[b.id] && was[b.id] !== 'paid').forEach(b =>
+    notice_('paid', { vendorId: G2.vendor.id, entryId: b.opening ? '' : b.id, vname: G2.vendor.name, amount: b.amount, billNo: b.opening ? 'Opening' : String(b.billNo || ''), by: by })); }
+/** The bill check found a calculation issue it didn't show before. */
+function vCheckNote_(r, oldSt, v, by) { const c = vjson_(r.check, {}) || {};
+  if (c.st === 'issues' && oldSt !== 'issues' && !c.ack) notice_('check', { vendorId: r.vendorId, entryId: r.id, vname: v.name, amount: num_(r.amount), billNo: String(r.billNo || ''), extra: { n: (c.issues || []).length }, by: by }); }
+function notices_(who) { const me = mkey_(who.name), s = sheet_(tab_('Notices'), NOTE_COLS), n = s.getLastRow() - 1;
+  const rows = n > 0 ? s.getRange(Math.max(2, n - 99 + 1), 1, Math.min(n, 100), NOTE_COLS.length).getValues() : [];
+  const list = rows.map(r => { const o = {}; NOTE_COLS.forEach((k, j) => o[k] = r[j]); const rd = vjson_(o.read, []);
+    return { id: String(o.id), at: num_(o.at), kind: String(o.kind), vendorId: String(o.vendorId || ''), entryId: String(o.entryId || ''), vname: String(o.vname || ''), amount: o.amount === '' ? null : num_(o.amount),
+      billNo: String(o.billNo || ''), extra: vjson_(o.extra, {}), by: String(o.by || ''), read: rd.indexOf(me) >= 0 }; }).filter(o => o.id).reverse();
+  return { nrev: nrevC_(ENV_), list: list }; }
+function noticeRead_(who, ids) { const me = mkey_(who.name), s = sheet_(tab_('Notices'), NOTE_COLS), n = s.getLastRow() - 1; if (n < 1) return notices_(who);
+  const want = ids ? ids.reduce((m, id) => (m[id] = 1, m), {}) : null, c = NOTE_COLS.indexOf('read') + 1, idc = NOTE_COLS.indexOf('id') + 1;
+  const from = Math.max(2, n - 199 + 1), cnt = n - from + 2, ids_ = s.getRange(from, idc, cnt, 1).getValues(), rd = s.getRange(from, c, cnt, 1).getValues(); let ch = false;
+  ids_.forEach((x, i) => { if (want && !want[String(x[0])]) return; const a = vjson_(rd[i][0], []); if (a.indexOf(me) < 0) { a.push(me); rd[i][0] = JSON.stringify(a.slice(-30)); ch = true; } });
+  if (ch) { s.getRange(from, c, cnt, 1).setValues(rd); nbump_(); }
+  return notices_(who); }
 /* ======================= Bill lines → items, buy prices, purchase history (#Bill) =======================
  * vEx: the reading of one bill (lines etc.) for the phone to show. vApply: the owner matched the lines to items; save one
  * Purchases row per matched line (replacing earlier rows of that bill), remember the match per vendor (map: description →

@@ -4,6 +4,8 @@
 <script>document.documentElement.classList.add("locked")</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<script>/* iPhone/iPad: Safari zooms the page when a box under 16px gets focus; maximum-scale stops that (pinch zoom still works on iOS) */
+if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)){ const m=document.querySelector('meta[name=viewport]'); if(m) m.content+=",maximum-scale=1"; }</script>
 <title>Rate Book</title>
 <meta name="description" content="Shop price list and quick bills">
 <meta name="theme-color" content="#8C2331">
@@ -1488,7 +1490,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot.sres-top body.qtyp.qhas[data-tab="items"] #list{flex-direction:column}
   html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
   /* typing on Bill: the results panel rises from the search */
-  html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
+  html.sbot body.qtyp[data-tab="bill"] #rise.on{display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--risetop,var(--toph,80px));bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
   html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:auto 0 0;flex:none}
   html.sbot.sres-top #rise #bill-search-results{flex-direction:column}
   html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
@@ -1514,7 +1516,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .total .ts1 #bill-sum.xlong{font-size:17px}
 .total .ts2{grid-area:chips;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0;white-space:nowrap}
 .total .ts2::-webkit-scrollbar{display:none}
-.total .ts2:not(:has(> :not([hidden]))){display:none}
+.total .ts2.empty{display:none}
 .total .ts2 > *{flex:none;margin:0}
 .total .ts2 .duechip{height:26px;display:inline-flex;align-items:center;padding:0 10px;font-size:12px;border-radius:999px}
 .total .ts2 .profit,.total .ts2 .cash-open{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;border:0;background:var(--surface-2);color:var(--muted);font:600 12.5px var(--f-body,inherit);text-decoration:none;cursor:pointer}
@@ -2874,9 +2876,11 @@ function updateBillTotals(){ try{ custXSync(); }catch{}
     gs.innerHTML=`<div><span>${esc(t("taxable"))}</span><b>${rs2(g.taxable)}</b></div>`+g.rows.map(r=>`<div><span>${esc(r.label)}</span><b>${rs2(r.v)}</b></div>`).join("")+(g.roundOff?`<div><span>${esc(t("roundOff"))}</span><b>${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}</b></div>`:"")+`<div class="inwords">${esc(inWords(g.total))}</div>`;
     $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
+  tsSync();
   { const bs=$("#bill-sum"), n=bs.textContent.length; bs.classList.toggle("long",n>=9 && n<11); bs.classList.toggle("xlong",n>=11); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   { const p=payInfo(billTotal()), dc=$("#bill-duechip"); dc.hidden = p.mode==="paid" || !S.bill.length; dc.textContent=t("dueAmt",rs(p.due));
+  tsSync();
     $("#pay-due").textContent = S.pay==="part" ? t("dueAmt",rs(p.due)) : ""; }
   renderCash(); renderHeld();
   $("#bill-wa").href=waLink();
@@ -3140,7 +3144,7 @@ function renderCash(){
   const row=$("#cashrow"); if(!row) return;
   const due=cashDue(), can_=S.bill.length>0 && due>0, open=can_ && (ls.get("rb_cashopen",false) || !!S.cash), show=open;
   const co=$("#cash-open"); if(co){ co.hidden=!can_; co.setAttribute("aria-expanded",String(open)); co.querySelector("span").textContent=t(open?"cashClose":"cashOpen"); }
-  row.hidden=!show; if(!show) return;
+  row.hidden=!show; tsSync(); if(!show) return;
   const inp=$("#cash-in"); if(document.activeElement!==inp) inp.value=S.cash||"";
   const g=parseFloat(S.cash), chips=$("#cash-chips"), res=$("#cash-res");
   if(!(g>0)){ res.hidden=true; chips.hidden=false; chips.innerHTML=cashNotes(due).map(v=>`<button type="button" data-cash="${v}">${rs(v)}</button>`).join(""); return; }
@@ -3152,6 +3156,8 @@ function renderCash(){
   const key=d+"|"+g; if(res.dataset.k!==key){ res.dataset.k=key; res.innerHTML=pill+`<button type="button" class="x" id="cash-x" aria-label="${esc(t("clearX"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`; }
 }
 function setCash(v){ S.cash=v; renderCash(); }
+/** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
+function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 $("#cash-open").onclick=()=>{ const open=$("#cash-open").getAttribute("aria-expanded")==="true";
   if(open){ ls.set("rb_cashopen",false); S.cash=""; $("#cash-in").value=""; renderCash(); }
   else { ls.set("rb_cashopen",true); renderCash(); } };
@@ -3839,7 +3845,9 @@ function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim();
   if(q!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
   renderBillSearch.lastQ=q;
-  if(S.tab!=="bill"||!q){ box.innerHTML=""; return; }
+  const riseOn=on=>{ const r=$("#rise"); if(r) r.classList.toggle("on",on); };   // (a class, not :has(), so older iPhones show it too)
+  if(S.tab!=="bill"||!q){ box.innerHTML=""; riseOn(false); return; }
+  riseOn(true);
   const {res}=runSearch(q);
   /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,
      and shows what's already in the bill when the same item is searched again. */
@@ -3927,6 +3935,7 @@ function dockPos(){ if(!root.classList.contains("sbot")) return;
     dock.style.left=(dockPos.l??12)+"px"; dock.style.right=(dockPos.r??12)+"px"; }
   root.style.setProperty("--docktop",(b+(dock.offsetHeight||56))+"px");
   const hd=$("header.top"), th=hd?Math.round(hd.getBoundingClientRect().bottom):80; root.style.setProperty("--toph",th+"px");
+  { const vt=vv?Math.round(vv.offsetTop):0; root.style.setProperty("--risetop",Math.max(th,vt+8)+"px"); }
   root.style.setProperty("--risemin",Math.max(120,H-th-(b+(dock.offsetHeight||56))-18)+"px"); }
 window.addEventListener("resize",()=>dockPos());
 /* While searching from the bottom bar, tapping a result's buttons (or a Bill-tab result row) keeps the focus in the search box, so

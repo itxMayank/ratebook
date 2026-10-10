@@ -1704,7 +1704,7 @@ Object.assign(STR.en,{readOnly2:"View only. Unlock editing to change prices.",un
   editBill:"Edit bill",editing:(n,d)=>`Editing Bill No. ${n}${d?` · ${d}`:""}`,cancelEdit:"Cancel editing",saveChanges:"Save changes",saveShare:"Save & share on WhatsApp",
   editedPill:"Edited",editedLine:d=>`Edited: ${d}`,editedInfo:(d,by,n)=>`Edited ${d}${by?` by ${by}`:""}${n>1?` · ${n} times`:""}`,billUpdated:n=>`Bill ${n} updated and marked as edited.`,
   editOffline:"You're offline. Connect to save changes to this bill.",editFail:"Couldn't save the changes. Try again.",oldNoEdit:"This bill is from before editing was added, so only its text is available.",
-  editStarted:n=>`Editing bill ${n}. Your unfinished bill is kept aside.`,editStartedPlain:n=>`Editing bill ${n}.`,editCancelled:"Editing cancelled. Nothing was changed.",
+  editStarted:n=>`Editing bill ${n}. Your unfinished bill is kept in the open bills above.`,editAlready:n=>`Bill ${n} is already open for editing.`,editStartedPlain:n=>`Editing bill ${n}.`,editCancelled:"Editing cancelled. Nothing was changed.",
   blSummary:(n,tot)=>`${n} bill${n===1?"":"s"} · ${tot}`,blToday:"Today",blYesterday:"Yesterday",blNoDate:"No date",blYear:"Year",blAllYears:"All years",blDate:"Date",blClear:"Clear filters",blMore:"Show more bills"});
 Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के लिए। रेट बदलने के लिए एडिटिंग खोलें।",unlockBtn:"खोलें",unlockT:"एडिटिंग खोलें",unlockD:"इस फ़ोन पर रेट जोड़ने या बदलने के लिए दुकान का PIN डालें।",lockT:"इस फ़ोन पर एडिटिंग बंद करें",lockD:n=>`${n} के नाम से एडिटिंग चालू है। बंद करने के लिए दबाएँ।`,yourName:"आपका नाम",pinL:"दुकान का PIN",wrongPin:"गलत PIN। फिर कोशिश करें।",lockedOut:"बहुत बार गलत PIN। 15 मिनट बाद कोशिश करें।",unlocked:"इस फ़ोन पर एडिटिंग खुल गई",lockedNow:"इस फ़ोन पर एडिटिंग बंद हो गई",
   changePin:"दुकान का PIN बदलें",newPin:"नया PIN (4 से 8 अंक)",newPin2:"नया PIN दोबारा",pinMismatch:"दोनों PIN एक जैसे नहीं हैं।",pinRule:"4 से 8 अंक डालें।",pinChanged:"PIN बदल गया। बाकी लोगों को एडिट के लिए नया PIN चाहिए।",
@@ -1730,7 +1730,7 @@ Object.assign(STR.hi,{readOnly2:"सिर्फ़ देखने के ल�
   editBill:"बिल बदलें",editing:(n,d)=>`बिल नं. ${n} बदल रहे हैं${d?` · ${d}`:""}`,cancelEdit:"बदलना रद्द करें",saveChanges:"बदलाव सेव करें",saveShare:"सेव करके WhatsApp पर भेजें",
   editedPill:"बदला गया",editedLine:d=>`बदला गया: ${d}`,editedInfo:(d,by,n)=>`${d} को बदला गया${by?` · ${by}`:""}${n>1?` · ${n} बार`:""}`,billUpdated:n=>`बिल ${n} अपडेट हुआ और "बदला गया" लिखा गया।`,
   editOffline:"आप ऑफ़लाइन हैं। बिल के बदलाव सेव करने के लिए इंटरनेट चालू करें।",editFail:"बदलाव सेव नहीं हुए। फिर कोशिश करें।",oldNoEdit:"यह बिल बदलने की सुविधा से पहले का है, इसलिए सिर्फ़ इसका टेक्स्ट उपलब्ध है।",
-  editStarted:n=>`बिल ${n} बदल रहे हैं। आपका अधूरा बिल अलग रख दिया है।`,editStartedPlain:n=>`बिल ${n} बदल रहे हैं।`,editCancelled:"बदलना रद्द हुआ। कुछ नहीं बदला।",
+  editStarted:n=>`बिल ${n} बदल रहे हैं। आपका अधूरा बिल ऊपर खुले बिलों में रखा है।`,editAlready:n=>`बिल ${n} पहले से बदलने के लिए खुला है।`,editStartedPlain:n=>`बिल ${n} बदल रहे हैं।`,editCancelled:"बदलना रद्द हुआ। कुछ नहीं बदला।",
   blSummary:(n,tot)=>`${n} बिल · ${tot}`,blToday:"आज",blYesterday:"कल",blNoDate:"बिना तारीख़",blYear:"साल",blAllYears:"सभी साल",blDate:"तारीख़",blClear:"फ़िल्टर हटाएँ",blMore:"और बिल दिखाएँ"});
 const DEFAULT_UNITS=[{code:"kg",hi:"किलो"},{code:"g",hi:"ग्राम"},{code:"L",hi:"लीटर"},{code:"ml",hi:"मि.ली."},{code:"pc",hi:"नग"},{code:"dozen",hi:"दर्जन"},{code:"packet",hi:"पैकेट"},{code:"box",hi:"डिब्बा"},{code:"bag",hi:"बोरी"},{code:"bottle",hi:"बोतल"},{code:"metre",hi:"मीटर"},{code:"bundle",hi:"गड्डी"}];
 const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","किग्रा","केजी"],g:["g","gm","gms","gram","grams","ग्राम"],L:["l","ltr","litre","liter","litres","लीटर"],ml:["ml","मिली"],pc:["pc","pcs","piece","pieces","nag","नग","पीस"],dozen:["dozen","darjan","दर्जन"],packet:["packet","pkt","packets","पैकेट","पाकेट"],box:["box","dabba","डिब्बा"],bag:["bag","bori","बोरी"],bottle:["bottle","बोतल"],metre:["metre","meter","mtr","मीटर"],bundle:["bundle","gaddi","गड्डी"]};
@@ -2876,7 +2876,8 @@ function newHeldBill(){
 function resumeHeld(hid){
   const h=heldGet(); const i=h.findIndex(x=>x.hid===hid); if(i<0) return;
   const e=h.splice(i,1)[0];
-  if(!draftEmpty()) h.push(snapDraft());
+  let put=null; if(!draftEmpty()){ put=snapDraft(); h.push(put); }
+  if(put && e.editing && !e.editing.fresh && !h.some(x=>x.hid===e.editing.from)) e.editing={...e.editing, from:put.hid};   // ending this edit returns to the bill just left
   heldSet(h); loadDraft(e); renderBill(); renderList(); renderHeld();
   if(S.tab!=="bill" && !DESK()) setTab("bill");
 }
@@ -2918,17 +2919,41 @@ $("#bill-new").onclick=newHeldBill;
 $("#addto").onclick=()=>setTab("bill");
 document.addEventListener("keydown",e=>{ if(!DESK() || !e.altKey) return; const k=parseInt(e.key,10); if(!(k>=1&&k<=9)) return;
   const chips=[...document.querySelectorAll("#heldrow .hchip:not(.add)")]; const c=chips[k-1]; if(!c) return; e.preventDefault(); if(c.dataset.held) resumeHeld(c.dataset.held); });
+/* Editing a past bill is just another open bill: the bill on screen (if any) goes into the open-bills row as a chip (no hidden
+   copy), and a bill already open for editing (on screen or as a chip) is brought back instead of opened twice, so two copies can
+   never be saved over each other ("someone else changed it"). */
+const sameBill=(e,b)=>!!e && (e.id && b.id ? e.id===b.id : (+e.row||0)===(+b.row||0) && String(e.n)===String(b.n));
+/* An open copy is out of date when the sheet's bill was saved again after that copy was opened (edit counts differ). */
+const editStale=(e,b)=>e.edits!=null && b.edits!=null && b.edits!=="" && (+e.edits||0)!==(+b.edits||0);
 function startEdit(b){
-  if(!S.editing && S.bill.length){ ls.set("rb_stash",draftState()); }
-  const kept=!S.editing && S.bill.length;
-  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"" };   // null = edit count not known: don't block the save ls.set("rb_editing",S.editing);
+  let from="";
+  if(S.editing && !S.editing.fresh && sameBill(S.editing,b)){
+    if(!editStale(S.editing,b)){ closeSheet(); setTab("bill"); toast(t("editAlready",b.n)); return; }
+    from=S.editing.from||""; S.editing=null; ls.set("rb_editing",null); applyDraft({});   // old copy on screen: replaced by the latest below
+  }
+  const open=heldGet().find(x=>x.editing && !x.editing.fresh && sameBill(x.editing,b));
+  if(open){
+    if(!editStale(open.editing,b)){ closeSheet(); resumeHeld(open.hid); setTab("bill"); toast(t("editAlready",b.n)); return; }
+    heldSet(heldGet().filter(x=>x.hid!==open.hid)); from=from||open.editing.from||"";   // old copy as a chip: dropped, the latest opens
+  }
+  if(!draftEmpty()){ const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; }
+    const snap=snapDraft(); h.push(snap); heldSet(h); from=snap.hid; }
+  blankDraft();
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
+  ls.set("rb_editing",S.editing);
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
-  closeSheet(); setTab("bill"); toast(kept?t("editStarted",b.n):t("editStartedPlain",b.n));
+  renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
-function endEdit(){ S.cash=""; ls.set(envKey("rb_draftat"),Date.now()); 
-  S.editing=null; ls.set("rb_editing",null);
+/** Editing finished (saved or cancelled): the bill that was on screen when it started comes back if it's still open; otherwise a
+   new empty bill. (Older phones may still hold a hidden copy in rb_stash: that comes back as before.) */
+function endEdit(){ const ed=S.editing||{};
+  S.cash=""; S.editing=null; ls.set("rb_editing",null);
   const st=ls.get("rb_stash",null); ls.set("rb_stash",null);
-  applyDraft(st||{}); renderBill(); renderList();
+  const h=heldGet(), i=ed.from?h.findIndex(x=>x.hid===ed.from):-1;
+  if(st){ applyDraft(st); ls.set(envKey("rb_draftat"),Date.now()); }
+  else if(i>=0){ const e=h.splice(i,1)[0]; heldSet(h); loadDraft(e); }
+  else { blankDraft(); }
+  renderBill(); renderList(); renderHeld();
 }
 async function saveEdit(opts){
   opts=opts||{};

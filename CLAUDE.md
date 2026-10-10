@@ -541,6 +541,18 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 
 **Tests:** `tests/directory.test.js` (create, seed, Shop.gs, lookup, lockouts, pause, update keeps link / other files / Shop.gs, automatic rollback), `tests/shops.test.js` (main unchanged, shop link, approval wait, per-shop storage, staff locked to shop, owner switching, queued bill only to its shop, wrong-shop reply ignored), `tests/admin.test.js`.
 
+## Search at the bottom, tidy top, cash row folded (10 Oct 2026, `index.html` only)
+
+Phones only (under 1024 px); the laptop layout is unchanged. Asked for because the top search is hard to reach on a Samsung phone.
+- **Bottom dock (`#dock`, `html.sbot`):** `placeSearch()` (run from `applyDesk`) moves `#searchbox` and the Add button (`#fab`, shown as a round + without its label) into `#dock`, and `#bill-search-results` into `#rise`. `dockPos()` measures where the dock goes: just above the tab bar (Prices), just above the total card (Bill), or on the keyboard (`--kb` + 8 px) while the search box is focused; it sets `--docktop` (dock's top edge from the bottom), `--toph` (header height) and `--risemin` for the CSS. It runs on resize, keyboard changes (`vvSet`), focus changes (`syncQe`), `renderBill` and a ResizeObserver.
+- **Bill tab:** the total card is `position:fixed` above the tab bar (it was sticky), so the search always sits right above it. Typing in another box (customer, qty, rate, cash) hides the dock and lifts the total card onto the keyboard.
+- **While searching (`body.qtyp`, plus `qhas` when there's text):** tab bar and Add hide; on Prices the chips/net bar are hidden and the results are anchored just above the search with the **best match nearest the thumb** (`#list` column-reverse, `#view-items` min-height `--risemin`, scrolled to the bottom); on Bill the results rise from the search in `#rise` and the total card steps aside. Tapping a result's + / − (or a Bill result row) keeps focus in the search (pointerdown guard), so the keyboard stays up and several items can be added in a row; `flyToBill` only pops the badge in this mode.
+- **Settings → Text size card → "Search bar (this phone)": Bottom (default) / Top** (`rb_spos`). Top = the old layout.
+- **Tidy top:** the "Prices up to date · Refresh" bar now shows only when offline or a sync failed; otherwise a small "· updated 12:46 pm ↻" sits in the "16 items" line (`#meta-sync`, tap = refresh).
+- **Cash given row folded by default:** a small "Cash given?" link under the total (`#cash-open`) opens `#cashrow`; it stays open on this phone until closed (`rb_cashopen`; "Hide cash" closes and clears it). Also on the laptop.
+- **Update pill** sits above the dock (`--docktop`).
+- Tests: `tests/bottomsearch.test.js`; `tests/paidby.test.js` updated for the folded cash row.
+
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 
 Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, and the phone's copies of prices, Past bills, customers, Credit, vendors, Reports, photos). Three fixes:

@@ -1454,6 +1454,49 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .speed-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
 .speed-row:last-child{border-bottom:0}
 .sess-row small{color:var(--muted);display:block}
+
+/* ---- Search at the bottom (phones; Settings → Search bar). The search box and the round Add button sit in #dock, just above the
+   tab bar (Prices) or the total card (Bill); while typing, the dock rides on the keyboard and results rise from it, best match
+   nearest the thumb. Positions come from dockPos() (measured), so text sizes and the keyboard can't misplace it. ---- */
+#dock,#rise{display:none}
+@media (max-width:1023px){
+  html.sbot #dock{position:fixed;left:12px;right:12px;bottom:var(--dockb,86px);z-index:32;display:flex;gap:10px;align-items:center;transition:bottom .18s ease}
+  html.sbot #dock[hidden]{display:none}
+  html.sbot #dock .search{flex:1;min-width:0;zoom:var(--fz,1);box-shadow:0 6px 22px rgba(16,16,24,.16),0 0 0 1px var(--line)}
+  html.sbot #dock .search[hidden]{display:none}
+  html.sbot #dock .search input{min-width:0;width:100%}
+  html.sbot #dock .fab{position:static;width:52px;height:52px;padding:0;border-radius:50%;justify-content:center;flex:none;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+  html.sbot #dock .fab[hidden]{display:none}
+  html.sbot #dock .fab span{display:none}
+  html.sbot #dock .fab svg{width:24px;height:24px}
+  html.sbot body{padding-bottom:calc(var(--docktop,150px) + 14px)}
+  html.sbot #view-items{padding-bottom:4px}
+  html.sbot body:is([data-tab="items"],[data-tab="bill"])::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(var(--docktop,150px) + 18px);z-index:5;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--bg) 42%)}
+  html.sbot body.typing.qe .tabs,html.sbot body.typing.qe .fab,html.sbot body.qtyp .tabs,html.sbot body.qtyp #dock .fab{display:none}
+  html.sbot body.qtyp::after{display:none}
+  /* Bill: the total card is pinned above the tab bar; the search floats just above it */
+  html.sbot body[data-tab="bill"] #view-bill .total{position:fixed;left:calc(12px / var(--fz,1));right:calc(12px / var(--fz,1));bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1));margin:0;z-index:31}
+  html.sbot body.qtyp #view-bill .total{display:none}
+  /* typing in another box (customer, qty, rate, cash): the dock steps aside and the total card rides on the keyboard */
+  html.sbot body.typing:not(.qtyp) #dock{display:none}
+  html.sbot body.typing:not(.qtyp)[data-tab="bill"] #view-bill .total{bottom:calc((var(--kb,0px) + 8px) / var(--fz,1))}
+  /* typing on Prices: hide the extras, results sit just above the search, best match last (nearest the thumb) */
+  html.sbot body.qtyp.qhas[data-tab="items"] :is(#fchips,.netbar,#addto,#meta-r,#install-wrap){display:none}
+  html.sbot body.qtyp.qhas[data-tab="items"] main{padding-bottom:0}
+  html.sbot body.qtyp.qhas[data-tab="items"] #view-items{display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:0;min-height:calc(var(--risemin,300px) / var(--fz,1))}
+  html.sbot body.qtyp.qhas[data-tab="items"] #list{display:flex;flex-direction:column-reverse}
+  html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
+  /* typing on Bill: the results panel rises from the search */
+  html.sbot body.qtyp[data-tab="bill"] #rise:has(.mini,.note){display:flex;flex-direction:column;justify-content:flex-end;position:fixed;left:0;right:0;top:var(--toph,80px);bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
+  html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:0}
+  html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
+  html.locked.sbot #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+}
+/* "Cash given?" link under the total; the cash row opens from it and stays open on this phone until closed */
+.cash-open{border:0;background:none;padding:2px 0 0;color:var(--muted);font:600 12.5px var(--f-body,inherit);text-decoration:underline;text-underline-offset:3px;cursor:pointer;display:block;text-align:left}
+.cash-open[hidden]{display:none}
+.cash-open[aria-expanded="true"]{color:var(--accent)}
+.netsync{border:0;background:none;color:var(--muted);font:inherit;padding:0 0 0 6px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -1546,7 +1589,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
-        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b><span class="duechip num" id="bill-duechip" hidden></span><button type="button" class="profit num" id="bill-profit" hidden></button></div>
+        <div class="tot-sum"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b><span class="duechip num" id="bill-duechip" hidden></span><button type="button" class="profit num" id="bill-profit" hidden></button><button type="button" class="cash-open" id="cash-open" hidden aria-expanded="false"><span data-t="cashOpen">Cash given?</span></button></div>
         <a class="btn wa sm" id="bill-wa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg><span id="wa-label">Share</span></a>
         <button class="btn primary sm" id="bill-done">Done</button>
         <button type="button" class="iconbtn sm" id="tot-more" aria-expanded="false" aria-label="More options"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
@@ -1595,6 +1638,9 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 </main>
 
 <button class="fab" id="fab" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-t="add">Add</span></button>
+
+<div id="rise" aria-live="polite"></div>
+<div id="dock" hidden></div>
 
 <nav class="tabs" role="tablist">
   <div class="side-head" aria-hidden="true"><span class="side-logo">₹</span><b>Rate Book</b></div>
@@ -1922,8 +1968,8 @@ Object.assign(STR.hi,{backExit:"बाहर जाने के लिए फ�
 Object.assign(STR.en,{themeT:"Theme (this phone)",thInk:"Ink",thMaroon:"Maroon",thForest:"Forest",thIndigo:"Indigo",thSaffron:"Saffron",appearT:"Appearance",apAuto:"Auto",apLight:"Light",apDark:"Dark",appearD:"Auto follows the phone's light or dark setting."});
 Object.assign(STR.hi,{themeT:"थीम (इस फ़ोन पर)",thInk:"काला",thMaroon:"मैरून",thForest:"हरा",thIndigo:"नीला",thSaffron:"केसरिया",appearT:"रूप",apAuto:"अपने-आप",apLight:"हल्का",apDark:"गहरा",appearD:"“अपने-आप” फ़ोन की लाइट/डार्क सेटिंग के हिसाब से चलेगा।"});
 /* Text size strings */
-Object.assign(STR.en,{tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
-Object.assign(STR.hi,{tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
+Object.assign(STR.en,{sposT:"Search bar (this phone)",sposB:"Bottom",sposTop:"Top",sposD:"Bottom is easier to reach with your thumb.",cashOpen:"Cash given?",cashClose:"Hide cash",syncedAt:tm=>`updated ${tm}`,tsizeT:"Text size (this phone)",tsizeD:"Makes text and buttons bigger on this phone only.",ts1:"Normal",ts2:"Large",ts3:"Larger",ts4:"Largest"});
+Object.assign(STR.hi,{sposT:"सर्च बार (इस फ़ोन पर)",sposB:"नीचे",sposTop:"ऊपर",sposD:"नीचे अँगूठे से आसानी से पहुँचता है।",cashOpen:"ग्राहक ने कितने दिए?",cashClose:"कैश छिपाएँ",syncedAt:tm=>`${tm} अपडेट`,tsizeT:"अक्षरों का आकार (इस फ़ोन पर)",tsizeD:"सिर्फ़ इस फ़ोन पर अक्षर और बटन बड़े होंगे।",ts1:"सामान्य",ts2:"बड़ा",ts3:"और बड़ा",ts4:"सबसे बड़ा"});
 /* Refresh strings */
 Object.assign(STR.en,{helloName:n=>`Namaste, ${n}`,hello:"Namaste",fAll:"All",fInBill:"In bill",fRecent:"Changed this week",fPhoto:"With photo"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
@@ -2573,6 +2619,8 @@ function renderList(){
   else if(S.filter==="photo") res=res.filter(r=>r.e.it.imgV);
   else if(String(S.filter).startsWith("c:")){ const c=S.filter.slice(2); res=res.filter(r=>r.e.it.cat===c); }
   $("#meta-l").textContent = q ? t("results", exact?res.length:0) : t("items",res.length);
+  if(!q && S.lastSync && S.online) $("#meta-l").insertAdjacentHTML("beforeend",`<button type="button" class="netsync" id="meta-sync" aria-label="${esc(t("refresh"))}">· ${esc(t("syncedAt",new Date(S.lastSync).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})))} ↻</button>`);
+  document.body.classList.toggle("qhas",!!q);
   { const mr=$("#meta-r"); const hasPop=!!S.pop && Object.keys(S.pop).length>0;
     mr.innerHTML = (hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : "")
       + `<button type="button" class="layoutbtn" data-layout aria-label="${esc(t(gridOn()?"layList":"layGrid"))}" title="${esc(t(gridOn()?"layList":"layGrid"))}">${gridOn()?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`}</button>`; }
@@ -2584,6 +2632,7 @@ function renderList(){
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
+  if(q && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));   // best match sits just above the search
   more.innerHTML = shown.length && res.length>S.limit ? `<button class="more" data-act="more">${esc(t("showMore",Math.min(40,res.length-S.limit)))}</button>` : "";
 }
 function renderFilters(){
@@ -2762,6 +2811,7 @@ function renderBill(){
   }
   updateBillTotals();
   renderBillSearch();
+  try{ dockPos(); }catch{}
 }
 function updateBillTotals(){ try{ custXSync(); }catch{}
   const bp=$("#bill-profit"), pb=$("#bill-pbox");
@@ -3039,7 +3089,9 @@ function cashDue(){ if(S.pm && S.pm!=="cash") return 0;   // UPI / cheque: no ch
 function cashNotes(T){ const out=[]; [50,100,500,2000].forEach(m=>{ const v=Math.ceil(T/m)*m; if(v>T && !out.includes(v)) out.push(v); }); return out.slice(0,3); }
 function renderCash(){
   const row=$("#cashrow"); if(!row) return;
-  const due=cashDue(); const show=S.bill.length>0 && due>0; row.hidden=!show; if(!show) return;
+  const due=cashDue(), can_=S.bill.length>0 && due>0, open=can_ && (ls.get("rb_cashopen",false) || !!S.cash), show=open;
+  const co=$("#cash-open"); if(co){ co.hidden=!can_; co.setAttribute("aria-expanded",String(open)); co.firstElementChild.textContent=t(open?"cashClose":"cashOpen"); }
+  row.hidden=!show; if(!show) return;
   const inp=$("#cash-in"); if(document.activeElement!==inp) inp.value=S.cash||"";
   const g=parseFloat(S.cash), chips=$("#cash-chips"), res=$("#cash-res");
   if(!(g>0)){ res.hidden=true; chips.hidden=false; chips.innerHTML=cashNotes(due).map(v=>`<button type="button" data-cash="${v}">${rs(v)}</button>`).join(""); return; }
@@ -3051,6 +3103,9 @@ function renderCash(){
   const key=d+"|"+g; if(res.dataset.k!==key){ res.dataset.k=key; res.innerHTML=pill+`<button type="button" class="x" id="cash-x" aria-label="${esc(t("clearX"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`; }
 }
 function setCash(v){ S.cash=v; renderCash(); }
+$("#cash-open").onclick=()=>{ const open=$("#cash-open").getAttribute("aria-expanded")==="true";
+  if(open){ ls.set("rb_cashopen",false); S.cash=""; $("#cash-in").value=""; renderCash(); }
+  else { ls.set("rb_cashopen",true); renderCash(); } };
 $("#cash-in").addEventListener("input",e=>{ S.cash=e.target.value.replace(/[^0-9.]/g,""); renderCash(); });
 $("#cash-in").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 $("#cashrow").addEventListener("click",e=>{ const c=e.target.closest("[data-cash]"); if(c){ setCash(c.dataset.cash); try{navigator.vibrate&&navigator.vibrate(8);}catch{} return; }
@@ -3765,7 +3820,7 @@ function renderAll(){
 
 /* ---------------- Keyboard handling ---------------- */
 const vv=window.visualViewport, root=document.documentElement;
-function vvSet(){ if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); }
+function vvSet(){ if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); try{ dockPos(); }catch{} }
 if(vv){ vv.addEventListener("resize",vvSet); vv.addEventListener("scroll",vvSet); vvSet(); }
 /* ---------------- Back button (installed app / Android) ----------------
  * One extra history entry acts as a guard. Each Back press: close what's open, else step back inside a sheet,
@@ -3787,11 +3842,38 @@ window.addEventListener("popstate",()=>{
   if(Date.now()-backAt<2000){ history.back(); return; }   // second press: leave
   backAt=Date.now(); toast(t("backExit")); pushGuard();
 });
+/* ---------------- Search at the bottom (phones) ----------------
+ * The search box (and the round Add button) live in #dock on phones unless this phone chose "Top" in Settings. On a laptop the
+ * search stays in the header. dockPos() measures where the dock goes: above the tab bar (Prices), above the total card (Bill), or
+ * on the keyboard while typing; it also sets --docktop (dock's top edge from the bottom) and --toph (header height) for CSS. */
+const sposNow=()=>ls.get("rb_spos","bottom")==="top"?"top":"bottom";
+const SBOT=()=>!DESK() && sposNow()==="bottom";
+function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fab=$("#fab"), rise=$("#rise"), bsr=$("#bill-search-results");
+  root.classList.toggle("sbot",on);
+  if(on){ if(sb.parentNode!==dock){ dock.appendChild(sb); dock.appendChild(fab); } if(bsr.parentNode!==rise) rise.appendChild(bsr); }
+  else { if(sb.parentNode===dock){ $("header.top").insertBefore(sb,$("#mictip")); document.body.insertBefore(fab,rise); } if(bsr.parentNode===rise) $("#view-bill").insertBefore(bsr,$("#heldrow")); }
+  dock.hidden=!on; dockPos(); }
+function dockPos(){ if(!root.classList.contains("sbot")) return;
+  const dock=$("#dock"), H=window.innerHeight, a=document.activeElement, qf=!!a && a.id==="q";
+  const kb=parseFloat(root.style.getPropertyValue("--kb"))||0; let b;
+  if(qf) b=kb+8;
+  else if(S.tab==="bill" && !$("#bill-total").hidden){ const r=$("#bill-total").getBoundingClientRect(); b=r.height?H-r.top+8:96; }
+  else { const r=$("nav.tabs").getBoundingClientRect(); b=r.height?H-r.top+10:14; }
+  b=Math.max(8,Math.round(b)); dock.style.bottom=b+"px";
+  root.style.setProperty("--docktop",(b+(dock.offsetHeight||56))+"px");
+  const hd=$("header.top"), th=hd?Math.round(hd.getBoundingClientRect().bottom):80; root.style.setProperty("--toph",th+"px");
+  root.style.setProperty("--risemin",Math.max(120,H-th-(b+(dock.offsetHeight||56))-18)+"px"); }
+window.addEventListener("resize",()=>dockPos());
+/* While searching from the bottom bar, tapping a result's buttons (or a Bill-tab result row) keeps the focus in the search box, so
+   the keyboard and the results stay put and the tap lands where it was aimed; several items can be added in a row. */
+["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(!root.classList.contains("sbot") || !document.body.classList.contains("qtyp")) return;
+  if(e.target.closest && e.target.closest("#rise .mini, #list [data-add], #list [data-decid], #list .mstep")) e.preventDefault(); },true));
+if(window.ResizeObserver){ const ro=new ResizeObserver(()=>dockPos()); ["#bill-total","nav.tabs","header.top","#dock"].forEach(s=>{ const e=document.querySelector(s); if(e) ro.observe(e); }); }
 /* Laptop / desktop: the bill stays open on the right, so there is no separate Bill tab. */
 const deskMQ=window.matchMedia("(min-width:1024px)");
 const DESK=()=>deskMQ.matches;
 function applyDesk(){
-  const d=DESK(); document.documentElement.classList.toggle("desk",d);
+  const d=DESK(); document.documentElement.classList.toggle("desk",d); placeSearch();
   const vb=$("#view-bill"); if(vb) vb.hidden = !(d || S.tab==="bill");
   const f=$("#side-foot"); if(f) f.innerHTML = `<div><kbd>/</kbd><span>${esc(t("kSearch"))}</span></div><div><kbd>Enter</kbd><span>${esc(t("kAdd"))}</span></div><div><kbd>Esc</kbd><span>${esc(t("kClose"))}</span></div>`;
 }
@@ -3804,13 +3886,13 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
 });
 let blurT;
-function syncQe(){ const a=document.activeElement; document.body.classList.toggle("qe", !DESK() && !!a && a.id==="q" && !a.value.trim()); }
+function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="q"; document.body.classList.toggle("qe", qf && !a.value.trim()); document.body.classList.toggle("qtyp",qf); try{ dockPos(); }catch{} }
 document.addEventListener("focusin",e=>{
   syncQe();
   if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop
   const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]):not([readonly]),textarea")) return;
   clearTimeout(blurT); document.body.classList.add("typing");
-  if(el.closest(".top")) return;
+  if(el.closest(".top,#dock")) return;
   [80,350,700].forEach(d=>setTimeout(()=>{ if(document.activeElement===el) el.scrollIntoView({block:"center",behavior:d<100?"auto":"smooth"}); },d));
 });
 document.addEventListener("focusout",()=>{ blurT=setTimeout(()=>{ const a=document.activeElement; if(!a || !a.matches("input:not([type=checkbox]),textarea")) document.body.classList.remove("typing"); syncQe(); },200); });
@@ -3928,6 +4010,7 @@ function flyToBill(a){
   const reduce=window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(!a || (!a.width && !a.height) || reduce || !document.body.animate){ pop(); return; }
   let b=tab.querySelector("svg").getBoundingClientRect();
+  if(!b.width && !b.height && document.documentElement.classList.contains("sbot") && document.body.classList.contains("qtyp")){ pop(); return; }   // search at the bottom: keep typing, just a buzz + badge pop
   if(!b.width && !b.height){            // tab bar hidden because the search box was focused: close the keyboard, show the bar, then aim
     const ae=document.activeElement; if(ae && ae.blur && ae.matches("input,textarea")) ae.blur();
     document.body.classList.remove("typing"); syncQe(); b=tab.querySelector("svg").getBoundingClientRect();
@@ -4638,7 +4721,10 @@ function openSettings(){
       <div class="err" id="cf-meerr" role="alert"></div></div>`:""}
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("tsizeT"))}</h3>
       <div class="tsize" id="cf-tsize" role="group">${TSIZES.map((v,i)=>`<button type="button" data-fz="${v}" aria-pressed="${Math.abs(fzNow()-v)<.01}"><b style="font-size:${14+i*3}px">A</b><span>${esc(t("ts"+(i+1)))}</span></button>`).join("")}</div>
-      <p class="note" style="margin:0">${esc(t("tsizeD"))}</p></div>
+      <p class="note" style="margin:0">${esc(t("tsizeD"))}</p>
+      <h3 style="margin:6px 0 0;font-size:14px">${esc(t("sposT"))}</h3>
+      <div class="appear" id="cf-spos" role="group">${["bottom","top"].map(k=>`<button type="button" data-spos="${k}" aria-pressed="${sposNow()===k}">${esc(t(k==="bottom"?"sposB":"sposTop"))}</button>`).join("")}</div>
+      <p class="note" style="margin:0">${esc(t("sposD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
@@ -4680,6 +4766,7 @@ function openSettings(){
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   renderPrCfg(); renderAiCfg(); $("#cf-groups").onclick=()=>openGroups();
+  $("#cf-spos").onclick=e=>{ const b=e.target.closest("[data-spos]"); if(!b) return; ls.set("rb_spos",b.dataset.spos); $("#cf-spos").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); placeSearch(); };
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   /* Just for you: saved with the person on the sheet (follows them to any phone); without signing in, hide-buy stays per phone */
   const mySet=async(el,p,undo)=>{ el.disabled=true; $("#cf-meerr").textContent="";
@@ -6320,10 +6407,11 @@ async function fetchThumbs(){
 function renderNet(){
   const bar=$("#netbar"); if(!apiUrl()){ bar.hidden=true; return; }
   const tm=S.lastSync? new Date(S.lastSync).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}) : "";
-  bar.hidden = S.online===null || (S.tab==="bill" && S.online!==false);   // on the bill screen only show it when something's wrong
+  bar.hidden = S.online!==false;   // only when something's wrong; "updated 12:12 ↻" sits in the items line otherwise
   bar.classList.toggle("off", S.online===false);
   $("#net-txt").textContent = S.online ? t("online",tm) : (S.lastSync ? t("offline",tm) : t("neverSynced"));
 }
+$("#meta-l").addEventListener("click",e=>{ if(e.target.closest("#meta-sync")){ e.target.closest("#meta-sync").textContent="· "+t("loading"); sync(); } });
 $("#net-refresh").onclick=()=>{ $("#net-txt").textContent=t("loading"); sync(); };
 window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); });
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });

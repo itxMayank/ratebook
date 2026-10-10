@@ -51,12 +51,22 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   d = await rect(m, '#dock');
   ok(await m.evaluate(() => document.documentElement.classList.contains('kbo')) && Math.abs(520 - d.bottom - 8) < 3 && !(await rect(m, 'nav.tabs')).vis, 'keyboard open: the search sits on it (no page jump), tab bar steps aside');
   await m.keyboard.type('bag'); await m.waitForTimeout(400);
+  await m.tap('#q-clear'); await m.waitForTimeout(300);
+  ok(await m.evaluate(() => document.querySelector('#q').value === '' && document.activeElement.id === 'q'), 'tapping ✕ with the keyboard open clears the word and keeps typing');
+  await m.keyboard.type('bag'); await m.waitForTimeout(400);
   const before = await rect(m, '#dock'); await m.mouse.wheel(0, -300); await m.waitForTimeout(200); await m.mouse.wheel(0, 200); await m.waitForTimeout(300);
   const after = await rect(m, '#dock');
   ok(Math.abs(before.bottom - after.bottom) < 1, 'scrolling the results: the search bar stays still');
   await m.setViewportSize({ width: 390, height: 844 }); await m.waitForTimeout(400);
   ok(await m.evaluate(() => document.activeElement.id !== 'q' && !document.body.classList.contains('qtyp')) && (await rect(m, 'nav.tabs')).vis, 'keyboard closed with Back: search box let go, tab bar is back');
   await m.context().close();
+  // Settings: best match at the top instead of next to the search
+  const s2 = await phone(390, 844, '', true);
+  await s2.evaluate(() => { localStorage.setItem('rb_sres', JSON.stringify('top')); T.placeSearch(); });
+  await s2.evaluate(() => document.documentElement.style.setProperty('--kb', '300px')); await s2.focus('#q'); await s2.keyboard.type('pp bag'); await s2.waitForTimeout(500);
+  const firstTop = await s2.$$eval('#list > *', els => els.map(e => e.getBoundingClientRect().top));
+  ok(await s2.evaluate(() => document.documentElement.classList.contains('sres-top')) && firstTop.length >= 2 && firstTop[0] < firstTop[1], 'Settings "Best match: At the top": results run top-down');
+  await s2.context().close();
   const lap = await phone(1280, 800);
   ok(await lap.evaluate(() => document.querySelector('#searchbox').closest('header') !== null && !document.documentElement.classList.contains('sbot')), 'laptop: unchanged, search in the header');
   await b.close(); done();

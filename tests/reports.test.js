@@ -1,7 +1,7 @@
 /* Reports summary card: rolling numbers, split by group, rows in/out, per-day bars, highlight, periods kept on the phone.
    Run: node tests/reports.test.js */
 const { appHtml, launch, ok, done, MAIN_API } = require('./browser');
-const html = appHtml('S,LOCK,appUnlock,openReports');
+const html = appHtml('S,LOCK,appUnlock,openReports,switchEnv');
 const items = [{ id: 'a', name: 'PP Bag', unit: 'kg', buy: 90, sell: 120, cat: 'Bags' }, { id: 'b', name: 'Paper Cup', unit: 'pc', buy: 1, sell: 2, cat: 'Cups' },
   { id: 'c', name: 'Foil Roll', unit: 'pc', buy: 50, sell: 70, cat: 'Foil' }, { id: 'd', name: 'Tape', unit: 'pc', buy: 10, sell: 15, cat: '' }];
 const it = (name, amount) => ({ name, unit: name === 'PP Bag' ? 'kg' : 'pc', qty: 1, amount, bills: 1 });
@@ -71,6 +71,8 @@ function report(from, to) {
   // stale copy: shown at once, then re-read
   const n1 = reqs.length; await p.click('[data-rp=today]'); await p.waitForTimeout(700);
   ok(reqs.length === n1, 'a period read less than 20 s ago is not read again');
+  await p.evaluate(() => T.switchEnv({ ...T.S.cfg.raw, mode: 'test' })); await p.click('[data-rp=week]'); await p.waitForTimeout(700);
+  ok(reqs.length === n1 + 1, 'after switching between test and real billing, Reports reads the figures again (never shows the other mode\'s)');
   // reduced motion: values jump straight to the end
   const q = await phone({ reducedMotion: 'reduce' });
   await q.evaluate(() => T.openReports()); await q.waitForTimeout(3200); await q.click('[data-rp=week]'); await q.waitForTimeout(60);

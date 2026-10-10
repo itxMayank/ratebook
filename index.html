@@ -2812,7 +2812,7 @@ function switchEnv(cfg){
   if(before!==S.cfg.mode){
     if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); }
     S.billNoOvr=null; ls.set("rb_billno",null); S.lastBill=null; ls.set("rb_lastbill",null);
-    duesCache=null; S.custQ=""; showCustHint(null);
+    duesCache=null; S.custQ=""; showCustHint(null); for(const k in RPC) delete RPC[k];
   }
   renderEnv(); renderAll();
 }
@@ -3382,11 +3382,13 @@ function openReports(){
   RP.data=null; loadReport().then(rpPrefetch);
 }
 /* Reports for a period are kept on the phone for a short while, so switching between periods animates at once.
-   Money must be current: a copy older than RPC_FRESH is shown and immediately re-read; the card then moves to the fresh figures. */
+   Money must be current: a copy older than RPC_FRESH is shown and immediately re-read; the card then moves to the fresh figures.
+   Keyed by test/real mode as well, so one mode's figures never show in the other. */
 const RPC={}, RPC_FRESH=20000;
-const rpKey=()=>RP.from+"_"+RP.to;
-async function rpFetch(from,to,quiet){ const body={action:"report",from,to,tz:new Date().getTimezoneOffset()};
-  const j = await (quiet ? apiPost0(body) : apiPost(body)); if(!j || j.ok===false) throw j||{}; RPC[from+"_"+to]={r:j.report,at:Date.now()}; return j.report; }
+const rpK=(from,to)=>(S.cfg.mode||"")+"|"+from+"_"+to, rpKey=()=>rpK(RP.from,RP.to);
+async function rpFetch(from,to,quiet){ const k=rpK(from,to), body={action:"report",from,to,tz:new Date().getTimezoneOffset()};
+  const j = await (quiet ? apiPost0(body) : apiPost(body)); if(!j || j.ok===false) throw j||{}; RPC[k]={r:j.report,at:Date.now()};
+  if(k!==rpK(from,to)) throw {code:"mode_changed"}; return j.report; }
 async function loadReport(){
   const box=$("#rp-body"); if(!box) return;
   const rg = RP.k==="custom" ? [$("#rp-from").value,$("#rp-to").value] : rpRange(RP.k);
@@ -3399,7 +3401,7 @@ async function loadReport(){
   finally{ if(seq===RP.seq) rpBusy(false); }
 }
 /** After the first period shows: quietly load the other common periods, one at a time, while Reports stays open. */
-async function rpPrefetch(){ for(const k of ["week","month","yest","lastMonth"]){ if(!$("#rp-body")) return; const rg=rpRange(k), c=RPC[rg[0]+"_"+rg[1]];
+async function rpPrefetch(){ for(const k of ["week","month","yest","lastMonth"]){ if(!$("#rp-body")) return; const rg=rpRange(k), c=RPC[rpK(rg[0],rg[1])];
   if(c && Date.now()-c.at<RPC_FRESH) continue; try{ await rpFetch(rg[0],rg[1],true); }catch{ return; } } }
 function rpBusy(on){ const h=$("#rp-hero"); if(h) h.classList.toggle("busy",!!on); }
 
@@ -4031,13 +4033,14 @@ $("#cust").addEventListener("input",()=>{ S.custAuto=""; });
  * Nothing shows on tap; suggestions appear only once something typed matches (name: 1+ letters, mobile: 3+ digits, GSTIN: 2+).
  * Source: every customer on the sheet (cached on the phone in IndexedDB, refreshed with the same bills version as Past bills,
  * so it downloads only when bills changed on some phone) plus customers remembered on this phone that aren't on the sheet yet. */
-let CUSTD=null, custdLoading=null, custdAt=0, custIdx=null, custIdxKey="";
+let CUSTD=null, custdLoading=null, custdLoadingEnv="", custdAt=0, custIdx=null, custIdxKey="";
 async function custdGet(){ if(CUSTD && CUSTD.env===S.cfg.mode) return CUSTD; const v=await idb.get("images","cust:"+S.cfg.mode); if(v && v.env===S.cfg.mode && Array.isArray(v.list)) CUSTD=v; return CUSTD && CUSTD.env===S.cfg.mode ? CUSTD : null; }
 function custdRefresh(force){
   if(!S.canWrite || !apiUrl() || navigator.onLine===false) return Promise.resolve(null);
+  if(custdLoading && custdLoadingEnv!==S.cfg.mode) return custdLoading.then(()=>custdRefresh(force));   // started before a test/real switch
   if(custdLoading) return custdLoading;
   if(!force && Date.now()-custdAt<15000 && CUSTD && CUSTD.env===S.cfg.mode) return Promise.resolve(CUSTD);
-  const env=S.cfg.mode;
+  const env=S.cfg.mode; custdLoadingEnv=env;
   custdLoading=(async()=>{ await custdGet(); const have=CUSTD && CUSTD.env===env ? CUSTD : null;
       const j=await apiPost0({action:"listCustomers",brev:have&&have.brev||""});
       if(j.same && have){ custdAt=Date.now(); return have; }
@@ -4900,7 +4903,7 @@ function billFilter(){
  * The phone keeps a copy of the recent bills (up to 3000, IndexedDB, per test/real mode). Searching and the year/date
  * filters run on that copy, so results show as you type. The copy is refreshed in the background each time Past bills
  * opens, and right after any change to bills. Older bills beyond the copy can still be searched on the sheet. */
-let BLC=null, blcLoading=null, blcFreshAt=0;
+let BLC=null, blcLoading=null, blcLoadingEnv="", blcFreshAt=0;
 const blcKey=()=>"bills:"+S.cfg.mode;
 function blcDirty(){ blcFreshAt=0; }
 /** A bill made on this phone shows in Past bills straight away, even before it reaches the sheet and even if Past bills was
@@ -4938,8 +4941,9 @@ function blcBump(){ if(BLC && $("#bl-list") && !billsServer) blcShow(BLC); }
 function blcSyncUi(on){ const e=$("#bl-sync"); if(e) e.hidden=!on; }
 async function blcGet(){ if(BLC && BLC.env===S.cfg.mode) return BLC; const v=await idb.get("images",blcKey()); if(v && Array.isArray(v.bills) && v.env===S.cfg.mode) BLC=v; return BLC && BLC.env===S.cfg.mode ? BLC : null; }
 function blcRefresh(){
+  if(blcLoading && blcLoadingEnv!==S.cfg.mode) return blcLoading.catch(()=>{}).then(()=>blcRefresh());   // started before a test/real switch
   if(blcLoading) return blcLoading;
-  const env=S.cfg.mode;
+  const env=S.cfg.mode; blcLoadingEnv=env;
   const have=BLC && BLC.env===env ? BLC : null;
   blcSyncUi(true);
   blcLoading=(async()=>{ const j=await apiPost0({action:"listBills",q:"",limit:3000,full:true,tz:new Date().getTimezoneOffset(),brev:have&&have.brev||""});

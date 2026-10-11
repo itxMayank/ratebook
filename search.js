@@ -199,7 +199,7 @@ function localParse(text){ return devDigits(text).split(/\n|;|\.\s|।|\b(?:and 
 /* ---------------- English → Hindi letters (transliteration, not translation) ---------------- */
 const HI_WORDS={
   bag:"बैग",bags:"बैग्स",gauge:"गेज",micron:"माइक्रोन",microns:"माइक्रोन",drone:"ड्रोन",jumbo:"जंबो",film:"फ़िल्म",stretch:"स्ट्रेच",sugar:"शुगर",paper:"पेपर",cup:"कप",cups:"कप्स",
-  plate:"प्लेट",plates:"प्लेट्स",glass:"ग्लास",box:"बॉक्स",boxes:"बॉक्सेस",roll:"रोल",rolls:"रोल्स",tape:"टेप",pouch:"पाउच",zip:"ज़िप",lock:"लॉक",ziplock:"ज़िपलॉक",carry:"कैरी",
+  plate:"प्लेट",plates:"प्लेट्स",glass:"ग्लास",box:"बॉक्स",boxes:"बॉक्सेस",roll:"रोल",rolls:"रोल्स",liner:"लाइनर",liners:"लाइनर्स",tape:"टेप",pouch:"पाउच",zip:"ज़िप",lock:"लॉक",ziplock:"ज़िपलॉक",carry:"कैरी",
   garbage:"गार्बेज",black:"ब्लैक",white:"व्हाइट",blue:"ब्लू",green:"ग्रीन",red:"रेड",yellow:"येलो",silver:"सिल्वर",gold:"गोल्ड",golden:"गोल्डन",foil:"फॉयल",rubber:"रबर",band:"बैंड",
   plastic:"प्लास्टिक",poly:"पॉली",polythene:"पॉलीथीन",large:"लार्ज",medium:"मीडियम",small:"स्मॉल",big:"बिग",extra:"एक्स्ट्रा",heavy:"हैवी",super:"सुपर",premium:"प्रीमियम",
   transparent:"ट्रांसपेरेंट",printed:"प्रिंटेड",print:"प्रिंट",plain:"प्लेन",milk:"मिल्क",powder:"पाउडर",oil:"ऑयल",mustard:"मस्टर्ड",rice:"राइस",tea:"टी",coffee:"कॉफ़ी",salt:"सॉल्ट",

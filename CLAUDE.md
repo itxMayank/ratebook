@@ -807,6 +807,7 @@ First step towards a more mature structure before wrapping the app with Capacito
   - Hindi letters: word list, acronyms, numbers and sizes kept, units, other packaging words.
   - The same 22 checks pass on the version before the split.
 - **Checked:** all 39 test files pass; screenshots identical except the "updated" clock and the Bill badge animation frame; a phone on part 10 updates online and opens offline with `search.js` there. `sw.js` unchanged.
+- **Fix (separate commit):** "Liner" came out as लिनेर (sound rules); `liner` / `liners` → लाइनर / लाइनर्स added to `HI_WORDS` (an HDPE liner is a common packaging item). Items already saved keep their Hindi name until it's edited or Tools → Convert names to Hindi is run. Check C4 in the test (it fails on the version before).
 - Seen while testing, left as is: a spoken line whose second item isn't in the price list (e.g. "चीनी" when Sugar has no Hindi name) isn't split and shows as one odd "add" in the preview; the preview step is there for this.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)

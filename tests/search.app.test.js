@@ -45,10 +45,12 @@ const items = [
   ok((await lp('add 51 micron bag 1kg rates 110 and 120 sugar 5% badha do')).join(';') === 'add|51 Micron Bag 1kg|110|120|kg;update|i2|42|48|kg', 'B7 …also after a size like "1kg"');
 
   // C. English → Hindi letters
-  const hi = await p.evaluate(() => ['Sugar', 'PP Bag', 'Paper Cup 150ml', 'Garbage Bag 27 x 30', 'Silver Foil 9m', 'Thermocol Plate', 'Rubber Band', 'Container'].map(T.toHindi));
+  const hi = await p.evaluate(() => ['Sugar', 'PP Bag', 'Paper Cup 150ml', 'Garbage Bag 27 x 30', 'Silver Foil 9m', 'Thermocol Plate', 'Rubber Band', 'Container', 'HDPE Liner'].map(T.toHindi));
   ok(hi[0] === 'शुगर' && hi[1] === 'पीपी बैग', 'C1 word list and acronyms: Sugar → शुगर, PP Bag → पीपी बैग');
   ok(hi[2] === 'पेपर कप 150 एमएल' && hi[3] === 'गार्बेज बैग 27 x 30' && hi[4] === 'सिल्वर फॉयल 9 एम', 'C2 numbers and sizes stay, units in Hindi');
   ok(hi[5] === 'थर्मोकोल प्लेट' && hi[6] === 'रबर बैंड' && hi[7] === 'कंटेनर', 'C3 other packaging words');
+
+  ok(hi[8] === 'एचडीपीई लाइनर', 'C4 Liner → लाइनर (was लिनेर, by sound rules)');
 
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();

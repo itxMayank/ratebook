@@ -34,7 +34,8 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   ok(!(await rect(p, '#cashrow')).vis && (await rect(p, '#cash-open')).vis, 'Bill: cash-given row folded away, "Cash given?" link instead');
   await kb(p, true); await p.click('#tot-find'); await p.keyboard.type('bag'); await p.waitForTimeout(500);
   const rise = await rect(p, '#rise'); d = await rect(p, '#dock');
-  ok(rise.vis && !(await rect(p, '#bill-total')).vis && Math.abs(rise.bottom - d.top) < 8, 'Bill typing: results rise from the search; total card steps aside');
+  const rb = await rect(p, '#bill-search-results');
+  ok(rise.vis && !(await rect(p, '#bill-total')).vis && d.top - rb.bottom >= 0 && d.top - rb.bottom < 16 && rise.bottom >= d.bottom, 'Bill typing: results rise from the search (panel reaches behind the bar, so nothing shows through); total card steps aside');
   await p.click('#rise [data-add="i1"] .name'); await p.waitForTimeout(400);
   ok(await p.evaluate(() => T.S.bill.some(l => l.id === 'i1')), 'tapping a result adds it to the bill');
   await p.context().close();

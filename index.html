@@ -1497,7 +1497,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   html.sbot.sres-top body.qtyp.qhas[data-tab="items"] #list{flex-direction:column}
   html.sbot body.qtyp.qhas[data-tab="items"] #list.gridv{display:grid}
   /* typing on Bill: the results panel rises from the search */
-  html.sbot body.qtyp[data-tab="bill"] #rise.on{display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--risetop,var(--toph,80px));bottom:calc(var(--docktop,150px) + 4px);z-index:31;background:var(--bg);padding:8px 12px;overflow:auto;overscroll-behavior:contain}
+  html.sbot body.qtyp[data-tab="bill"] #rise.on{display:flex;flex-direction:column;position:fixed;left:0;right:0;top:var(--risetop,var(--toph,80px));bottom:0;z-index:31;background:var(--bg);padding:8px 16px calc(var(--docktop,150px) + 8px);overflow:auto;overscroll-behavior:contain}
   html.sbot #rise #bill-search-results{zoom:var(--fz,1);display:flex;flex-direction:column-reverse;gap:8px;margin:auto 0 0;flex:none}
   html.sbot.sres-top #rise #bill-search-results{flex-direction:column}
   html.sbot #updpill{bottom:calc(var(--docktop,150px) + 10px)}
@@ -1768,6 +1768,24 @@ html[lang="hi"] body{line-height:1.5}
 .section-title,.sheet-h h2,.empty h2,.empty p{text-wrap:balance}
 .ic{width:1.05em;height:1.05em;display:inline-block;vertical-align:-.17em;flex:none}
 @media (min-width:1024px){ .side-logo{background:none!important;padding:0}.side-logo svg{display:block;width:40px;height:40px} }
+/* Bill-tab search results look like the Prices search (11 Oct 2026): one grouped list with dividers, no letter tiles,
+   name on top and Hindi name · price under it; the panel's background reaches behind the search bar, so the bill never shows through. */
+#bill-search-results:not(:empty){background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;gap:0!important}
+#bill-search-results .mini{border:0!important;border-radius:0;background:transparent;box-shadow:none;padding:10px 14px;min-height:60px;gap:12px}
+#bill-search-results .mini + .mini{border-top:1px solid var(--line)!important}
+html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini{border-top:0!important;border-bottom:1px solid var(--line)!important}
+#bill-search-results .mini:active{background:var(--surface-2)}
+#bill-search-results .mini.inb{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+#bill-search-results .mini .thumb{width:44px!important;height:44px!important;border-radius:var(--r-md)}
+#bill-search-results .mini .name{font-size:16px;font-weight:700;line-height:1.3}
+#bill-search-results .mini .msub{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px;line-height:1.45}
+#bill-search-results .mini .msub b{color:var(--fg);font-weight:700}
+#bill-search-results > .note{padding:14px 16px;margin:0}
+.sheet #bill-search-results:not(:empty){box-shadow:none;border:1.5px solid var(--line)}
+#bill-search-results .mini .mright{flex:none;display:grid;justify-items:end;gap:6px}
+#bill-search-results .mini .mprice{font-size:12px;color:var(--muted);white-space:nowrap}
+#bill-search-results .mini .mprice b{font:800 18px var(--f-display);color:var(--fg);letter-spacing:-.02em}
+#bill-search-results .mini .mrates b{font-weight:600}
 </style>
 </head>
 <body>
@@ -4103,9 +4121,9 @@ function renderBillSearch(){
   const {res}=runSearch(q);
   /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,
      and shows what's already in the bill when the same item is searched again. */
-  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it, inB=billQty(it.id); return `<div class="mini${inB?" inb":""}" role="button" tabindex="0" data-add="${esc(it.id)}">${thumbHTML(it,40)}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="per" lang="hi"> · ${esc(it.nameHi)}</span>`:""}<span class="per"> · ${rs(it.sell)}/${esc(unitL(it.unit))}</span></span>
-    ${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
-         :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</div>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
+  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it, inB=billQty(it.id), img=!!thumbOf(it); return `<div class="mini${inB?" inb":""}${img?"":" noimg"}" role="button" tabindex="0" data-add="${esc(it.id)}">${img?thumbHTML(it,40):""}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="msub" lang="hi">${highlight(it.nameHi,q)}</span>`:""}${hideBuy()?"":`<span class="msub mrates num">${esc(t("buy"))} <b>${rs(it.buy)}</b>${marginPct(it)?` · ${esc(t("margin"))} <b>${marginPct(it)}</b>`:""}</span>`}</span>
+    <span class="mright"><span class="mprice"><b class="num">${rs(it.sell)}</b> /${esc(unitL(it.unit))}</span>${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
+         :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</span></div>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
 /** − / + inside a bill-search result: change the quantity, keep the search and keyboard open. */
 function searchStep(id,up){ const it=S.byId.get(id); if(!it) return; const i=S.bill.findIndex(x=>x.id===id);

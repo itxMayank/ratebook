@@ -30,6 +30,15 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Garbage Bag']
     await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(300);
     ok(!(await vis(p, '#searchbox')) && await vis(p, '#tot-find') && await p.evaluate(() => document.querySelector('#q').value === ''), `${spos}: leaving the box folds it back to the button (word cleared)`);
     await p.tap('#tot-find'); await p.keyboard.type('garbage'); await p.waitForTimeout(400);
+    { for (let k = 0; k < 7; k++) await p.keyboard.press('Backspace'); await p.keyboard.type('bag'); await p.waitForTimeout(400);
+      const g = await p.evaluate(() => { const ms = [...document.querySelectorAll('#bill-search-results .mini')]; const r = ms.map(e => e.getBoundingClientRect()), box = document.querySelector('#bill-search-results');
+        const rise = document.querySelector('#rise'), dock = document.querySelector('#dock');
+        return { n: ms.length, touch: r.slice(1).every((x, i) => Math.abs(Math.min(x.top, r[i].top) + (x.top < r[i].top ? x.height : r[i].height) - Math.max(x.top, r[i].top)) < 1.5),
+          tile: ms.some(e => e.querySelector('.thumb')), bg: getComputedStyle(box).backgroundColor, price: !!ms[0].querySelector('.mprice'),
+          covered: !rise.classList.contains('on') || getComputedStyle(rise).position !== 'fixed' || rise.getBoundingClientRect().bottom >= innerHeight - 1 }; });
+      ok(g.n > 1 && g.touch && !g.tile && g.bg !== 'rgba(0, 0, 0, 0)' && g.price, `${spos}: Bill results look like the Prices search (one grouped list, no gaps, no letter tiles, price on the right)`);
+      ok(g.covered, `${spos}: nothing of the bill shows between the results and the search bar`);
+      for (let k = 0; k < 3; k++) await p.keyboard.press('Backspace'); await p.keyboard.type('garbage'); await p.waitForTimeout(400); }
     await p.tap('#bill-search-results [data-add="i3"] .name'); await p.waitForTimeout(500);
     ok(await p.evaluate(() => T.S.bill.some(l => l.id === 'i3')) && await vis(p, '#tot-find') && !(await vis(p, '#searchbox')), `${spos}: tapping a result adds it, then back to the button`);
     await p.evaluate(() => { T.S.bill.length = 0; T.setTab('items'); T.setTab('bill'); }); await p.waitForTimeout(400);

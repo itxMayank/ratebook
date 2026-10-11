@@ -639,6 +639,13 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
 
   `billsearch` covers the in-bar search icon and the empty-bill button.
 - Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
+- **Bill-tab search results look like the Prices search** (11 Oct 2026):
+  - `#bill-search-results` is one white grouped list with hairline dividers instead of separate pill cards.
+  - Rows (`.mini`) have no letter tile when there's no photo (`.noimg`).
+  - Each row shows the name, Hindi name and Buy · Margin line (hidden with "Hide buy rate"), with "₹23 /pc" on the right (`.mright` / `.mprice`) and the + or − qty + under it.
+  - With bottom search and results next to the bar (reversed list), dividers use `border-bottom`.
+  - **No gap:** `#rise` used to stop 4 px above the search bar, so the bill showed through around the bar. It now reaches the bottom of the screen (`bottom:0`, `padding-bottom: --docktop + 8px`), with the search bar floating on top.
+  - Tests: `billsearch` (grouped list, no gaps, no letter tiles, price on the right, nothing showing through) and `bottomsearch` (results end just above the bar).
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 

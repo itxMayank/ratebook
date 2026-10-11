@@ -675,6 +675,35 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
 - **Hindi type:** elements marked `lang="hi"` (not buttons/inputs) get line height 1.5, and the whole page body gets 1.5 when the app is in Hindi. Headings (`.section-title`, sheet titles, empty states) use `text-wrap: balance`.
 - Test: `tests/designb.test.js`.
 
+## Design pass C: tokens, motion, line icons, app icon set (11 Oct 2026, `index.html` + icons)
+
+- **Motion tokens** in `:root`:
+  - `--ease-out` (decelerate)
+  - `--ease-std` (state changes)
+  - `--ease-in` (exits)
+  - `--ease-spring` (light overshoot for pops: toast, snack bar, mark)
+  - `--ease-sheet` (sheets, iOS curve)
+
+  The 9 different curves in the CSS now use these. The only `cubic-bezier` left is in `flyToBill`'s Web Animations call.
+- **Corner scale:** `--r-xs` 6 · `--r-sm` 10 · `--r-md` 14 · `--r` 20 · `--r-xl` 28 · `--r-full` 999 (plus 50 % circles and 2–4 px hairlines). All 216 px values were mapped to the nearest step, a ±2–4 px change. New CSS must use the tokens.
+- **Transform-only animation in Reports:**
+  - The per-day bars (`.rph-d`) are full height and use `scaleY(var(--h)/100)` from the bottom.
+  - The meters use `scaleX`.
+  - The tooltip (`#rph-tip`) moves with `--tx` / `--ty` in a transform instead of `left` / `top`.
+  - The split bar (`.rph-seg`) still animates `width`. It's only a few segments, and moving it to FLIP isn't worth the risk.
+- **Line icons instead of emoji:** `IC.warn / lock / receipt / file / clip / cam / link` (inline SVG, `.ic`, 1.05em, `currentColor`) replace ⚠ 🔒 🧾 📄 📎 📷 🔗 across the vendor screens, the customer note, the bill-number warning and the script-update note. ✓ and ✕ stay as text.
+- **Screen text at least 11 px:** the badge, "old", photo-count and cash labels were 10–10.5 px. Print sizes are unchanged.
+- **App icon set**, generated from one master (white ₹ tag on Iris, the ₹ as a vector path from Inter ExtraBold so it's crisp at every size):
+  - `icon.svg` favicon (plus a 64 px `favicon.png` fallback, also on `admin.html` / `vendor.html`).
+  - "any" `icon-192/512.png` (rounded square).
+  - **Separate** maskable `icon-maskable-192/512.png` (full bleed, artwork within a 34 % radius, inside the 40 % safe circle).
+  - `apple-touch-icon.png` 180, full bleed.
+  - `icon-mono-512.png` (`purpose: monochrome`, for Android themed icons).
+  - The lock-screen mark (`APP_MARK`) and the laptop sidebar logo use the same artwork.
+  - `sw.js` caches all of them. `tests/sw.test.js` now reads the file list from `sw.js`, so a listed file that's missing fails the test (it would break offline install on phones).
+- **Not done (noted in `designinstructions.md` §11):** shadows are still ~39 different values, the font sizes aren't yet on a strict scale, and theme palettes keep their own colour codes.
+- Test: `tests/designc.test.js` (tokens, no emoji, ≥ 11 px, transform-only, manifest icons, maskable safe zone checked pixel by pixel).
+
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 
 Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, and the phone's copies of prices, Past bills, customers, Credit, vendors, Reports, photos). Three fixes:

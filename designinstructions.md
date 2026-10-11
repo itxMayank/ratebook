@@ -230,7 +230,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - Outline for inactive, filled for the active tab.
 - **One icon style across the app.** Don't mix in emoji as UI icons in new work (old 🔒/⚠ markers may stay).
 
-**Radius scale.**
+**Radius scale** (tokens `--r-xs` 6 · `--r-sm` 10 · `--r-md` 14 · `--r` 20 · `--r-xl` 28 · `--r-full` 999).
 - 6 (small inner) · 10 (inputs inside cards) · 14 (thumbs, small cards) · 20 (`--r`, cards) · 28 (sheets) · 999 (pills).
 - **Nested radii are concentric:** inner radius = outer radius − padding (iOS 26 rule).
 
@@ -422,12 +422,17 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 
 ## 11. Known gaps (do these when touching the area)
 
-- [ ] Add the motion tokens from §6 and replace one-off easings as screens are touched.
+- [x] Motion tokens `--ease-out/std/in/spring/sheet` in `:root`; all CSS curves use them (11 Oct 2026). The `linear()` springs in §6 are optional extras.
 - [ ] Delay every loader by about 300 ms and keep it up at least 500 ms.
 - [ ] Check APCA contrast for `--muted` on `--surface-2` in dark mode, in every palette.
 - [x] Devanagari line height 1.5 on `lang="hi"` text and on the body in Hindi (11 Oct 2026).
 - [x] Small controls (bill-line ×, stepper ±, "+ Bill" on Prices, card stepper) have a 44 px hit area through `::after` hit-slop (11 Oct 2026).
-- [ ] Icons: a separate maskable PNG set, an SVG favicon with dark mode, `theme-color` metas per colour scheme, and a single-colour mark.
+- [x] Icons: maskable 192/512, monochrome, SVG favicon, one master artwork (11 Oct 2026). Still open: `theme-color` metas per colour scheme (set at runtime by `applyTheme` today).
+- [x] Corner scale tokens `--r-xs/sm/md/r/xl/full` (11 Oct 2026).
+- [x] Line icons (`IC.*`) instead of emoji (11 Oct 2026).
+- [ ] Shadows: ~39 different values; move to `--shadow` / `--shadow-lg` (+ focus rings) as screens are touched.
+- [ ] Font sizes: put them on the §3 scale as screens are touched (none under 11 px on screen now).
+- [ ] Reports split bar (`.rph-seg`) still animates width.
 - [ ] Permission pre-prompts before notifications, microphone and camera.
 - [x] EN | हि switch on the lock / sign-in screen, plus the app mark (11 Oct 2026).
 

@@ -1,9 +1,15 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-6';
+const VERSION = 'rb-shell-7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './icon-mono-512.png', './icon.svg', './apple-touch-icon.png', './favicon.png'];
 
+/* The page links its own files with a version stamp ("app.css?v=1a2b3c"). Whenever a copy of the page is saved, the files it
+   names are saved with it, so the app also opens offline the first time after an update, and a new page never meets an old
+   stylesheet. Older stamps of the same file are dropped. */
+const assetsOf = html => [...String(html).matchAll(/(?:href|src)="([a-z0-9_-]+\.(?:css|js)\?v=[^"]+)"/gi)].map(m => './' + m[1]);
+const keepOnly = (c, url) => c.keys().then(ks => Promise.all(ks.filter(k => { const u = new URL(k.url); return u.pathname === url.pathname && u.search && u.search !== url.search; }).map(k => c.delete(k))));
+const saveAssets = (c, html) => Promise.all(assetsOf(html).map(a => c.match(a).then(hit => hit || fetch(a, { cache: 'no-store' }).then(r => r.ok ? c.put(a, r).then(() => keepOnly(c, new URL(a, self.location.href))) : null)).catch(() => null)));
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL).then(() => c.match('./index.html')).then(r => r ? r.text() : '').then(h => saveAssets(c, h))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
@@ -26,6 +32,7 @@ self.addEventListener('fetch', e => {
           const net = fetch(url.origin + url.pathname, { cache: 'no-store', credentials: 'same-origin' }).then(async res => {   // a plain fetch (a navigation request can't take options)
             if (res && res.ok) {
               const fresh = await res.clone().text(), old = await oldText;
+              await saveAssets(c, fresh);   // its stylesheet and texts first, so the new page is complete when it's offered
               await c.put('./index.html', res.clone());
               if (old !== null && old !== fresh) self.clients.matchAll({ type: 'window' }).then(cs => cs.forEach(cl => cl.postMessage({ type: 'rb-update' })));
             }
@@ -38,6 +45,9 @@ self.addEventListener('fetch', e => {
         e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })
           .catch(() => caches.match(req)));
       }
+    } else if (url.search.startsWith('?v=')) {
+      // a stamped file: the stamp changes whenever the file does, so the saved copy is always right
+      e.respondWith(caches.open(VERSION).then(c => c.match(req).then(r => r || fetch(req).then(res => { if (res.ok) { const copy = res.clone(); c.put(req, copy).then(() => keepOnly(c, url)); } return res; }))));
     } else {
       e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })));
     }

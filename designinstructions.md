@@ -8,7 +8,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 ## 0. How to use this file
 
 1. **Before any UI work, read §1 (principles) and the sections for what you're touching.** Run the §12 checklist before calling the work done.
-2. **Use the tokens in the code** (all colour tokens live in one `:root` block at the top of the `<style>`, plus its two dark blocks): `--bg`, `--surface`, `--surface-2`, `--fg`, `--muted`, `--line`, `--ink`/`--ink-fg`, `--accent`/`--accent-soft`, `--good`, `--danger`, `--gold`, `--r`, `--shadow`, `--f-display`, `--f-body`. Never write a new hex value in a component. If a token is missing, add it to `:root`, to both dark blocks and to every palette (`PALETTES` + `:root[data-palette=…]`).
+2. **Use the tokens in the code** (all colour tokens live in one `:root` block at the top of `app.css`, plus its two dark blocks; run `node tools/stamp.js` after editing `app.css` or `strings.js`): `--bg`, `--surface`, `--surface-2`, `--fg`, `--muted`, `--line`, `--ink`/`--ink-fg`, `--accent`/`--accent-soft`, `--good`, `--danger`, `--gold`, `--r`, `--shadow`, `--f-display`, `--f-body`. Never write a new hex value in a component. If a token is missing, add it to `:root`, to both dark blocks and to every palette (`PALETTES` + `:root[data-palette=…]`).
 3. **This file wins over taste.** When the user asks for something that goes against it, do what they ask, then add an "Overrides" note at the bottom so it isn't undone later.
 4. **Keep it current.** When a design decision is made in a conversation (for example "no extra taps to see things on small screens"), add it to §1 or the relevant section in the same pull request.
 
@@ -22,7 +22,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 4. **Content is never on glass.** Prices, totals and inputs sit on solid surfaces. Glass or blur, if used at all, is only for floating chrome (tab bar), with a solid fallback.
 5. **Neutral with one accent.** About 90% of a screen is neutral. The accent marks the main action, the selection and focus. Status colours (green/red/gold) mean status only.
 6. **Colour never carries meaning alone.** Pair it with a word or sign: "Due ₹450", "Paid", "−", ✓.
-7. **Hindi is first-class.** Every string goes in both `STR.en` and `STR.hi`. Devanagari gets more line height (see §3) and is never letter-spaced. Check every layout in Hindi.
+7. **Hindi is first-class.** Every string goes in both `STR.en` and `STR.hi` (in `strings.js`). Devanagari gets more line height (see §3) and is never letter-spaced. Check every layout in Hindi.
 8. **Must work on iPhone (Safari 16+) and Android Chrome**, from 320 px wide up to a laptop, at all four text sizes (1 / 1.12 / 1.25 / 1.38), in light and dark, in all 5 palettes.
 9. **Teach in context, not with tours.** Empty states and one-time hints instead of slides.
 10. **Uncluttered.** When adding something, ask what can go. Show secondary information on demand (the tap-to-reveal profit is the model), but never hide primary information that way.

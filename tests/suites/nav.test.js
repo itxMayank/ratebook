@@ -1,6 +1,6 @@
 const { chromium } = require('../browser').pw;
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8').replace('boot();\n})();\n</script>', 'boot();\nwindow.T={appUnlock,openSettings,openVendors,get STK(){return SHEET_STK;}};\n})();\n</script>');
+const html = require('../browser').inlineFiles(fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8')).replace('boot();\n})();\n</script>', 'boot();\nwindow.T={appUnlock,openSettings,openVendors,get STK(){return SHEET_STK;}};\n})();\n</script>');
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 const users = [{ id: 'u1', name: 'Sanjay', role: 'staff', active: true, testOk: true }, { id: 'u2', name: 'Dad', role: 'manager', active: true, testOk: true }];
 const vendors = Array.from({ length: 30 }, (_, i) => ({ id: 'v' + i, name: 'Vendor ' + i, mobile: '', opening: 0, creditDays: 0, updatedAt: 100 - i }));

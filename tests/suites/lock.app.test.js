@@ -1,6 +1,6 @@
 const { chromium } = require('../browser').pw;
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8').replace('boot();\n})();\n</script>', 'boot();\nwindow.T={S,LOCK,lockAway,appLock,apiPost0,flushBills:typeof flushBills!=="undefined"?flushBills:null};\n})();\n</script>');
+const html = require('../browser').inlineFiles(fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8')).replace('boot();\n})();\n</script>', 'boot();\nwindow.T={S,LOCK,lockAway,appLock,apiPost0,flushBills:typeof flushBills!=="undefined"?flushBills:null};\n})();\n</script>');
 const people = { '1111': { name: 'Sanjay', role: 'staff' }, '2222': { name: 'Dad', role: 'manager' } };
 let tokens = {}, bodies = [], offline = false, n = 0;
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);

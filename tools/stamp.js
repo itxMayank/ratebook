@@ -4,7 +4,7 @@
    (tests/assets.test.js fails if a stamp is out of date.) */
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
-const ASSETS = ['app.css', 'strings.js', 'print.js', 'reports.js', 'bills.js', 'customers.js', 'vendors.js', 'app.js'];
+const ASSETS = ['app.css', 'strings.js', 'print.js', 'reports.js', 'settings.js', 'bills.js', 'customers.js', 'vendors.js', 'app.js'];
 const hash = f => crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 10);
 function stamped(html) {
   for (const f of ASSETS) html = html.replace(new RegExp(`(["'])${f.replace('.', '\\.')}\\?v=[^"']*\\1`), `$1${f}?v=${hash(f)}$1`);

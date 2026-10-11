@@ -21,6 +21,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Garbage Bag']
     ok(await vis(p, '#tot-find') && !(await vis(p, '#bsfab')) && !(await vis(p, '#searchbox')), `${spos}: bill with items — search is an icon in the total bar (nothing floats over the bill)`);
     const f = await p.$eval('#tot-find', e => e.getBoundingClientRect()), t = await p.$eval('#bill-total', e => e.getBoundingClientRect());
     ok(f.top >= t.top && f.bottom <= t.bottom && f.height >= 40, `${spos}: it sits inside the total card, a full-size tap target`);
+    ok(await p.evaluate(() => { const f = document.querySelector('#tot-find').getBoundingClientRect(); return ['#bill-wa', '#bill-done', '#tot-more'].every(s => document.querySelector(s).getBoundingClientRect().right <= f.left + 1); }), `${spos}: the search icon is at the far right of the total card`);
     ok((await p.$eval('[data-pm="cash"]', e => e.getBoundingClientRect().height)) <= 34, `${spos}: Paid by tiles are short (≤ 34 px)`);
     await p.tap('#tot-find'); await p.waitForTimeout(300);
     ok(await vis(p, '#searchbox') && await p.evaluate(() => document.activeElement.id === 'q'), `${spos}: tap → the bar opens and the cursor is in it`);

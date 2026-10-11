@@ -1,11 +1,12 @@
 /* Opening from the phone (sw.js): offline open, instant open from the saved copy, a new version offered/applied, never mid-bill.
    Serves a copy of the app from a local web server (service workers need a real origin). Run: node tests/sw.test.js */
 const fs = require('fs'), path = require('path'), os = require('os'), http = require('http');
-const { launch, ok, done, ROOT, appHtml } = require('./browser');
+const { launch, ok, done, ROOT, appHtml, appJs } = require('./browser');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rbsw-'));
 /* every file sw.js caches for offline use must exist (a missing one would make the install fail on real phones) */
 const SHELLF = JSON.parse(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/const SHELL = (\[[^\]]*\])/)[1].replace(/'/g, '"')).map(x => x.replace('./', '')).filter(x => x && x !== 'index.html');
-for (const f of ['sw.js', ...SHELLF, ...require('../tools/stamp').ASSETS]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));   // + the stamped app.css / strings.js, served as real files
+for (const f of ['sw.js', ...SHELLF, ...require('../tools/stamp').ASSETS]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));   // + the stamped app.css / strings.js / app.js, served as real files
+fs.writeFileSync(path.join(dir, 'app.js'), appJs());   // with the test Directory link (same stamp as the page names; only the address matters here)
 const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill', { files: true }).replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
 write(1);
 let netHits = 0;
@@ -22,7 +23,7 @@ srv.listen(0, async () => {
   ok(await p.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the page');
   await ctx.setOffline(true); await p.reload(); await p.waitForTimeout(800);
   ok(await p.evaluate(() => window.__ver) === 1, 'opens with no internet (from the phone)');
-  ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor === 'rgb(241, 242, 244)' && !!window.RB_STR && /PIN/.test(document.querySelector('#applock').textContent)), 'offline: the separate app.css and strings.js load from the phone too (styles and texts in place)');
+  ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor === 'rgb(241, 242, 244)' && !!window.RB_STR && typeof T === 'object' && typeof T.appUnlock === 'function' && /PIN/.test(document.querySelector('#applock').textContent)), 'offline: the separate app.css, strings.js and app.js load from the phone too (styles, texts and app code in place)');
   await ctx.setOffline(false);
   // new version published; app is on the lock screen with no bill: loads by itself
   await p.evaluate(() => { sessionStorage.vers = ''; }); write(2); await p.reload(); await p.waitForTimeout(400);

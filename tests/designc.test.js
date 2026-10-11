@@ -5,19 +5,20 @@ const fs = require('fs'), path = require('path'), http = require('http');
 const { launch, ok, done } = require('./browser');
 const ROOT = path.join(__dirname, '..'), html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');   // the styles live in app.css
+const code = html.slice(html.indexOf('</head>')) + fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');   // the page body + the app code (inline styles in templates)
 (async () => {
   const curves = (css.match(/cubic-bezier\([^)]*\)/g) || []);
   ok(/--ease-out:cubic-bezier/.test(css) && curves.length <= 5, `motion: easing comes from tokens (${curves.length} curves, all in :root)`);
   const radii = [...css.matchAll(/border-radius:([^;}"!]*)/g)].map(m => m[1].trim()).filter(v => /\d+px/.test(v) && !/^(0|[234]px|3px 3px 1px 1px)$/.test(v));
   ok(radii.length === 0, 'corners: only the token scale (plus hairline 2–4 px): ' + radii.slice(0, 5).join(' | '));
-  ok(!/[🔒📄🧾📎📷🔗⚠]/u.test(html), 'no emoji used as icons in the app (line icons instead)');
+  ok(!/[🔒📄🧾📎📷🔗⚠]/u.test(code), 'no emoji used as icons in the app (line icons instead)');
   const tiny = [...css.matchAll(/([^{}]*)\{[^}]*font(?:-size)?:[^;}]*?\b(\d+(?:\.\d+)?)px/g)].filter(m => +m[2] < 11 && !/printroot|rp-chart|@page/.test(m[1]));
   ok(tiny.length === 0, 'screen text is never under 11 px: ' + tiny.map(m => m[1].trim().slice(-40)).join(' | '));
   const drops = [...css.matchAll(/box-shadow:([^;}"]*)/g)].map(m => m[1]).filter(v => /rgba/.test(v) && !/^inset/.test(v));
   ok(drops.length === 0, 'shadows: only the tokens --shadow-sm / --shadow / --shadow-lg / --shadow-up (rings and hairlines aside): ' + drops.slice(0, 3).join(' | '));
   const SCALE = [11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32];
-  const off = [...html.matchAll(/([^{}]*)\{[^{}]*?(?:font-size:\s*|font:\s*(?:[a-z0-9]+ )*?)(\d+(?:\.\d+)?)px/g)].filter(m => !SCALE.includes(+m[2]) && !/printroot|rp-chart|vv-pdf|@page/.test(m[1]));
-  const offInline = [...html.slice(html.indexOf('</head>')).matchAll(/font-size:(\d+(?:\.\d+)?)px/g)].filter(m => !SCALE.includes(+m[1]));
+  const off = [...css.matchAll(/([^{}]*)\{[^{}]*?(?:font-size:\s*|font:\s*(?:[a-z0-9]+ )*?)(\d+(?:\.\d+)?)px/g)].filter(m => !SCALE.includes(+m[2]) && !/printroot|rp-chart|vv-pdf|@page/.test(m[1]));
+  const offInline = [...code.matchAll(/font-size:(\d+(?:\.\d+)?)px/g)].filter(m => !SCALE.includes(+m[1]));
   ok(off.length === 0 && offInline.length === 0, 'font sizes on the type scale 11·12·13·14·15·16·18·20·22·24·28·32: ' + off.map(m => m[2] + ' ' + m[1].trim().slice(-30)).join(' | '));
   ok(/\.rph-d\{[^}]*transform:scaleY/.test(css) && !/transition:[^;}]*\b(width|height|left|top)\b/.test(css.replace(/\.rph-seg\{[^}]*\}/, '')), 'animations use transform, not width/height/left/top (split bar excepted)');
   const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8')), has = (p, sz) => man.icons.some(i => i.purpose === p && i.sizes === sz && fs.existsSync(path.join(ROOT, i.src)));

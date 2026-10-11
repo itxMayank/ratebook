@@ -1546,6 +1546,21 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .vm-n{flex:1;min-width:0;display:grid}.vm-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vm-n small{color:var(--muted)}
 .vm-b{flex:none;font-size:13px;color:var(--muted)}
 .vm-done{display:grid;gap:8px;margin-top:10px}.vm-done b{font-size:17px;color:var(--good)}
+/* Typing in a bill box on a phone (qty, rate, customer, received…): the keyboard leaves little room, so the shop header
+   scrolls away with the page and the total card shrinks to one slim line (Total · Share · Done), so Done is still one tap
+   away. A box inside the card (Cash given) keeps the full card (body.tin, set on focus of a box, so tapping Done doesn't change it). */
+@media (max-width:1023px){
+  body.typing:not(.qtyp)[data-tab="bill"] header.top{position:static}
+  html.sbot body.typing:not(.qtyp)::after{display:none}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total{padding:6px 6px 6px 16px;gap:0;border-radius:999px}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total>:not(.tot-row),
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total .ts2,
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #tot-more{display:none!important}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #bill-sum{font-size:22px}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total .btn{min-height:40px;padding-top:0;padding-bottom:0}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #bill-wa{width:40px;height:40px;min-width:40px}
+  html:not(.sbot) body.typing:not(.qtyp)[data-tab="bill"] #view-bill .total{bottom:calc(8px / var(--fz,1))}   /* tab bar is hidden while typing */
+}
 /* Bill tab on phones: the search is a round floating button until tapped (body.bsopen = the bar is open) */
 .bsfab{display:none}
 @media (max-width:1023px){
@@ -4046,6 +4061,7 @@ document.addEventListener("focusin",e=>{
   syncQe();
   if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop
   const el=e.target; if(!el.matches || !el.matches("input:not([type=checkbox]):not([type=file]):not([readonly]),textarea")) return;
+  document.body.classList.toggle("tin", !!el.closest("#bill-total"));
   clearTimeout(blurT); document.body.classList.add("typing");
   if(el.closest(".top,#dock")) return;
   [80,350,700].forEach(d=>setTimeout(()=>{ if(document.activeElement===el) el.scrollIntoView({block:"center",behavior:d<100?"auto":"smooth"}); },d));

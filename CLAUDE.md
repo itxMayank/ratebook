@@ -4,6 +4,19 @@ A shared shop price list and quick-bill app for the family business. Runs on the
 
 Last updated: 10 October 2026 (vendor notifications in the app; earlier: more shops from one app + admin dashboard; speed; error log).
 
+## Design rules (read first for any UI work)
+
+**Before building or changing anything people see, read [`designinstructions.md`](designinstructions.md)** and run its §12 checklist before calling the work done. It covers:
+- principles;
+- layout, typography and colour;
+- UI elements;
+- motion tokens;
+- the welcome screen and first run;
+- the logo and icons;
+- known gaps.
+
+It is based on research into current (2025–26) app design. When the user makes a design decision in a conversation, add it there (§1, or "Overrides") in the same pull request. Top rule: **on small screens, wrap or stack; never hide things behind an extra tap.**
+
 ## Where everything lives
 
 | What | Where | Owner / access |
@@ -627,6 +640,70 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   `billsearch` covers the in-bar search icon and the empty-bill button.
 - Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
+## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
+
+- **New accent, Iris** (`--accent` #4F46E5, dark #A5A6FF; soft #EEEEFF / #25264D), replacing maroon, which Mayank found dull. Teal and ocean blue were also tried: teal is too close to the green used for "Paid" and to WhatsApp, and ocean blue looks generic. Maroon stays as an optional theme.
+  - The two sets of colour tokens (the original warm set, overridden by the "Design refresh" set) are merged into **one** `:root` block plus its two dark blocks at the top of the `<style>`.
+  - The manifest's `theme_color` / `background_color` and the `theme-color` meta now equal `--bg` (#F1F2F4), so there's no maroon flash at launch.
+  - `admin.html` and `vendor.html` use Iris too.
+  - The icons are recoloured: a white ₹ tag on Iris. The full icon set is part C.
+  - `sw.js` → `rb-shell-6`.
+- **Grey text** `--muted` #5F636B (was #6E727A, 4.2–4.3:1 on grey backgrounds). It's now ≥ 5.1:1 on every light background in every theme.
+- **Tools in groups:**
+  - **Every day** (`.tl-daily`, 2-column tiles on phones; an odd last tile spans the row): Past bills · Credit · Customers · Vendors · Reports.
+  - **Prices & items:** typing/speaking changes, Add, Bulk add, Bulk edit, Groups, Hindi names.
+  - **App:** Settings, Lock now, Install.
+  - Headings are `.tl-h` (`tlDaily` / `tlItems` / `tlApp`). Element ids and handlers are unchanged.
+- **44 px touch areas without changing the look:** an `::after` hit-slop on "+ Bill" (`.addbtn`), the Prices card stepper (`.card .mstep button`; `.mstep` is now `overflow:visible`), and the bill line − / + and ×. The bill stepper's end buttons carry their own rounded corners now that `.bill-line .step` doesn't clip.
+- Test: `tests/designa.test.js`.
+
+## Design pass B: Prices list, compact header, welcome screen, Hindi type (11 Oct 2026, `index.html` only)
+
+- **Prices list on phones is one grouped list** (`#list.rows`, toggled in `renderList` when not in photo grid). It's one white rounded box with hairline dividers instead of a shadowed card per item.
+  - Items without a photo get no letter tile (`.card.noimg`); real photos show as 44 px thumbnails.
+  - "₹23 /pc" sits on one line with "+ Bill" under it.
+  - Rows went from ~94 px to ~68–83 px (about 6½ items per screen instead of 5).
+  - With bottom search and results next to the search (reversed list), dividers use `border-bottom`.
+  - The laptop card grid and the photo grid are unchanged.
+- **Header compacts once scrolled** (phones; `hdrSync` on scroll, `html.hdr-min`): the greeting hides, the shop name goes to one line at 18 px, and the bell / wand / EN-हि stay.
+  - It shrinks after 72 px of scrolling, only on pages with room (so it can't flicker at the bottom), and grows back at the top.
+  - It's off on the laptop and while typing. 87 → 52 px.
+- **Lock / sign-in = welcome screen:**
+  - The app mark (`APP_MARK` SVG: white ₹ tag on Iris, fixed colour in light and dark) sits above the shop name, which wraps instead of being cut.
+  - An **EN | हि** switch in the top-right corner (`.al-lang`, `data-al-lang`) redraws the screen in place (`LOCK.re`; sign-in keeps the typed name and PIN).
+  - A short entrance on each lock (`#applock.al-enter`: fade-up 420 ms, mark scale with a slight overshoot), off under reduced motion.
+- **Hindi type:** elements marked `lang="hi"` (not buttons/inputs) get line height 1.5, and the whole page body gets 1.5 when the app is in Hindi. Headings (`.section-title`, sheet titles, empty states) use `text-wrap: balance`.
+- Test: `tests/designb.test.js`.
+
+## Design pass C: tokens, motion, line icons, app icon set (11 Oct 2026, `index.html` + icons)
+
+- **Motion tokens** in `:root`:
+  - `--ease-out` (decelerate)
+  - `--ease-std` (state changes)
+  - `--ease-in` (exits)
+  - `--ease-spring` (light overshoot for pops: toast, snack bar, mark)
+  - `--ease-sheet` (sheets, iOS curve)
+
+  The 9 different curves in the CSS now use these. The only `cubic-bezier` left is in `flyToBill`'s Web Animations call.
+- **Corner scale:** `--r-xs` 6 · `--r-sm` 10 · `--r-md` 14 · `--r` 20 · `--r-xl` 28 · `--r-full` 999 (plus 50 % circles and 2–4 px hairlines). All 216 px values were mapped to the nearest step, a ±2–4 px change. New CSS must use the tokens.
+- **Transform-only animation in Reports:**
+  - The per-day bars (`.rph-d`) are full height and use `scaleY(var(--h)/100)` from the bottom.
+  - The meters use `scaleX`.
+  - The tooltip (`#rph-tip`) moves with `--tx` / `--ty` in a transform instead of `left` / `top`.
+  - The split bar (`.rph-seg`) still animates `width`. It's only a few segments, and moving it to FLIP isn't worth the risk.
+- **Line icons instead of emoji:** `IC.warn / lock / receipt / file / clip / cam / link` (inline SVG, `.ic`, 1.05em, `currentColor`) replace ⚠ 🔒 🧾 📄 📎 📷 🔗 across the vendor screens, the customer note, the bill-number warning and the script-update note. ✓ and ✕ stay as text.
+- **Screen text at least 11 px:** the badge, "old", photo-count and cash labels were 10–10.5 px. Print sizes are unchanged.
+- **App icon set**, generated from one master (white ₹ tag on Iris, the ₹ as a vector path from Inter ExtraBold so it's crisp at every size):
+  - `icon.svg` favicon (plus a 64 px `favicon.png` fallback, also on `admin.html` / `vendor.html`).
+  - "any" `icon-192/512.png` (rounded square).
+  - **Separate** maskable `icon-maskable-192/512.png` (full bleed, artwork within a 34 % radius, inside the 40 % safe circle).
+  - `apple-touch-icon.png` 180, full bleed.
+  - `icon-mono-512.png` (`purpose: monochrome`, for Android themed icons).
+  - The lock-screen mark (`APP_MARK`) and the laptop sidebar logo use the same artwork.
+  - `sw.js` caches all of them. `tests/sw.test.js` now reads the file list from `sw.js`, so a listed file that's missing fails the test (it would break offline install on phones).
+- **Not done (noted in `designinstructions.md` §11):** shadows are still ~39 different values, the font sizes aren't yet on a strict scale, and theme palettes keep their own colour codes.
+- Test: `tests/designc.test.js` (tokens, no emoji, ≥ 11 px, transform-only, manifest icons, maskable safe zone checked pixel by pixel).
+
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 
 Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, and the phone's copies of prices, Past bills, customers, Credit, vendors, Reports, photos). Three fixes:
@@ -703,7 +780,7 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-5`). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-6`). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 

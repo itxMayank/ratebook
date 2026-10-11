@@ -3,7 +3,9 @@
 const fs = require('fs'), path = require('path'), os = require('os'), http = require('http');
 const { launch, ok, done, ROOT, appHtml } = require('./browser');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rbsw-'));
-for (const f of ['sw.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon.png']) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));
+/* every file sw.js caches for offline use must exist (a missing one would make the install fail on real phones) */
+const SHELLF = JSON.parse(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/const SHELL = (\[[^\]]*\])/)[1].replace(/'/g, '"')).map(x => x.replace('./', '')).filter(x => x && x !== 'index.html');
+for (const f of ['sw.js', ...SHELLF]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));
 const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill').replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
 write(1);
 let netHits = 0;

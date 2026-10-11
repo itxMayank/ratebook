@@ -22,7 +22,7 @@ const items = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, name: 'PP Bag
   ok(gap >= 0 && gap < 40, 'typing more jumps back to the best match, just above the search (' + Math.round(gap) + ' px)');
   await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(300);
   await p.evaluate(() => { document.activeElement.blur(); const q = document.querySelector('#q'); q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); T.addToBill('i0', 1); T.setTab('bill'); }); await p.waitForTimeout(400);
-  await p.click('#bsfab'); await p.setViewportSize({ width: 390, height: 420 }); await p.keyboard.type('bag'); await p.waitForTimeout(600);
+  await p.click('#tot-find'); await p.setViewportSize({ width: 390, height: 420 }); await p.keyboard.type('bag'); await p.waitForTimeout(600);
   const r0 = await p.evaluate(() => { const r = document.querySelector('#rise'); return { st: r.scrollTop, sh: r.scrollHeight, ch: r.clientHeight }; });
   await p.mouse.move(200, 150); await p.mouse.wheel(0, -2000); await p.waitForTimeout(400);
   const topMost = await p.evaluate(() => { const r = document.querySelector('#rise').getBoundingClientRect(); const m = [...document.querySelectorAll('#rise .mini')].map(e => e.getBoundingClientRect().top); return Math.min(...m) - r.top; });

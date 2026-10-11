@@ -32,7 +32,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   d = await rect(p, '#dock'); const tot = await rect(p, '#bill-total');
   ok(d.bottom <= tot.top + 1 && tot.top - d.bottom < 20 && !(await rect(p, '#fab')).vis, 'Bill: the search sits just above the total card (no Add button there)');
   ok(!(await rect(p, '#cashrow')).vis && (await rect(p, '#cash-open')).vis, 'Bill: cash-given row folded away, "Cash given?" link instead');
-  await kb(p, true); await p.click('#bsfab'); await p.keyboard.type('bag'); await p.waitForTimeout(500);
+  await kb(p, true); await p.click('#tot-find'); await p.keyboard.type('bag'); await p.waitForTimeout(500);
   const rise = await rect(p, '#rise'); d = await rect(p, '#dock');
   ok(rise.vis && !(await rect(p, '#bill-total')).vis && Math.abs(rise.bottom - d.top) < 8, 'Bill typing: results rise from the search; total card steps aside');
   await p.click('#rise [data-add="i1"] .name'); await p.waitForTimeout(400);
@@ -41,7 +41,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   const q = await phone(390, 844, 'top');
   ok(await q.evaluate(() => document.querySelector('#searchbox').closest('header') !== null && document.querySelector('#dock').hidden), 'Settings "Top": search stays in the header like before');
   await q.evaluate(() => { T.addToBill('i0', 2); T.setTab('bill'); }); await q.waitForTimeout(400);
-  await q.click('#bsfab'); await q.keyboard.type('bag'); await q.setViewportSize({ width: 390, height: 500 }); await q.waitForTimeout(500);
+  await q.click('#tot-find'); await q.keyboard.type('bag'); await q.setViewportSize({ width: 390, height: 500 }); await q.waitForTimeout(500);
   ok(!(await rect(q, '#bill-total')).vis, '"Top" + Bill: the total card steps aside while searching (it used to float over the results above the keyboard)');
   await q.evaluate(() => document.activeElement.blur()); await q.waitForTimeout(300);
   ok((await rect(q, '#bill-total')).vis, '"Top" + Bill: the total card is back once the search is left');

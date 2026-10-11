@@ -635,33 +635,5 @@ function custXSync(){ const b=$("#cust-x"); if(!b) return; const on=!!(S.cust.tr
 function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; S.custAuto=""; S.custQ="";
   ["#cust","#cust-mob","#cust-gstin"].forEach(k=>{ const el=$(k); if(el){ el.value=""; el.classList.remove("need"); } }); ["rb_cust","rb_mob","rb_cgstin"].forEach(k=>ls.set(k,""));
   const me=$("#mob-err"); if(me) me.textContent=""; const ge=$("#gstin-err"); if(ge) ge.textContent=""; sugClose(); showCustHint(null); updateBillTotals(); custXSync(); }
-function openToHindi(){
-  let onlyMissing=false;
-  const rows=()=>S.items.filter(it=>!onlyMissing || !it.nameHi).map(it=>({it, hi:toHindi(it.name)}));
-  let data=rows(); const sel=new Set(data.map(r=>r.it.id)); const edits={};
-  const body=`<p class="note" style="margin:0 0 8px">${esc(t("toHindiHelp"))}</p>
-    <label class="note" style="display:flex;gap:6px;align-items:center;margin-bottom:8px"><input type="checkbox" id="th-only"> ${esc(t("onlyMissing"))}</label>
-    <div class="gridwrap"><table class="g"><thead><tr><th style="width:36px"><input type="checkbox" id="th-all" checked aria-label="All"></th><th>${esc(t("item"))}</th><th>${esc(t("hiName"))}</th></tr></thead><tbody id="th-body"></tbody></table></div>
-    <p class="note" id="th-prog"></p>`;
-  openSheet(t("toHindiT"), body, `<button class="btn ghost" id="th-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="th-save"></button>`, {full:true});
-  const tb=$("#th-body");
-  const count=()=>[...sel].filter(id=>{ const it=S.byId.get(id); const v=(edits[id]??toHindi(it.name)).trim(); return v && v!==it.nameHi; }).length;
-  const upd=()=>{ const n=count(); const b=$("#th-save"); b.textContent=n?t("convertN",n):t("hiNone"); b.disabled=!n; };
-  const draw=()=>{ tb.innerHTML=data.map(r=>`<tr><td><input type="checkbox" data-sel="${esc(r.it.id)}" ${sel.has(r.it.id)?"checked":""} aria-label="Select"></td>
-      <td class="c-name">${esc(r.it.name)}${r.it.nameHi?`<span class="tag" style="color:var(--muted)">${esc(t("current"))}: ${esc(r.it.nameHi)}</span>`:""}</td>
-      <td class="c-name"><input id="th-${esc(r.it.id)}" data-hid="${esc(r.it.id)}" lang="hi" value="${esc(edits[r.it.id]??r.hi)}"></td></tr>`).join(""); upd(); };
-  tb.addEventListener("input",e=>{ const id=e.target.dataset.hid; if(id){ edits[id]=e.target.value; upd(); } });
-  tb.addEventListener("change",e=>{ const id=e.target.dataset.sel; if(id){ e.target.checked?sel.add(id):sel.delete(id); upd(); } });
-  $("#th-all").onchange=e=>{ data.forEach(r=>e.target.checked?sel.add(r.it.id):sel.delete(r.it.id)); draw(); };
-  $("#th-only").onchange=e=>{ onlyMissing=e.target.checked; data=rows(); sel.clear(); data.forEach(r=>sel.add(r.it.id)); draw(); };
-  $("#th-cancel").onclick=sheetCancel;
-  $("#th-save").onclick=async()=>{ if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
-    const recs=[...sel].map(id=>{ const it=S.byId.get(id); const v=(edits[id]??toHindi(it.name)).trim(); return v && v!==it.nameHi ? {id, nameHi:v} : null; }).filter(Boolean);
-    if(!recs.length) return; $("#th-save").disabled=true;
-    try{ for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#th-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
-      if(SHEET_STK.length) sheetBack(); else closeSheet(); toast(t("savedN",recs.length)); resyncSoon(); }
-    catch{ const b=$("#th-save"); if(b) b.disabled=false; } };
-  draw();
-}
 /* Sign-in and app lock: lock.js. LOCK stays here because it reads phone storage while loading. */
 const LOCK_MS=5*60000, LOCK={on:false, fails:ls.get("rb_lockfail",{n:0,until:0})};

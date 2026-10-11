@@ -30,7 +30,7 @@ const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/6
   ok(await p.evaluate(() => document.activeElement.id !== 'q') && (await rect('nav.tabs')).vis, 'keyboard down: search let go, tab bar back');
   // Bill: results panel stays inside the visible part when Safari slides the page
   await p.evaluate(() => { T.addToBill('i0', 1); T.setTab('bill'); }); await p.waitForTimeout(300);
-  await p.focus('#q'); await kb(544, 250); await p.keyboard.type('bag'); await p.waitForTimeout(400);
+  await p.click('#bsfab'); await kb(544, 250); await p.keyboard.type('bag'); await p.waitForTimeout(400);
   const r = await rect('#rise');
   ok(r.vis && r.top >= 250, 'Bill: results show (no :has() needed) and start inside the visible part of the slid page');
   await kb(844, 0); await p.waitForTimeout(300);

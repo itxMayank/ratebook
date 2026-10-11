@@ -12,7 +12,7 @@
  *   2. Link it to a standard Google Cloud project with the Apps Script API turned on; turn on the Apps Script API at
  *      script.google.com/home/usersettings.
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
- *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, index.html, vendor.html.
+ *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
 const DIR_VERSION = 4;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs

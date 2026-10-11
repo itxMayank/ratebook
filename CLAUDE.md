@@ -21,9 +21,9 @@ It is based on research into current (2025–26) app design. When the user makes
 
 | What | Where | Owner / access |
 |---|---|---|
-| App files (`index.html`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
+| App files (`index.html`, `app.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
 | Backend script (`Code.gs`) | Apps Script project at script.google.com, created as a standalone project (not from inside a sheet) | Mayank's Google account |
-| Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` in `index.html`) | Deployed: Execute as Me, access Anyone |
+| Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` at the top of `app.js`) | Deployed: Execute as Me, access Anyone |
 | Price data | Google Sheet **"Rate Book prices"** in Mayank's Google Drive, created automatically by the script. Tabs: `Items`, `Config`, `Images`, `Bills` | Mayank only; the app reaches it through the script |
 | Shop PIN, sheet ID, change counter | Apps Script → Project settings → Script properties: `PIN`, `SHEET_ID`, `rev` | Default PIN `1234` until changed in the app |
 | Per-phone state | Each phone's browser storage (see "On each phone" below) | That phone only |
@@ -554,7 +554,7 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 - `vendor.html`: links from non-main shops carry `&s=<code>`; the page asks the Directory for that shop's link.
 
 **Runbook**
-1. **One-time Directory setup (laptop, ~15 min):** script.google.com → New project "Rate Book Directory" → paste `admin/Directory.gs`; Project Settings → "Show appsscript.json" → paste `admin/appsscript.json`. In Google Cloud console: create a project, **APIs & Services → enable "Apps Script API"**, OAuth consent screen (External, testing, add your Gmail as a test user). Apps Script → Project Settings → Google Cloud Platform project → **Change project** → paste the project number. Turn on the Apps Script API at **script.google.com/home/usersettings**. Run **`setupDirectory`** (allow): View → Logs shows the **admin PIN** and "Apps Script API: OK". Deploy → New deployment → Web app, Execute as **Me**, access **Anyone** → copy the link. Set `DIR_URL` in `index.html`, `vendor.html` and `admin.html` to it (commit), or paste it once in `admin.html`.
+1. **One-time Directory setup (laptop, ~15 min):** script.google.com → New project "Rate Book Directory" → paste `admin/Directory.gs`; Project Settings → "Show appsscript.json" → paste `admin/appsscript.json`. In Google Cloud console: create a project, **APIs & Services → enable "Apps Script API"**, OAuth consent screen (External, testing, add your Gmail as a test user). Apps Script → Project Settings → Google Cloud Platform project → **Change project** → paste the project number. Turn on the Apps Script API at **script.google.com/home/usersettings**. Run **`setupDirectory`** (allow): View → Logs shows the **admin PIN** and "Apps Script API: OK". Deploy → New deployment → Web app, Execute as **Me**, access **Anyone** → copy the link. Set `DIR_URL` in `app.js`, `vendor.html` and `admin.html` to it (commit), or paste it once in `admin.html`.
 2. **Register your shop:** `admin.html` → Register my shop (web app link, Script ID from Project Settings, Deployment ID from Manage deployments) → add the shown `HEALTH_KEY` as a script property in your shop's project.
 3. **Create a shop:** Create shop → open the shop's script → choose `setupShop` → Run → allow → the card turns **live**. Send the shop link (`…/ratebook/?shop=<code>`) and the starting PIN to the owner; they sign in (owner, with their name), change the shop PIN, add staff in Settings → People, approve staff phones, switch to real billing when ready.
 4. **Update scripts:** after merging a `Code.gs` change, Update script on your shop first, check it, then Update all shops. If a shop shows "needs authorising" after an update (new Google permissions), run `setupShop` in it once.
@@ -664,9 +664,19 @@ First step towards a more mature structure before wrapping the app with Capacito
   - `tests/sw.test.js` serves the real files and also checks that styles and texts work offline and that a changed `app.css` arrives under its new stamp.
   - `designc` reads the tokens from `app.css`.
 - **Still to do:**
-  - step 3: split the app code by area, with vendors, reports and printing loading only when opened;
+  - step 3: split the app code by area, with vendors, reports and printing loading only when opened (part 2 below);
   - step 4: offline cache and update check for those files;
   - step 5: tests for every screen opening.
+
+## App split into files, part 2: app code in `app.js` (11 Oct 2026, step 3a)
+
+- **`app.js`**: all the app's code (515 KB), moved out of the big `<script>` at the end of `index.html`, unchanged except that it now runs as a plain script in **global scope** instead of inside `(() => { … })()`. It starts with `"use strict";`, so strict mode is unchanged. `index.html` (24 KB) is now only the markup, two tiny start-up lines in `<head>`, then `strings.js` and `app.js` at the end of `<body>` (plain scripts, no `defer`/`module`, so the page is built when the code runs, as before).
+- Why global scope: the next steps cut `app.js` into several files by area, and plain scripts share their top-level names (`let`/`const` across files; functions also become `window` properties).
+- **Checked first** that none of the 717 top-level names (462 functions, 187 `const`, 68 `let`) is a browser global (`window.open`, `print`, `top`, `name`…), which would have replaced it or failed to load. `tests/globals.test.js` keeps it that way: it records every browser global before the app runs and fails if any was replaced (tried with a planted `function open(){}`: caught).
+- `API_URL` and `DIR_URL` are now at the top of `app.js`. `app.js` is stamped like the other files (`ASSETS` in `tools/stamp.js`); the offline cache and the "Update ready" check needed no change (they already follow every stamped file), so `sw.js` stays `rb-shell-7`.
+- Error reports from phones now name `app.js:<line>:<col>` instead of `index.html:…`.
+- **Tests:** `tests/browser.js` inlines `app.js` too and adds the `window.T={…}` test hook right after it (`inlineFiles(html, expose)`; with `{files:true}` it's a small script after `app.js`, and `appJs()` gives the file with the test Directory link). The five `tests/suites/*.app` tests use `inlineFiles(html, expose)`. `assets` checks the stamp, that no app code is left in `index.html`, the load order and strict mode; `sw` checks that `app.js` also works offline; `designc` reads inline font sizes and icons from `app.js`.
+- **Checked:** all 30 test files pass; 12 screenshots (light/dark: lock, prices, bill, tools, settings, item) match the previous version pixel for pixel, except the Bill badge caught at a different frame of its pop animation; a phone on the previous version (part 1) updates to this one online, and opens offline afterwards.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
@@ -819,13 +829,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css` or `strings.js`, run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js` or `app.js`, run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup + app code), `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `app.js` (all app code, global scope), `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

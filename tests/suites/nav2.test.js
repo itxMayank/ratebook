@@ -1,6 +1,6 @@
 const { chromium } = require('../browser').pw;
 const fs = require('fs');
-const html = require('../browser').inlineFiles(fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8')).replace('boot();\n})();\n</script>', 'boot();\nwindow.T={appUnlock,openDues,openCustomers,openDetail,openEdit};\n})();\n</script>');
+const html = require('../browser').inlineFiles(fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8'), 'appUnlock,openDues,openCustomers,openDetail,openEdit');
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 const custs = Array.from({ length: 40 }, (_, i) => ({ name: 'Cust ' + i, mobile: '98765432' + String(i).padStart(2, '0'), due: 100 + i, oldest: '2026-10-01', bills: [{ n: i + 1, date: '2026-10-01', total: 100 + i, paid: 0, due: 100 + i, items: '' }] }));
 (async () => {

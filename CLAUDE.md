@@ -4,6 +4,19 @@ A shared shop price list and quick-bill app for the family business. Runs on the
 
 Last updated: 10 October 2026 (vendor notifications in the app; earlier: more shops from one app + admin dashboard; speed; error log).
 
+## Design rules (read first for any UI work)
+
+**Before building or changing anything people see, read [`designinstructions.md`](designinstructions.md)** and run its §12 checklist before calling the work done. It covers:
+- principles;
+- layout, typography and colour;
+- UI elements;
+- motion tokens;
+- the welcome screen and first run;
+- the logo and icons;
+- known gaps.
+
+It is based on research into current (2025–26) app design. When the user makes a design decision in a conversation, add it there (§1, or "Overrides") in the same pull request. Top rule: **on small screens, wrap or stack; never hide things behind an extra tap.**
+
 ## Where everything lives
 
 | What | Where | Owner / access |

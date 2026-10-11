@@ -1713,6 +1713,51 @@ details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
 .bill-line .step button::after{inset:-4px 0}
 .bill-line .step button:first-child{border-radius:999px 0 0 999px}
 .bill-line .step button:last-child{border-radius:0 999px 999px 0}
+/* Prices list on phones = one grouped list (11 Oct 2026): rows with hairline dividers instead of a shadowed card each,
+   no letter tile when there's no photo, so ~8 items fit instead of ~5. Photo grid and laptop cards unchanged. */
+@media (max-width:1023px){
+  #list.rows{gap:0;background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  #list.rows .card{box-shadow:none;border:0;border-radius:0;background:transparent;padding:11px 14px;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;min-height:64px;contain-intrinsic-size:auto 68px;transition:background-color .15s}
+  #list.rows .card:active{transform:none;background:var(--surface-2)}
+  #list.rows .card + .card{border-top:1px solid var(--line)}
+  html.sbot:not(.sres-top) body.qtyp.qhas[data-tab="items"] #list.rows .card + .card{border-top:0;border-bottom:1px solid var(--line)}
+  #list.rows .card.noimg{grid-template-columns:minmax(0,1fr) auto}
+  #list.rows .card.noimg .thumb{display:none}
+  #list.rows .thumb{width:44px;height:44px;border-radius:12px}
+  #list.rows .name{font-size:15.5px;line-height:1.3}
+  #list.rows .sub{font-size:13px;line-height:1.45;margin-top:1px}
+  #list.rows .rates{font-size:12.5px;margin-top:3px;gap:8px}
+  #list.rows .price{grid-template-columns:auto auto;column-gap:3px;row-gap:7px;align-items:baseline}
+  #list.rows .price > :not(.sell):not(.per:nth-child(2)){grid-column:1/-1;justify-self:end}
+  #list.rows .sell{font-size:19px}
+  #list.rows .per{font-size:12px}
+}
+/* compact header once scrolled (phones) */
+@media (max-width:1023px){
+  html.hdr-min .top{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:6px}
+  html.hdr-min .brand .hello{display:none}
+  html.hdr-min .brand{font-size:18px}
+  html.hdr-min .brand #shopname{-webkit-line-clamp:1}
+  html.hdr-min header.top .bar>.iconbtn{width:40px;height:40px}
+}
+/* Lock / welcome screen (11 Oct 2026): app mark, language switch, a short calm entrance */
+#applock .al-lang{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:16px;display:flex;background:var(--surface);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+#applock .al-lang button{border:0;background:none;color:var(--muted);font:700 14px var(--f-body);min-width:44px;height:36px;border-radius:999px;cursor:pointer}
+#applock .al-lang button[lang="hi"]{font-family:"Mukta",var(--f-body);font-size:16px}
+#applock .al-lang button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg)}
+#applock .al-mark{width:52px;height:52px;margin:0 auto -4px;display:block;filter:drop-shadow(0 6px 14px rgba(79,70,229,.28))}
+#applock .al-shop{white-space:normal;text-wrap:balance;line-height:1.25}
+@media (prefers-reduced-motion:no-preference){
+  #applock.al-enter .al-box{animation:alIn .42s cubic-bezier(.23,1,.32,1) both}
+  #applock.al-enter .al-mark{animation:alMark .5s cubic-bezier(.34,1.4,.64,1) both}
+  #applock.al-enter .al-pad{animation:alIn .42s cubic-bezier(.23,1,.32,1) .06s both}
+}
+@keyframes alIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes alMark{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+/* Hindi (Devanagari) needs more line height than Latin, or the vowel marks above and below collide (designinstructions §3) */
+[lang="hi"]:not(button):not(input){line-height:1.5}
+html[lang="hi"] body{line-height:1.5}
+.section-title,.sheet-h h2,.empty h2,.empty p{text-wrap:balance}
 </style>
 </head>
 <body>
@@ -2678,7 +2723,7 @@ function billQty(id){ const l=S.bill.find(x=>x.id===id); return l? l.qty : 0; }
 function cardHTML(it,q){
   const inB=billQty(it.id);
   const rates = hideBuy() ? "" : `<div class="rates num"><span>${t("buy")} <b>${rs(it.buy)}</b></span>${marginPct(it)?`<span>${t("margin")} <b>${marginPct(it)}</b></span>`:""}${popN(it.id)?`<span class="sold">${esc(t("soldIn",popN(it.id)))}</span>`:""}</div>`;
-  return `<div class="card${it.pending?" pending":""}" data-id="${esc(it.id)}">
+  return `<div class="card${it.pending?" pending":""}${thumbOf(it)?"":" noimg"}" data-id="${esc(it.id)}">
     ${thumbHTML(it)}
     <div class="info"><div class="name">${highlight(it.name,q)}</div>
       ${it.nameHi?`<div class="sub" lang="hi">${highlight(it.nameHi,q)}</div>`:""}${akaHTML(it,q)}${rates}
@@ -2866,6 +2911,7 @@ function renderList(){
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
+  list.classList.toggle("rows", !gridOn() && shown.length>0);   /* phones: one grouped list with dividers */
   /* jump to the best match only when the search text changes, never on a redraw (photos arriving, a sync), so scrolling the results isn't pulled back */
   if(q && q!==renderList.lastQ && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));
   renderList.lastQ=q;   // best match next to the search (or at the top, Settings)
@@ -4142,6 +4188,15 @@ window.addEventListener("resize",()=>dockPos());
 ["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(!root.classList.contains("sbot") || !document.body.classList.contains("qtyp")) return;
   if(e.target.closest && e.target.closest("#rise .mini, #list [data-add], #list [data-decid], #list .mstep, #dock #q-clear")) e.preventDefault(); },true));
 if(window.ResizeObserver){ const ro=new ResizeObserver(()=>dockPos()); ["#bill-total","nav.tabs","header.top","#dock"].forEach(s=>{ const e=document.querySelector(s); if(e) ro.observe(e); }); }
+/* Header on phones: greeting + full shop name at the top of a page; one compact line once scrolled (iOS large-title pattern).
+   Hysteresis (shrink past 72 px, grow back at the very top) and a long-enough page, so it can't flicker. */
+let hdrMin=false;
+function hdrSync(){ const r=document.documentElement, hd=$("header.top"); if(!hd) return;
+  if(DESK() || document.body.classList.contains("typing")){ if(hdrMin){ hdrMin=false; r.classList.remove("hdr-min"); } return; }
+  const y=window.scrollY, room=r.scrollHeight-window.innerHeight;
+  const want = hdrMin ? y>4 : (y>72 && room>150);
+  if(want!==hdrMin){ hdrMin=want; r.classList.toggle("hdr-min",want); try{ dockPos(); }catch{} } }
+window.addEventListener("scroll",hdrSync,{passive:true});
 /* Laptop / desktop: the bill stays open on the right, so there is no separate Bill tab. */
 const deskMQ=window.matchMedia("(min-width:1024px)");
 const DESK=()=>deskMQ.matches;
@@ -6565,11 +6620,11 @@ async function bioCheck(){ await navigator.credentials.get({publicKey:{challenge
 function lockEl(){ let el=$("#applock"); if(!el){ el=document.createElement("div"); el.id="applock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.hidden=true; document.body.appendChild(el); } return el; }
 function lockInert(on){ for(const c of document.body.children){ if(c.id!=="applock" && c.id!=="toast" && c.id!=="updpill"){ if(on) c.setAttribute("inert",""); else c.removeAttribute("inert"); } } }
 /** Lock the app (or show sign-in when nobody is signed in on this phone). */
-function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false;
+function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false; if(!el.dataset.lw){ el.dataset.lw=1; el.addEventListener("click",e=>{ const b=e.target.closest("[data-al-lang]"); if(!b) return; S.lang=b.dataset.alLang; ls.set("rb_lang",S.lang); applyLang(); if(LOCK.re) LOCK.re(); else el.querySelectorAll("[data-al-lang]").forEach(x=>x.setAttribute("aria-pressed",x===b)); }); } el.classList.add("al-enter"); setTimeout(()=>el.classList.remove("al-enter"),900);
   if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if(S.canWrite && S.auth.pending) pendingUI(msg); else if(S.canWrite && (S.auth.pinH || S.auth.pin || S.auth.bio)) lockPinUI(msg); else signInUI(msg); }
 /** Signed in, but the owner hasn't approved this phone yet: nothing opens; checks again every 15 s. */
-function pendingUI(msg){ const el=lockEl(); let tm=0;
+function pendingUI(msg){ LOCK.re=null; const el=lockEl(); let tm=0;
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg);font-weight:700">${esc(t("pendT"))}</div><p class="note" style="margin:0">${esc(t("pendD",S.cfg.shopName||"this shop"))}</p>
     <button type="button" class="al-bio" id="al-pchk">${esc(t("pendCheck"))}</button><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div><button type="button" class="al-link" id="al-other">${esc(t("alOther",S.auth.by||""))}</button></div>`;
   const check=async(quiet)=>{ if(!$("#al-pchk")) return; clearTimeout(tm);
@@ -6583,7 +6638,9 @@ function appUnlock(){ if(S.canWrite) shopRemember({code:SHOP.code, name:S.cfg.sh
 /** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
 function signedOut(msgKey){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }
 let SHOP_ASK_FAIL="";
-function lockHead(){ return `<div class="al-shop">${esc(SHOP_ASK_FAIL && !S.canWrite ? t("shopCodeT",SHOP_ASK_FAIL) : (S.cfg.shopName||(SHOP_MAIN?"":SHOP.name)||"Rate Book"))}</div>`; }
+/* App mark (white ₹ tag on Iris), the same in light and dark: the brand colour doesn't change with the theme. */
+const APP_MARK=`<svg class="al-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="14" fill="#4F46E5"/><path d="M7 24 19.5 11.5H41v25H19.5z" fill="#fff"/><circle cx="17" cy="24" r="2.6" fill="#4F46E5"/><text x="30.5" y="31" text-anchor="middle" font-size="19" font-weight="800" font-family="Plus Jakarta Sans,system-ui,sans-serif" fill="#4F46E5">₹</text></svg>`;
+function lockHead(){ return `<div class="al-lang" role="group" aria-label="Language"><button type="button" data-al-lang="en" aria-pressed="${S.lang!=="hi"}">EN</button><button type="button" data-al-lang="hi" aria-pressed="${S.lang==="hi"}" lang="hi">हि</button></div>${APP_MARK}<div class="al-shop">${esc(SHOP_ASK_FAIL && !S.canWrite ? t("shopCodeT",SHOP_ASK_FAIL) : (S.cfg.shopName||(SHOP_MAIN?"":SHOP.name)||"Rate Book"))}</div>`; }
 /** "Switch shop": only on a phone that is already signed in to more than one shop (e.g. the admin supporting a shop). */
 function shopSwitchList(){ const here=SHOP.code, L=shopsKnown().filter(x=>x.code!==here && shopSignedIn(x.code)); return L; }
 function shopSwitchHTML(){ const L=shopSwitchList(); if(!L.length) return "";
@@ -6616,7 +6673,7 @@ function shopRefresh(){ if(SHOP_MAIN || !DIR_URL || Date.now()-(+SHOP.at||0)<864
   dirLookup(SHOP.code).then(sh=>{ if(sh.api) SHOP.api=sh.api; SHOP.name=sh.name||SHOP.name; SHOP.at=Date.now(); try{ localStorage.setItem("rb_shop",JSON.stringify(SHOP)); }catch{} shopRemember(SHOP); if(sh.status==="paused") shopPausedNote(); }).catch(()=>{}); }
 /** Same person? Names compared without case or extra spaces. */
 const samePerson=(a,b)=>String(a||"").trim().replace(/\s+/g," ").toLowerCase()===String(b||"").trim().replace(/\s+/g," ").toLowerCase();
-function lockPinUI(msg){ const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.auth.pinLen||(S.auth.pin||"").length))||0; let pin="";
+function lockPinUI(msg){ LOCK.re=()=>lockPinUI(); const el=lockEl(), a=S.auth, pinLen=()=>(S.auth&&(S.auth.pinLen||(S.auth.pin||"").length))||0; let pin="";
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-av">${esc((a.by||"?").charAt(0).toUpperCase())}</div><div class="al-hi">${esc(t("alHello",a.by||""))}</div>
     <div id="al-biobox"></div><div class="al-hi" id="al-lbl">${esc(t("alPin"))}</div><div class="al-dots" id="al-dots"></div><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div>
     <div class="al-pad" id="al-pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-k="${n}">${n}</button>`).join("")}<button type="button" data-k="del" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" class="al-ok" data-k="ok">OK</button></div>
@@ -6658,7 +6715,7 @@ async function afterPinUnlock(){ const a=S.auth; if(a && a.pending){ pendingUI()
     <button type="button" class="al-bio" id="al-by">${esc(t("bioYes"))}</button><button type="button" class="al-link" id="al-bn">${esc(t("bioNo"))}</button><div class="al-err" id="al-err"></div></div>`;
   $("#al-by").onclick=async()=>{ try{ await bioRegister(); appUnlock(); }catch{ $("#al-err").textContent=t("bioFail"); setTimeout(appUnlock,1200); } };
   $("#al-bn").onclick=()=>{ ls.set("rb_bio_no_"+(a.by||""),true); appUnlock(); }; }
-function signInUI(msg){ const el=lockEl();
+function signInUI(msg){ LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=n&&n.value, pv=p&&p.value; signInUI(); if(n) $("#al-name").value=nv; if(p) $("#al-pin").value=pv; }; const el=lockEl();
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:17px;color:var(--fg);font-weight:700">${esc(t("siT"))}</div><p class="note" style="margin:0">${esc(t("siD"))}</p>
     <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="name" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
     <input id="al-pin" type="password" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="current-password" enterkeyhint="go" aria-label="${esc(t("siPin"))}">

@@ -657,6 +657,24 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
 - **44 px touch areas without changing the look:** an `::after` hit-slop on "+ Bill" (`.addbtn`), the Prices card stepper (`.card .mstep button`; `.mstep` is now `overflow:visible`), and the bill line − / + and ×. The bill stepper's end buttons carry their own rounded corners now that `.bill-line .step` doesn't clip.
 - Test: `tests/designa.test.js`.
 
+## Design pass B: Prices list, compact header, welcome screen, Hindi type (11 Oct 2026, `index.html` only)
+
+- **Prices list on phones is one grouped list** (`#list.rows`, toggled in `renderList` when not in photo grid). It's one white rounded box with hairline dividers instead of a shadowed card per item.
+  - Items without a photo get no letter tile (`.card.noimg`); real photos show as 44 px thumbnails.
+  - "₹23 /pc" sits on one line with "+ Bill" under it.
+  - Rows went from ~94 px to ~68–83 px (about 6½ items per screen instead of 5).
+  - With bottom search and results next to the search (reversed list), dividers use `border-bottom`.
+  - The laptop card grid and the photo grid are unchanged.
+- **Header compacts once scrolled** (phones; `hdrSync` on scroll, `html.hdr-min`): the greeting hides, the shop name goes to one line at 18 px, and the bell / wand / EN-हि stay.
+  - It shrinks after 72 px of scrolling, only on pages with room (so it can't flicker at the bottom), and grows back at the top.
+  - It's off on the laptop and while typing. 87 → 52 px.
+- **Lock / sign-in = welcome screen:**
+  - The app mark (`APP_MARK` SVG: white ₹ tag on Iris, fixed colour in light and dark) sits above the shop name, which wraps instead of being cut.
+  - An **EN | हि** switch in the top-right corner (`.al-lang`, `data-al-lang`) redraws the screen in place (`LOCK.re`; sign-in keeps the typed name and PIN).
+  - A short entrance on each lock (`#applock.al-enter`: fade-up 420 ms, mark scale with a slight overshoot), off under reduced motion.
+- **Hindi type:** elements marked `lang="hi"` (not buttons/inputs) get line height 1.5, and the whole page body gets 1.5 when the app is in Hindi. Headings (`.section-title`, sheet titles, empty states) use `text-wrap: balance`.
+- Test: `tests/designb.test.js`.
+
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 
 Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, and the phone's copies of prices, Past bills, customers, Credit, vendors, Reports, photos). Three fixes:

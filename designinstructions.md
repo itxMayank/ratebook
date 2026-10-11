@@ -425,11 +425,11 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 - [ ] Add the motion tokens from §6 and replace one-off easings as screens are touched.
 - [ ] Delay every loader by about 300 ms and keep it up at least 500 ms.
 - [ ] Check APCA contrast for `--muted` on `--surface-2` in dark mode, in every palette.
-- [ ] Devanagari line height: check sub-lines (`.bl-sub`, card `nameHi`) are at least 1.4, and 1.5 for paragraphs.
+- [x] Devanagari line height 1.5 on `lang="hi"` text and on the body in Hindi (11 Oct 2026).
 - [x] Small controls (bill-line ×, stepper ±, "+ Bill" on Prices, card stepper) have a 44 px hit area through `::after` hit-slop (11 Oct 2026).
 - [ ] Icons: a separate maskable PNG set, an SVG favicon with dark mode, `theme-color` metas per colour scheme, and a single-colour mark.
 - [ ] Permission pre-prompts before notifications, microphone and camera.
-- [ ] Optionally, a first-run language tile choice on the sign-in screen.
+- [x] EN | हि switch on the lock / sign-in screen, plus the app mark (11 Oct 2026).
 
 ---
 

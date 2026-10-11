@@ -21,7 +21,7 @@ It is based on research into current (2025–26) app design. When the user makes
 
 | What | Where | Owner / access |
 |---|---|---|
-| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
+| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `bills.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
 | Backend script (`Code.gs`) | Apps Script project at script.google.com, created as a standalone project (not from inside a sheet) | Mayank's Google account |
 | Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` at the top of `app.js`) | Deployed: Execute as Me, access Anyone |
 | Price data | Google Sheet **"Rate Book prices"** in Mayank's Google Drive, created automatically by the script. Tabs: `Items`, `Config`, `Images`, `Bills` | Mayank only; the app reaches it through the script |
@@ -686,7 +686,7 @@ First step towards a more mature structure before wrapping the app with Capacito
 - **New test `tests/vendors.app.test.js`** (the vendor screens had little cover): list and total owed, a vendor's page and Bills tab, payment form with "which bills" and saving it through the outbox (₹200 on the open bill, balance 480 → 280), new bill (amount, number, today's date; balance 2,640), a bill's own screen and header ←, share screen with the link, statement PDF made, new vendor (mobile saved as 10 digits) and no page errors. The same 19 checks pass on the version before the split. `SHOT=<dir>` saves screenshots of six vendor screens.
 - `tests/browser.js` inlines every `<script src="….js?v=…">` (and adds the test hook after `app.js`); `codeFiles()` lists the code files in load order (used by `assets` and `designc`).
 - **Checked:** all 31 test files pass; vendor screens identical to before the split (one button-edge pixel that also differs between two runs of the old version); main screens identical except the clock and the badge animation frame; a phone on part 2 updates online and opens offline with the vendor code there. `sw.js` unchanged (`rb-shell-7`): stamped files are followed automatically.
-- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), past bills, settings/people, lock/sign-in, shops, search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
+- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), ~~past bills~~ (part 7), settings/people, lock/sign-in, shops, search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
 
 ## App split into files, part 4: Reports in `reports.js` (11 Oct 2026, step 3c)
 
@@ -729,6 +729,26 @@ First step towards a more mature structure before wrapping the app with Capacito
   - **Shortcuts:** Start a bill fills the Bill tab; Dues & payment opens their Credit screen.
   - The same 29 checks pass on the version before the split. `SHOT=<dir>` saves five screenshots, which match the version before the split pixel for pixel.
 - **Checked:** all 34 test files pass; main screens identical except the Bill badge animation frame; a phone on part 5 updates online and opens offline with Credit and Customers there. `sw.js` unchanged.
+
+## App split into files, part 7: Past bills in `bills.js` (11 Oct 2026, step 3f)
+
+- **`bills.js`** (33 KB): everything under "Past bills" and "Past bills: searched on the phone" (`oldBillText`, `billProfit`, `profitBox`, `profitChip`, `billWa`, `BL` and the filters, `openBills`, the phone's copy `BLC` with `blcAdd` / `blcSoon` / `blcBg` / `blcRefresh` / `blcQuery`, `loadBills`, `loadBillsServer`, `renderBills`, `linesFromItems`, `showBill`) plus the bill screen's payment box helpers `billBack`, `payPill`, `payUpdateText`, `payBoxHTML`, moved unchanged out of `app.js` (now 314 KB). Putting it back gives the old `app.js` exactly; parser check: no load-time dependency either way.
+- **Stays in `app.js`:** `billPayMode` (bill editing uses it), the `let` line with `billBackFn` / `duesCache` / `duesDirty` / `duesQ`, and the Tools tile wiring (`#t-bills` …). Sync (`checkRev`), the bill page and `customers.js` call into `bills.js` only after start-up.
+- **New test `tests/bills.app.test.js`** (there was none for this screen; 36 checks):
+  - **The list:** month → day groups with exact totals (a cancelled bill left out); this month open, older months closed until tapped.
+  - **Search:** by name, 4 mobile digits, bill number, item name and dd/mm/yyyy date.
+  - **Filters:** GST, Credit/due (with the total due), Cancelled, Edited; ✕ clears them; the date filter.
+  - **A bill's screen:**
+    - the latest copy is read from the sheet (id, row, number);
+    - the text, the payment box, the "Edited … by Dad" note;
+    - WhatsApp to the saved number, a bad number flagged, a typed number with a leading 0 used;
+    - header ← back.
+  - **Cancel and restore:** cancel needs a reason, then the text is marked CANCELLED and Edit disappears; Restore brings it back.
+  - **Repeat and Edit:** Repeat as new bill gives the same lines and customer as a new bill, not an edit; Edit bill opens Bill 12 in edit mode.
+  - **Sync between phones:** another phone's new bill and payment arrive as a delta (asked with the copy's version), the paid bill's Due pill goes, and the next open asks with the new version.
+  - **Waiting bills:** a bill that couldn't be sent yet still shows in the list.
+  - The same 36 checks pass on the version before the split; `SHOT=<dir>` saves four screenshots (identical apart from the cancel time).
+- **Checked:** all 35 test files pass; main screens identical except the Bill badge animation frame; a phone on part 6 updates online and opens offline with Past bills there. `sw.js` unchanged.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
@@ -881,13 +901,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `bills.js` (Past bills), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

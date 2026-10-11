@@ -4,7 +4,7 @@
 const fs = require('fs'), path = require('path'), http = require('http');
 const { launch, ok, done } = require('./browser');
 const ROOT = path.join(__dirname, '..'), html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const css = html.slice(0, html.indexOf('</head>'));
+const css = fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8');   // the styles live in app.css
 (async () => {
   const curves = (css.match(/cubic-bezier\([^)]*\)/g) || []);
   ok(/--ease-out:cubic-bezier/.test(css) && curves.length <= 5, `motion: easing comes from tokens (${curves.length} curves, all in :root)`);

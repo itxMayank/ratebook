@@ -1,6 +1,6 @@
 const { chromium } = require('../browser').pw;
 const fs = require('fs');
-const html = fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8').replace('boot();\n})();\n</script>', 'boot();\nwindow.T={S,LOCK,appLock,apiPost0};\n})();\n</script>');
+const html = require('../browser').inlineFiles(fs.readFileSync(require('path').join(__dirname,'..','..','index.html'), 'utf8')).replace('boot();\n})();\n</script>', 'boot();\nwindow.T={S,LOCK,appLock,apiPost0};\n})();\n</script>');
 const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
 let tokens = {}, n = 0, bodies = [], offline = false;
 (async () => {

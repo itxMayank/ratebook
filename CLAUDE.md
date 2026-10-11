@@ -647,6 +647,27 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   - **No gap:** `#rise` used to stop 4 px above the search bar, so the bill showed through around the bar. It now reaches the bottom of the screen (`bottom:0`, `padding-bottom: --docktop + 8px`), with the search bar floating on top.
   - Tests: `billsearch` (grouped list, no gaps, no letter tiles, price on the right, nothing showing through) and `bottomsearch` (results end just above the bar).
 
+## App split into files, part 1: styles and texts (11 Oct 2026)
+
+First step towards a more mature structure before wrapping the app with Capacitor. Nothing changes on screen (ten of twelve screenshots were pixel-identical; the other two differed only in the clock and a badge animation frame).
+- **`app.css`**: all styles (1,764 lines, 150 KB), moved out of `index.html`'s `<style>`. The design tokens (colour, motion, corners, shadows) are its first `:root` block.
+- **`strings.js`**: every English/Hindi text (1,124 / 1,121 keys, 87 KB): the `STR` table plus the 34 `Object.assign(STR.en|hi, …)` additions that were scattered through the code, in the same order. It sets `window.RB_STR`, and the app does `const STR = window.RB_STR;`. Text functions (`n=>…`) only use their own parameters, so they don't need any of the app's helpers.
+- `index.html` went from 814 KB to 534 KB.
+- **Version stamps:** `index.html` links `app.css?v=<hash>` and `strings.js?v=<hash>` (first 10 hex of SHA-256). `node tools/stamp.js` updates them. `tests/assets.test.js` fails when a stamp is out of date, when styles or text tables creep back into `index.html`, or when `strings.js` loads after the app.
+- **Offline cache (`sw.js`, `rb-shell-7`):**
+  - Whenever a copy of the page is saved (on install, and with each background refresh), the stamped files it names are saved too (`saveAssets`), before the new page is offered. So the app opens offline even right after an update, and a new page never meets an old stylesheet.
+  - Stamped files are served from the phone. A new stamp is fetched once, and older stamps of the same file are dropped (`keepOnly`).
+  - Checked: upgrading from the live single-file version (old service worker) works online and offline, and under both the old and the new worker.
+- **"Update ready" check:** the page's fingerprint now also includes the stamped addresses, so a change to `app.css` or `strings.js` alone is noticed.
+- **Tests:**
+  - `tests/browser.js` puts both files back inline for the simulated phones (`inlineFiles`; `appHtml(expose, {files:true})` keeps them separate).
+  - `tests/sw.test.js` serves the real files and also checks that styles and texts work offline and that a changed `app.css` arrives under its new stamp.
+  - `designc` reads the tokens from `app.css`.
+- **Still to do:**
+  - step 3: split the app code by area, with vendors, reports and printing loading only when opened;
+  - step 4: offline cache and update check for those files;
+  - step 5: tests for every screen opening.
+
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
 - **New accent, Iris** (`--accent` #4F46E5, dark #A5A6FF; soft #EEEEFF / #25264D), replacing maroon, which Mayank found dull. Teal and ocean blue were also tried: teal is too close to the green used for "Paid" and to WhatsApp, and ocean blue looks generic. Maroon stays as an optional theme.
@@ -798,13 +819,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-6`). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css` or `strings.js`, run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** a single `index.html` (vanilla JS/CSS, no build step), installable as a home-screen web app. Fonts: Baloo 2 and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup + app code), `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

@@ -5,12 +5,12 @@ const { launch, ok, done, ROOT, appHtml } = require('./browser');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rbsw-'));
 /* every file sw.js caches for offline use must exist (a missing one would make the install fail on real phones) */
 const SHELLF = JSON.parse(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/const SHELL = (\[[^\]]*\])/)[1].replace(/'/g, '"')).map(x => x.replace('./', '')).filter(x => x && x !== 'index.html');
-for (const f of ['sw.js', ...SHELLF]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));
-const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill').replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
+for (const f of ['sw.js', ...SHELLF, ...require('../tools/stamp').ASSETS]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));   // + the stamped app.css / strings.js, served as real files
+const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill', { files: true }).replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
 write(1);
 let netHits = 0;
 const srv = http.createServer((q, r) => { const f = path.join(dir, q.url === '/' ? 'index.html' : q.url.split('?')[0]); if (/index\.html$|\/$/.test(q.url.split('?')[0])) netHits++;
-  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': f.endsWith('.js') ? 'text/javascript' : f.endsWith('.html') ? 'text/html' : 'application/octet-stream', 'Cache-Control': 'no-cache' }); r.end(fs.readFileSync(f)); });
+  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': f.endsWith('.js') ? 'text/javascript' : f.endsWith('.html') ? 'text/html' : f.endsWith('.css') ? 'text/css' : 'application/octet-stream', 'Cache-Control': 'no-cache' }); r.end(fs.readFileSync(f)); });
 srv.listen(0, async () => {
   const URL0 = 'http://localhost:' + srv.address().port + '/';
   const b = await launch(); const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
@@ -21,7 +21,9 @@ srv.listen(0, async () => {
   await p.reload(); await p.waitForTimeout(800);
   ok(await p.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the page');
   await ctx.setOffline(true); await p.reload(); await p.waitForTimeout(800);
-  ok(await p.evaluate(() => window.__ver) === 1, 'opens with no internet (from the phone)'); await ctx.setOffline(false);
+  ok(await p.evaluate(() => window.__ver) === 1, 'opens with no internet (from the phone)');
+  ok(await p.evaluate(() => getComputedStyle(document.body).backgroundColor === 'rgb(241, 242, 244)' && !!window.RB_STR && /PIN/.test(document.querySelector('#applock').textContent)), 'offline: the separate app.css and strings.js load from the phone too (styles and texts in place)');
+  await ctx.setOffline(false);
   // new version published; app is on the lock screen with no bill: loads by itself
   await p.evaluate(() => { sessionStorage.vers = ''; }); write(2); await p.reload(); await p.waitForTimeout(400);
   if (process.env.DBG) console.log('DBG cached', await p.evaluate(() => caches.keys().then(async ks => { const out = []; for (const k of ks) { const c = await caches.open(k); for (const r of await c.keys()) { const t = await (await c.match(r)).text(); out.push(k + ' ' + r.url + ' ver=' + (t.match(/__ver=(\d)/) || [])[1]); } } return out.join(' | '); })), 'netHits', netHits);
@@ -41,5 +43,14 @@ srv.listen(0, async () => {
   ok(!ov, 'the pill and a notice (toast) never cover each other');
   await p.click('#updpill'); await p.waitForFunction(() => window.__ver === 3, null, { timeout: 8000 }).catch(() => {});
   ok(await p.evaluate(() => window.__ver) === 3 && await p.evaluate(() => JSON.parse(localStorage.rb_bill || '[]').length) === 1, 'tapping the pill loads the update even mid-bill, and the bill in progress is still there');
+  // a changed stylesheet gets a new stamp; the phone fetches it once and drops the old copy
+  { const st = require('../tools/stamp'); fs.appendFileSync(path.join(dir, 'app.css'), '\nbody{--swtest:1}\n');
+    const h = require('crypto').createHash('sha256').update(fs.readFileSync(path.join(dir, 'app.css'))).digest('hex').slice(0, 10);
+    fs.writeFileSync(path.join(dir, 'index.html'), fs.readFileSync(path.join(dir, 'index.html'), 'utf8').replace(/app\.css\?v=[^"]*/, 'app.css?v=' + h).replace(/window\.__ver=\d+/, 'window.__ver=4'));
+    await p.evaluate(() => { localStorage.removeItem('rb_bill'); }); await p.reload(); await p.waitForFunction(() => window.__ver === 4, null, { timeout: 8000 }).catch(() => {});
+    if (await p.evaluate(() => window.__ver) !== 4) { await p.reload(); await p.waitForTimeout(800); }
+    const got = await p.evaluate(() => getComputedStyle(document.body).getPropertyValue('--swtest').trim());
+    const keys = await p.evaluate(() => caches.keys().then(async ks => { const out = []; for (const k of ks) for (const r of await (await caches.open(k)).keys()) if (r.url.includes('app.css')) out.push(r.url); return out; }));
+    ok(got === '1' && keys.length === 1 && keys[0].includes(h), 'a changed app.css reaches the phone under its new stamp, and the old copy is dropped (' + keys.length + ' saved)'); }
   await b.close(); srv.close(); done();
 });

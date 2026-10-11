@@ -21,7 +21,7 @@ It is based on research into current (2025–26) app design. When the user makes
 
 | What | Where | Owner / access |
 |---|---|---|
-| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `bills.js`, `settings.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
+| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `bills.js`, `settings.js`, `lock.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
 | Backend script (`Code.gs`) | Apps Script project at script.google.com, created as a standalone project (not from inside a sheet) | Mayank's Google account |
 | Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` at the top of `app.js`) | Deployed: Execute as Me, access Anyone |
 | Price data | Google Sheet **"Rate Book prices"** in Mayank's Google Drive, created automatically by the script. Tabs: `Items`, `Config`, `Images`, `Bills` | Mayank only; the app reaches it through the script |
@@ -686,7 +686,7 @@ First step towards a more mature structure before wrapping the app with Capacito
 - **New test `tests/vendors.app.test.js`** (the vendor screens had little cover): list and total owed, a vendor's page and Bills tab, payment form with "which bills" and saving it through the outbox (₹200 on the open bill, balance 480 → 280), new bill (amount, number, today's date; balance 2,640), a bill's own screen and header ←, share screen with the link, statement PDF made, new vendor (mobile saved as 10 digits) and no page errors. The same 19 checks pass on the version before the split. `SHOT=<dir>` saves screenshots of six vendor screens.
 - `tests/browser.js` inlines every `<script src="….js?v=…">` (and adds the test hook after `app.js`); `codeFiles()` lists the code files in load order (used by `assets` and `designc`).
 - **Checked:** all 31 test files pass; vendor screens identical to before the split (one button-edge pixel that also differs between two runs of the old version); main screens identical except the clock and the badge animation frame; a phone on part 2 updates online and opens offline with the vendor code there. `sw.js` unchanged (`rb-shell-7`): stamped files are followed automatically.
-- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), ~~past bills~~ (part 7), ~~settings/people~~ (part 8), lock/sign-in, shops, search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
+- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), ~~past bills~~ (part 7), ~~settings/people~~ (part 8), ~~lock/sign-in~~ (part 9), shops, search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
 
 ## App split into files, part 4: Reports in `reports.js` (11 Oct 2026, step 3c)
 
@@ -770,6 +770,19 @@ First step towards a more mature structure before wrapping the app with Capacito
   - **Backups:** status, Back up now, a bad email refused and a good one saved, the list with the "before restore" tag, Restore asking first and then sending the chosen copy.
   - The other 38 checks pass identically before and after the split.
 - **Checked:** all 36 test files pass; main screens (Settings included) identical except the Bill badge animation frame; a phone on part 7 updates online and opens offline with Settings there. `sw.js` unchanged.
+
+## App split into files, part 9: sign-in and the lock screen in `lock.js` (11 Oct 2026, step 3h)
+
+- **`lock.js`** (22 KB): who-am-I at start (`meChecked`, `refreshMe`, `applyMe`), `openUnlock`, the PIN check value (`pinHash`, `pinCheckSet`), `devLabel`, fingerprint/face (`bioAvail`, `bioRegister`, `bioCheck`), the lock screen (`lockEl`, `lockInert`, `appLock`, `appUnlock`, `lockHead`, `APP_MARK`, `lockPinUI`, `afterPinUnlock`), the approval wait (`pendingUI`), sign-in (`signInUI`, `adoptSignIn`, `samePerson`), signing out (`signedOut`, `lockPhone`), `lockAway`, and the shop pieces shown on those screens (`shopSwitchHTML`, `shopCodeHTML`/`Wire`, `shopFromLink`, `shopRefresh`, `shopPausedNote`), moved unchanged out of `app.js` (now 256 KB). Putting it back gives the old `app.js` exactly; parser check: no load-time dependency either way.
+- **Stays in `app.js`:** `const LOCK_MS, LOCK` (it reads phone storage while loading, and `ls` is in `app.js`), the `visibilitychange` / `pagehide` listeners, the Tools → Lock now wiring and the `[data-act="unlock"]` click. Shop routing (`SHOP`, `shopGo`, `dirLookup`, `shopsKnown`) stays in `app.js` with the rest of start-up.
+- **New test `tests/signin.app.test.js`** (28 checks, for what `suites/lock.app`, `bio` and `switch` didn't cover):
+  - sign-in screen: EN | हि redraws and keeps the typed name and PIN; a PIN under 4 digits isn't sent; the shop PIN without a name asks for one; the request asks for a token with a phone label; the name comes from a personal PIN; token + check value kept, no PIN; name and shop code remembered;
+  - Tools → Lock now; everything behind the lock inert; 4 dots; "6 more tries"; the 30 s wait from the 5th wrong PIN (even the right PIN waits), kept on the phone; keyboard typing opens afterwards and clears the count;
+  - "Not Dad? Switch person" signs out here and on the sheet;
+  - a phone waiting for approval: remembered, Check again while waiting stays locked, approved → opens;
+  - at start: a role changed by the owner is picked up; a phone signed out elsewhere shows sign-in with the reason.
+  - The same 28 checks pass on the version before the split.
+- **Checked:** all 37 test files pass; the 12 main screenshots identical except the "updated" clock and the Bill badge animation frame; a phone on part 8 updates online and opens offline with `lock.js` there. No bugs found this time. `sw.js` unchanged.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
@@ -922,13 +935,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `lock.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `settings.js` (Settings, People, Backups), `bills.js` (Past bills), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `settings.js` (Settings, People, Backups), `lock.js` (sign-in and the lock screen), `bills.js` (Past bills), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

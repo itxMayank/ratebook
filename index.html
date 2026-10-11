@@ -561,7 +561,7 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .billno span{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .billno b{font:700 26px/1 var(--f-display);color:var(--accent)}
 .billno small{color:var(--muted);font-size:13px}
-.lastbill{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;font-size:14px;color:var(--muted);padding:8px 2px 0}
+.lastbill{display:flex;align-items:center;gap:2px 2px;flex-wrap:wrap;font-size:14px;color:var(--muted);padding:8px 2px 0}
 .lastbill a,.lastbill button{color:var(--accent);font-weight:600;background:none;border:0;padding:2px 4px;text-decoration:none}
 .lastbill .lb-print{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border-radius:50%;background:var(--surface-2)}
 .field .err{font-size:13px}
@@ -1369,6 +1369,14 @@ b.plus{color:var(--fg)} b.minus{color:#17703f}
   .bill-line .step input{width:34px}
   .bill-line .uwrap .note{font-size:12px}
 }
+/* very narrow (largest text on a small phone): rate gets its own line under the stepper and ×, so it's never clipped */
+.bill-line{container:bl/inline-size}
+@container bl (max-width:272px){
+  .bill-line .ctrl{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"step . x" "rate rate rate";row-gap:6px}
+  .bill-line .ctrl .step{grid-area:step}.bill-line .ctrl .x{grid-area:x}
+  .bill-line .ctrl .uwrap{grid-area:rate;justify-content:flex-end}
+  .bill-line .rate input{width:auto!important;flex:0 1 96px!important;max-width:120px}
+}
 /* Step-wise sheets: header ← on inner screens; the body's own "← Back" pill is kept (it does the work) but hidden. */
 #sheet-back{flex:none;margin-left:-6px}
 #sheet-back[hidden]{display:none}
@@ -1507,10 +1515,10 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 /* Total card, compact (10 Oct 2026): line 1 = "Total ₹2,078" + Share · Done · ⌃; line 2 (full width, only when something applies) =
    Due · Profit · Cash given?. On phones Share is the round WhatsApp button so the amount always has room. */
 .total{grid-template-columns:minmax(0,1fr)}
-.total .tot-row{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;grid-template-areas:"sum wa done more" "chips chips chips chips";align-items:center;column-gap:6px;row-gap:6px}
+.total .tot-row{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto auto auto auto;grid-template-areas:"sum find wa done more" "chips chips chips chips chips";align-items:center;column-gap:6px;row-gap:6px}
 .total .tot-sum{display:contents}
 .total .ts1{grid-area:sum;display:flex;align-items:baseline;gap:6px;min-width:0;white-space:nowrap;line-height:1.1}
-.total #bill-wa{grid-area:wa}.total #bill-done{grid-area:done}.total #tot-more{grid-area:more}
+.total #tot-find{grid-area:find}.total #bill-wa{grid-area:wa}.total #bill-done{grid-area:done}.total #tot-more{grid-area:more}
 .total .ts1 #sum-label{flex:none;font-size:12.5px;font-weight:600;color:var(--muted)}
 .total .ts1 #bill-sum{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .total .ts1 #bill-sum.long{font-size:20px}
@@ -1530,7 +1538,12 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   .total #bill-wa #wa-label{display:none}
   .total #bill-wa svg{width:21px;height:21px}
   .total #bill-done{height:42px}
-  html.fz-big .total .ts1 #sum-label{display:none}
+  /* search sits in the bar (no floating button over the bill once it has items) */
+  .total #tot-find{width:42px;height:42px;border-radius:50%;background:var(--surface-2);color:var(--ink);box-shadow:none}
+  html.billhas body[data-tab="bill"]:not(.bsopen) .bsfab{display:none!important}
+  /* larger text: the amount gets its own line, the buttons go under it */
+  html.fz-big .total .tot-row,.total.tot-stack .tot-row{grid-template-columns:minmax(0,1fr) auto auto auto;grid-template-areas:"sum sum sum sum" "find wa done more" "chips chips chips chips"}
+  html.fz-big .total #tot-find,.total.tot-stack #tot-find{justify-self:start}
   html.fz-big .total .ts1 #bill-sum.long{font-size:18px}
   html.fz-big .total .ts1 #bill-sum.xlong{font-size:15px}
   html.fz-big .total #bill-done{padding:0 12px}
@@ -1546,6 +1559,62 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .vm-n{flex:1;min-width:0;display:grid}.vm-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vm-n small{color:var(--muted)}
 .vm-b{flex:none;font-size:13px;color:var(--muted)}
 .vm-done{display:grid;gap:8px;margin-top:10px}.vm-done b{font-size:17px;color:var(--good)}
+/* ---- Bill page fixes from the full UI check (11 Oct 2026) ---- */
+/* GST lines: the HSN row sits under the name, not in the number's column (it pushed the name to the right) */
+.bill-line .name .taxline{grid-column:2;flex-wrap:wrap;white-space:nowrap;row-gap:2px}   /* wraps as whole pieces ("HSN 3923" · "GST 18%"), never letter by letter */
+.bill-line{grid-template-columns:minmax(0,1fr) auto}
+.bill-line>*{min-width:0}
+.bill-line .name{min-width:0;overflow-wrap:anywhere;grid-template-columns:auto minmax(0,1fr)}
+/* Total: label above the amount, so the amount gets the whole width (it was cut to "₹…" on small phones) */
+.total .ts1{flex-direction:column;align-items:flex-start;gap:1px;justify-content:center}
+.total .ts1 #sum-label{font-size:11.5px;line-height:1.1}
+html.fz-big .total .ts1 #sum-label{display:block}
+.total .ts1 #bill-sum{max-width:100%;text-overflow:clip}
+/* Cash given: "Return ₹X" stacks small over the amount and may move to its own line; it never sits on the typed number */
+.cashrow{flex-wrap:wrap;row-gap:6px}
+.cash-res{flex:1 1 150px;overflow:hidden}
+.cash-res .pill{flex-direction:column;align-items:flex-end;gap:0;padding:4px 10px;line-height:1.05}
+.cash-res .pill small{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
+.cash-res .pill b{font-size:19px}
+/* Bill number never covered by the GST chips: the chips wrap to the next line when there's no room */
+.bh-row{flex-wrap:wrap;row-gap:6px}
+.bh-no{flex:none;white-space:nowrap}
+.bh-chips{flex-wrap:wrap;justify-content:flex-end;min-width:0;row-gap:6px}
+.billhead{grid-template-columns:minmax(0,1fr)}
+.billhead>*{min-width:0}
+.paybar>*{min-width:0}
+#pay-seg button{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.fz-big #pay-seg button{padding-left:4px;padding-right:4px}
+.pay-part{flex-wrap:wrap;row-gap:4px}
+.pay-part label,.pay-due{white-space:nowrap}
+/* Paid by: icons step aside before the words get cut ("Cheq…") */
+@container (max-width:330px){.pm svg{display:none}}
+/* Larger text: name and mobile each get a full row, Paid by tiles a row of their own */
+html.fz-big .bh-cust{grid-template-columns:minmax(0,1fr) auto!important}
+html.fz-big .bh-cust #cust{grid-column:1/-1}
+html.fz-big .pm-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+html.fz-big .pm-l{grid-column:1/-1}
+/* Header: the shop name uses the room it has (space was kept for the TEST badge even when it's off) */
+.brand.nobadge #shopname{max-width:100%}
+@media (max-width:380px){
+  header.top .bar>.iconbtn{width:38px;height:38px}
+  header.top .lang button{padding:4px 9px;min-width:36px}
+  .brand{font-size:19px}
+}
+/* Quick qty strip fits a 360 px phone without scrolling */
+@media (max-width:400px){.qpick{gap:2px;padding:3px}.qpick button{min-width:30px;padding:0 5px;font-size:13px}.qpick i{margin:0}}
+/* Easier to tap (bigger touch area, same look) */
+.chip-t,#bh-no-btn{min-height:36px}
+.bill-line .unitchip{min-height:30px;padding-top:3px;padding-bottom:3px}
+.lastbill a,.lastbill button{min-height:36px;display:inline-flex;align-items:center}
+.lastbill .lb-print{width:36px;height:36px;display:inline-grid}
+.lang button{min-height:32px}
+/* Empty bill: one tap to start searching */
+.empty .empty-find{margin-top:14px;display:inline-flex;align-items:center;gap:8px}
+/* Customer hint is information, not an error: neutral colour */
+.custhint{background:var(--surface-2)}
+/* Laptop: room under the price grid so the Add button never covers the last card */
+@media (min-width:1024px){#view-items{padding-bottom:96px}.total #tot-find{display:none}}
 /* Typing in a bill box on a phone (qty, rate, customer, received…): the keyboard leaves little room, so the shop header
    scrolls away with the page and the total card shrinks to one slim line (Total · Share · Done), so Done is still one tap
    away. A box inside the card (Cash given) keeps the full card (body.tin, set on focus of a box, so tapping Done doesn't change it). */
@@ -1555,8 +1624,10 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total{padding:6px 6px 6px 16px;gap:0;border-radius:999px}
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total>:not(.tot-row),
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total .ts2,
-  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #tot-more{display:none!important}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #tot-more,
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #tot-find{display:none!important}
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #bill-sum{font-size:22px}
+  body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total .tot-row{grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-areas:"sum wa done"!important}
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total .btn{min-height:40px;padding-top:0;padding-bottom:0}
   body.typing:not(.qtyp):not(.tin)[data-tab="bill"] #view-bill .total #bill-wa{width:40px;height:40px;min-width:40px}
   html:not(.sbot) body.typing:not(.qtyp)[data-tab="bill"] #view-bill .total{bottom:calc(8px / var(--fz,1))}   /* tab bar is hidden while typing */
@@ -1726,6 +1797,7 @@ details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
         <div class="tot-sum"><div class="ts1"><span id="sum-label">Total</span><b class="num" id="bill-sum">₹0</b></div><div class="ts2"><span class="duechip num" id="bill-duechip" hidden></span><button type="button" class="profit num" id="bill-profit" hidden></button><button type="button" class="cash-open" id="cash-open" hidden aria-expanded="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span data-t="cashOpen">Cash given?</span></button></div></div>
+        <button type="button" class="iconbtn tot-find" id="tot-find" aria-label="Find an item to add"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
         <a class="btn wa sm" id="bill-wa" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg><span id="wa-label">Share</span></a>
         <button class="btn primary sm" id="bill-done">Done</button>
         <button type="button" class="iconbtn sm" id="tot-more" aria-expanded="false" aria-label="More options"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg></button>
@@ -1827,7 +1899,7 @@ const STR = {
     save:"Save",edit:"Edit",del:"Delete",delItem:"Delete item",delQ:"Delete this item for everyone?",yesDel:"Yes, delete",addToBill:"Add to bill",inBill:"In bill",qty:"Qty",
     newItem:"New item",editItem:"Edit item",needName:"Enter the item name.",needRate:"Enter a valid sell rate.",dup:"An item with this name already exists.",
     saved:"Saved",deleted:"Deleted",added:"added to bill",updatedAgo:(a,b)=>`Updated ${a}${b?` by ${b}`:""}`,
-    billEmptyT:"Bill is empty",billEmptyD:"Search above and tap + Bill on an item. Rates come from the price list; you can change them here.",copied:"Bill copied",copyFail:"Couldn't copy. Long-press to select the text.",
+    billEmptyT:"Bill is empty",billEmptyD:"Find an item and tap it to add. Rates come from the price list; you can change them here.",billEmptyBtn:"Find an item",copied:"Bill copied",copyFail:"Couldn't copy. Long-press to select the text.",
     bulkHelp:"Columns: Item, Unit, Buy, Sell, Hindi name (optional), HSN (optional). One item per line. Commas or tabs both work.",pasteList:"Paste list",parse:"Fill rows",addRow:"+ Row",saveN:n=>`Save ${n}`,willUpdate:"updates existing",badRow:"check rates",
     savingN:(a,b)=>`Saving ${a}/${b}…`,savedN:n=>`Saved ${n} changes`,filter:"Filter items…",apply:"Apply",selected:n=>`${n} selected`,allShown:"applies to all shown",
     both:"Buy + Sell",onlySell:"Sell",onlyBuy:"Buy",unchanged:"No changes yet",pctPh:"+5 or -3 %",
@@ -1850,7 +1922,7 @@ const STR = {
     save:"सेव करें",edit:"बदलें",del:"हटाएँ",delItem:"सामान हटाएँ",delQ:"यह सामान सबके लिए हटाएँ?",yesDel:"हाँ, हटाएँ",addToBill:"बिल में जोड़ें",inBill:"बिल में है",qty:"मात्रा",
     newItem:"नया सामान",editItem:"सामान बदलें",needName:"सामान का नाम लिखें।",needRate:"सही बिक्री रेट लिखें।",dup:"इस नाम का सामान पहले से है।",
     saved:"सेव हो गया",deleted:"हटा दिया",added:"बिल में जोड़ा",updatedAgo:(a,b)=>`${a} बदला${b?` · ${b}`:""}`,
-    billEmptyT:"बिल ख़ाली है",billEmptyD:"ऊपर खोजें और सामान पर + बिल दबाएँ। रेट लिस्ट से आता है, यहाँ बदल भी सकते हैं।",copied:"बिल कॉपी हो गया",copyFail:"कॉपी नहीं हुआ। टेक्स्ट को दबाकर चुनें।",
+    billEmptyT:"बिल ख़ाली है",billEmptyD:"सामान खोजें और जोड़ने के लिए उस पर दबाएँ। रेट लिस्ट से आता है, यहाँ बदल भी सकते हैं।",billEmptyBtn:"सामान खोजें",copied:"बिल कॉपी हो गया",copyFail:"कॉपी नहीं हुआ। टेक्स्ट को दबाकर चुनें।",
     bulkHelp:"कॉलम: सामान, इकाई, ख़रीद, बिक्री, हिंदी नाम (वैकल्पिक), HSN (वैकल्पिक)। हर लाइन में एक सामान। कॉमा या टैब दोनों चलेंगे।",pasteList:"लिस्ट पेस्ट करें",parse:"लाइनें भरें",addRow:"+ लाइन",saveN:n=>`${n} सेव करें`,willUpdate:"पुराना अपडेट होगा",badRow:"रेट देखें",
     savingN:(a,b)=>`सेव हो रहा ${a}/${b}…`,savedN:n=>`${n} बदलाव सेव हुए`,filter:"सामान छाँटें…",apply:"लागू करें",selected:n=>`${n} चुने`,allShown:"दिखाए गए सभी पर लागू",
     both:"ख़रीद + बिक्री",onlySell:"बिक्री",onlyBuy:"ख़रीद",unchanged:"अभी कोई बदलाव नहीं",pctPh:"+5 या -3 %",
@@ -2114,6 +2186,8 @@ Object.assign(STR.en,{nT:"Notifications",nBell:"Notifications",nEmpty:"No update
 Object.assign(STR.hi,{nT:"सूचनाएँ",nBell:"सूचनाएँ",nEmpty:"अभी कोई सूचना नहीं। नए सप्लायर, सप्लायर के बिल और भुगतान यहाँ दिखेंगे।",nHidden:n=>`${n} आपकी सेटिंग से छिपी`,nToday:"आज",nYest:"कल",nBy:n=>`${n} ने किया`,nNewVendor:v=>`नया सप्लायर: ${v}`,nOpenBal:a=>`पुराना बकाया ${a}`,nCredit:d=>`${d} दिन उधार`,nBill:(a,v)=>`${v} का बिल ${a}`,nBillNo:n=>`बिल ${n}`,nDue:d=>`देय ${d}`,nPay:(a,v)=>`${v} को ${a} दिए`,nAdj:(a,v)=>`${v} को ${a} का माल वापस`,nFor:s=>`बिल ${s} के लिए`,nPaid:n=>n?`बिल ${n} पूरा चुका`:"बिल पूरा चुका",nOpening:"पुराना बकाया",nRmBill:(a,v)=>`बिल ${a} हटाया · ${v}`,nRmPay:(a,v)=>`भुगतान ${a} हटाया · ${v}`,nRmAdj:(a,v)=>`वापसी ${a} हटाई · ${v}`,nCheck:(n,v)=>`${v} का बिल${n?" "+n:""} जाँचें`,nIssues:n=>`हिसाब में ${n} गड़बड़ी`,nMove:n=>`${n} सप्लायर असली मोड में ले जाए गए`,nMore:n=>`${n} नई सूचनाएँ`,nView:"देखें",nSetT:"सप्लायर की सूचनाएँ",nSetD:"आपकी घंटी पर दिखेंगी। किसी को बंद करने के लिए दबाएँ।",nk_vendor:"नया सप्लायर",nk_bill:"बिल",nk_pay:"भुगतान",nk_paid:"बिल पूरा चुका",nk_rm:"हटाया",nk_check:"बिल जाँच में गड़बड़ी",nk_move:"टेस्ट से लाए"});
 Object.assign(STR.en,{cgYou:"You and this phone",cgShopL:"Shop · for everyone",cgOwnerL:"Owner",cgLook:"Display & search",cgPr:"Printer",cgShop:"Shop details",cgBills:"Bill numbers",cgItems:"Items & units",cgPpl:"People & security",cgPplD:"PINs, signed-in phones, shop code",cgBkD:"Copies in Google Drive, restore",cgSpeedD:"How fast the sheet answers",cgTest:"Test mode",cgReal:"Real billing",cgSBot:"search at bottom",cgSTop:"search at top",cgAuto:"prints after Done",cgNoGst:"no GSTIN",cgNext:n=>`Next bill ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>n===1?"1 unit":`${n} units`});
 Object.assign(STR.hi,{cgYou:"आप और यह फ़ोन",cgShopL:"दुकान · सबके लिए",cgOwnerL:"मालिक",cgLook:"दिखावट और सर्च",cgPr:"प्रिंटर",cgShop:"दुकान की जानकारी",cgBills:"बिल नंबर",cgItems:"आइटम और यूनिट",cgPpl:"लोग और सुरक्षा",cgPplD:"PIN, साइन-इन फ़ोन, दुकान का कोड",cgBkD:"Google Drive में कॉपी, वापस लाना",cgSpeedD:"शीट कितनी जल्दी जवाब देती है",cgTest:"टेस्ट मोड",cgReal:"असली बिलिंग",cgSBot:"सर्च नीचे",cgSTop:"सर्च ऊपर",cgAuto:"Done के बाद प्रिंट",cgNoGst:"GSTIN नहीं",cgNext:n=>`अगला बिल ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>`${n} यूनिट`});
+Object.assign(STR.en,{heldNoItems:"No items yet",totFind:"Find an item to add"});
+Object.assign(STR.hi,{heldNoItems:"अभी कोई सामान नहीं",totFind:"जोड़ने के लिए सामान खोजें"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
 /* Backup strings */
 Object.assign(STR.en,{bkT:"Backups",bkNow:"Back up now",bkAutoOn:"Automatic every 4 hours",bkLast:d=>`last ${d}`,bkCopies:n=>`${n} cop${n===1?"y":"ies"} kept`,bkNone:"No backups yet.",
@@ -2940,7 +3014,8 @@ function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
 function renderBill(){
   const wrap=$("#bill-lines");
   if(!S.bill.length){
-    wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t(DESK()?"billEmptyDesk":"billEmptyD"))}</p></div>`;
+    wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t(DESK()?"billEmptyDesk":"billEmptyD"))}</p>${DESK()?"":`<button type="button" class="btn primary empty-find" id="empty-find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${esc(t("billEmptyBtn"))}</button>`}</div>`;
+    { const f=$("#empty-find"); if(f) f.onclick=()=>bsOpen(); }
     $("#bill-total").hidden=true;
   } else {
     wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
@@ -2971,7 +3046,7 @@ function updateBillTotals(){ try{ custXSync(); }catch{}
     $("#bill-sum").textContent=rs(g.total); $("#sum-label").textContent=t("totalInclGst");
   } else { gs.hidden=true; $("#bill-sum").textContent=rs(billSum()); $("#sum-label").textContent=t("total"); }
   tsSync();
-  { const bs=$("#bill-sum"), n=bs.textContent.length; bs.classList.toggle("long",n>=9 && n<11); bs.classList.toggle("xlong",n>=11); }
+  { const bs=$("#bill-sum"), n=bs.textContent.length; bs.classList.toggle("long",n>=9 && n<11); bs.classList.toggle("xlong",n>=11); sumFit(); }
   S.bill.forEach((l,i)=>{ const el=document.querySelector(`[data-amt="${i}"]`); if(el) el.textContent=rs(l.qty*l.rate); });
   { const p=payInfo(billTotal()), dc=$("#bill-duechip"); dc.hidden = p.mode==="paid" || !S.bill.length; dc.textContent=t("dueAmt",rs(p.due));
   tsSync();
@@ -3016,7 +3091,7 @@ function switchEnv(cfg){
 function renderEnv(){
   const test=S.cfg.mode==="test";
   document.body.classList.toggle("env-test",test);
-  const b=$("#envbadge"); if(b){ b.hidden=!test; b.textContent=t("testBadge"); }
+  const b=$("#envbadge"); if(b){ b.hidden=!test; b.textContent=t("testBadge"); } { const br=document.querySelector(".brand"); if(br) br.classList.toggle("nobadge",!test); }
   const bb=$("#bill-envnote"); if(bb){ bb.hidden=!test; bb.textContent=t("envBanner"); }
   duesSub();
 }
@@ -3097,7 +3172,7 @@ function renderHeld(){
   const all=[...h,cur].sort((a,b)=>(a.at||0)-(b.at||0));
   row.hidden=false;
   row.innerHTML=all.map(e=>{ const n=(e.d.bill||[]).length; const old=!e.cur && new Date(e.held||e.at).toDateString()!==today;
-    return `<button type="button" class="hchip${e.cur?" on":""}" role="tab" aria-selected="${e.cur?"true":"false"}" ${e.cur?"":`data-held="${esc(e.hid)}"`}>${old?`<span class="old">${esc(t("heldOld"))}</span>`:""}<span class="hn">${esc(heldLabel(e.d,e.editing))}</span><span class="ht">${n?`<b class="num">${esc(rs(e.cur?billTotal():heldTotal(e.d)))}</b> · ${esc(t("heldItems",n))}`:"—"}</span></button>`; }).join("")
+    return `<button type="button" class="hchip${e.cur?" on":""}" role="tab" aria-selected="${e.cur?"true":"false"}" ${e.cur?"":`data-held="${esc(e.hid)}"`}>${old?`<span class="old">${esc(t("heldOld"))}</span>`:""}<span class="hn">${esc(heldLabel(e.d,e.editing))}</span><span class="ht">${n?`<b class="num">${esc(rs(e.cur?billTotal():heldTotal(e.d)))}</b> · ${esc(t("heldItems",n))}`:esc(t("heldNoItems"))}</span></button>`; }).join("")
     + (draftEmpty()?"":`<button type="button" class="hchip add" id="held-add" aria-label="${esc(t("newBillChip"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${esc(t("heldNew"))}</button>`);
   const on=row.querySelector(".hchip.on"); if(on && row.scrollWidth>row.clientWidth){ const r=on.offsetLeft-row.clientWidth/2+on.offsetWidth/2; row.scrollLeft=Math.max(0,r); }
   if(at){ at.hidden=DESK(); at.innerHTML=`<span class="at-l">${esc(t("addingTo"))}</span><span class="at-n">${esc(heldLabel(cur.d,cur.editing))}</span><span class="at-m">${esc(t("heldMore",h.length))} ›</span>`; }
@@ -4016,12 +4091,19 @@ function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fa
   if(on){ if(sb.parentNode!==dock){ dock.appendChild(sb); dock.appendChild(fab); } if(bsr.parentNode!==rise) rise.appendChild(bsr); }
   else { if(sb.parentNode===dock){ $("header.top").insertBefore(sb,$("#mictip")); document.body.insertBefore(fab,rise); } if(bsr.parentNode===rise) $("#view-bill").insertBefore(bsr,$("#heldrow")); }
   dock.hidden=!on; dockPos(); }
+/** The total is never cut: if the amount doesn't fit its space, its size steps down until it does. */
+/* The total must always be readable: shrink it a little, and if it still doesn't fit beside the buttons (narrow phone, big amount)
+   give it its own line above them instead of shrinking it to an unreadable size. */
+function sumFit(){ const bs=$("#bill-sum"), tc=$("#bill-total"); if(!bs) return; bs.style.fontSize=""; tc.classList.remove("tot-stack"); if(!bs.clientWidth) return;
+  const fit=min=>{ let fs=parseFloat(getComputedStyle(bs).fontSize)||24; while(bs.scrollWidth>bs.clientWidth+1 && fs>min){ fs-=1; bs.style.fontSize=fs+"px"; } return bs.scrollWidth<=bs.clientWidth+1; };
+  if(fit(17)) return; if(!DESK()){ bs.style.fontSize=""; tc.classList.add("tot-stack"); } fit(13); }
 function bsPos(){ const H=window.innerHeight, t=$("#bill-total"), tb=$("nav.tabs"); let b=96, r=16;
   const tr=tb.getBoundingClientRect(); if(tr.width>0) r=Math.round(window.innerWidth-tr.right);
   if(tr.width>0){ root.style.setProperty("--tabl",Math.round(tr.left)+"px"); root.style.setProperty("--tabr",Math.round(window.innerWidth-tr.right)+"px"); }
-  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; root.style.setProperty("--billpad",Math.round(b+56+16)+"px"); } } else if(tr.height) b=H-tr.top+12;
+  root.classList.toggle("billhas", !t.hidden);
+  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; root.style.setProperty("--billpad",Math.round(b+16)+"px"); } } else if(tr.height) b=H-tr.top+12;
   root.style.setProperty("--bsb",Math.max(12,Math.round(b))+"px"); root.style.setProperty("--bsr",Math.max(12,r)+"px"); }
-function dockPos(){ try{ bsPos(); }catch{} if(!root.classList.contains("sbot")) return;
+function dockPos(){ try{ bsPos(); sumFit(); }catch{} if(!root.classList.contains("sbot")) return;
   const dock=$("#dock"), H=window.innerHeight, a=document.activeElement, qf=!!a && a.id==="q";
   const kb=parseFloat(root.style.getPropertyValue("--kb"))||0; let b;
   if(qf) b=kb+8;
@@ -4098,11 +4180,11 @@ $("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(can("manager") &
 /* Bill tab on phones: tap the round search button = the bar opens with the keyboard; ✕ empties it but keeps it open;
    leaving it (keyboard closed, tapped elsewhere, an item added) = back to the button. */
 const bsOn=()=>!DESK() && S.tab==="bill";
-function bsOpen(){ document.body.classList.add("bsopen"); const q=$("#q"); q.focus(); try{ syncQe(); dockPos(); }catch{} }
+function bsOpen(){ document.body.classList.add("bsopen"); const q=$("#q"); q.focus(); if(!root.classList.contains("sbot")) window.scrollTo(0,0);   /* search at the Top: results show under the bar, so start from the top */ try{ syncQe(); dockPos(); }catch{} }
 function bsClose(){ if(!document.body.classList.contains("bsopen")) return; document.body.classList.remove("bsopen");
   const q=$("#q"); if(q.value){ q.value=""; onQuery(""); } try{ syncQe(); dockPos(); }catch{} }
 let bsKeep=0;
-$("#bsfab").addEventListener("click",bsOpen);
+$("#bsfab").addEventListener("click",bsOpen); $("#tot-find").addEventListener("click",bsOpen); $("#tot-find").setAttribute("aria-label",t("totFind"));
 $("#mic").addEventListener("pointerdown",()=>{ bsKeep=Date.now(); },true);
 $("#q").addEventListener("blur",()=>{ if(!bsOn()) return; setTimeout(()=>{ const a=document.activeElement; if(a && a.id==="q") return; if(Date.now()-bsKeep<1500) return; bsClose(); },60); });
 document.addEventListener("pointerdown",e=>{ if(!bsOn() || !document.body.classList.contains("bsopen")) return; const a=document.activeElement; if(a && a.id==="q") return;
@@ -4248,8 +4330,9 @@ function qpEl(){ let el=$("#qpick"); if(!el){ el=document.createElement("div"); 
       const ln=document.querySelector(`.bill-line[data-i="${i}"]`); if(ln){ ln.classList.remove("flash"); void ln.offsetWidth; ln.classList.add("flash"); } }); }
   return el; }
 function qpPlace(el,anchor){ const r=anchor.getBoundingClientRect(), w=Math.min(window.innerWidth-16, el.offsetWidth||320);
-  let x=Math.max(8, Math.min(r.left-8, window.innerWidth-w-8)), y=r.bottom+6;
-  const vh=(window.visualViewport?window.visualViewport.height:window.innerHeight); if(y+56>vh) y=Math.max(8,r.top-56-6);
+  const h=el.offsetHeight||48, top=(document.querySelector("header.top")||{getBoundingClientRect:()=>({bottom:0})}).getBoundingClientRect().bottom;
+  let x=Math.max(8, Math.min(r.left-8, window.innerWidth-w-8)), y=r.top-h-6;   // above the box, over its own line, so the next line stays free to tap
+  const vh=(window.visualViewport?window.visualViewport.height:window.innerHeight); if(y<Math.max(8,top+4)) y=Math.min(r.bottom+6, vh-h-8);
   el.style.left=x+"px"; el.style.top=y+"px"; }
 function qpOpen(i,anchor){ const l=S.bill[i]; if(!l) return; const sub=fracSub(l.unit); if(!sub) return; const el=qpEl(); el.dataset.i=i;
   const chip=(q,lab)=>`<button type="button" data-q="${q}" aria-selected="${Math.abs(q-l.qty)<1e-9}">${esc(lab)}</button>`;

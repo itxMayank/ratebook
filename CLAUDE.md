@@ -601,6 +601,30 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
 - **Total card pinned with the search at the Top too** (11 Oct 2026): it was sticky, so on a short bill it sat right after the items, mid-screen, with empty space below. It's now `position:fixed` above the tab bar in both search positions (as with Bottom), the same width as the tab bar (`--tabl` / `--tabr`, now set in `bsPos()`), and `#view-bill` gets bottom padding `--billpad` (card + search button + gap, from `bsPos()`) so the last line can scroll clear of both.
 - **Paid by tiles are shorter** (11 Oct 2026): 32 px pills with 13 px text (they were 40 px boxes).
 - Tests: `tests/billsearch.test.js` (button, open + cursor, ✕ keeps it open, folds back on leaving, add from results, Prices/laptop unchanged, tile height); the Bill-tab parts of `bottomsearch`, `searchscroll` and `ios` open the bar with the button.
+- **Bill page UX fixes after a full UI check** (11 Oct 2026, `index.html` only). Checked at 320 / 360 / 412 px, iPhone SE, Top and Bottom search, dark, Hindi, every text size and a laptop. The rule: on small screens nothing is hidden behind an extra tap; things wrap or stack instead.
+  - **Search on the Bill tab:** once the bill has items, the search is a round icon **inside the total bar** (`#tot-find`, before Share), so nothing floats over the bill lines. The floating `#bsfab` shows only on an empty bill (`html.billhas`, set in `bsPos()`). The empty bill also has a **Find an item** button (`#empty-find`) and a clearer hint. With the search at the Top, opening it scrolls to the top so the results under the bar are visible. `--billpad` no longer counts the floating button.
+  - **Total never cut:** `sumFit()` (from `updateBillTotals` and `dockPos`) shrinks the amount down to 17 px. If it still doesn't fit beside the buttons (narrow phone, big amount) it gives the total its own line above them (`.total.tot-stack`, same layout as the large text sizes) rather than shrinking it further. The label sits small above the amount. At the large text sizes "Total" is shown again (it was hidden).
+  - **Bill lines:**
+    - the GST line (`.taxline`) sits under the item name, not the number circle, and wraps as whole pieces ("HSN 3923" · "GST 18%");
+    - the line grid can't overflow (`minmax(0,1fr)`), and long names wrap beside the amount;
+    - when a line is narrower than 272 px (largest text on a small phone; container `bl` on `.bill-line`), the rate gets its own row under the stepper and ×, instead of being clipped.
+  - **Quick qty strip** (`qpPlace`) opens above its own box (below only if there's no room under the header), so the next line's rate stays tappable. It's compact under 400 px.
+  - **Bill head at small sizes:** the chips row wraps; the Paid / Credit / Part paid buttons can shrink; "Paid by" icons hide under 330 px so "Cheque" isn't cut. At the large text sizes, name and mobile stack and Paid by tiles take a row of their own.
+  - **Cash given:** the Return / Short result wraps under the typed amount instead of covering it.
+  - **Header:** the shop name uses the full width when there's no TEST badge (`.brand.nobadge`). Under 380 px the icon buttons are 38 px.
+  - **Other fixes:**
+    - Bigger tap areas: GST and bill-number chips, unit chip, Last-bill links and print, EN/हि.
+    - The returning-customer hint is neutral grey (it was pink, which read as an error).
+    - An empty open bill's chip says "No items yet".
+  - Test: `tests/billfit.test.js` checks, at 320/360/412 px and text 1–1.38 with ₹17-lakh bills:
+    - nothing spills sideways;
+    - the total is shown in full;
+    - the GST line sits under the name;
+    - Share, Done and search are on screen and ≥ 36 px;
+    - the qty strip opens above its box;
+    - Top search results are visible.
+
+  `billsearch` covers the in-bar search icon and the empty-bill button.
 - Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)

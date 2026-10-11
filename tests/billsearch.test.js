@@ -1,5 +1,6 @@
-/* Bill tab on phones: the search is a round floating button. Tap = the bar opens with the keyboard; ✕ empties it but keeps it
-   open; leaving it (tap elsewhere, add an item) folds it back. Prices tab and laptops keep the bar. Paid-by tiles are short.
+/* Bill tab on phones: the search is a button — a round floating one on an empty bill, a search icon inside the total bar once
+   the bill has items. Tap = the bar opens with the keyboard; ✕ empties it but keeps it open; leaving it (tap elsewhere, add an
+   item) folds it back. Prices tab and laptops keep the bar. Paid-by tiles are short.
    Run: node tests/billsearch.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
 const html = appHtml('S,appUnlock,addToBill,setTab');
@@ -17,20 +18,25 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Garbage Bag']
   const vis = (p, s) => p.$eval(s, e => { const r = e.getBoundingClientRect(); return r.height > 0 && getComputedStyle(e).display !== 'none'; });
   for (const spos of ['bottom', 'top']) {
     const p = await phone(390, 844, spos, true);
-    ok(await vis(p, '#bsfab') && !(await vis(p, '#searchbox')), `${spos}: Bill tab shows a round search button, not the bar`);
-    const f = await p.$eval('#bsfab', e => e.getBoundingClientRect()), t = await p.$eval('#bill-total', e => e.getBoundingClientRect());
-    ok(f.bottom <= t.top && t.top - f.bottom < 30 && f.right > 340, `${spos}: it floats at the right, just above the total card`);
+    ok(await vis(p, '#tot-find') && !(await vis(p, '#bsfab')) && !(await vis(p, '#searchbox')), `${spos}: bill with items — search is an icon in the total bar (nothing floats over the bill)`);
+    const f = await p.$eval('#tot-find', e => e.getBoundingClientRect()), t = await p.$eval('#bill-total', e => e.getBoundingClientRect());
+    ok(f.top >= t.top && f.bottom <= t.bottom && f.height >= 40, `${spos}: it sits inside the total card, a full-size tap target`);
     ok((await p.$eval('[data-pm="cash"]', e => e.getBoundingClientRect().height)) <= 34, `${spos}: Paid by tiles are short (≤ 34 px)`);
-    await p.tap('#bsfab'); await p.waitForTimeout(300);
-    ok(await vis(p, '#searchbox') && !(await vis(p, '#bsfab')) && await p.evaluate(() => document.activeElement.id === 'q'), `${spos}: tap → the bar opens and the cursor is in it`);
+    await p.tap('#tot-find'); await p.waitForTimeout(300);
+    ok(await vis(p, '#searchbox') && await p.evaluate(() => document.activeElement.id === 'q'), `${spos}: tap → the bar opens and the cursor is in it`);
     await p.keyboard.type('bag'); await p.waitForTimeout(300); await p.tap('#q-clear'); await p.waitForTimeout(300);
     ok(await vis(p, '#searchbox') && await p.evaluate(() => document.querySelector('#q').value === '' && document.activeElement.id === 'q'), `${spos}: ✕ empties it and keeps it open, cursor still in it`);
     await p.keyboard.type('cup'); await p.waitForTimeout(300);
     await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(300);
-    ok(!(await vis(p, '#searchbox')) && await vis(p, '#bsfab') && await p.evaluate(() => document.querySelector('#q').value === ''), `${spos}: leaving the box folds it back to the button (word cleared)`);
-    await p.tap('#bsfab'); await p.keyboard.type('garbage'); await p.waitForTimeout(400);
+    ok(!(await vis(p, '#searchbox')) && await vis(p, '#tot-find') && await p.evaluate(() => document.querySelector('#q').value === ''), `${spos}: leaving the box folds it back to the button (word cleared)`);
+    await p.tap('#tot-find'); await p.keyboard.type('garbage'); await p.waitForTimeout(400);
     await p.tap('#bill-search-results [data-add="i3"] .name'); await p.waitForTimeout(500);
-    ok(await p.evaluate(() => T.S.bill.some(l => l.id === 'i3')) && await vis(p, '#bsfab') && !(await vis(p, '#searchbox')), `${spos}: tapping a result adds it, then back to the button`);
+    ok(await p.evaluate(() => T.S.bill.some(l => l.id === 'i3')) && await vis(p, '#tot-find') && !(await vis(p, '#searchbox')), `${spos}: tapping a result adds it, then back to the button`);
+    await p.evaluate(() => { T.S.bill.length = 0; T.setTab('items'); T.setTab('bill'); }); await p.waitForTimeout(400);
+    ok(await vis(p, '#bsfab') && await vis(p, '#empty-find'), `${spos}: empty bill — floating search button plus a "Find an item" button in the empty message`);
+    await p.tap('#empty-find'); await p.waitForTimeout(300);
+    ok(await p.evaluate(() => document.activeElement.id === 'q'), `${spos}: "Find an item" opens the search with the cursor in it`);
+    await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(200);
     await p.evaluate(() => T.setTab('items')); await p.waitForTimeout(300);
     ok(await vis(p, '#searchbox') && !(await vis(p, '#bsfab')), `${spos}: Prices tab keeps the search bar`);
     await p.context().close();

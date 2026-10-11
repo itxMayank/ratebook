@@ -1,5 +1,5 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-5';
+const VERSION = 'rb-shell-6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png'];
 
 self.addEventListener('install', e => {

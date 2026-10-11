@@ -640,6 +640,23 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   `billsearch` covers the in-bar search icon and the empty-bill button.
 - Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
+## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
+
+- **New accent, Iris** (`--accent` #4F46E5, dark #A5A6FF; soft #EEEEFF / #25264D), replacing maroon, which Mayank found dull. Teal and ocean blue were also tried: teal is too close to the green used for "Paid" and to WhatsApp, and ocean blue looks generic. Maroon stays as an optional theme.
+  - The two sets of colour tokens (the original warm set, overridden by the "Design refresh" set) are merged into **one** `:root` block plus its two dark blocks at the top of the `<style>`.
+  - The manifest's `theme_color` / `background_color` and the `theme-color` meta now equal `--bg` (#F1F2F4), so there's no maroon flash at launch.
+  - `admin.html` and `vendor.html` use Iris too.
+  - The icons are recoloured: a white ₹ tag on Iris. The full icon set is part C.
+  - `sw.js` → `rb-shell-6`.
+- **Grey text** `--muted` #5F636B (was #6E727A, 4.2–4.3:1 on grey backgrounds). It's now ≥ 5.1:1 on every light background in every theme.
+- **Tools in groups:**
+  - **Every day** (`.tl-daily`, 2-column tiles on phones; an odd last tile spans the row): Past bills · Credit · Customers · Vendors · Reports.
+  - **Prices & items:** typing/speaking changes, Add, Bulk add, Bulk edit, Groups, Hindi names.
+  - **App:** Settings, Lock now, Install.
+  - Headings are `.tl-h` (`tlDaily` / `tlItems` / `tlApp`). Element ids and handlers are unchanged.
+- **44 px touch areas without changing the look:** an `::after` hit-slop on "+ Bill" (`.addbtn`), the Prices card stepper (`.card .mstep button`; `.mstep` is now `overflow:visible`), and the bill line − / + and ×. The bill stepper's end buttons carry their own rounded corners now that `.bill-line .step` doesn't clip.
+- Test: `tests/designa.test.js`.
+
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 
 Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, and the phone's copies of prices, Past bills, customers, Credit, vendors, Reports, photos). Three fixes:
@@ -716,7 +733,7 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-5`). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-6`). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 

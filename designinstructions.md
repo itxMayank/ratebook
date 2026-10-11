@@ -8,7 +8,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 ## 0. How to use this file
 
 1. **Before any UI work, read §1 (principles) and the sections for what you're touching.** Run the §12 checklist before calling the work done.
-2. **Use the tokens in the code**: `--bg`, `--surface`, `--surface-2`, `--fg`, `--muted`, `--line`, `--ink`/`--ink-fg`, `--accent`/`--accent-soft`, `--good`, `--danger`, `--gold`, `--r`, `--shadow`, `--f-display`, `--f-body`. Never write a new hex value in a component. If a token is missing, add it to `:root`, to both dark blocks and to every palette (`PALETTES` + `:root[data-palette=…]`).
+2. **Use the tokens in the code** (all colour tokens live in one `:root` block at the top of the `<style>`, plus its two dark blocks): `--bg`, `--surface`, `--surface-2`, `--fg`, `--muted`, `--line`, `--ink`/`--ink-fg`, `--accent`/`--accent-soft`, `--good`, `--danger`, `--gold`, `--r`, `--shadow`, `--f-display`, `--f-body`. Never write a new hex value in a component. If a token is missing, add it to `:root`, to both dark blocks and to every palette (`PALETTES` + `:root[data-palette=…]`).
 3. **This file wins over taste.** When the user asks for something that goes against it, do what they ask, then add an "Overrides" note at the bottom so it isn't undone later.
 4. **Keep it current.** When a design decision is made in a conversation (for example "no extra taps to see things on small screens"), add it to §1 or the relevant section in the same pull request.
 
@@ -133,7 +133,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 ## 4. Colour
 
 **Palette rules.**
-- The base is warm off-white `--bg` (#F5F4F2) with white `--surface`, near-black **ink** primary buttons (`--ink` #16171A) and one accent (maroon `--accent` #8C2331). This matches the 2025–26 direction (Linear, Vercel, Revolut). Keep it.
+- The base is cool off-white `--bg` (#F1F2F4) with white `--surface`, near-black **ink** primary buttons (`--ink` #16171A) and one accent, **Iris** (`--accent` #4F46E5; dark mode #A5A6FF; soft #EEEEFF / #25264D). This matches the 2025–26 direction (Linear, Vercel, Revolut). Iris was chosen over teal (too close to the green for "Paid" and the WhatsApp button) and ocean blue (generic). Keep it.
 - New palettes should be built in **OKLCH**:
   - fix the hue;
   - step lightness over about 11 shades (98, 95, 90, 82, 72, 62, 54, 46, 38, 30, 22%);
@@ -156,7 +156,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - Show elevation with **lighter** surfaces (2–4% L per level), not shadows.
 - Text is off-white (#F2EEEA, L 93–96%), not #fff.
 - Borders: white at 8–12%, or `--line`.
-- Accents get lighter and slightly less saturated (`--accent` #F08A97 in dark).
+- Accents get lighter and slightly less saturated (`--accent` #A5A6FF in dark).
 - Coloured themes switch the tab bar and toasts to neutral grey in dark mode (`--nav-*`), with only the active item in colour.
 
 **Contrast.**
@@ -426,7 +426,7 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 - [ ] Delay every loader by about 300 ms and keep it up at least 500 ms.
 - [ ] Check APCA contrast for `--muted` on `--surface-2` in dark mode, in every palette.
 - [ ] Devanagari line height: check sub-lines (`.bl-sub`, card `nameHi`) are at least 1.4, and 1.5 for paragraphs.
-- [ ] Give small controls (bill-line ×, stepper ±, "+ Bill" on Prices, 49 × 28 px) a 44 px hit area through hit-slop.
+- [x] Small controls (bill-line ×, stepper ±, "+ Bill" on Prices, card stepper) have a 44 px hit area through `::after` hit-slop (11 Oct 2026).
 - [ ] Icons: a separate maskable PNG set, an SVG favicon with dark mode, `theme-color` metas per colour scheme, and a single-colour mark.
 - [ ] Permission pre-prompts before notifications, microphone and camera.
 - [ ] Optionally, a first-run language tile choice on the sign-in screen.
@@ -470,4 +470,5 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 
 ## Overrides (user decisions that differ from the above)
 
-- *(none yet)*
+- **Brand accent is Iris, not maroon** (Mayank, 11 Oct 2026: "maroon does not look that good, there should be a fresh colour"). Maroon stays only as an optional theme in Settings.
+- **Grey text `--muted` is #5F636B** (was #6E727A, which measured 4.2:1 on grey backgrounds).

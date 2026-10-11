@@ -8,7 +8,7 @@
 if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)){ const m=document.querySelector('meta[name=viewport]'); if(m) m.content+=",maximum-scale=1"; }</script>
 <title>Rate Book</title>
 <meta name="description" content="Shop price list and quick bills">
-<meta name="theme-color" content="#8C2331">
+<meta name="theme-color" content="#F1F2F4">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -23,22 +23,30 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: one-column counter app — sticky header + search, scrolling item list, fixed bottom tabs, bottom sheets for detail/edit. */
+/* Colour tokens (one set; see designinstructions.md §4). Accent = Iris (11 Oct 2026; was maroon). */
 :root{
-  --bg:#F5F4F2; --surface:#FFFFFF; --surface-2:#EDEBE8; --fg:#1E1B1A; --muted:#6C6560; --line:#E0DCD7;
-  --accent:#8C2331; --accent-fg:#FFFFFF; --accent-soft:#F5E6E8; --gold:#B87A0B;
-  --good:#2D7A4D; --danger:#B3261E; --shadow:0 1px 2px rgba(30,20,20,.06),0 6px 20px rgba(30,20,20,.08);
-  --f-display:"Baloo 2","Mukta",system-ui,sans-serif;
-  --f-body:"Mukta","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --r:14px;
+  --bg:#F1F2F4; --surface:#FFFFFF; --surface-2:#EEF0F3; --fg:#16171A; --muted:#5F636B; --line:#E3E5E9;
+  --ink:#16171A; --ink-fg:#FFFFFF; --ink-2:#2A2C31;
+  --accent:#4F46E5; --accent-fg:#FFFFFF; --accent-soft:#EEEEFF;
+  --gold:#B87A0B; --good:#2D7A4D; --danger:#B3261E;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.07);
+  --shadow-lg:0 12px 40px rgba(16,24,40,.14);
+  --f-display:"Plus Jakarta Sans","Mukta",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans","Mukta","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:20px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#141312; --surface:#1D1B1A; --surface-2:#2A2725; --fg:#F2EEEA; --muted:#A49C95; --line:#36312E;
-  --accent:#E8848F; --accent-fg:#22090D; --accent-soft:#3B1F24; --gold:#E3B04B;
-  --good:#6FC892; --danger:#F2867E; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark}}
+  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
+  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0;
+  --accent:#A5A6FF; --accent-fg:#0E0E2E; --accent-soft:#25264D;
+  --gold:#E3B04B; --good:#6FC892; --danger:#F2867E;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#141312; --surface:#1D1B1A; --surface-2:#2A2725; --fg:#F2EEEA; --muted:#A49C95; --line:#36312E;
-  --accent:#E8848F; --accent-fg:#22090D; --accent-soft:#3B1F24; --gold:#E3B04B;
-  --good:#6FC892; --danger:#F2867E; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark}
+  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
+  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0;
+  --accent:#A5A6FF; --accent-fg:#0E0E2E; --accent-soft:#25264D;
+  --gold:#E3B04B; --good:#6FC892; --danger:#F2867E;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6); color-scheme:dark}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -588,24 +596,6 @@ details.alt summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4
 .btn.listening{background:var(--accent);color:var(--accent-fg);animation:pulse 1.2s infinite}
 
 /* ===================== Design refresh: soft cards, ink pills, floating tab bar ===================== */
-:root{
-  --bg:#F1F2F4; --surface:#FFFFFF; --surface-2:#EEF0F3; --fg:#16171A; --muted:#6E727A; --line:#E3E5E9;
-  --ink:#16171A; --ink-fg:#FFFFFF; --ink-2:#2A2C31;
-  --accent:#9B2335; --accent-fg:#FFFFFF; --accent-soft:#F7E8EA;
-  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.07);
-  --shadow-lg:0 12px 40px rgba(16,24,40,.14);
-  --f-display:"Plus Jakarta Sans","Mukta",system-ui,sans-serif;
-  --f-body:"Plus Jakarta Sans","Mukta","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --r:20px;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
-  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0; --accent:#F08A97; --accent-fg:#2A0A10; --accent-soft:#3A1E24;
-  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6)}}
-:root[data-theme="dark"]{
-  --bg:#0E0F11; --surface:#18191C; --surface-2:#222428; --fg:#F3F4F6; --muted:#9CA0A8; --line:#2A2C31;
-  --ink:#F3F4F6; --ink-fg:#111214; --ink-2:#D9DBE0; --accent:#F08A97; --accent-fg:#2A0A10; --accent-soft:#3A1E24;
-  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4); --shadow-lg:0 12px 40px rgba(0,0,0,.6)}
 body{background:var(--bg);color:var(--fg);letter-spacing:-.005em}
 /* header: greeting + shop name */
 .brand{font:800 21px/1.2 var(--f-display);letter-spacing:-.02em}
@@ -1703,6 +1693,26 @@ details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
 #nslide .n-mid b{font-size:14px}
 #nslide .n-x{flex:none;border:0;background:none;color:var(--muted);font-size:18px;padding:4px}
 @media (prefers-reduced-motion:reduce){#nslide{transition:opacity .2s}.nbell.ring svg{animation:none}}
+/* Tools in groups (11 Oct 2026): daily screens first as tiles, then item tools, then app settings */
+.tl-h{font:700 12.5px var(--f-body);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:20px 4px 8px}
+#view-tools .section-title + .tl-h{margin-top:4px}
+@media (max-width:1023px){
+  .tl-daily{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tl-daily button{flex-direction:column;align-items:flex-start;gap:10px;padding:14px;min-height:124px}
+  .tl-daily button span{font-size:13px;line-height:1.35}
+  .tl-daily > button:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;align-items:center;min-height:0}
+}
+/* Bigger touch areas, same look (designinstructions §2: aim for 44 px). Invisible hit-slop via ::after. */
+.addbtn,.bill-line .x,.card .mstep button,.bill-line .step button{position:relative}
+.addbtn::after,.bill-line .x::after,.card .mstep button::after,.bill-line .step button::after{content:"";position:absolute}
+.addbtn::after{inset:-8px -6px}
+.bill-line .x::after{inset:-5px}
+.card .mstep{overflow:visible}
+.card .mstep button::after{inset:-8px 0}
+.bill-line .step{overflow:visible}
+.bill-line .step button::after{inset:-4px 0}
+.bill-line .step button:first-child{border-radius:999px 0 0 999px}
+.bill-line .step button:last-child{border-radius:0 999px 999px 0}
 </style>
 </head>
 <body>
@@ -1826,21 +1836,28 @@ details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
 
   <section id="view-tools" hidden>
     <h2 class="section-title" data-t="tools">Tools</h2>
+    <h3 class="tl-h" data-t="tlDaily">Every day</h3>
+    <div class="menu-list tl-daily">
+      <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
+      <button id="t-dues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2-2-1.3V4z"/><path d="M8 9h6M8 13h4"/><circle cx="18" cy="7" r="4" fill="var(--surface)"/><path d="M18 5.2v3.6M16.6 6h2.3a.7.7 0 0 1 0 1.4h-1.8a.7.7 0 0 0 0 1.4h2.3"/></svg><div><b data-t="duesT">Credit (Udhaar)</b><span id="t-dues-sub" data-t="duesD">Who owes money, and record payments</span></div></button>
+      <button id="t-custs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 20a6 6 0 0 0-2.5-4.9"/></svg><div><b data-t="cuT">Customers</b><span data-t="cuToolD">Everyone who bought, their details and bills</span></div></button>
+      <button id="t-vendors" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18M9 20v-6h6v6"/></svg><div><b data-t="vTitle">Vendors</b><span data-t="vToolD">Bills from suppliers, payments, what you owe</span></div></button>
+      <button id="t-reports" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><div><b data-t="repT">Reports</b><span data-t="repD">Sales, top items, GST summary and files for your CA</span></div></button>
+    </div>
+    <h3 class="tl-h" data-t="tlItems">Prices &amp; items</h3>
     <div class="menu-list">
       <button id="t-cmd" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg><div><b data-t="cmdTitle">Change by typing or speaking</b><span data-t="cmdD">"add 51 micron bag 1kg rates 110 and 120"</span></div></button>
       <button id="t-add" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><div><b data-t="addItem">Add item</b><span data-t="addItemD">One item with photo</span></div></button>
       <button id="t-bulkadd" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg><div><b data-t="bulkAdd">Bulk add</b><span data-t="bulkAddD">Type rows or paste a list from Excel / WhatsApp</span></div></button>
       <button id="t-bulkedit" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13 7 4 4"/></svg><div><b data-t="bulkEdit">Bulk edit prices</b><span data-t="bulkEditD">Change many rates at once, or raise by %</span></div></button>
-      <button id="t-unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b id="t-unlock-t"></b><span id="t-unlock-d"></span></div></button>
-      <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
       <button id="t-groups" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/></svg><div><b data-t="grpT">Groups &amp; other names</b><span data-t="grpToolD">Sort items into groups, add names customers use</span></div></button>
       <button id="t-hindi" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h8M8 3v2M5 9c1.5 3 4 5 7 6M11 5c-1 4-3.5 7.5-7 10"/><path d="m13 21 4-9 4 9M14.5 18h5"/></svg><div><b data-t="toHindiT">Convert names to Hindi</b><span data-t="toHindiD">Write every item name in Hindi letters</span></div></button>
-      <button id="t-bills"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z"/><path d="M9 7h6M9 11h6"/><circle cx="17" cy="17" r="4" fill="var(--surface)"/><path d="m20 20 2 2"/></svg><div><b data-t="pastBills">Past bills</b><span data-t="pastBillsD">Find a bill and send it again</span></div></button>
-      <button id="t-reports" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><div><b data-t="repT">Reports</b><span data-t="repD">Sales, top items, GST summary and files for your CA</span></div></button>
-      <button id="t-vendors" data-w><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18M9 20v-6h6v6"/></svg><div><b data-t="vTitle">Vendors</b><span data-t="vToolD">Bills from suppliers, payments, what you owe</span></div></button>
-      <button id="t-custs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 20a6 6 0 0 0-2.5-4.9"/></svg><div><b data-t="cuT">Customers</b><span data-t="cuToolD">Everyone who bought, their details and bills</span></div></button>
-      <button id="t-dues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2-2-1.3V4z"/><path d="M8 9h6M8 13h4"/><circle cx="18" cy="7" r="4" fill="var(--surface)"/><path d="M18 5.2v3.6M16.6 6h2.3a.7.7 0 0 1 0 1.4h-1.8a.7.7 0 0 0 0 1.4h2.3"/></svg><div><b data-t="duesT">Credit (Udhaar)</b><span id="t-dues-sub" data-t="duesD">Who owes money, and record payments</span></div></button>
+    </div>
+    <h3 class="tl-h" data-t="tlApp">App</h3>
+    <div class="menu-list">
       <button id="t-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><b data-t="settings">Settings</b><span data-t="settingsD">Shop name, units, rounding, bill footer</span></div></button>
+      <button id="t-unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b id="t-unlock-t"></b><span id="t-unlock-d"></span></div></button>
+      <button id="t-install" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><div><b data-t="installT">Install Rate Book</b><span data-t="installD">Adds an icon to your home screen. Works offline.</span></div></button>
     </div>
   </section>
 </main>
@@ -2186,6 +2203,7 @@ Object.assign(STR.en,{nT:"Notifications",nBell:"Notifications",nEmpty:"No update
 Object.assign(STR.hi,{nT:"सूचनाएँ",nBell:"सूचनाएँ",nEmpty:"अभी कोई सूचना नहीं। नए सप्लायर, सप्लायर के बिल और भुगतान यहाँ दिखेंगे।",nHidden:n=>`${n} आपकी सेटिंग से छिपी`,nToday:"आज",nYest:"कल",nBy:n=>`${n} ने किया`,nNewVendor:v=>`नया सप्लायर: ${v}`,nOpenBal:a=>`पुराना बकाया ${a}`,nCredit:d=>`${d} दिन उधार`,nBill:(a,v)=>`${v} का बिल ${a}`,nBillNo:n=>`बिल ${n}`,nDue:d=>`देय ${d}`,nPay:(a,v)=>`${v} को ${a} दिए`,nAdj:(a,v)=>`${v} को ${a} का माल वापस`,nFor:s=>`बिल ${s} के लिए`,nPaid:n=>n?`बिल ${n} पूरा चुका`:"बिल पूरा चुका",nOpening:"पुराना बकाया",nRmBill:(a,v)=>`बिल ${a} हटाया · ${v}`,nRmPay:(a,v)=>`भुगतान ${a} हटाया · ${v}`,nRmAdj:(a,v)=>`वापसी ${a} हटाई · ${v}`,nCheck:(n,v)=>`${v} का बिल${n?" "+n:""} जाँचें`,nIssues:n=>`हिसाब में ${n} गड़बड़ी`,nMove:n=>`${n} सप्लायर असली मोड में ले जाए गए`,nMore:n=>`${n} नई सूचनाएँ`,nView:"देखें",nSetT:"सप्लायर की सूचनाएँ",nSetD:"आपकी घंटी पर दिखेंगी। किसी को बंद करने के लिए दबाएँ।",nk_vendor:"नया सप्लायर",nk_bill:"बिल",nk_pay:"भुगतान",nk_paid:"बिल पूरा चुका",nk_rm:"हटाया",nk_check:"बिल जाँच में गड़बड़ी",nk_move:"टेस्ट से लाए"});
 Object.assign(STR.en,{cgYou:"You and this phone",cgShopL:"Shop · for everyone",cgOwnerL:"Owner",cgLook:"Display & search",cgPr:"Printer",cgShop:"Shop details",cgBills:"Bill numbers",cgItems:"Items & units",cgPpl:"People & security",cgPplD:"PINs, signed-in phones, shop code",cgBkD:"Copies in Google Drive, restore",cgSpeedD:"How fast the sheet answers",cgTest:"Test mode",cgReal:"Real billing",cgSBot:"search at bottom",cgSTop:"search at top",cgAuto:"prints after Done",cgNoGst:"no GSTIN",cgNext:n=>`Next bill ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>n===1?"1 unit":`${n} units`});
 Object.assign(STR.hi,{cgYou:"आप और यह फ़ोन",cgShopL:"दुकान · सबके लिए",cgOwnerL:"मालिक",cgLook:"दिखावट और सर्च",cgPr:"प्रिंटर",cgShop:"दुकान की जानकारी",cgBills:"बिल नंबर",cgItems:"आइटम और यूनिट",cgPpl:"लोग और सुरक्षा",cgPplD:"PIN, साइन-इन फ़ोन, दुकान का कोड",cgBkD:"Google Drive में कॉपी, वापस लाना",cgSpeedD:"शीट कितनी जल्दी जवाब देती है",cgTest:"टेस्ट मोड",cgReal:"असली बिलिंग",cgSBot:"सर्च नीचे",cgSTop:"सर्च ऊपर",cgAuto:"Done के बाद प्रिंट",cgNoGst:"GSTIN नहीं",cgNext:n=>`अगला बिल ${n}`,cgNextG:n=>`GST ${n}`,cgUnits:n=>`${n} यूनिट`});
+Object.assign(STR.en,{tlDaily:"Every day",tlItems:"Prices & items",tlApp:"App"}); Object.assign(STR.hi,{tlDaily:"रोज़ के काम",tlItems:"दाम और सामान",tlApp:"ऐप"});
 Object.assign(STR.en,{heldNoItems:"No items yet",totFind:"Find an item to add"});
 Object.assign(STR.hi,{heldNoItems:"अभी कोई सामान नहीं",totFind:"जोड़ने के लिए सामान खोजें"});
 Object.assign(STR.hi,{helloName:n=>`नमस्ते, ${n}`,hello:"नमस्ते",fAll:"सब",fInBill:"बिल में",fRecent:"इस हफ़्ते बदले",fPhoto:"फ़ोटो वाले"});
@@ -2270,7 +2288,7 @@ setFz(fzNow());
 document.addEventListener("DOMContentLoaded",()=>{ if(!document.body.dataset.tab) document.body.dataset.tab="items"; });
 if(document.body) document.body.dataset.tab="items";
 /* Theme and appearance, chosen per phone. [key, light primary, light second, dark primary, status-bar colour] */
-const PALETTES=[["ink","#16171A","#9B2335","#F3F4F6","#F1F2F4"],["maroon","#8C2331","#F6E6E8","#EC8E99","#8C2331"],["forest","#1F6B4A","#E3F1EA","#5CC594","#1F6B4A"],["indigo","#3443A8","#E7EAF9","#9AABFF","#3443A8"],["saffron","#A14B07","#FBEEDC","#F5A524","#A14B07"]];
+const PALETTES=[["ink","#16171A","#4F46E5","#F3F4F6","#F1F2F4"],["maroon","#8C2331","#F6E6E8","#EC8E99","#8C2331"],["forest","#1F6B4A","#E3F1EA","#5CC594","#1F6B4A"],["indigo","#3443A8","#E7EAF9","#9AABFF","#3443A8"],["saffron","#A14B07","#FBEEDC","#F5A524","#A14B07"]];
 function palNow(){ const v=ls.get("rb_palette","ink"); return PALETTES.some(p=>p[0]===v)?v:"ink"; }
 function appearNow(){ const v=ls.get("rb_appear","auto"); return ["auto","light","dark"].includes(v)?v:"auto"; }
 function applyTheme(){

@@ -595,6 +595,7 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   - No `:has()` in what this session built (needs iOS 15.4): the Bill results panel shows via `#rise.on` (`renderBillSearch`), and the total card's second line hides via `.ts2.empty` (`tsSync()`).
   - iPhone/iPad only: `maximum-scale=1` is added to the viewport at start, so Safari doesn't zoom the page when a box under 16 px (e.g. the rate) gets focus; pinch zoom still works on iOS.
   - Checked that no newer JavaScript (`findLast`, `.at()`, `structuredClone`, `replaceAll`…) is used. Real Safari isn't available in the build environment; `tests/ios.test.js` simulates an iPhone (identity + Safari-style keyboard).
+- **Search bar at the Top + Bill tab (fixed 11 Oct 2026):** since `interactive-widget=resizes-content`, the app shrinks above the keyboard, so the sticky total card rode up over the search results while typing. `body.qtyp[data-tab="bill"]` now hides the total card in both search positions (it already did for Bottom); it's back as soon as the search is left.
 - Tests: `tests/bottomsearch.test.js`, `tests/searchscroll.test.js`; `tests/paidby.test.js` updated for the folded cash row.
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)

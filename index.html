@@ -1479,6 +1479,7 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   /* Bill: the total card is pinned above the tab bar; the search floats just above it */
   html.sbot body[data-tab="bill"] #view-bill .total{position:fixed;left:calc(var(--tabl,12px) / var(--fz,1));right:calc(var(--tabr,12px) / var(--fz,1));bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1));margin:0;z-index:31}
   html.sbot body.qtyp #view-bill .total{display:none}
+  body.qtyp[data-tab="bill"] #view-bill .total{display:none}   /* search at the top too: the total card never covers the results while searching */
   /* typing in another box (customer, qty, rate, cash): the dock steps aside and the total card rides on the keyboard */
   html.sbot body.typing:not(.qtyp) #dock{display:none}
   html.sbot body.typing:not(.qtyp)[data-tab="bill"] #view-bill .total{bottom:calc((var(--kb,0px) + 8px) / var(--fz,1))}

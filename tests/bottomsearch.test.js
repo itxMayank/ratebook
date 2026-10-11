@@ -40,6 +40,11 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   await p.context().close();
   const q = await phone(390, 844, 'top');
   ok(await q.evaluate(() => document.querySelector('#searchbox').closest('header') !== null && document.querySelector('#dock').hidden), 'Settings "Top": search stays in the header like before');
+  await q.evaluate(() => { T.addToBill('i0', 2); T.setTab('bill'); }); await q.waitForTimeout(400);
+  await q.focus('#q'); await q.keyboard.type('bag'); await q.setViewportSize({ width: 390, height: 500 }); await q.waitForTimeout(500);
+  ok(!(await rect(q, '#bill-total')).vis, '"Top" + Bill: the total card steps aside while searching (it used to float over the results above the keyboard)');
+  await q.evaluate(() => document.activeElement.blur()); await q.waitForTimeout(300);
+  ok((await rect(q, '#bill-total')).vis, '"Top" + Bill: the total card is back once the search is left');
   await q.context().close();
   // the dock lines up with the tab bar; Settings buttons share their row
   const m = await phone(390, 844, '', true);

@@ -1572,7 +1572,9 @@ html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
   .bsfab:active{transform:scale(.92)}
   body.typing .bsfab{display:none!important}
   body[data-tab="bill"].bsopen #searchbox{animation:bsOpen .24s cubic-bezier(.2,.9,.3,1);transform-origin:right center}
-  html:not(.sbot) body[data-tab="bill"] #view-bill .total{margin-top:80px}
+  /* search at the Top too: the total card is pinned above the tab bar (it used to sit right after the items, mid-screen on short bills) */
+  html:not(.sbot) body[data-tab="bill"] #view-bill .total{position:fixed;left:calc(var(--tabl,12px) / var(--fz,1));right:calc(var(--tabr,12px) / var(--fz,1));bottom:calc((80px * var(--fz2,1) + env(safe-area-inset-bottom,0px)) / var(--fz,1));margin:0;z-index:31}
+  html:not(.sbot) body[data-tab="bill"] #view-bill{padding-bottom:calc(var(--billpad,240px) / var(--fz,1))}
 }
 @keyframes bsPop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
 @keyframes bsOpen{from{transform:scaleX(.25);opacity:0}to{transform:none;opacity:1}}
@@ -4016,7 +4018,8 @@ function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fa
   dock.hidden=!on; dockPos(); }
 function bsPos(){ const H=window.innerHeight, t=$("#bill-total"), tb=$("nav.tabs"); let b=96, r=16;
   const tr=tb.getBoundingClientRect(); if(tr.width>0) r=Math.round(window.innerWidth-tr.right);
-  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height) b=H-x.top+12; } else if(tr.height) b=H-tr.top+12;
+  if(tr.width>0){ root.style.setProperty("--tabl",Math.round(tr.left)+"px"); root.style.setProperty("--tabr",Math.round(window.innerWidth-tr.right)+"px"); }
+  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; root.style.setProperty("--billpad",Math.round(b+56+16)+"px"); } } else if(tr.height) b=H-tr.top+12;
   root.style.setProperty("--bsb",Math.max(12,Math.round(b))+"px"); root.style.setProperty("--bsr",Math.max(12,r)+"px"); }
 function dockPos(){ try{ bsPos(); }catch{} if(!root.classList.contains("sbot")) return;
   const dock=$("#dock"), H=window.innerHeight, a=document.activeElement, qf=!!a && a.id==="q";

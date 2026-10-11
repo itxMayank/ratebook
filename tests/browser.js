@@ -16,8 +16,8 @@ const inlineFiles = (html, expose, opt = {}) => html
   .replace(/<link rel="stylesheet" href="app\.css\?v=[^"]*">/, () => '<style>' + fs.readFileSync(path.join(ROOT, 'app.css'), 'utf8') + '</style>')
   .replace(/<script src="([a-z0-9_-]+\.js)\?v=[^"]*"><\/script>/g, (m, f) => {
     let js = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    if (opt.dir) js = js.replace(DIR_RE, `const DIR_URL = "${opt.dir}";`);   // the Directory link lives in shops.js
     if (f !== 'app.js') return '<script>' + js + '</script>';
-    if (opt.dir) js = js.replace(DIR_RE, `const DIR_URL = "${opt.dir}";`);
     return '<script>' + js + tHook(expose) + '</script>';
   });
 function appHtml(expose = 'S,LOCK,appLock,appUnlock,apiPost0,flushBills,sync,shopsKnown', opt = {}) {
@@ -27,8 +27,9 @@ function appHtml(expose = 'S,LOCK,appLock,appUnlock,apiPost0,flushBills,sync,sho
 }
 /* The app's code files in load order, as index.html lists them (tests that read the code use this). */
 const codeFiles = () => [...fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').matchAll(/<script src="([a-z0-9_-]+\.js)\?v=/g)].map(m => m[1]).filter(f => f !== 'strings.js');
-/* app.js as served when {files:true}: the test Directory link in place of the real one. */
-const appJs = () => fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').replace(DIR_RE, `const DIR_URL = "${DIR}";`);
+/* A code file as served when {files:true}: the test Directory link in place of the real one (it's in shops.js). */
+const codeJs = f => fs.readFileSync(path.join(ROOT, f), 'utf8').replace(DIR_RE, `const DIR_URL = "${DIR}";`);
+const appJs = () => codeJs('app.js');
 const exe = process.env.CHROME || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);
 async function launch() {
   return pw.chromium.launch(exe ? { executablePath: exe } : {});
@@ -36,4 +37,4 @@ async function launch() {
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const done = () => process.exit(fails ? 1 : 0);
-module.exports = { pw, appHtml, inlineFiles, appJs, codeFiles, launch, ok, done, MAIN_API, DIR, ROOT, exe };
+module.exports = { pw, appHtml, inlineFiles, appJs, codeJs, codeFiles, launch, ok, done, MAIN_API, DIR, ROOT, exe };

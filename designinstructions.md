@@ -234,8 +234,8 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - 6 (small inner) · 10 (inputs inside cards) · 14 (thumbs, small cards) · 20 (`--r`, cards) · 28 (sheets) · 999 (pills).
 - **Nested radii are concentric:** inner radius = outer radius − padding (iOS 26 rule).
 
-**Shadows.**
-- Two levels only: cards use `--shadow`; sheets and popovers use `0 8px 24px rgb(0 0 0/.12)`, tinted to the background hue.
+**Shadows** (tokens; never write a new shadow value).
+- `--shadow-sm` small raised controls · `--shadow` cards · `--shadow-lg` sheets, popovers, toasts, floating buttons · `--shadow-up` bars pinned to the bottom. Each has a dark-mode value.
 - No shadows on tiles inside a sheet, and no shadows in dark mode (use lighter surfaces).
 
 **Glass (`backdrop-filter`).**
@@ -430,8 +430,8 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 - [x] Icons: maskable 192/512, monochrome, SVG favicon, one master artwork (11 Oct 2026). Still open: `theme-color` metas per colour scheme (set at runtime by `applyTheme` today).
 - [x] Corner scale tokens `--r-xs/sm/md/r/xl/full` (11 Oct 2026).
 - [x] Line icons (`IC.*`) instead of emoji (11 Oct 2026).
-- [ ] Shadows: ~39 different values; move to `--shadow` / `--shadow-lg` (+ focus rings) as screens are touched.
-- [ ] Font sizes: put them on the §3 scale as screens are touched (none under 11 px on screen now).
+- [x] Shadows: four tokens `--shadow-sm` (small raised controls) · `--shadow` (cards) · `--shadow-lg` (floating: sheets, toasts, FABs, popovers) · `--shadow-up` (bars pinned to the bottom); focus/selection rings `0 0 0 Npx` stay as they are (11 Oct 2026).
+- [x] Font sizes on the scale **11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 24 · 28 · 32** (11 Oct 2026). Use only these; print styles and the 48 px PDF icon are the exceptions. Inputs stay ≥ 16.
 - [ ] Reports split bar (`.rph-seg`) still animates width.
 - [ ] Permission pre-prompts before notifications, microphone and camera.
 - [x] EN | हि switch on the lock / sign-in screen, plus the app mark (11 Oct 2026).

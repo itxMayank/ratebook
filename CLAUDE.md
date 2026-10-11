@@ -701,8 +701,19 @@ Phones only (under 1024 px); the laptop layout is unchanged. Asked for because t
   - `icon-mono-512.png` (`purpose: monochrome`, for Android themed icons).
   - The lock-screen mark (`APP_MARK`) and the laptop sidebar logo use the same artwork.
   - `sw.js` caches all of them. `tests/sw.test.js` now reads the file list from `sw.js`, so a listed file that's missing fails the test (it would break offline install on phones).
-- **Not done (noted in `designinstructions.md` §11):** shadows are still ~39 different values, the font sizes aren't yet on a strict scale, and theme palettes keep their own colour codes.
-- Test: `tests/designc.test.js` (tokens, no emoji, ≥ 11 px, transform-only, manifest icons, maskable safe zone checked pixel by pixel).
+- **Shadows** (follow-up, same day): four tokens, each with a dark value. The one-off drop shadows (20 values, including an old maroon glow on the Add button) all map onto them; focus/selection rings are unchanged.
+  - `--shadow-sm`: selected segment, keypad, toggles
+  - `--shadow`: cards
+  - `--shadow-lg`: sheets, toasts, snack bar, floating buttons, quick qty strip, notices
+  - `--shadow-up`: total bar
+- **Font sizes on one scale** (follow-up, same day): 11 · 12 · 13 · 14 · 15 · 16 · 18 · 20 · 22 · 24 · 28 · 32.
+  - Half-pixel sizes round up (12.5 → 13…).
+  - Headings at 17/19 → 18.
+  - Other odd sizes step down so nothing widens on small screens (17 → 16, 21 → 20, 26 → 24, 30 → 28).
+  - Inputs stay ≥ 16 px.
+  - Print styles, the old chart and the 48 px PDF icon are left alone.
+- **Not done:** the theme palettes keep their own colour codes, and the Reports split bar still animates `width`.
+- Test: `tests/designc.test.js` (motion, corner and shadow tokens, type scale, no emoji, ≥ 11 px, transform-only, manifest icons, maskable safe zone checked pixel by pixel).
 
 ## Cache check (10 Oct 2026, `SCRIPT_VERSION` 41 / `NEED_SV` unchanged)
 

@@ -21,7 +21,7 @@ It is based on research into current (2025–26) app design. When the user makes
 
 | What | Where | Owner / access |
 |---|---|---|
-| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `bills.js`, `settings.js`, `lock.js`, `shops.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
+| App files (`index.html`, `app.js`, `vendors.js`, `reports.js`, `print.js`, `customers.js`, `bills.js`, `settings.js`, `lock.js`, `shops.js`, `search.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
 | Backend script (`Code.gs`) | Apps Script project at script.google.com, created as a standalone project (not from inside a sheet) | Mayank's Google account |
 | Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` at the top of `shops.js`) | Deployed: Execute as Me, access Anyone |
 | Price data | Google Sheet **"Rate Book prices"** in Mayank's Google Drive, created automatically by the script. Tabs: `Items`, `Config`, `Images`, `Bills` | Mayank only; the app reaches it through the script |
@@ -66,7 +66,7 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 ## Hindi item names (added 2 Oct 2026)
 
-- Item names are written in Hindi letters (transliteration, not translation: Sugar → शुगर, PP Bag → पीपी बैग) by `toHindi()` in `index.html`. It uses a word list for common shop and packaging words (`HI_WORDS`), letter-by-letter spelling for short acronyms (PP, HDPE, LD), and sound rules for everything else. Numbers, sizes like 12x18, and "27 x 30" stay as they are. Units become किलो/ग्राम/एमएल and similar.
+- Item names are written in Hindi letters (transliteration, not translation: Sugar → शुगर, PP Bag → पीपी बैग) by `toHindi()` in `search.js`. It uses a word list for common shop and packaging words (`HI_WORDS`), letter-by-letter spelling for short acronyms (PP, HDPE, LD), and sound rules for everything else. Numbers, sizes like 12x18, and "27 x 30" stay as they are. Units become किलो/ग्राम/एमएल and similar.
 - The Hindi name (`nameHi`) fills itself while you type the English name in the add/edit screen, unless you type your own. On save, an empty Hindi name is filled automatically. Bulk add and plain-language "add" do the same.
 - **Tools → Convert names to Hindi** shows a reviewable, editable list for every item, with the current Hindi name next to each, and saves them in batches.
 - Display: the English name is the main name everywhere (cards, item detail, bill lines), with the Hindi name in small text underneath. The WhatsApp bill uses the English name only. Search works in English or Hindi.
@@ -686,7 +686,7 @@ First step towards a more mature structure before wrapping the app with Capacito
 - **New test `tests/vendors.app.test.js`** (the vendor screens had little cover): list and total owed, a vendor's page and Bills tab, payment form with "which bills" and saving it through the outbox (₹200 on the open bill, balance 480 → 280), new bill (amount, number, today's date; balance 2,640), a bill's own screen and header ←, share screen with the link, statement PDF made, new vendor (mobile saved as 10 digits) and no page errors. The same 19 checks pass on the version before the split. `SHOT=<dir>` saves screenshots of six vendor screens.
 - `tests/browser.js` inlines every `<script src="….js?v=…">` (and adds the test hook after `app.js`); `codeFiles()` lists the code files in load order (used by `assets` and `designc`).
 - **Checked:** all 31 test files pass; vendor screens identical to before the split (one button-edge pixel that also differs between two runs of the old version); main screens identical except the clock and the badge animation frame; a phone on part 2 updates online and opens offline with the vendor code there. `sw.js` unchanged (`rb-shell-7`): stamped files are followed automatically.
-- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), ~~past bills~~ (part 7), ~~settings/people~~ (part 8), ~~lock/sign-in~~ (part 9), ~~shops~~ (part 10), search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
+- **Next areas**, one at a time with the same checks: ~~reports~~ (part 4), ~~print/PDF~~ (part 5), ~~credit + customers~~ (part 6), ~~past bills~~ (part 7), ~~settings/people~~ (part 8), ~~lock/sign-in~~ (part 9), ~~shops~~ (part 10), ~~search~~ (part 11), bill, prices, core. Loading vendors/reports/print only when opened is step 4.
 
 ## App split into files, part 4: Reports in `reports.js` (11 Oct 2026, step 3c)
 
@@ -797,6 +797,18 @@ First step towards a more mature structure before wrapping the app with Capacito
   - the switch-shop list: newest first, no repeats, at most 10.
   - The same 17 checks pass on the version before the split.
 - **Checked:** all 38 test files pass; the 12 main screenshots identical except the Bill badge animation frame; a phone on part 9 updates online and opens offline with `shops.js` there. No bugs found. `sw.js` unchanged.
+
+## App split into files, part 11: the text engines in `search.js` (11 Oct 2026, step 3j)
+
+- **`search.js`** (27 KB): phonetic search (`translit`, `phonWord`, `phonTokens`, `lev`, `tokScore`, `buildIndex`, `runSearch`, `highlight`, `findDup`, the item order `popN` / `nameCmp` / `sortItems` / `setSort`), the wand's plain-language reader (`RE_ADD` … `looksLikeCommand`, `unitFromWord`, `bestMatch`, `parseOne`, `splitCommands`, `localParse`, `roundPrice`) and English → Hindi letters (`HI_WORDS`, `toHindi`, `hiWordRules`, `hiToken`), moved unchanged out of `app.js` (now 225 KB) as one block. Putting it back gives the old `app.js` exactly; parser check: no load-time dependency either way. Loads after `shops.js`, before the other area files.
+- **New test `tests/search.app.test.js`** (22 checks; nothing tested these engines directly before):
+  - search: most-sold order, English and Hindi letters, other names and groups, name + size, small typos, "Did you mean", nonsense finds nothing, highlight, the sounds-like duplicate check, a command told apart from a search;
+  - the wand: add with two rates, "5% badha do", sell only, delete, buy + sell + unit, two changes spoken in one line (also after a size like "1kg");
+  - Hindi letters: word list, acronyms, numbers and sizes kept, units, other packaging words.
+  - The same 22 checks pass on the version before the split.
+- **Checked:** all 39 test files pass; screenshots identical except the "updated" clock and the Bill badge animation frame; a phone on part 10 updates online and opens offline with `search.js` there. `sw.js` unchanged.
+- **Fix (separate commit):** "Liner" came out as लिनेर (sound rules); `liner` / `liners` → लाइनर / लाइनर्स added to `HI_WORDS` (an HDPE liner is a common packaging item). Items already saved keep their Hindi name until it's edited or Tools → Convert names to Hindi is run. Check C4 in the test (it fails on the version before).
+- Seen while testing, left as is: a spoken line whose second item isn't in the price list (e.g. "चीनी" when Sugar has no Hindi name) isn't split and shows as one odd "add" in the preview; the preview step is there for this.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
@@ -949,13 +961,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `lock.js`, `shops.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `lock.js`, `shops.js`, `search.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `settings.js` (Settings, People, Backups), `lock.js` (sign-in and the lock screen), `shops.js` (which shop, backend links, per-shop phone storage; loads first), `bills.js` (Past bills), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `print.js` (PDF invoices and printing), `reports.js` (Reports), `settings.js` (Settings, People, Backups), `lock.js` (sign-in and the lock screen), `shops.js` (which shop, backend links, per-shop phone storage; loads first), `search.js` (phonetic search, the wand's command reader, English → Hindi letters), `bills.js` (Past bills), `customers.js` (Credit and Customers), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

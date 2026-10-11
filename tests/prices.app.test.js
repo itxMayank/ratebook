@@ -4,7 +4,7 @@
    wand's screen (preview, then apply) and Convert names to Hindi. Checks what each sends to the sheet. Any page error fails.
    Run: node tests/prices.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
-const html = appHtml('S,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
+const html = appHtml('S,sync,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
 const now = Date.now() - 864e5;
 const items0 = () => [
   { id: 'i1', name: 'PP Bag 12x18', nameHi: 'पीपी बैग 12x18', unit: 'kg', buy: 150, sell: 180, cat: 'Bags', updatedAt: now },
@@ -13,7 +13,7 @@ const items0 = () => [
   { id: 'i4', name: 'Paper Cup 150ml', nameHi: '', unit: 'pc', buy: 0.5, sell: 0.8, cat: 'Cups', updatedAt: now },
   { id: 'i5', name: 'Maida', nameHi: 'मैदा', unit: 'kg', buy: 30, sell: 36, updatedAt: now }];
 const items = () => (db = db || items0()).map(x => ({ ...x }));
-let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved, like the real one
+let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved and, like the real one, skips a change to an item that's gone
 (async () => {
   const b = await launch(); const errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
@@ -23,7 +23,7 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved, lik
     if (q.method() === 'GET') return send({ rev: '1', items: items(), config: cfg, sv: 43, pop: { i2: 9, i1: 5, i5: 2 }, bl: '0', bt: '0', vl: '0', vt: '0' });
     const bd = JSON.parse(q.postData()); sent.push(bd);
     if (bd.action === 'boot') return send({ rev: '1', items: items(), config: cfg, sv: 43, pop: { i2: 9, i1: 5, i5: 2 }, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
-    if (bd.action === 'upsert') { items(); const out = bd.items.map(x => { const id = x.id || 'n' + (++nid), o = db.find(y => y.id === id), r = { ...(o || {}), ...x, id, updatedAt: Date.now() }; delete r.tmp; delete r.base; if (o) Object.assign(o, r); else db.push(r); return { ...r, tmp: x.tmp }; }); return send({ items: out }); }
+    if (bd.action === 'upsert') { items(); const out = bd.items.filter(x => db.some(y => y.id === x.id) || String(x.name || '').trim()).map(x => { const id = x.id || 'n' + (++nid), o = db.find(y => y.id === id), r = { ...(o || {}), ...x, id, updatedAt: Date.now() }; delete r.tmp; delete r.base; if (o) Object.assign(o, r); else db.push(r); return { ...r, tmp: x.tmp }; }); return send({ items: out }); }
     if (bd.action === 'delete') { items(); db = db.filter(y => !bd.ids.includes(y.id)); return send({}); }
     return send({}); });
   await p.addInitScript(() => { if (!sessionStorage.x) { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })); sessionStorage.x = 1; } });
@@ -81,6 +81,13 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved, lik
   await p.fill('#be-pct', '10'); await p.click('#be-apply'); await p.waitForTimeout(300); await p.click('#be-save'); await p.waitForTimeout(1000);
   const be = ups(), pp = be.find(x => x.id === 'i1') || {};
   ok(be.length >= 4 && pp.buy === 165 && pp.sell === 198, 'E1 +10% on all: PP Bag 150 / 180 → 165 / 198, rounded to the rupee');
+  // an item deleted on another phone while Bulk edit is open: the other changes still save (before: nothing saved, no message)
+  sent = []; await p.evaluate(() => T.openBulkEdit()); await p.waitForTimeout(400);
+  await p.fill('#be-pct', '10'); await p.click('#be-apply'); await p.waitForTimeout(300);
+  db = db.filter(y => y.name !== 'Steel Glass'); await p.evaluate(() => { T.S.rev = null; return T.sync(); }); await p.waitForTimeout(800);
+  await p.click('#be-save'); await p.waitForTimeout(1200);
+  const be2 = ups(), pp2 = be2.find(x => x.id === 'i1') || {};
+  ok(pp2.buy === 182 && pp2.sell === 218 && await p.evaluate(() => T.S.byId.get('i1').sell) === 218 && await p.evaluate(() => T.S.items.every(i => i.name)), 'E2 an item deleted elsewhere while Bulk edit is open: the other changes still save, no empty item appears');
 
   // F. the wand's screen
   sent = []; await p.evaluate(() => T.openCmd('')); await p.waitForTimeout(400);

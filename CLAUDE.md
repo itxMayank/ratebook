@@ -837,6 +837,7 @@ First step towards a more mature structure before wrapping the app with Capacito
   - the wand's screen: preview first, nothing saved, then Apply saves;
   - Convert names to Hindi: Paper Cup 150ml → पेपर कप 150 एमएल.
   - The same 19 checks pass on the version before the split.
+- **Bug found and fixed (separate commit): Bulk edit saved nothing if an item vanished meanwhile.** If the price list reloaded while Bulk edit was open and one of the edited items was gone (deleted on another phone), Save added a nameless item to the list on the phone, sorting it crashed, and the whole save was quietly undone: "Saving…", then nothing, no message. `upsertLocal` now adds a record only when it has a name, so a change to an item that's gone is skipped (the sheet script already skipped it) and the other changes save. Check E2 (fails on the version before).
 - **Checked:** all 41 test files pass; screenshots identical except the Bill badge animation frame; a phone on part 12 updates online and opens offline with `prices.js` there. `sw.js` unchanged.
 
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)

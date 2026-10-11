@@ -174,12 +174,12 @@ ${w?cg("speed","gauge",t("speedT"),t("cgSpeedD"),`
     <div class="err" id="cf-err" role="alert"></div>`;
   sheetKey("settings"), openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
   cgWire();
-  const drawUnits=()=>{ $("#cf-units").innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
+  const drawUnits=()=>{ const ue=$("#cf-units"); if(!ue) return;   /* staff have no Items & units card */ ue.innerHTML=c.units.map((u,i)=>`<span class="uchip"><b>${esc(u.code)}</b>${u.hi?`<span>${esc(u.hi)}</span>`:""}${w&&c.units.length>1?`<button type="button" data-rmu="${i}" aria-label="Remove ${esc(u.code)}">×</button>`:"<i style='width:6px'></i>"}</span>`).join(""); };
   drawUnits();
-  $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
+  if($("#cf-units")) $("#cf-units").addEventListener("click",e=>{ const b=e.target.closest("[data-rmu]"); if(!b) return; c.units.splice(+b.dataset.rmu,1); if(!c.units.some(u=>u.code===c.defaultUnit)){ c.defaultUnit=c.units[0].code; const d=$("#cf-def"); d.dataset.unit=c.defaultUnit; d.querySelector("span").textContent=c.defaultUnit; } drawUnits(); });
   $("#cf-pal").onclick=e=>{ const b=e.target.closest("[data-pal]"); if(!b) return; ls.set("rb_palette",b.dataset.pal); applyTheme(); $("#cf-pal").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
-  renderPrCfg(); renderAiCfg(); $("#cf-groups").onclick=()=>openGroups();
+  renderPrCfg(); renderAiCfg(); if($("#cf-groups")) $("#cf-groups").onclick=()=>openGroups();
   $("#cf-spos").onclick=e=>{ const b=e.target.closest("[data-spos]"); if(!b) return; ls.set("rb_spos",b.dataset.spos); $("#cf-spos").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); $("#cf-sres-w").hidden=b.dataset.spos!=="bottom"; placeSearch(); };
   $("#cf-sres").onclick=e=>{ const b=e.target.closest("[data-sres]"); if(!b) return; ls.set("rb_sres",b.dataset.sres); $("#cf-sres").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); placeSearch(); };
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };

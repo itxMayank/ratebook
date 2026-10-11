@@ -1962,7 +1962,7 @@ function vExClean_(x) { const n = v => (v === null || v === undefined || v === '
 function vExSafe_(e) { if (!e || typeof e !== 'object') return null;
   return vExClean_({ __model: e.model, readable: e.readable, confidence: e.confidence, billNo: e.billNo, date: e.date, sellerName: e.seller, subtotal: e.sub, discount: e.disc, taxTotal: e.tt, tcs: e.tcs, roundOff: e.ro, total: e.total, previousBalance: e.prev, netPayable: e.net,
     lines: (e.lines || []).map(l => ({ desc: l.d, qty: l.q, unit: l.un, rate: l.r, per: l.per, discPct: l.dp, discAmt: l.da, amount: l.a, unclear: l.u })), charges: (e.charges || []).map(c => ({ name: c.n, amount: c.a })), taxes: (e.taxes || []).map(t => ({ name: t.n, rate: t.r, amount: t.a })) }); }
-/** The arithmetic (the AI only reads). Identical to vCheckJS in app.js; keep them the same. */
+/** The arithmetic (the AI only reads). Identical to vCheckJS in vendors.js; keep them the same. */
 function vCheckCalc_(ex, entered) {
   if (!ex || !ex.readable || ex.confidence < 0.6 || ex.total == null) return { st: 'unread' };
   const r2 = v => Math.round(v * 100) / 100, near = (a, b, t) => Math.abs(a - b) <= t, tol = v => Math.max(1, Math.abs(v) * 0.002);

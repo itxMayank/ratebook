@@ -21,7 +21,7 @@ It is based on research into current (2025–26) app design. When the user makes
 
 | What | Where | Owner / access |
 |---|---|---|
-| App files (`index.html`, `app.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
+| App files (`index.html`, `app.js`, `vendors.js`, `app.css`, `strings.js`, `sw.js`, `manifest.webmanifest`, icons) | GitHub repository `ratebook` (public), served by GitHub Pages at `https://<github-username>.github.io/ratebook/` | Mayank's GitHub account |
 | Backend script (`Code.gs`) | Apps Script project at script.google.com, created as a standalone project (not from inside a sheet) | Mayank's Google account |
 | Backend web app URL | `https://script.google.com/macros/s/AKfycbxbvn-XbelK8mOeearCSHcnewrDevNfInjFggxH-60fzOiHpdEjkb9-BrJdfTOSVx_J/exec` (also hard-coded as `API_URL` at the top of `app.js`) | Deployed: Execute as Me, access Anyone |
 | Price data | Google Sheet **"Rate Book prices"** in Mayank's Google Drive, created automatically by the script. Tabs: `Items`, `Config`, `Images`, `Bills` | Mayank only; the app reaches it through the script |
@@ -678,6 +678,16 @@ First step towards a more mature structure before wrapping the app with Capacito
 - **Tests:** `tests/browser.js` inlines `app.js` too and adds the `window.T={…}` test hook right after it (`inlineFiles(html, expose)`; with `{files:true}` it's a small script after `app.js`, and `appJs()` gives the file with the test Directory link). The five `tests/suites/*.app` tests use `inlineFiles(html, expose)`. `assets` checks the stamp, that no app code is left in `index.html`, the load order and strict mode; `sw` checks that `app.js` also works offline; `designc` reads inline font sizes and icons from `app.js`.
 - **Checked:** all 30 test files pass; 12 screenshots (light/dark: lock, prices, bill, tools, settings, item) match the previous version pixel for pixel, except the Bill badge caught at a different frame of its pop animation; a phone on the previous version (part 1) updates to this one online, and opens offline afterwards.
 
+## App split into files, part 3: vendors in `vendors.js` (11 Oct 2026, step 3b)
+
+- **`vendors.js`** (99 KB): the whole vendor khata (from `VD` / `vKey` to `vStatementPdf` / `vDateA`, plus the helpers that lived among it: `b64Blob`, `unitCanon`, `itemBuysInto`), moved unchanged out of `app.js` (now 417 KB). Same global scope, its own `"use strict";`.
+- **Load order** (`index.html`): `strings.js`, `vendors.js`, then `app.js` **last**, because `app.js` ends with `boot()`, which may call anything. The rule for every area file split out from now on: while loading it only declares things (functions, and `const`/`let` whose values need nothing from `app.js`), so it can load before `app.js`. Checked with a parser for vendors: nothing in the vendor code needs `app.js` while loading, and nothing in `app.js` needs vendor code while loading (only when called). The two load-time lines in vendors (an `online` listener and a 5 s warm-up `vSync`) only run later.
+- **Guards** (`tests/assets.test.js`): every code file is stamped, strict, loads after `strings.js` and before/as `app.js` (last); no top-level name is declared in two files (a second `function x` would silently replace the first). `tests/globals.test.js` would catch a code file failing at load (page error).
+- **New test `tests/vendors.app.test.js`** (the vendor screens had little cover): list and total owed, a vendor's page and Bills tab, payment form with "which bills" and saving it through the outbox (₹200 on the open bill, balance 480 → 280), new bill (amount, number, today's date; balance 2,640), a bill's own screen and header ←, share screen with the link, statement PDF made, new vendor (mobile saved as 10 digits) and no page errors. The same 19 checks pass on the version before the split. `SHOT=<dir>` saves screenshots of six vendor screens.
+- `tests/browser.js` inlines every `<script src="….js?v=…">` (and adds the test hook after `app.js`); `codeFiles()` lists the code files in load order (used by `assets` and `designc`).
+- **Checked:** all 31 test files pass; vendor screens identical to before the split (one button-edge pixel that also differs between two runs of the old version); main screens identical except the clock and the badge animation frame; a phone on part 2 updates online and opens offline with the vendor code there. `sw.js` unchanged (`rb-shell-7`): stamped files are followed automatically.
+- **Next areas**, one at a time with the same checks: reports, print/PDF, credit + customers, past bills, settings/people, lock/sign-in, shops, search, bill, prices, core. Loading vendors/reports/print only when opened is step 4.
+
 ## Design pass A: Iris colour, Tools in groups, contrast, touch areas (11 Oct 2026, `index.html` only)
 
 - **New accent, Iris** (`--accent` #4F46E5, dark #A5A6FF; soft #EEEEFF / #25264D), replacing maroon, which Mayank found dull. Teal and ocean blue were also tried: teal is too close to the green used for "Paid" and to WhatsApp, and ocean blue looks generic. Maroon stays as an optional theme.
@@ -829,13 +839,13 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js` or `app.js`, run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `vendors.js` or `app.js`, run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 
 ## Architecture
 
-- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `app.js` (all app code, global scope), `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
+- **Frontend:** vanilla JS/CSS, no build step, installable as a home-screen web app. Files (since 11 Oct 2026): `index.html` (markup), `vendors.js` (vendor khata), `app.js` (everything else; loads last and starts the app), both plain scripts in global scope, `app.css` (all styles and design tokens), `strings.js` (every English/Hindi text, `window.RB_STR`). Fonts: Plus Jakarta Sans and Mukta from Google Fonts.
 - **Backend:** Google Apps Script web app over a Google Sheet.
   - `GET ?action=` `list` (items + config + rev), `rev` (change counter), `thumbs&ids=`, `image&id=`.
   - `POST` JSON `{pin, by, action, ...}`. Actions: `verify`, `upsert` (items, max 300, `tmp` ids for new rows), `delete`, `setImage`, `setConfig`, `setPin`, plus `takeBill`, which needs no PIN (records a bill and advances `nextBill`).

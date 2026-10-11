@@ -102,8 +102,8 @@ function receiptLines(inv,w){
   if(S.cfg.mode==="test") push("TEST BILL - not a real invoice",{c:1});
   if(inv.cancelled) push("*** CANCELLED ***",{c:1,b:1});
   push((inv.gst?"Invoice":"Bill")+" No: "+inv.no,{b:1}); push("Date: "+prDate(inv.date));
-  if(inv.cust.name) push("To: "+prAsc(inv.cust.name)); if(inv.cust.mobile) push("Mobile: "+inv.cust.mobile);
-  if(inv.gst && inv.cust.gstin) push("GSTIN: "+inv.cust.gstin); if(inv.gst && inv.pos) push("Place of supply: "+prAsc(inv.pos));
+  if(inv.cust.name) prWrap("To: "+prAsc(inv.cust.name),w).forEach(x=>push(x)); if(inv.cust.mobile) push("Mobile: "+inv.cust.mobile);   // wrapped: a 58 mm roll fits only 32 characters
+  if(inv.gst && inv.cust.gstin) push("GSTIN: "+inv.cust.gstin); if(inv.gst && inv.pos) prWrap("Place of supply: "+prAsc(inv.pos),w).forEach(x=>push(x));
   L.push(hr); push(prLR("Item","Amount",w),{b:1}); L.push(hr);
   inv.lines.forEach((l,i)=>{ prWrap(`${i+1}. ${prAsc(l.name)}`,w).forEach(x=>push(x));
     const q=prAsc(`${qtyText(l.qty,l.unit,true)} x ${prMoney(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+l.unit:""}`);

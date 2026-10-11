@@ -35,6 +35,19 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Garbage Bag']
     ok(await vis(p, '#searchbox') && !(await vis(p, '#bsfab')), `${spos}: Prices tab keeps the search bar`);
     await p.context().close();
   }
+  // typing in a bill box: header scrolls away, total card steps aside (but stays for Cash given)
+  for (const spos of ['bottom', 'top']) {
+    const p = await phone(390, 844, spos, true);
+    await p.evaluate(() => { for (let i = 0; i < 4; i++) T.addToBill('i' + i, 1); }); await p.waitForTimeout(300);
+    await p.focus('#br-1'); await p.setViewportSize({ width: 390, height: 450 }); await p.waitForTimeout(500);
+    const tt = await p.$eval('#bill-total', e => e.getBoundingClientRect());
+    ok(await p.$eval('header.top', e => getComputedStyle(e).position) === 'static' && tt.height < 70 && 450 - tt.bottom < 20 && await vis(p, '#bill-done'), `${spos}: typing a rate — header scrolls away; total card is one slim line at the bottom with Done still there (${Math.round(tt.height)} px)`);
+    await p.evaluate(() => document.activeElement.blur()); await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(500);
+    ok(await p.$eval('header.top', e => getComputedStyle(e).position) === 'sticky' && await p.$eval('#bill-total', e => e.getBoundingClientRect().height) > 90, `${spos}: done typing — header and the full total card are back`);
+    await p.tap('#cash-open'); await p.waitForTimeout(200); await p.focus('#cash-in'); await p.waitForTimeout(300);
+    ok(await vis(p, '#cashrow'), `${spos}: typing Cash given (inside the total card) keeps the full card`);
+    await p.context().close();
+  }
   const d = await phone(1280, 800, 'bottom');
   ok(!(await vis(d, '#bsfab')) && await vis(d, '#searchbox'), 'laptop: no floating button, the search bar stays');
   await d.context().close();

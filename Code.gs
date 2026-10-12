@@ -105,7 +105,7 @@ function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 
 /* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
 let T0_ = 0, ACT_ = '';
 const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1 };
-const ERR_QUIET_ = { bad_pin: 1, shop_pin_off: 1, pin_short: 1, pin_easy: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
+const ERR_QUIET_ = { bad_pin: 1, shop_pin_off: 1, needs_manager: 1, pin_short: 1, pin_easy: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
 function perfNote_(obj) {
   if (!ACT_ || PERF_SKIP_[ACT_]) return;
   try { const c = CacheService.getScriptCache(), now = Date.now();
@@ -537,7 +537,7 @@ function doPost(e) {
       case 'listCustomers': { const have = String(body.brev || ''); res = have && have === brev_() ? { same: true, brev: brev_() } : rcRead_('cust:' + ENV_, brev_, () => listCustomers_('')); break; }
       case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
-      case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
+      case 'updateBill': res = updateBill_(body.bill || {}, by, who); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = rcRead_('dues:' + ENV_, brev_, listDues_); break;
       case 'recordPayment': res = recordPayment_(body, by); bumpB_(false, body.billId); break;
       case 'undoPayment': res = undoPayment_(body); bumpB_(false, body.billId); break;
@@ -1188,7 +1188,7 @@ function getBill_(row, id, billNo) {
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }
 
 /** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
-function updateBill_(b, by) {
+function updateBill_(b, by, who) {
   popReset_();
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
@@ -1202,6 +1202,17 @@ function updateBill_(b, by) {
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) throw new Error('bill_changed');   // someone else saved it after this phone opened it
+  /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
+     making it; anything later or by someone else is an edit and shows as one. Staff can't change the total or the payment of a
+     bill that is on credit or has payments recorded (that would quietly wipe a customer's due): a manager or the owner can,
+     and money received goes through Record payment. */
+  const madeAt = r[B.date] instanceof Date ? r[B.date].getTime() : Date.parse(r[B.date]) || 0;
+  const freshOk = !!b.fresh && String(r[B.by] || '').trim().toLowerCase() === String(by || '').trim().toLowerCase() && Date.now() - madeAt < 30 * 60e3;
+  b.fresh = freshOk;
+  if (who && ROLE_RANK[who.role] < ROLE_RANK.manager && !freshOk) {
+    const oldPays = payList_(r[B.payments]), oldMode = modeOf_(r[B.payment], oldPays), hasMoney = num_(r[B.due]) > 0 || oldPays.some(p => !p.at);
+    if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
+  }
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);

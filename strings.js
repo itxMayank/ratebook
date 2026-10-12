@@ -323,8 +323,8 @@ cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें"
   pillDue:a=>`बाकी ${a}`,pillCleared:"बाद में मिला",pendingHint:a=>`${a} बाकी`,duesTabHint:"उधार या कुछ मिले वाले बिल यहाँ दिखेंगे। बिल स्क्रीन पर “उधार” या “कुछ मिला” चुनें।"});
 /* PINs (12 Oct 2026): the shop PIN switches off once the owner has their own PIN; easy PINs refused. */
 Object.assign(STR.en,{shopPinOff:"The shop PIN is switched off. Sign in with your own PIN.",pinShort:"Owners and managers need a PIN of 6 to 8 digits.",pinEasy:"That PIN is too easy to guess (like 1234, 0000 or a year). Choose another.",
-  pplShopOn:"Add yourself as Owner with your own PIN. The shop PIN then stops working, so every bill and change shows who really made it.",pplShopOff:"The shop PIN is switched off: everyone signs in with their own PIN."});
+  pplShopOn:"Add yourself as Owner with your own PIN. The shop PIN then stops working, so every bill and change shows who really made it.",pplShopOff:"The shop PIN is switched off: everyone signs in with their own PIN.",needsManager:"This bill has money due or payments recorded. Only a manager or the owner can change its total or payment. To take money, use Record payment."});
 Object.assign(STR.hi,{shopPinOff:"दुकान का PIN बंद है। अपने PIN से साइन इन करें।",pinShort:"मालिक और मैनेजर का PIN 6 से 8 अंकों का होना चाहिए।",pinEasy:"यह PIN आसानी से अंदाज़ा लग सकता है (जैसे 1234, 0000 या कोई साल)। दूसरा चुनें।",
-  pplShopOn:"अपने आप को अपने PIN के साथ मालिक के रूप में जोड़ें। फिर दुकान का PIN काम नहीं करेगा, और हर बिल व बदलाव में दिखेगा कि किसने किया।",pplShopOff:"दुकान का PIN बंद है: सब अपने PIN से साइन इन करते हैं।"});
+  pplShopOn:"अपने आप को अपने PIN के साथ मालिक के रूप में जोड़ें। फिर दुकान का PIN काम नहीं करेगा, और हर बिल व बदलाव में दिखेगा कि किसने किया।",pplShopOff:"दुकान का PIN बंद है: सब अपने PIN से साइन इन करते हैं।",needsManager:"इस बिल पर पैसा बाकी है या भुगतान दर्ज हैं। इसकी रकम या भुगतान सिर्फ़ मैनेजर या मालिक बदल सकते हैं। पैसे लेने के लिए \"भुगतान दर्ज करें\" इस्तेमाल करें।"});
 return STR;
 })();

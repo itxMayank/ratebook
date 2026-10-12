@@ -76,3 +76,21 @@ let sp2 = ''; try { R2("setPin_('819273')"); } catch (e) { sp2 = e.message; } ok
 const oid = R2("users_().find(u=>u.role==='owner').id"); R2(`removeUser_('${oid}')`);
 ok(v({ action: 'verify', pin: '4821', by: 'Mayank' }).ok, 'F9 removing the only owner turns the shop PIN back on, so nobody is locked out');
 let w = ''; try { R2("setPin_('111111')"); } catch (e) { w = e.message; } ok(w === 'pin_easy', 'F10 a new shop PIN follows the same rules');
+
+// G. editing past bills (v46): staff can't quietly wipe a customer's due; "fresh" only for the maker within 30 minutes
+const g3 = gas([path.join(__dirname, '..', 'Code.gs')]), R3 = g3.R;
+R3(`readConfig_=()=>({}); popReset_=()=>{}; touchCustomer_=()=>{}; refreshDue_=()=>{}; var HIST=[];
+  var ROWS=[]; const mk=(n,o)=>{ const r=BILL_COLS.map(()=> ''); Object.keys(o).forEach(k=>r[BILL_COLS.indexOf(k)]=o[k]); r[BILL_COLS.indexOf('billNo')]=n; return r; };
+  ROWS.push(mk(7,{billId:'b7',date:new Date(Date.now()-3*864e5),by:'Raju',total:500,payment:'Credit',paid:0,due:500,payments:'[]',mobile:'9876543210',edits:0}));
+  ROWS.push(mk(8,{billId:'b8',date:new Date(Date.now()-5*60e3),by:'Raju',total:300,payment:'Credit',paid:0,due:300,payments:'[]',mobile:'9876543210',edits:0}));
+  ROWS.push(mk(9,{billId:'b9',date:new Date(Date.now()-3*864e5),by:'Raju',total:200,payment:'Paid',edits:0}));
+  sheet_=(name)=>name.indexOf('BillHistory')>=0 ? {appendRow:r=>HIST.push(r)} : { getLastRow:()=>ROWS.length+1, getRange:(r,c,n,m)=>({ getValues:()=>ROWS.slice(r-2,r-2+n).map(x=>x.slice()), setValues:v=>{ ROWS[r-2]=v[0]; } }) };`);
+const ub = (b, by, role) => { try { return R3(`updateBill_(${JSON.stringify(b)}, '${by}', {role:'${role}', name:'${by}'})`) || 'ok'; } catch (e) { return e.message; } };
+const col = (n, k) => R3(`ROWS.find(r=>r[BILL_COLS.indexOf('billNo')]===${n})[BILL_COLS.indexOf('${k}')]`);
+ok(ub({ id: 'b7', n: 7, total: 500, pay: 'paid', mobile: '9876543210', fresh: true }, 'Raju', 'staff') === 'needs_manager' && col(7, 'due') === 500, 'G1 staff marking an old credit bill as Paid (even claiming "fresh"): refused, the due stays');
+ok(ub({ id: 'b7', n: 7, total: 100, pay: 'credit', mobile: '9876543210' }, 'Raju', 'staff') === 'needs_manager', 'G2 staff lowering the total of a bill with money due: refused');
+ok(ub({ id: 'b7', n: 7, total: 500, pay: 'credit', mobile: '9876543210', customer: 'Sunil T.' }, 'Raju', 'staff') !== 'needs_manager' && col(7, 'editedBy') === 'Raju', 'G3 staff fixing the name on it: allowed, and marked Edited by Raju');
+ok(ub({ id: 'b7', n: 7, total: 500, pay: 'paid', mobile: '9876543210' }, 'Sanjay', 'manager') !== 'needs_manager' && col(7, 'payment') === 'Paid' && col(7, 'editedBy') === 'Sanjay', 'G4 a manager can change it, and it shows as edited by them');
+ok(ub({ id: 'b8', n: 8, total: 320, pay: 'credit', mobile: '9876543210', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && !col(8, 'editedBy'), 'G5 the maker tweaking their own bill within 30 minutes: allowed, not marked Edited (as before)');
+ok(ub({ id: 'b9', n: 9, total: 150, pay: 'paid', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && col(9, 'editedBy') === 'Raju', 'G6 an old paid bill changed with "fresh": still marked Edited (fresh only counts within 30 minutes)');
+ok(R3('HIST.length') >= 4, 'G7 every change keeps the old text in BillHistory');

@@ -666,7 +666,7 @@ First step towards a more mature structure before wrapping the app with Capacito
 - **Still to do:**
   - step 3: split the app code by area, with vendors, reports and printing loading only when opened (part 2 below);
   - step 4: offline cache and update check for those files;
-  - step 5: tests for every screen opening.
+  - ~~step 5: tests for every screen opening~~ (done 12 Oct 2026, see "Every screen opens").
 
 ## App split into files, part 2: app code in `app.js` (11 Oct 2026, step 3a)
 
@@ -839,6 +839,27 @@ First step towards a more mature structure before wrapping the app with Capacito
   - The same 19 checks pass on the version before the split.
 - **Bug found and fixed (separate commit): Bulk edit saved nothing if an item vanished meanwhile.** If the price list reloaded while Bulk edit was open and one of the edited items was gone (deleted on another phone), Save added a nameless item to the list on the phone, sorting it crashed, and the whole save was quietly undone: "Saving…", then nothing, no message. `upsertLocal` now adds a record only when it has a name, so a change to an item that's gone is skipped (the sheet script already skipped it) and the other changes save. Check E2 (fails on the version before).
 - **Checked:** all 41 test files pass; screenshots identical except the Bill badge animation frame; a phone on part 12 updates online and opens offline with `prices.js` there. `sw.js` unchanged.
+
+## Every screen opens (step 5, 12 Oct 2026, `index.html` / `app.css` / `strings.js` / `settings.js`)
+
+- **New test `tests/screens.app.test.js`** (162 checks) opens every screen in five setups:
+  - a phone;
+  - a phone in dark mode and Hindi;
+  - 320 px with the largest text size;
+  - a laptop at 1280 px;
+  - a staff phone.
+- **What it opens:** the three tabs, every Tools tile, the inner screens (a past bill, a Credit customer, a customer, the item screen and Edit item, a vendor and one of its bills, notifications), every Settings card (10 for the owner, 3 for staff) and the lock screen.
+- **What it checks on each screen:**
+  - it opens with a title and ✕ closes it;
+  - nothing spills sideways;
+  - no "undefined", "NaN", "[object …]", "null" or untranslated text key is shown;
+  - staff can't use manager-only tiles;
+  - no page errors.
+- `SHOT=<dir>` saves all 150 screenshots.
+- **Fixed, found by it (320 px, largest text; normal phones unchanged):**
+  - Past bills month header, a bill's mobile box and payment amounts, the Credit search box, and the customer screen's top row were wider than the phone. Screens inside sheets now let grid columns and boxes shrink, and long amounts wrap (block at the end of `app.css`).
+  - Credit cards: once narrow (`#du-list` container under 300 px), the amount and the age go under the name, so the name and mobile are never squeezed out.
+- **Settings → Speed** showed the raw request names ("listBills", "vSync") and the English word "sheet". It now shows readable names in English and Hindi (`speedAct`, `speedSheet` in `strings.js`); a name not in the list still shows as it is.
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

@@ -22,10 +22,13 @@ function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg
 }
 
 /* ---------------- Owner settings: people & PINs, shop code ---------------- */
-let pplCache=null;
+let pplCache=null, pplShopOff=false;
+/** The same PIN rules as the sheet (owner and manager 6–8 digits; no repeats, runs, common picks or 4-digit years), said at once. */
+function pinProblem(p, role){ if(!/^\d{4,8}$/.test(p)) return t("pplPin"); if((role==="owner"||role==="manager") && p.length<6) return t("pinShort");
+  if(/^(\d)\1+$/.test(p) || "01234567890".indexOf(p)>=0 || "09876543210".indexOf(p)>=0 || (p.length===4 && /^(19|20)\d\d$/.test(p)) || ["1212","1122","1313","2580","0852","1379","6969","1004","121212","112233","123123","696969","159753","147258","258369","102030","101010","123321","789456","456789"].includes(p)) return t("pinEasy"); return ""; }
 async function loadOwnerCards(){
   if(!can("owner")) return;
-  try{ const [u,a]=await Promise.all([apiPost({action:"listUsers"}),apiPost({action:"getAccess"})]); pplCache=u.users||[]; renderPeople(); renderAccess(a.access); }
+  try{ const [u,a]=await Promise.all([apiPost({action:"listUsers"}),apiPost({action:"getAccess"})]); pplCache=u.users||[]; pplShopOff=!!u.shopPinOff; renderPeople(); renderAccess(a.access); }
   catch(e){ const b=$("#ppl-body"); if(b) b.innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
   apiPost({action:"listSessions"}).then(renderSessions).catch(()=>{ const b=$("#sess-body"); if(b) b.innerHTML=`<p class="note">${esc(t("oldScript"))}</p>`; });
 }
@@ -45,6 +48,9 @@ function renderSessions(j){ const box=$("#sess-body"); if(!box) return; const L=
   box.querySelectorAll("[data-sess]").forEach(b=>b.onclick=async()=>{ btnBusy(b,true); try{ renderSessions(await apiPost({action:"endSession",id:b.dataset.sess})); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } }); }
 function renderPeople(){
   const box=$("#ppl-body"); if(!box) return; const list=pplCache||[];
+  { const sec=box.closest(".cfg-sec"); let n=sec&&sec.querySelector(".ppl-shop"); if(sec && !n){ n=document.createElement("p"); n.className="note ppl-shop"; sec.insertBefore(n,box); }
+    if(n){ n.textContent=t(pplShopOff?"pplShopOff":"pplShopOn"); n.classList.toggle("warn",!pplShopOff); }
+    const cp=$("#cf-pin"); const cs=cp&&cp.closest(".cfg-sec"); if(cs) cs.hidden=pplShopOff; }   // the shop PIN can't be changed once it's off
   box.innerHTML=(list.length?list.map(u=>`<div class="ppl-row${u.active?"":" off"}"><span class="av">${esc((u.name||"?").charAt(0).toUpperCase())}</span><div><b>${esc(u.name)}</b><span class="pill role-${u.role}">${esc(t("role"+u.role[0].toUpperCase()+u.role.slice(1)))}</span></div><button type="button" class="btn ghost sm" data-ppl="${esc(u.id)}">${esc(t("pplEdit"))}</button></div>`).join(""):`<p class="note" style="margin:0">${esc(t("pplNone"))}</p>`)
     +`<button type="button" class="btn ghost" id="ppl-add">+ ${esc(t("pplAdd"))}</button>`;
   $("#ppl-add").onclick=()=>openPerson(null);
@@ -65,11 +71,13 @@ function openPerson(u){
   $("#pp-roles").onclick=e=>{ const b=e.target.closest("[data-role]"); if(!b) return; role=b.dataset.role; $("#pp-roles").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#pp-cancel").onclick=sheetBack;
   $("#pp-save").onclick=async()=>{ const name=$("#pp-name").value.trim(), pin=$("#pp-pin").value.trim(), err=$("#pp-err");
-    if(!name){ err.textContent=t("needYourName"); return; } if((!u||pin) && !/^\d{4,8}$/.test(pin)){ err.textContent=t("pplPin"); return; }
+    if(!name){ err.textContent=t("needYourName"); return; } if((!u||pin) && pinProblem(pin,role)){ err.textContent=pinProblem(pin,role); return; }
     const b=$("#pp-save"); btnBusy(b,true);
-    try{ const j=await apiPost({action:"saveUser",user:{id:u?u.id:undefined,name,pin,role,active:u?$("#pp-active").checked:true,testOk:$("#pp-test").checked}}); pplCache=j.users; toast(t("pplSaved")); openSettings(); }
+    try{ const j=await apiPost({action:"saveUser",user:{id:u?u.id:undefined,name,pin,role,active:u?$("#pp-active").checked:true,testOk:$("#pp-test").checked}}); pplCache=j.users; const was=pplShopOff; pplShopOff=!!j.shopPinOff;
+      if(pplShopOff && !was && S.auth && S.auth.personal===false){ toast(t("pplSaved")); setTimeout(()=>signedOut("shopPinOff"),300); return; }   // this phone used the shop PIN: sign in with the new personal PIN
+      toast(t("pplSaved")); openSettings(); }
     catch(e){ btnBusy(b,false); err.textContent = e&&e.code==="pin_taken"?t("pplTaken"):errMsg(e); } };
-  if($("#pp-remove")) $("#pp-remove").onclick=async()=>{ const b=$("#pp-remove"); btnBusy(b,true); try{ const j=await apiPost({action:"removeUser",id:u.id}); pplCache=j.users; openSettings(); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } };
+  if($("#pp-remove")) $("#pp-remove").onclick=async()=>{ const b=$("#pp-remove"); btnBusy(b,true); try{ const j=await apiPost({action:"removeUser",id:u.id}); pplCache=j.users; pplShopOff=!!j.shopPinOff; openSettings(); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } };
 }
 function renderAccess(a){
   const box=$("#acc-body"); if(!box||!a) return;
@@ -213,7 +221,7 @@ ${w?cg("speed","gauge",t("speedT"),t("cgSpeedD"),`
   $("#cf-round").addEventListener("click",e=>{ const b=e.target.closest("[data-r]"); if(!b) return; c.roundTo=+b.dataset.r; $("#cf-round").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
   $("#cf-cancel").onclick=sheetCancel;
   $("#cf-pin").onclick=async()=>{ const p1=$("#cf-p1").value.trim(), p2=$("#cf-p2").value.trim(), er=$("#cf-perr");
-    if(!/^\d{4,8}$/.test(p1)){ er.textContent=t("pinRule"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
+    if(pinProblem(p1,"owner")){ er.textContent=pinProblem(p1,"owner"); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); return; }
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); if(S.auth.tok){ if(!S.auth.personal) S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; } else S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   if($("#cf-bk")) loadBackupCard();
   if($("#ppl-body")) loadOwnerCards();

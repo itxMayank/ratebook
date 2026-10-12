@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 45;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 46;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -44,7 +44,7 @@ const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
 function setup() {
   const props = PropertiesService.getScriptProperties();
   ss_();
-  if (!props.getProperty('PIN')) props.setProperty('PIN', String(DEFAULT_PIN));
+  if (!props.getProperty('PIN') && !props.getProperty('PINH')) props.setProperty('PIN', String(DEFAULT_PIN));
   sheet_(ITEMS, COLS);
   sheet_(CONFIG, ['key', 'value']);
   sheet_(IMAGES, ['id', 'data']);
@@ -105,7 +105,7 @@ function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 
 /* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
 let T0_ = 0, ACT_ = '';
 const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1 };
-const ERR_QUIET_ = { bad_pin: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
+const ERR_QUIET_ = { bad_pin: 1, shop_pin_off: 1, pin_short: 1, pin_easy: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
 function perfNote_(obj) {
   if (!ACT_ || PERF_SKIP_[ACT_]) return;
   try { const c = CacheService.getScriptCache(), now = Date.now();
@@ -608,8 +608,8 @@ function auth_(body) {
   if (g >= GLOBAL_MAX_FAILS || d >= MAX_FAILS) return { error: 'locked' };
   const pin = String(body.pin || '');
   if (pin) {
-    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
-    if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true };
+    if (shopPinIs_(pin)) { if (shopPinOff_()) return { error: 'shop_pin_off' };   // the owner has their own PIN: the shop PIN no longer opens anything
+      return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true }; }
     const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
     if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false, viaPin: true };
   }
@@ -620,7 +620,7 @@ function auth_(body) {
 /** Kept for older callers: 'ok' or an error code. */
 function checkPin_(pin) { const a = auth_({ pin: pin }); return a.error || 'ok'; }
 
-function listUsers_() { return { users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false, testOk: u.testOk !== false })) }; }
+function listUsers_() { return { shopPinOff: shopPinOff_(), users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false, testOk: u.testOk !== false })) }; }
 
 /* ---------- sign-in tokens ----------
    After a PIN sign-in the phone keeps a random token instead of the PIN. SESS (script property, cached) maps the token's
@@ -650,7 +650,7 @@ function sessEnd_(pick) { sessEdit_(all => Object.keys(all).forEach(k => { if (p
 function sessWho_(tok) { const k = tokKey_(tok), x = sessAll_()[k];
   if (!x || (x.s || x.c || 0) < Date.now() - SESS_DAYS * 864e5) return { error: 'bad_session' };
   let who = null;
-  if (x.u.indexOf('m:') === 0) who = { name: x.n, role: 'owner', master: true };
+  if (x.u.indexOf('m:') === 0) { if (shopPinOff_()) return { error: 'shop_pin_off' }; who = { name: x.n, role: 'owner', master: true }; }   // phones signed in with the shop PIN are signed out once it's switched off
   else { const u = users_().filter(y => y.id === x.u && y.active !== false)[0]; if (u) who = { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false }; }
   if (!who) return { error: 'bad_session' };
   if (x.p) return { error: 'pending' };          // waiting for the owner to approve this phone
@@ -744,7 +744,7 @@ function health_(key) {
 function setupShop() {
   const b = boot_(); if (!b) throw new Error('This script has no Shop.gs. Only shops made from the admin Directory use setupShop.');
   const P = PropertiesService.getScriptProperties(), set = (k, v) => { if (v && !P.getProperty(k)) P.setProperty(k, String(v)); };
-  set('SHEET_ID', b.sheetId); set('PIN', b.initPin); set('BK_FOLDER', b.bkFolder); set('VD_FOLDER_live', b.vdFolder); set('VD_FOLDER_test', b.vdFolderTest); set('HEALTH_KEY', b.healthKey);
+  set('SHEET_ID', b.sheetId); if (!P.getProperty('PINH')) set('PIN', b.initPin); set('BK_FOLDER', b.bkFolder); set('VD_FOLDER_live', b.vdFolder); set('VD_FOLDER_test', b.vdFolderTest); set('HEALTH_KEY', b.healthKey);
   ['ENV_OK', 'DEDUP_OK', 'FYPFX_OFF'].forEach(k => set(k, '1'));   // a new sheet has nothing old to move or clean
   sheet_(ITEMS, COLS); sheet_(CONFIG, ['key', 'value']); sheet_(IMAGES, ['id', 'data']);
   ['live', 'test'].forEach(en => { ENV_ = en; sheet_(tab_('Bills'), BILL_COLS); }); ENV_ = 'live';
@@ -787,10 +787,9 @@ function saveUser_(u) {
   const pin = String(u.pin || '');
   if (!x && !/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
   if (pin) {
-    if (!/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
-    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
+    pinRule_(pin, role);
     const h = hashPin_(pin);
-    if (pin === real || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
+    if (shopPinIs_(pin) || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
     if (x && x.h !== h) { x.h = h; sessEnd_((k, y) => y.u === x.id); }   // new PIN: that person signs in again everywhere
   }
   if (x) { if (u.active === false && x.active !== false) sessEnd_((k, y) => y.u === x.id); x.name = name; x.role = role; x.active = u.active !== false; x.testOk = u.testOk !== false; if (x.testOk === false && x.prefs && x.prefs.mode === 'test') x.prefs.mode = 'live'; }
@@ -798,6 +797,23 @@ function saveUser_(u) {
   saveUsers_(list);
   return listUsers_();
 }
+/* ---- PINs (v46) ----
+   The shop PIN is kept as a salted digest (PINH), never as plain text; an old plain PIN is converted the first time it's used.
+   It is switched off for good once the shop has an owner with their own PIN (people then sign in only with their own PINs, so
+   every bill and change shows who really made it); removing the last such owner turns it back on, so nobody is locked out.
+   New PINs: owner and manager 6–8 digits, staff 4–8; no repeated digits, runs (1234, 9876), common picks or 4-digit years. */
+function shopPinOff_() { return users_().some(u => u.active !== false && u.role === 'owner'); }
+function shopPinIs_(pin) { pin = String(pin || ''); if (!pin) return false; const P = PropertiesService.getScriptProperties(), h = P.getProperty('PINH');
+  if (h) return hashPin_(pin) === h;
+  if (pin !== (P.getProperty('PIN') || String(DEFAULT_PIN))) return false;
+  P.setProperty('PINH', hashPin_(pin)); P.deleteProperty('PIN'); return true; }
+const EASY_PINS_ = { '1212': 1, '1122': 1, '1313': 1, '2580': 1, '0852': 1, '1379': 1, '6969': 1, '1004': 1, '121212': 1, '112233': 1, '123123': 1, '696969': 1, '159753': 1, '147258': 1, '258369': 1, '102030': 1, '101010': 1, '123321': 1, '789456': 1, '456789': 1 };
+function pinEasy_(p) { if (/^(\d)\1+$/.test(p) || EASY_PINS_[p]) return true;
+  const up = '01234567890', dn = '09876543210'; if (up.indexOf(p) >= 0 || dn.indexOf(p) >= 0) return true;
+  return p.length === 4 && /^(19|20)\d\d$/.test(p); }
+function pinRule_(p, role) { p = String(p || ''); if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
+  if ((role === 'owner' || role === 'manager') && p.length < 6) throw new Error('pin_short');
+  if (pinEasy_(p)) throw new Error('pin_easy'); }
 function removeUser_(id) { saveUsers_(users_().filter(u => u.id !== id)); return listUsers_(); }
 
 /* ---------- shop code: hides buy rates and blocks bill saving for anyone who only has the link ---------- */
@@ -1009,8 +1025,9 @@ function setConfig_(cfg) {
 }
 
 function setPin_(p) {
-  if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
-  PropertiesService.getScriptProperties().setProperty('PIN', p);
+  if (shopPinOff_()) throw new Error('shop_pin_off');
+  pinRule_(p, 'owner');
+  const P = PropertiesService.getScriptProperties(); P.setProperty('PINH', hashPin_(p)); P.deleteProperty('PIN');   // kept only as a digest
   return {};
 }
 

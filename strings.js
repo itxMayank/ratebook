@@ -321,5 +321,10 @@ cashGiven:"ग्राहक ने दिए",cashRet:"वापस दें"
   paySave:a=>`${a} दर्ज करें`,payDone:(a,c)=>`${a} मिले।${c?` ${c} बिल पूरे हुए।`:""}`,payFail:"भुगतान सेव नहीं हुआ। इंटरनेट देखकर फिर कोशिश करें।",
   payHist:"भुगतान",atBilling:"बिल के समय",undoPay:"आख़िरी भुगतान हटाएँ",undoDone:a=>`${a} का भुगतान हटाया।`,clearedOn:d=>`${d} को पूरा भुगतान`,
   pillDue:a=>`बाकी ${a}`,pillCleared:"बाद में मिला",pendingHint:a=>`${a} बाकी`,duesTabHint:"उधार या कुछ मिले वाले बिल यहाँ दिखेंगे। बिल स्क्रीन पर “उधार” या “कुछ मिला” चुनें।"});
+/* PINs (12 Oct 2026): the shop PIN switches off once the owner has their own PIN; easy PINs refused. */
+Object.assign(STR.en,{shopPinOff:"The shop PIN is switched off. Sign in with your own PIN.",pinShort:"Owners and managers need a PIN of 6 to 8 digits.",pinEasy:"That PIN is too easy to guess (like 1234, 0000 or a year). Choose another.",
+  pplShopOn:"Add yourself as Owner with your own PIN. The shop PIN then stops working, so every bill and change shows who really made it.",pplShopOff:"The shop PIN is switched off: everyone signs in with their own PIN."});
+Object.assign(STR.hi,{shopPinOff:"दुकान का PIN बंद है। अपने PIN से साइन इन करें।",pinShort:"मालिक और मैनेजर का PIN 6 से 8 अंकों का होना चाहिए।",pinEasy:"यह PIN आसानी से अंदाज़ा लग सकता है (जैसे 1234, 0000 या कोई साल)। दूसरा चुनें।",
+  pplShopOn:"अपने आप को अपने PIN के साथ मालिक के रूप में जोड़ें। फिर दुकान का PIN काम नहीं करेगा, और हर बिल व बदलाव में दिखेगा कि किसने किया।",pplShopOff:"दुकान का PIN बंद है: सब अपने PIN से साइन इन करते हैं।"});
 return STR;
 })();

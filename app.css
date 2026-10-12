@@ -1824,3 +1824,4 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 #sheet input[type=search]:not(.field input):focus{outline:0;box-shadow:0 0 0 2px var(--ink)!important}
 #sheet input[type=search]::placeholder{color:var(--muted);opacity:1}
 #sheet .sx{margin:0 0 10px}#sheet .bl-bar .sx,#sheet .field .sx,#sheet .vi-pick .sx{margin-bottom:0}
+.ppl-shop{margin:0 0 4px}.ppl-shop.warn{color:#8a5a00;font-weight:600}

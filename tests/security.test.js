@@ -54,3 +54,25 @@ const pv = R("vPreviews_(['OWNBILLPHOTO123','EVILPREVIEW1234']).previews");
 ok(pv.OWNBILLPHOTO123 && !pv.EVILPREVIEW1234, 'E4 a preview that isn\'t a plain image is never handed out (it would run on the vendor\'s link page)');
 ok(R("vPrevOk_('data:image/png;base64,iVBOR=')") && !R("vPrevOk_('javascript:alert(1)')") && !R(`vPrevOk_("data:image/png;base64,AA')x")`), 'E5 preview check: real image data only');
 ok(R("keyEq_('abc','abc')") === true && R("keyEq_('abd','abc')") === false && R("keyEq_('', '')") === false, 'E6 secret keys compared safely; an empty key never matches');
+
+// F. PINs (v46): the shop PIN is kept only as a digest, switches off once an owner has their own PIN, and easy PINs are refused
+const g2 = gas([path.join(__dirname, '..', 'Code.gs')]), R2 = g2.R; g2.props.PIN = '4821';
+R2("readConfig_=()=>({}); shopPaused_=()=>false; ensureEnv_=()=>{}; dedupeOnce_=()=>{}");
+const v = b => JSON.parse(R2(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
+const sp = v({ action: 'verify', pin: '4821', by: 'Mayank', wantTok: true });
+ok(sp.ok && sp.me.role === 'owner' && !g2.props.PIN && g2.props.PINH && g2.props.PINH !== '4821', 'F1 shop PIN still works before anyone has their own PIN, and is now kept only as a digest (plain PIN removed)');
+const shopTok = sp.tok;
+const bad = [['123456', 'owner'], ['000000', 'manager'], ['1234', 'staff'], ['1999', 'staff'], ['2580', 'staff'], ['98765', 'staff'], ['55555', 'staff'], ['48213', 'owner']];
+const errs = bad.map(([pin, role]) => { try { R2(`saveUser_({name:'X',pin:'${pin}',role:'${role}'})`); return 'saved'; } catch (e) { return e.message; } });
+ok(errs.join() === 'pin_easy,pin_easy,pin_easy,pin_easy,pin_easy,pin_easy,pin_easy,pin_short', 'F2 easy PINs refused (runs, repeats, years, keypad lines); owner/manager need 6+ digits: ' + errs.join());
+let taken = ''; try { R2("saveUser_({name:'X',pin:'4821',role:'staff'})"); } catch (e) { taken = e.message; } ok(taken === 'pin_taken', 'F3 a personal PIN can\'t be the shop PIN');
+R2("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
+ok(v({ action: 'verify', pin: '4821', by: 'X' }).ok && v({ action: 'verify', tok: shopTok }).ok, 'F4 a staff member alone doesn\'t switch the shop PIN off');
+R2("saveUser_({name:'Mayank',pin:'739164',role:'owner'})");
+ok(v({ action: 'verify', pin: '4821', by: 'Mayank' }).error === 'shop_pin_off', 'F5 once the owner has their own PIN: the shop PIN no longer signs in');
+ok(v({ action: 'verify', tok: shopTok }).error === 'shop_pin_off', 'F6 …and phones signed in with it are signed out');
+ok(v({ action: 'verify', pin: '739164' }).me.name === 'Mayank' && R2('listUsers_().shopPinOff') === true, 'F7 the owner\'s own PIN works; People shows the shop PIN as off');
+let sp2 = ''; try { R2("setPin_('819273')"); } catch (e) { sp2 = e.message; } ok(sp2 === 'shop_pin_off', 'F8 the switched-off shop PIN can\'t be changed (or brought back that way)');
+const oid = R2("users_().find(u=>u.role==='owner').id"); R2(`removeUser_('${oid}')`);
+ok(v({ action: 'verify', pin: '4821', by: 'Mayank' }).ok, 'F9 removing the only owner turns the shop PIN back on, so nobody is locked out');
+let w = ''; try { R2("setPin_('111111')"); } catch (e) { w = e.message; } ok(w === 'pin_easy', 'F10 a new shop PIN follows the same rules');

@@ -52,6 +52,10 @@ const get = q => JSON.parse(R('doGet(' + JSON.stringify({ parameter: q }) + ').t
 ok(post({ action: 'list' }).error === 'bad_session', 'admin actions need sign-in');
 for (let i = 0; i < 6; i++) post({ action: 'signIn', pin: '0', dev: 'x' }); ok(post({ action: 'signIn', pin: '0', dev: 'x' }).error === 'locked', 'wrong admin PINs lock that device');
 R("P_().setProperty('ADMIN_PIN_H', hash_('12345678'))"); let tok = post({ action: 'signIn', pin: '12345678', dev: 'y' }).tok; ok(!!tok, 'right admin PIN signs in');
+// a stranger sending 30 wrong PINs an hour (new device id each time) no longer locks out the admin's own laptop (DIR_VERSION 5)
+for (let i = 0; i < 35; i++) post({ action: 'signIn', pin: String(i), dev: 'attacker' + i });
+ok(post({ action: 'signIn', pin: '12345678', dev: 'brandnew' }).error === 'locked' && !!post({ action: 'signIn', pin: '12345678', dev: 'y' }).tok, 'after 30+ wrong PINs from strangers: new devices wait, the laptop that signed in before still gets in');
+R("CacheService.getScriptCache().remove('afail_all')");
 // forgot the admin PIN: a new one works, the old one and old dashboards don't, nothing else changes
 const shopsBefore = JSON.stringify(R('shops_().length')); const newPin = R('newAdminPin()');
 ok(/^\d{8}$/.test(newPin) && post({ action: 'list', tok }).error === 'bad_session' && post({ action: 'signIn', pin: '12345678', dev: 'z' }).error === 'bad_pin' && JSON.stringify(R('shops_().length')) === shopsBefore, 'newAdminPin: new PIN, old PIN and old sign-ins stop working, shops untouched');

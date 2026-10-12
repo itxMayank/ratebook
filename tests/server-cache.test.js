@@ -20,19 +20,19 @@ const out = JSON.parse(R("doPost({postData:{contents:JSON.stringify({action:'ver
 ok(R("approveOn_({approveNew:''})") === false && R("approveOn_({approveNew:'true'})") === true, 'approval: off by default for the original shop, owner can turn it on');
 const g2 = gas([CODE], {}); g2.R("var SHOP_BOOT={code:'SHARMA-ABCDEFGH23', sheetId:'s1'}");
 ok(g2.R('shopCode_()') === 'SHARMA-ABCDEFGH23' && g2.R("approveOn_({approveNew:''})") === true, 'Directory-made shop: its own code, approval on by default');
-g2.props.PIN = '9999'; g2.R("saveUser_({name:'Staff',pin:'1111',role:'staff'})"); g2.R("readConfig_=()=>({approveNew:true})");
-const t1 = g2.R("sessNew_(auth_({pin:'1111',dev:'phoneA'}),{dev:'phoneA'})"); g2.R('var T1=' + JSON.stringify(t1.tok));
+g2.props.PIN = '9999'; g2.R("saveUser_({name:'Staff',pin:'5273',role:'staff'})"); g2.R("readConfig_=()=>({approveNew:true})");
+const t1 = g2.R("sessNew_(auth_({pin:'5273',dev:'phoneA'}),{dev:'phoneA'})"); g2.R('var T1=' + JSON.stringify(t1.tok));
 ok(t1.pending === true && g2.R('auth_({tok:T1})').error === 'pending', 'staff on a new phone: waits for the owner');
 const own = g2.R("sessNew_(auth_({pin:'9999',by:'Owner',dev:'phoneO'}),{dev:'phoneO'})"); ok(own.pending === false, 'owner never waits');
 g2.R("var W=auth_({tok:'" + own.tok + "'})"); g2.R("sessEdit_(all=>Object.keys(all).forEach(k=>{ if(all[k].d==='phoneA') delete all[k].p; }))");
 ok(!g2.R('auth_({tok:T1})').error, 'after the owner approves: the phone works');
-const t3 = g2.R("sessNew_(auth_({pin:'1111',dev:'phoneA'}),{dev:'phoneA'})"); ok(t3.pending === false, 'same phone signing in again: no second approval');
-ok(g2.R("auth_({pin:'1111'})").viaPin === true, 'PIN-only requests are marked (refused when approval is on, except sign-in)');
+const t3 = g2.R("sessNew_(auth_({pin:'5273',dev:'phoneA'}),{dev:'phoneA'})"); ok(t3.pending === false, 'same phone signing in again: no second approval');
+ok(g2.R("auth_({pin:'5273'})").viaPin === true, 'PIN-only requests are marked (refused when approval is on, except sign-in)');
 // phone errors: kept in memory only, no sign-in needed, at most 20 per phone per hour, shown in health
 const ce = b2 => JSON.parse(R('doPost({postData:{contents:' + JSON.stringify(JSON.stringify(b2)) + '}}).text'));
 const r1 = ce({ action: 'clientErr', shop: 'main', dev: 'phoneZ', by: 'Raju', e: { m: 'x is undefined\u0000', w: 'index.html:10:5', st: 'TypeError'.repeat(200), tab: 'bill' } });
 const ce1 = JSON.parse(g.cache.CERRS)[0];
-ok(r1.ok && ce1.m === 'x is undefined ' && ce1.by === 'Raju' && ce1.st.length === 500 && ce1.tab === 'bill', 'phone error stored (trimmed, cleaned), no PIN needed');
+ok(r1.ok && ce1.m === 'x is undefined ' && ce1.by === '? Raju' && ce1.st.length === 500 && ce1.tab === 'bill', 'phone error stored (trimmed, cleaned), no PIN needed');
 for (let i = 0; i < 30; i++) ce({ action: 'clientErr', dev: 'phoneZ', e: { m: 'e' + i } });
 ok(JSON.parse(g.cache.CERRS).length === 20, 'at most 20 errors per phone per hour');
 ok(ce({ action: 'clientErr', shop: 'OTHER-1', dev: 'p', e: { m: 'x' } }).error === 'wrong_shop', 'another shop\'s phone errors are refused');

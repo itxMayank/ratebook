@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-89r0pS/O+9xBhXT1/sNlIA2MHnvSF6aNA6ORO5b/6ao='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -130,7 +131,9 @@ function chkHTML(e){ const c=e&&e.check; if(!c||e.type!=="bill") return ""; if(c
   if(c.st!=="issues"||c.ack) return ""; const m=v=>rs(v), n=v=>Number(v).toLocaleString("en-IN",{maximumFractionDigits:3});
   const txt=i=>i.t==="line"?t("iLine",i.i,i.d?" ("+esc(i.d)+")":"",n(i.q),m(i.r),m(i.e),m(i.a)):i.t==="sum"?t("iSum",m(i.s),m(i.sub)):i.t==="tax"?t("iTax",esc(i.n||"GST"),n(i.r),m(i.b),m(i.e),m(i.a)):i.t==="cs"?t("iCs",m(i.c),m(i.s)):i.t==="total"?t("iTot",m(i.e),m(i.tot)):i.t==="entry"?t("iEnt",m(i.ent),m(i.tot)):i.t==="prev"?t("iPrev",m(i.ent),m(i.prev),m(i.tot)):"";
   return ` <span class="pill p-due">⚠ ${t("chkIss")}</span><ul class="iss">${c.issues.map(i=>`<li>${txt(i)}</li>`).join("")}</ul>`; }
-function photosHTML(e){ return e.photos&&e.photos.length?`<div class="ph">${e.photos.map((p,i)=>`<button type="button" data-f="${esc(p.f)}" data-m="${esc(p.m)}" data-lab="${esc(title(e)+" · "+dd(e.date))}" ${prev[p.f]?`style="background-image:url('${prev[p.f]}')"`:""}>${p.m==="application/pdf"?"PDF":""}</button>`).join("")}</div>`:""; }
+/* a preview is drawn only if it's a plain image data address (nothing that could break out of the style) */
+function okPrev(x){ x=String(x||""); return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(x)?x:""; }
+function photosHTML(e){ return e.photos&&e.photos.length?`<div class="ph">${e.photos.map((p,i)=>`<button type="button" data-f="${esc(p.f)}" data-m="${esc(p.m)}" data-lab="${esc(title(e)+" · "+dd(e.date))}" ${okPrev(prev[p.f])?`style="background-image:url('${okPrev(prev[p.f])}')"`:""}>${p.m==="application/pdf"?"PDF":""}</button>`).join("")}</div>`:""; }
 function render(){
   const c=D.calc, v=D.vendor, bills={}; c.bills.forEach(b=>bills[b.id]=b);
   const bal=c.balance, lab=bal>0?t("balDue"):bal<0?t("balAdv"):t("balNil");
@@ -169,7 +172,7 @@ async function load(){
   try{ const j=await api({action:"vpub"}); if(!j.ok){ $("#app").innerHTML=`<div class="center">${t("offLink")}</div>`; return; }
     D=j; document.title=(j.shop.name?j.shop.name+" · ":"")+t("title"); render();
     api({action:"vpubprev"}).then(p=>{ if(p.ok){ prev=p.previews||{}; render(); } }).catch(()=>{}); }
-  catch{ if(!D) $("#app").innerHTML=`<div class="center">${t("noLoad",`<a href="" onclick="location.reload();return false">`)}</div>`; }
+  catch{ if(!D){ $("#app").innerHTML=`<div class="center">${t("noLoad",`<a href="" id="reload-pg">`)}</div>`; const a=$("#reload-pg"); if(a) a.onclick=e=>{ e.preventDefault(); location.reload(); }; } }
 }
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && D) load(); });
 load();

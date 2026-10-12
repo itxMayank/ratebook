@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 44;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 46;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -44,7 +44,7 @@ const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
 function setup() {
   const props = PropertiesService.getScriptProperties();
   ss_();
-  if (!props.getProperty('PIN')) props.setProperty('PIN', String(DEFAULT_PIN));
+  if (!props.getProperty('PIN') && !props.getProperty('PINH')) props.setProperty('PIN', String(DEFAULT_PIN));
   sheet_(ITEMS, COLS);
   sheet_(CONFIG, ['key', 'value']);
   sheet_(IMAGES, ['id', 'data']);
@@ -105,7 +105,7 @@ function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 
 /* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
 let T0_ = 0, ACT_ = '';
 const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1 };
-const ERR_QUIET_ = { bad_pin: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
+const ERR_QUIET_ = { bad_pin: 1, shop_pin_off: 1, needs_manager: 1, pin_short: 1, pin_easy: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
 function perfNote_(obj) {
   if (!ACT_ || PERF_SKIP_[ACT_]) return;
   try { const c = CacheService.getScriptCache(), now = Date.now();
@@ -123,9 +123,11 @@ function perfNote_(obj) {
 function clientErr_(b) {
   try { const c = CacheService.getScriptCache(), d = String(b.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40) || 'nodev', rk = 'cerr_' + d, n = Number(c.get(rk) || 0);
     if (n >= 20) return { ok: true, skipped: true }; c.put(rk, String(n + 1), 3600);
+    const ga = Number(c.get('cerr_all') || 0); if (ga >= 60) return { ok: true, skipped: true }; c.put('cerr_all', String(ga + 1), 3600);   // (v46) at most 60 an hour in all: the phone id is the phone's own choice
+    let by = ''; if (b.tok) { const w = sessWho_(String(b.tok)); if (w && !w.error) by = w.name; } if (!by) by = '? ' + String(b.by == null ? '' : b.by);   // a name is trusted only from a sign-in; anything else is marked "?" 
     const s = (v, m) => String(v == null ? '' : v).replace(/[\u0000-\u001f]+/g, ' ').slice(0, m), e = b.e || {};
     let a = []; try { a = JSON.parse(c.get('CERRS') || '[]'); } catch (x) {}
-    a.push({ t: Date.now(), m: s(e.m, 300), w: s(e.w, 160), st: s(e.st, 500), by: s(b.by, 40), d: d.slice(0, 6), ua: s(e.ua, 90), tab: s(e.tab, 30) });
+    a.push({ t: Date.now(), m: s(e.m, 300), w: s(e.w, 160), st: s(e.st, 500), by: s(by, 40), d: d.slice(0, 6), ua: s(e.ua, 90), tab: s(e.tab, 30) });
     if (a.length > 40) a = a.slice(-40); c.put('CERRS', JSON.stringify(a), 21600);
   } catch (x) {}
   return { ok: true }; }
@@ -191,7 +193,7 @@ function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) {} 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
 function num_(v) { const n = Number(String(v).replace(/[₹,\s]/g, '')); return isFinite(n) ? n : 0; }
-function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@]/.test(s)) s = "'" + s; return s; }
+function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@\-]/.test(s)) s = "'" + s; return s; }   // a cell starting = + @ - would be read by Sheets as a formula
 
 /* ---------- reads ---------- */
 
@@ -537,7 +539,7 @@ function doPost(e) {
       case 'listCustomers': { const have = String(body.brev || ''); res = have && have === brev_() ? { same: true, brev: brev_() } : rcRead_('cust:' + ENV_, brev_, () => listCustomers_('')); break; }
       case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
-      case 'updateBill': res = updateBill_(body.bill || {}, by); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
+      case 'updateBill': res = updateBill_(body.bill || {}, by, who); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = rcRead_('dues:' + ENV_, brev_, listDues_); break;
       case 'recordPayment': res = recordPayment_(body, by); bumpB_(false, body.billId); break;
       case 'undoPayment': res = undoPayment_(body); bumpB_(false, body.billId); break;
@@ -608,8 +610,8 @@ function auth_(body) {
   if (g >= GLOBAL_MAX_FAILS || d >= MAX_FAILS) return { error: 'locked' };
   const pin = String(body.pin || '');
   if (pin) {
-    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
-    if (pin === real) return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true };
+    if (shopPinIs_(pin)) { if (shopPinOff_()) return { error: 'shop_pin_off' };   // the owner has their own PIN: the shop PIN no longer opens anything
+      return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true }; }
     const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
     if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false, viaPin: true };
   }
@@ -620,7 +622,7 @@ function auth_(body) {
 /** Kept for older callers: 'ok' or an error code. */
 function checkPin_(pin) { const a = auth_({ pin: pin }); return a.error || 'ok'; }
 
-function listUsers_() { return { users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false, testOk: u.testOk !== false })) }; }
+function listUsers_() { return { shopPinOff: shopPinOff_(), users: users_().map(u => ({ id: u.id, name: u.name, role: u.role, active: u.active !== false, testOk: u.testOk !== false })) }; }
 
 /* ---------- sign-in tokens ----------
    After a PIN sign-in the phone keeps a random token instead of the PIN. SESS (script property, cached) maps the token's
@@ -642,15 +644,18 @@ function sessNew_(who, body) { const t = (Utilities.getUuid() + Utilities.getUui
   if (!sessEdit_(all => {
     /* New-phone approval (owner setting): a phone that hasn't had an approved sign-in here waits until the owner approves it.
        Owners never wait (they are the ones who approve). */
-    if (approve && !Object.keys(all).some(x => !all[x].p && dev && all[x].d === dev)) pending = true;
-    all[k] = { u: who.master ? 'm:' + mkey_(who.name) : who.id, n: who.name, l: str_(body.dl || '', 60), c: now, s: now, d: dev };
+    /* (v46) Approval is for this person on this phone: the phone's id is chosen by the phone and can be copied from an approved one,
+       so it only counts together with the same person who was approved on it. */
+    const uid = who.master ? 'm:' + mkey_(who.name) : who.id;
+    if (approve && !Object.keys(all).some(x => !all[x].p && dev && all[x].d === dev && all[x].u === uid)) pending = true;
+    all[k] = { u: uid, n: who.name, l: str_(body.dl || '', 60), c: now, s: now, d: dev };
     if (pending) all[k].p = 1; })) throw new Error('busy');
   return { tok: t, pending: pending }; }
 function sessEnd_(pick) { sessEdit_(all => Object.keys(all).forEach(k => { if (pick(k, all[k])) delete all[k]; })); }
 function sessWho_(tok) { const k = tokKey_(tok), x = sessAll_()[k];
   if (!x || (x.s || x.c || 0) < Date.now() - SESS_DAYS * 864e5) return { error: 'bad_session' };
   let who = null;
-  if (x.u.indexOf('m:') === 0) who = { name: x.n, role: 'owner', master: true };
+  if (x.u.indexOf('m:') === 0) { if (shopPinOff_()) return { error: 'shop_pin_off' }; who = { name: x.n, role: 'owner', master: true }; }   // phones signed in with the shop PIN are signed out once it's switched off
   else { const u = users_().filter(y => y.id === x.u && y.active !== false)[0]; if (u) who = { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false }; }
   if (!who) return { error: 'bad_session' };
   if (x.p) return { error: 'pending' };          // waiting for the owner to approve this phone
@@ -693,19 +698,21 @@ function bootReply_(who, body) {
 function retire_(key, code) {
   const b = boot_(); if (!b) return { ok: false, error: 'not_a_shop' };
   const P = PropertiesService.getScriptProperties(), want = P.getProperty('HEALTH_KEY') || b.healthKey || '';
-  if (!want || String(key || '') !== String(want) || String(code || '') !== String(b.code)) return { ok: false, error: 'bad_key' };
+  if (!want || !keyEq_(key, want) || String(code || '') !== String(b.code)) return { ok: false, error: 'bad_key' };
   let n = 0; try { ScriptApp.getProjectTriggers().forEach(t => { ScriptApp.deleteTrigger(t); n++; }); } catch (e) { return { ok: false, error: 'triggers|' + (e && e.message) }; }
   P.setProperty('RETIRED', String(Date.now())); CacheService.getScriptCache().remove('TRIG_OK');
   return { ok: true, triggers: n, sheetId: P.getProperty('SHEET_ID') || b.sheetId || '' }; }
 
+/** Compares two secret keys by their digests, so the time taken doesn't hint at how much of a guess was right. */
+function keyEq_(a, b) { const d = x => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(x || ''))); return !!b && d(a) === d(b); }
 function health_(key) {
   const P = PropertiesService.getScriptProperties(), b = boot_();
   const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
-  if (!want || String(key || '') !== String(want)) return { ok: false, error: 'bad_key' };
+  if (!want || !keyEq_(key, want)) return { ok: false, error: 'bad_key' };
   const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION, hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
-  const ss = ss_(); out.sheetId = ss.getId(); let cells = 0; ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
+  const ss = ss_(); let cells = 0;   // the sheet's id isn't sent (v45): the dashboard doesn't need it, and an id is a key to a file in the owner's Drive ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
   const it = ss.getSheetByName(ITEMS); out.items = it ? Math.max(0, it.getLastRow() - 1) : 0;
   /* Bills today / this month (India time) for real bills and, separately, test bills (new shops start in test mode). Cancelled bills
      don't count. Rebuilt only when that mode's bills change or the day changes. */
@@ -742,7 +749,7 @@ function health_(key) {
 function setupShop() {
   const b = boot_(); if (!b) throw new Error('This script has no Shop.gs. Only shops made from the admin Directory use setupShop.');
   const P = PropertiesService.getScriptProperties(), set = (k, v) => { if (v && !P.getProperty(k)) P.setProperty(k, String(v)); };
-  set('SHEET_ID', b.sheetId); set('PIN', b.initPin); set('BK_FOLDER', b.bkFolder); set('VD_FOLDER_live', b.vdFolder); set('VD_FOLDER_test', b.vdFolderTest); set('HEALTH_KEY', b.healthKey);
+  set('SHEET_ID', b.sheetId); if (!P.getProperty('PINH')) set('PIN', b.initPin); set('BK_FOLDER', b.bkFolder); set('VD_FOLDER_live', b.vdFolder); set('VD_FOLDER_test', b.vdFolderTest); set('HEALTH_KEY', b.healthKey);
   ['ENV_OK', 'DEDUP_OK', 'FYPFX_OFF'].forEach(k => set(k, '1'));   // a new sheet has nothing old to move or clean
   sheet_(ITEMS, COLS); sheet_(CONFIG, ['key', 'value']); sheet_(IMAGES, ['id', 'data']);
   ['live', 'test'].forEach(en => { ENV_ = en; sheet_(tab_('Bills'), BILL_COLS); }); ENV_ = 'live';
@@ -785,10 +792,9 @@ function saveUser_(u) {
   const pin = String(u.pin || '');
   if (!x && !/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
   if (pin) {
-    if (!/^\d{4,8}$/.test(pin)) throw new Error('bad_new_pin');
-    const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
+    pinRule_(pin, role);
     const h = hashPin_(pin);
-    if (pin === real || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
+    if (shopPinIs_(pin) || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
     if (x && x.h !== h) { x.h = h; sessEnd_((k, y) => y.u === x.id); }   // new PIN: that person signs in again everywhere
   }
   if (x) { if (u.active === false && x.active !== false) sessEnd_((k, y) => y.u === x.id); x.name = name; x.role = role; x.active = u.active !== false; x.testOk = u.testOk !== false; if (x.testOk === false && x.prefs && x.prefs.mode === 'test') x.prefs.mode = 'live'; }
@@ -796,6 +802,23 @@ function saveUser_(u) {
   saveUsers_(list);
   return listUsers_();
 }
+/* ---- PINs (v46) ----
+   The shop PIN is kept as a salted digest (PINH), never as plain text; an old plain PIN is converted the first time it's used.
+   It is switched off for good once the shop has an owner with their own PIN (people then sign in only with their own PINs, so
+   every bill and change shows who really made it); removing the last such owner turns it back on, so nobody is locked out.
+   New PINs: owner and manager 6–8 digits, staff 4–8; no repeated digits, runs (1234, 9876), common picks or 4-digit years. */
+function shopPinOff_() { return users_().some(u => u.active !== false && u.role === 'owner'); }
+function shopPinIs_(pin) { pin = String(pin || ''); if (!pin) return false; const P = PropertiesService.getScriptProperties(), h = P.getProperty('PINH');
+  if (h) return hashPin_(pin) === h;
+  if (pin !== (P.getProperty('PIN') || String(DEFAULT_PIN))) return false;
+  P.setProperty('PINH', hashPin_(pin)); P.deleteProperty('PIN'); return true; }
+const EASY_PINS_ = { '1212': 1, '1122': 1, '1313': 1, '2580': 1, '0852': 1, '1379': 1, '6969': 1, '1004': 1, '121212': 1, '112233': 1, '123123': 1, '696969': 1, '159753': 1, '147258': 1, '258369': 1, '102030': 1, '101010': 1, '123321': 1, '789456': 1, '456789': 1 };
+function pinEasy_(p) { if (/^(\d)\1+$/.test(p) || EASY_PINS_[p]) return true;
+  const up = '01234567890', dn = '09876543210'; if (up.indexOf(p) >= 0 || dn.indexOf(p) >= 0) return true;
+  return p.length === 4 && /^(19|20)\d\d$/.test(p); }
+function pinRule_(p, role) { p = String(p || ''); if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
+  if ((role === 'owner' || role === 'manager') && p.length < 6) throw new Error('pin_short');
+  if (pinEasy_(p)) throw new Error('pin_easy'); }
 function removeUser_(id) { saveUsers_(users_().filter(u => u.id !== id)); return listUsers_(); }
 
 /* ---------- shop code: hides buy rates and blocks bill saving for anyone who only has the link ---------- */
@@ -1007,8 +1030,9 @@ function setConfig_(cfg) {
 }
 
 function setPin_(p) {
-  if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
-  PropertiesService.getScriptProperties().setProperty('PIN', p);
+  if (shopPinOff_()) throw new Error('shop_pin_off');
+  pinRule_(p, 'owner');
+  const P = PropertiesService.getScriptProperties(); P.setProperty('PINH', hashPin_(p)); P.deleteProperty('PIN');   // kept only as a digest
   return {};
 }
 
@@ -1169,7 +1193,7 @@ function getBill_(row, id, billNo) {
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }
 
 /** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
-function updateBill_(b, by) {
+function updateBill_(b, by, who) {
   popReset_();
   const s = sheet_(tab_('Bills'), BILL_COLS);
   const n = s.getLastRow() - 1;
@@ -1183,6 +1207,17 @@ function updateBill_(b, by) {
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) throw new Error('bill_changed');   // someone else saved it after this phone opened it
+  /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
+     making it; anything later or by someone else is an edit and shows as one. Staff can't change the total or the payment of a
+     bill that is on credit or has payments recorded (that would quietly wipe a customer's due): a manager or the owner can,
+     and money received goes through Record payment. */
+  const madeAt = r[B.date] instanceof Date ? r[B.date].getTime() : Date.parse(r[B.date]) || 0;
+  const freshOk = !!b.fresh && String(r[B.by] || '').trim().toLowerCase() === String(by || '').trim().toLowerCase() && Date.now() - madeAt < 30 * 60e3;
+  b.fresh = freshOk;
+  if (who && ROLE_RANK[who.role] < ROLE_RANK.manager && !freshOk) {
+    const oldPays = payList_(r[B.payments]), oldMode = modeOf_(r[B.payment], oldPays), hasMoney = num_(r[B.due]) > 0 || oldPays.some(p => !p.at);
+    if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
+  }
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
@@ -1795,7 +1830,7 @@ function vToLive_(ids, by) {
     append(LL.s, VLED_COLS, ents); append(LD.s, VDOC_COLS, docs); append(LP.s, PUR_COLS, purs);
     // the files themselves go to the real-mode folder (they open by id either way, so a failure here only leaves them where they were)
     let files = 0, fileFail = 0; const fids = {};
-    ents.forEach(e => vjson_(e.photos, []).forEach(ph => { if (ph && ph.f) fids[String(ph.f)] = 1; })); docs.forEach(d => { if (d.fileId) fids[String(d.fileId)] = 1; });
+    docs.forEach(d => { if (d.fileId) fids[String(d.fileId)] = 1; });   // only files this script made (VendorDocs), never an id written on an entry
     if (Object.keys(fids).length) { let dest = null; try { dest = vFolder_(); } catch (e) {}
       Object.keys(fids).forEach(f => { try { if (dest) { DriveApp.getFileById(f).moveTo(dest); files++; } } catch (e) { fileFail++; } }); }
     ENV_ = 'test';
@@ -1827,7 +1862,7 @@ function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
   let r = x.id ? L.rows.find(o => String(o.id) === String(x.id)) : null;
   const billIds = {}; G.calc.bills.forEach(b => billIds[b.id] = 1); if (type !== 'bill' && x.id) Object.keys(x.alloc || {}).forEach(k => { if (A.entries.some(e => e.id === k && e.vendorId === G.vendor.id && e.type === 'bill')) billIds[k] = 1; });
   const fields = { vendorId: G.vendor.id, type: type, date: vday_(x.date) || vday_(new Date()), amount: amount, gst: (x.gst === '' || x.gst == null) ? '' : Math.max(0, num_(x.gst)), billNo: str_(x.billNo, 40), mode: str_(x.mode, 20),
-    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f)).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
+    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((own => (Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f) && own[String(p.f)]))(vDocIds_()).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
     alloc: type === 'bill' ? '' : JSON.stringify(vAllocClean_(x.alloc, billIds, amount)) };
   if (type === 'bill') {   // bill check: from what the phone already read, else the stored reading (re-done with the new amount), cleared when photos change
     const exIn = vExSafe_(x.ex);
@@ -1869,11 +1904,18 @@ function vUpload_(x) { const mime = /^(image\/jpeg|image\/png|application\/pdf)$
   const data = String(x.data || ''); if (!data || data.length > 14000000) throw new Error('bad_file');
   let file; try { file = vFolder_().createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, str_(x.name, 80) || ('bill-' + Date.now() + (mime === 'application/pdf' ? '.pdf' : '.jpg')))); }
   catch (err) { if (/permission|authori|access/i.test(String(err && err.message || err))) throw new Error('drive_auth'); throw err; }
-  const D = vtab_('VendorDocs', VDOC_COLS); vwrite_(D.s, VDOC_COLS, { fileId: file.getId(), vendorId: str_(x.vendorId, 40), preview: String(x.preview || '').slice(0, 48000), mime: mime, at: Date.now() });
+  const D = vtab_('VendorDocs', VDOC_COLS); vwrite_(D.s, VDOC_COLS, { fileId: file.getId(), vendorId: str_(x.vendorId, 40), preview: vPrevOk_(x.preview), mime: mime, at: Date.now() });
   return { f: file.getId(), m: mime }; }
 function vPreviews_(ids) { const want = {}; (ids || []).forEach(i => want[String(i)] = 1); const out = {};
-  vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { if (want[r.fileId] && r.preview) out[r.fileId] = String(r.preview); }); return { previews: out }; }
-function vFile_(f) { const file = DriveApp.getFileById(String(f)); const b = file.getBlob(); return { data: Utilities.base64Encode(b.getBytes()), mime: b.getContentType() }; }
+  vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { const pv = want[r.fileId] && vPrevOk_(r.preview); if (pv) out[r.fileId] = pv; }); return { previews: out }; }
+/** Every shop's script runs as the Google account that deployed it, so a file id from a phone must never open just any Drive file
+    (another shop's sheet, backups, the Directory). Only files this script made itself for this mode's vendor bills count: those are
+    the ones listed in VendorDocs (written by vUpload_ alone, or moved by vToLive_). (v45) */
+function vDocIds_() { const set = {}; vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { if (r.fileId) set[String(r.fileId)] = 1; }); return set; }
+function vOwnFile_(f, set) { f = String(f || ''); if (!/^[\w-]{10,100}$/.test(f) || !(set || vDocIds_())[f]) throw new Error('not_found'); return DriveApp.getFileById(f); }
+/** A bill photo's small preview must be a real image (it's drawn on the vendor's link page). */
+function vPrevOk_(x) { x = String(x || ''); return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(x) && x.length <= 48000 ? x : ''; }
+function vFile_(f) { const file = vOwnFile_(f); const b = file.getBlob(); return { data: Utilities.base64Encode(b.getBytes()), mime: b.getContentType() }; }
 /* ---- the vendor's own read-only page ---- */
 function vPubFind_(t) { t = String(t || ''); if (!/^[tl][0-9a-f]{22}$/.test(t)) return null; ENV_ = t[0] === 't' ? 'test' : 'live';
   const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.token) === t && String(o.linkOn) === '1' && String(o.removed) !== '1'); return r || null; }
@@ -1949,7 +1991,7 @@ function aiCall_(parts, schema) { const key = aiKey_(); if (!key) throw new Erro
   throw new Error(last || 'ai_fail'); }
 /** Read the bill files (Drive ids) → normalised extraction. */
 function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts = [{ text: AI_PROMPT }];
-  (fileIds || []).slice(0, 6).forEach(f => { const b = DriveApp.getFileById(String(f)).getBlob(); const mime = b.getContentType();
+  const own = vDocIds_(); (fileIds || []).slice(0, 6).forEach(f => { const b = vOwnFile_(f, own).getBlob(); const mime = b.getContentType();
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return; parts.push({ inline_data: { mime_type: mime, data: Utilities.base64Encode(b.getBytes()) } }); });
   if (parts.length < 2) return { readable: false, confidence: 0 };
   AI_T0 = Date.now(); const raw = aiCall_(parts);

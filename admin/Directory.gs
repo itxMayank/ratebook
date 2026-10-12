@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 4;
+const DIR_VERSION = 5;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -24,7 +24,7 @@ let T0_ = 0;
 
 function out_(o) { if (T0_ && o && typeof o === 'object') o.ms = Date.now() - T0_; return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function P_() { return PropertiesService.getScriptProperties(); }
-function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@]/.test(s)) s = "'" + s; return s; }
+function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@\-]/.test(s)) s = "'" + s; return s; }   // a cell starting = + @ - would be read by Sheets as a formula
 function rand_(n, abc) { abc = abc || 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; const b = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   for (let i = 0; i < n; i++) s += abc[parseInt(b.substr(i * 2, 2), 16) % abc.length]; return s; }
 function hash_(s) { return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, (P_().getProperty('DIR_SALT') || '') + ':' + s)); }
@@ -99,7 +99,7 @@ function lookup_(code, dev) {
   if (!x || !x.apiUrl || x.code === 'main' || !(x.status === 'live' || x.status === 'paused')) { c.put(fk, String(Number(c.get(fk) || 0) + 1), 900); return { ok: false, error: 'bad_code' }; }
   const r = { ok: true, code: x.code, api: x.apiUrl, name: x.name, status: x.status }; c.put('shop:' + code, JSON.stringify(r), 600); return r; }
 /** For a shop's own script (its health key): is it paused? */
-function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || String(key) !== String(x.healthKey)) return { ok: false, error: 'bad_key' };
+function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || !x.healthKey || hash_('k:' + key) !== hash_('k:' + x.healthKey)) return { ok: false, error: 'bad_key' };
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
@@ -136,11 +136,17 @@ function pub_(x) { const o = {}; SHOP_COLS.forEach(k => { if (k !== 'healthKey')
 /** Admin PIN (set by setupDirectory) → a token kept by the dashboard. Wrong PINs: 6 per 15 minutes per device, then wait. */
 function adminSignIn_(b) {
   const c = CacheService.getScriptCache(), d = String(b.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40), fk = 'afail_' + d, g = Number(c.get('afail_all') || 0);
-  if (Number(c.get(fk) || 0) >= ADMIN_MAX_FAILS || g >= 30) return { ok: false, error: 'locked' };
+  /* (DIR_VERSION 5) A laptop that has signed in before isn't held up by the hourly limit on everyone (only by its own): before,
+     anyone with the Directory's address could send 30 wrong PINs an hour and keep the admin locked out. 8-digit PIN, 30 tries an
+     hour from new devices: guessing would take centuries. */
+  const known = d && adminDevs_()[hash_('d:' + d)];
+  if (Number(c.get(fk) || 0) >= ADMIN_MAX_FAILS || (!known && g >= 30)) return { ok: false, error: 'locked' };
   const want = P_().getProperty('ADMIN_PIN_H');
-  if (!want || hash_(String(b.pin || '')) !== want) { c.put(fk, String(Number(c.get(fk) || 0) + 1), ADMIN_FAIL_SEC); c.put('afail_all', String(g + 1), 3600); return { ok: false, error: 'bad_pin' }; }
+  if (!want || hash_(String(b.pin || '')) !== want) { c.put(fk, String(Number(c.get(fk) || 0) + 1), ADMIN_FAIL_SEC); if (!known) c.put('afail_all', String(g + 1), 3600); return { ok: false, error: 'bad_pin' }; }
+  if (d && d !== 'nodev') { const dv = adminDevs_(); dv[hash_('d:' + d)] = Date.now(); const ks = Object.keys(dv).sort((x, y) => dv[y] - dv[x]).slice(0, 10), o = {}; ks.forEach(k => o[k] = dv[k]); P_().setProperty('ADMIN_DEVS', JSON.stringify(o)); }
   const t = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''); const all = adminSess_(); all[hash_('t:' + t)] = Date.now(); adminSessSave_(all);
   return { ok: true, tok: t }; }
+function adminDevs_() { try { return JSON.parse(P_().getProperty('ADMIN_DEVS') || '{}'); } catch (e) { return {}; } }
 function adminSess_() { try { return JSON.parse(P_().getProperty('ADMIN_SESS') || '{}'); } catch (e) { return {}; } }
 function adminSessSave_(all) { const old = Date.now() - 30 * 864e5; Object.keys(all).forEach(k => { if (all[k] < old) delete all[k]; }); P_().setProperty('ADMIN_SESS', JSON.stringify(all)); }
 function adminOk_(t) { if (!t) return false; const all = adminSess_(), k = hash_('t:' + t); if (!all[k]) return false;

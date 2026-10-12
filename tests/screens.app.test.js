@@ -56,13 +56,24 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(500);
     return p;
   }
-  const look = (p, where) => p.evaluate(where => { const sh = document.querySelector('#sheet'), open = sh && !sh.hidden && sh.classList.contains('on');
+  const look = (p, where) => p.evaluate(where => { const de0 = document.documentElement; const sh = document.querySelector('#sheet'), open = sh && !sh.hidden && sh.classList.contains('on');
     const root = where === 'sheet' ? document.querySelector('#sheet') : document.querySelector(where);
     const vis = el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
     let text = ''; if (root) { const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); while (w.nextNode()) { const pe = w.currentNode.parentElement; if (pe && vis(pe) && !pe.closest('script,style,template')) text += w.currentNode.textContent + ' '; } }
     const keyish = (text.match(/\b[a-z]+[A-Z][A-Za-z]*\b/g) || []).filter(x => !/^(iPhone|iPad|WhatsApp|GSTIN|mPos)$/.test(x));
+    // text cut short: a box too narrow for a short value (a mobile, an amount), or a label cut with "…" / hidden overflow
+    const hid = el => { for (let x = el; x; x = x.parentElement) { const s = getComputedStyle(x); if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity < 0.05 || x.hidden) return true; } return !!el.closest('details:not([open]) > :not(summary)'); };
+    const cut = [], cx = document.createElement('canvas').getContext('2d');
+    for (const e of (root || document).querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]):not([type=date])')) {
+      const v = e.value; if (!v || v.length > 16 || !vis(e) || hid(e)) continue; const cs = getComputedStyle(e); cx.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+      if (cx.measureText(v).width > e.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) + 1) cut.push('box ' + (e.id || e.name) + ' "' + v + '"'); }
+    for (const e of (root || document).querySelectorAll('*')) {
+      if (['INPUT', 'SELECT', 'TEXTAREA', 'SCRIPT', 'STYLE'].includes(e.tagName) || e.closest('svg,#printroot,template') || (e.id === 'shopname' && de0.classList.contains('hdr-min'))) continue;
+      const cs = getComputedStyle(e); if (cs.overflowX === 'visible' && cs.textOverflow !== 'ellipsis' || /auto|scroll/.test(cs.overflowX)) continue;
+      if (![...e.childNodes].some(x => x.nodeType === 3 && x.textContent.trim()) || !vis(e) || hid(e)) continue;
+      if (e.scrollWidth > e.clientWidth + 1) cut.push('"' + e.textContent.trim().slice(0, 24) + '"'); }
     const de = document.documentElement, body = document.querySelector('#sheet-body');
-    return { open, title: (document.querySelector('#sheet-title') || {}).textContent || '', text: text.replace(/\s+/g, ' ').slice(0, 4000), keyish,
+    return { cut: [...new Set(cut)], open, title: (document.querySelector('#sheet-title') || {}).textContent || '', text: text.replace(/\s+/g, ' ').slice(0, 4000), keyish,
       spill: Math.max(de.scrollWidth - innerWidth, open && body ? body.scrollWidth - body.clientWidth : 0) }; }, where);
   async function check(p, set, name, where, act) {
     let r; try { await act(); await p.waitForTimeout(700); r = await look(p, where || 'sheet'); }
@@ -71,6 +82,7 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     if (where === undefined && (!r.open || !r.title.trim())) issues.push('not open / no title');
     if (r.spill > 1) issues.push('spills sideways by ' + r.spill + ' px');
     if (bad) issues.push('shows "' + bad + '"');
+    if (r.cut.length) issues.push('cut short: ' + r.cut.slice(0, 3).join(', '));
     if (r.keyish.length) issues.push('text key showing: ' + r.keyish.slice(0, 3).join(', '));
     if (process.env.SHOT) await p.screenshot({ path: `${process.env.SHOT}/${set.name.replace(/\W+/g, '-')}-${String(++n).padStart(2, '0')}-${name.replace(/\W+/g, '-')}.png` });
     ok(!issues.length, `${set.name} · ${name}` + (issues.length ? ': ' + issues.join('; ') : ''));
@@ -81,6 +93,7 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     { name: 'phone', vp: { width: 390, height: 844 }, role: 'owner' },
     { name: 'phone dark Hindi', vp: { width: 390, height: 844 }, role: 'owner', dark: true, hi: true },
     { name: '320px largest text', vp: { width: 320, height: 640 }, role: 'owner', fz: 1.38 },
+    { name: 'Samsung Ultra Large text', vp: { width: 384, height: 832 }, role: 'owner', fz: 1.12 },
     { name: 'laptop', vp: { width: 1280, height: 800 }, role: 'owner' },
     { name: 'staff phone', vp: { width: 390, height: 844 }, role: 'staff' }];
   for (const set of SETS) {
@@ -89,6 +102,13 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     await p.evaluate(() => { T.addToBill('i1'); T.addToBill('i3'); });
     await check(p, set, 'Prices tab', '#view-items', () => p.evaluate(() => T.setTab('items')));
     if (!desk) await check(p, set, 'Bill tab', '#view-bill', () => p.evaluate(() => T.setTab('bill')));
+    if (!desk) {   // the two rows reported from a Samsung Ultra at Large text (12 Oct 2026)
+      await p.fill('#cust', 'Sunil Traders'); await p.fill('#cust-mob', '9876543210'); await p.evaluate(() => document.activeElement.blur()); await p.waitForTimeout(400);
+      await check(p, set, 'Bill tab with a customer', '#view-bill', async () => {});
+      ok(await p.evaluate(() => { const m = document.querySelector('#cust-mob').getBoundingClientRect(), x = document.querySelector('#cust-x').getBoundingClientRect(); return x.left >= m.right && Math.abs(x.top - m.top) < 4; }), `${set.name} · the customer ✕ sits beside the mobile, not over it or on a line of its own`);
+      await p.evaluate(() => { document.querySelector('#cust-x').click(); T.setTab('items'); }); await p.waitForTimeout(400);
+      ok(await p.evaluate(() => { const a = document.querySelector('#meta-r .sortseg').getBoundingClientRect(), g = document.querySelector('#meta-r .layoutbtn').getBoundingClientRect(); return Math.abs((a.top + a.bottom) / 2 - (g.top + g.bottom) / 2) < 4 && g.left > a.right; }), `${set.name} · Prices: the grid button stays beside Most sold | A–Z`);
+    }
     await check(p, set, 'Tools tab', '#view-tools', () => p.evaluate(() => T.setTab('tools')));
     // Tools tiles each person can use
     const tiles = [['#t-bills', 'Past bills'], ['#t-dues', 'Credit'], ['#t-custs', 'Customers'], ['#t-settings', 'Settings']]

@@ -199,7 +199,7 @@ Made so the app stays fast as the sheet grows (thousands of bills and items). No
   - Tokens: `--ink`/`--ink-fg` (near-black in light mode, near-white in dark) for main buttons, selected chips and segments, and the tab bar. `--accent` (maroon) kept for highlights, the in-bill state and badges.
   - Shapes: soft off-white background, borderless white cards with large radii and soft shadows, pill buttons and inputs.
 - **Phones:** a floating ink pill tab bar (inside `@media (max-width:1023px)`, so the desktop sidebar is unaffected) with a light capsule on the active tab. Body, FAB, total bar and toast offsets were moved up to clear it.
-- **Header:** greeting "Namaste, {name}" (`#hello`, from the unlocked name) above the shop name, which is cut off with … if too long.
+- **Header:** greeting "Namaste, {name}" (`#hello`, from the unlocked name) above the shop name, which wraps and is shown in full (since 12 Oct 2026; before, it was cut off with …).
 - **Filter chips** under the search (`#fchips`, `S.filter`): All / In bill / Changed this week / With photo, with counts. A chip only shows when it has items.
 - **Item screen with a photo:** `.hero-mode` on `#sheet` (set in `openDetail`, cleared in `openSheet`). The photo goes full-bleed with a round close button over it, and a `.d-card` with the name overlaps the photo.
 - **Desktop:** active sidebar item in ink, bill panel on `--bg` with white cards.
@@ -860,6 +860,17 @@ First step towards a more mature structure before wrapping the app with Capacito
   - Past bills month header, a bill's mobile box and payment amounts, the Credit search box, and the customer screen's top row were wider than the phone. Screens inside sheets now let grid columns and boxes shrink, and long amounts wrap (block at the end of `app.css`).
   - Credit cards: once narrow (`#du-list` container under 300 px), the amount and the age go under the name, so the name and mobile are never squeezed out.
 - **Settings → Speed** showed the raw request names ("listBills", "vSync") and the English word "sheet". It now shows readable names in English and Hindi (`speedAct`, `speedSheet` in `strings.js`); a name not in the list still shows as it is.
+
+## Larger text on phones (12 Oct 2026, `index.html` / `app.css`)
+
+Reported on a Samsung Galaxy Ultra (384 px wide) at text size **Large**: the customer ✕ crowded the mobile number (it was cut to "987654321"), and on Prices the grid button and "updated …" dropped to odd lines. A sweep of every screen at 384 / 412 px, Large / Larger / Largest, English and Hindi, found the same kind of problem elsewhere. All now wrap or stack instead of being cut (`designinstructions.md` §2, "How to make things wrap"):
+- **Bill → customer:** mobile and ✕ are one group (`.bh-mob` in `index.html`). Name and mobile sit side by side only when the mobile has room for 10 digits (row ≥ 304 px: e.g. a 360 px phone at Normal); otherwise the name takes a row and the mobile + ✕ the next. Larger text still always stacks.
+- **Prices → "N items · updated … ↻" and Most sold | A–Z + grid button:** the meta row wraps as two groups; the grid button stays beside the switch.
+- **Header:** the shop name is shown in full (no more "Packaging &…"). When there's too little room beside the bell · wand · EN/हि (now one group, `.top-acts`), the name gets its own row and the buttons sit under it on the right. The slim header once scrolled stays one line.
+- **Cut with "…" before, wrapping now:** Past bills month headers, Credit customer names, Settings card summaries, vendor names, Reports labels and item names, "Part paid" / "Cheque" on the bill, GSTIN / address on the customer screen.
+- **Customer screen:** the top row's call / WhatsApp / edit buttons move under the name when narrow (the name was breaking letter by letter); the four tiles go 2 × 2 (1 column on the narrowest) so ₹12,34,567 shows in full. A past bill's Total / Paid / Due wrap as whole amounts instead of breaking "₹12,34, 567".
+- Groups tool rows stack the two boxes when narrow; a past bill's "Send to" box keeps room for the number; Settings cards use less side padding at larger text so a GSTIN fits.
+- **Test:** `tests/screens.app.test.js` now also fails on text cut with "…" / hidden overflow and on a short value (mobile, amount, GSTIN) wider than its box, has a sixth set (**384 px at Large**), and checks the customer ✕ sits beside the mobile and the grid button beside the sort switch.
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

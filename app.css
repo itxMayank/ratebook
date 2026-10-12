@@ -1572,7 +1572,7 @@ html.fz-big .pm-l{grid-column:1/-1}
 /* Header: the shop name uses the room it has (space was kept for the TEST badge even when it's off) */
 .brand.nobadge #shopname{max-width:100%}
 @media (max-width:380px){
-  header.top .bar>.iconbtn{width:38px;height:38px}
+  header.top .top-acts>.iconbtn{width:38px;height:38px}
   header.top .lang button{padding:4px 9px;min-width:36px}
   .brand{font-size:18px}
 }
@@ -1723,7 +1723,7 @@ details.cg[data-cg="me"] .cg-b>.cfg-sec>div:first-child>h3{display:none}
   html.hdr-min .brand .hello{display:none}
   html.hdr-min .brand{font-size:18px}
   html.hdr-min .brand #shopname{-webkit-line-clamp:1}
-  html.hdr-min header.top .bar>.iconbtn{width:40px;height:40px}
+  html.hdr-min header.top .top-acts>.iconbtn{width:40px;height:40px}
 }
 /* Lock / welcome screen (11 Oct 2026): app mark, language switch, a short calm entrance */
 #applock .al-lang{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:16px;display:flex;background:var(--surface);border-radius:var(--r-full);padding:3px;box-shadow:var(--shadow)}
@@ -1788,3 +1788,34 @@ html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini{border-top:0!i
   #du-list .duecard b{grid-area:b}#du-list .duecard .m{grid-area:m;white-space:normal}
   #du-list .duecard .amt{grid-area:amt;text-align:left}#du-list .duecard .age{grid-area:age;text-align:left}
 }
+/* Larger text on phones (12 Oct 2026, seen on a Samsung Ultra at "Large"): rows wrap or stack, text wraps, nothing is cut */
+.bh-cust{display:flex;flex-wrap:wrap;gap:8px}
+.bh-cust #cust{flex:1.2 1 128px}   /* name and mobile side by side only when the mobile has room for all 10 digits (≥ 304 px, e.g. a 360 px phone at Normal); else they stack */
+.bh-mob{flex:1 1 164px;display:flex;gap:8px;min-width:0}.bh-mob #cust-mob{flex:1 1 auto}.bh-mob .cust-x{flex:none;width:36px}
+html.fz-big .bh-cust #cust{flex-basis:100%}
+.meta{flex-wrap:wrap;gap:4px 8px}
+#meta-l .netsync{white-space:nowrap}
+#meta-r{display:flex;align-items:center;gap:6px;margin-left:auto}#meta-r:empty{display:none}
+#meta-r .layoutbtn{margin-left:0;flex:none}
+.brand #shopname{-webkit-line-clamp:unset;display:inline-block;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.bl-ml{flex:1 1 auto;white-space:normal;overflow:visible}
+.duecard b,#du-list .duecard .m{white-space:normal;overflow:visible;overflow-wrap:break-word}
+.cg-s{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.vc-mid b,.vr-mid b{white-space:normal;overflow-wrap:break-word}
+.rph-m span,.rph-row .nm,.rp-item .nm{white-space:normal;overflow:visible;overflow-wrap:break-word}
+.cu-top>div:not(.cu-av){flex:1 1 10em}
+.cu-stats{display:flex;flex-wrap:wrap;container-type:inline-size}
+.cu-stat{flex:1 1 0}
+.cu-stat b{white-space:normal;overflow:visible;overflow-wrap:normal}
+@container (max-width:420px){.cu-stat{flex-basis:calc(50% - 3px)}}
+@container (max-width:240px){.cu-stat{flex-basis:100%}}
+html.hdr-min .brand #shopname{display:-webkit-inline-box;-webkit-line-clamp:1;overflow:hidden}   /* the slim header once scrolled stays one line; the full name shows at the top */
+.paybox .kv3{display:flex;flex-wrap:wrap;justify-content:space-around}.paybox .kv3>div{flex:1 1 auto;min-width:max-content}.paybox .kv3 b{white-space:nowrap;overflow-wrap:normal}   /* an amount never breaks mid-number; the three wrap instead */
+.sendrow{display:flex;flex-wrap:wrap;align-items:end}.sendrow>.field{flex:1 1 9em;min-width:0}
+#pay-seg button,.pm span{white-space:normal;overflow:visible;line-height:1.15}   /* "Part paid" / "Cheque" take two lines rather than "Part…" */
+.grp-row{grid-template-columns:repeat(auto-fit,minmax(9em,1fr))}
+html.fz-big .cg-b{padding-left:8px;padding-right:8px}html.fz-big details.cg>summary{padding-left:10px;padding-right:10px;gap:10px}
+header.top .bar{flex-wrap:wrap}header.top .brand{flex:1 1 7em}   /* too little room beside the buttons: the shop name gets its own row and the buttons move under it, right-aligned */
+.top-acts{display:flex;align-items:center;gap:10px;flex:none;margin-left:auto}
+html.hdr-min header.top .bar{flex-wrap:nowrap}
+.vkv b,.vkv .cu-txt{overflow-wrap:anywhere;min-width:0}

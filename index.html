@@ -22,17 +22,19 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="app.css?v=268f7dfa86">
+<link rel="stylesheet" href="app.css?v=dd9106552e">
 </head>
 <body>
 <header class="top">
   <div class="bar">
     <h1 class="brand"><span class="hello" id="hello"></span><span id="shopname">Rate Book</span><span class="envbadge" id="envbadge" hidden>TEST</span><small id="count" class="num"></small></h1>
-    <button class="iconbtn nbell" id="nbell" hidden aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge num" id="nbadge" hidden></span></button>
-    <button class="iconbtn" id="cmd-open" aria-label="Change by typing or speaking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg></button>
-    <div class="lang" role="group" aria-label="Language">
-      <button id="lang-en" aria-pressed="true">EN</button>
-      <button id="lang-hi" aria-pressed="false">हि</button>
+    <div class="top-acts">
+      <button class="iconbtn nbell" id="nbell" hidden aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge num" id="nbadge" hidden></span></button>
+      <button class="iconbtn" id="cmd-open" aria-label="Change by typing or speaking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg></button>
+      <div class="lang" role="group" aria-label="Language">
+        <button id="lang-en" aria-pressed="true">EN</button>
+        <button id="lang-hi" aria-pressed="false">हि</button>
+      </div>
     </div>
   </div>
   <div class="search" id="searchbox">
@@ -83,8 +85,10 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
       </div>
       <div class="bh-cust">
         <input id="cust" name="rb-cust-x" autocomplete="rb-cust-name" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" enterkeyhint="next" data-tp="custName" placeholder="Customer name" aria-label="Customer name">
-        <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="20" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
-        <button type="button" class="cust-x" id="cust-x" hidden aria-label="Clear customer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <div class="bh-mob">
+          <input id="cust-mob" name="rb-mob-x" type="text" inputmode="tel" autocomplete="rb-cust-mob" role="combobox" aria-autocomplete="list" aria-controls="sug-cust" aria-expanded="false" maxlength="20" data-tp="custMob" placeholder="Mobile no." aria-label="Mobile no.">
+          <button type="button" class="cust-x" id="cust-x" hidden aria-label="Clear customer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
       </div>
       <div class="sugbox" id="sug-cust" role="listbox" hidden></div>
       <span class="err" id="mob-err"></span>

@@ -80,6 +80,13 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - A FAB only for one dominant create action.
 - No hamburger menu as main navigation, no notched bottom app bar, no speed-dial FAB (all dated).
 
+**How to make things wrap (learned 12 Oct 2026, Samsung Ultra at Large).** The text-size setting zooms the page, so a phone at Large has about 11% less room than its width suggests (384 px at Large ≈ 343 px at Normal). Viewport `@media` widths don't see this; these do:
+- **Rows of controls:** `display:flex; flex-wrap:wrap` with a `flex-basis` that is the smallest useful width (e.g. the mobile box: room for 10 digits). When it doesn't fit, the item moves to its own line.
+- **Keep partners together:** put things that belong together (mobile + its ✕, Most sold | A–Z + the grid button, the header's bell · wand · EN/हि) in one wrapper, so they wrap as a group instead of one button landing alone on the next line.
+- **Card internals:** a container query (`container-type:inline-size` on the list or card, then `@container (max-width:…)`) measures the card itself, zoom included.
+- **Labels and names:** no `white-space:nowrap` + `text-overflow:ellipsis`. Let them wrap; add `overflow-wrap:anywhere` only for long codes (GSTIN, links). Amounts never break mid-number: wrap the whole figure to the next row instead.
+- `tests/screens.app.test.js` fails on text cut with "…", a short value (mobile, amount, GSTIN) too wide for its box, and runs a 384 px / Large set.
+
 ---
 
 ## 3. Typography
@@ -441,7 +448,7 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 ## 12. Checklist before calling UI work done
 
 1. **Sizes:** 320, 360, 390, 412 px and a laptop (1280). No horizontal scroll and nothing cut to "…" that matters (§1.2).
-2. **Text size:** Normal and Largest (1.38). Everything readable, and buttons still reachable.
+2. **Text size:** Normal, **Large (1.12)** and Largest (1.38). Everything readable, and buttons still reachable. Large on a 384 px phone (Samsung Galaxy Ultra) is a real phone in the shop.
 3. **Language:** English and Hindi. Hindi labels fit and Devanagari isn't clipped.
 4. **Appearance:** light and dark, and at least Ink plus one coloured palette.
 5. **iPhone:** keyboard behaviour (the `visualViewport` path), 16 px inputs, no `:has()` or newer JS in critical paths. Run `tests/ios.test.js`.

@@ -250,6 +250,8 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - Provide a solid fallback with `@supports not (backdrop-filter: blur(1px))` and `@media (prefers-reduced-transparency: reduce)`.
 - At most 2 glass elements on screen (blur is costly on budget Android).
 
+**Search boxes** (12 Oct 2026): every search box inside a screen gets the one shared look from `app.css` (grey pill, 44 px, 16 px text, ✕ added by `addSearchX`). Don't give an input its own inline style; if a new kind of box needs a look, add a class to `app.css`. A box with a label in a form (`.field`) keeps the form-field look.
+
 ---
 
 ## 6. Motion
@@ -374,8 +376,8 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 - still work as a **single colour**, for Android themed icons and the iOS tinted / clear appearances (the system strips the colour and keeps only the shape).
 
 **Files and sizes:**
-- `favicon.ico` 32 px (`sizes="32x32"`) and `icon.svg`. The SVG favicon can switch for dark mode with an internal `<style>@media (prefers-color-scheme:dark){…}</style>`.
-- `apple-touch-icon.png` **180 × 180**, opaque, about 20 px padding, no rounded corners baked in.
+- `favicon.ico` 32 px (`sizes="32x32"`) and `icon-iris.svg`. The SVG favicon can switch for dark mode with an internal `<style>@media (prefers-color-scheme:dark){…}</style>`.
+- `apple-touch-icon-iris.png` **180 × 180**, opaque, about 20 px padding, no rounded corners baked in.
 - Manifest icons:
   - 192 and 512 PNG with `"purpose":"any"`;
   - **separate** 192 and 512 PNG with `"purpose":"maskable"`. Never combine them as `"any maskable"`.

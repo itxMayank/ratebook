@@ -872,6 +872,11 @@ Reported on a Samsung Galaxy Ultra (384 px wide) at text size **Large**: the cus
 - Groups tool rows stack the two boxes when narrow; a past bill's "Send to" box keeps room for the number; Settings cards use less side padding at larger text so a GSTIN fits.
 - **Test:** `tests/screens.app.test.js` now also fails on text cut with "…" / hidden overflow and on a short value (mobile, amount, GSTIN) wider than its box, has a sixth set (**384 px at Large**), and checks the customer ✕ sits beside the mobile and the grid button beside the sort switch.
 
+## Search boxes, app icon on installed phones (12 Oct 2026)
+
+- **One look for every search box inside a screen** (`#sheet input[type=search]`, end of `app.css`): grey pill, 44 px tall, 16 px text, room for the ✕. Reported: the Vendors list search (`#vl-q`, shown once there are 5+ vendors) was the browser's plain box with a black frame. The Credit and Bulk edit searches lost their own inline styles. Form fields with a label (`.field`, e.g. the vendor picker on a new vendor bill) keep the form look. `tests/screens.app.test.js` now has 6 vendors (so the Vendors search shows) and fails on any text box left with the browser's own frame.
+- **Installed apps still showed the maroon icon and opening screen.** The files had been Iris since 11 Oct, but an installed app keeps the icon it was installed with; Android only refreshes it when the manifest's icon addresses change. The icons are renamed `icon-iris-*.png`, `icon-iris.svg`, `apple-touch-icon-iris.png`, `favicon-iris.png` (manifest, pages, `sw.js`, banner images). `sw.js` → `rb-shell-8`, and it now fetches its files past the browser's HTTP cache (`cache:'reload'`). Chrome checks an installed app's manifest when it's opened (about once a day) and may ask to confirm the new icon. **Next time the icon changes, rename the files again.** iPhone: the home-screen icon only changes after removing it and adding it again.
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).
@@ -932,11 +937,11 @@ Reported on a Samsung Galaxy Ultra (384 px wide) at text size **Large**: the cus
 - **Line icons instead of emoji:** `IC.warn / lock / receipt / file / clip / cam / link` (inline SVG, `.ic`, 1.05em, `currentColor`) replace ⚠ 🔒 🧾 📄 📎 📷 🔗 across the vendor screens, the customer note, the bill-number warning and the script-update note. ✓ and ✕ stay as text.
 - **Screen text at least 11 px:** the badge, "old", photo-count and cash labels were 10–10.5 px. Print sizes are unchanged.
 - **App icon set**, generated from one master (white ₹ tag on Iris, the ₹ as a vector path from Inter ExtraBold so it's crisp at every size):
-  - `icon.svg` favicon (plus a 64 px `favicon.png` fallback, also on `admin.html` / `vendor.html`).
+  - `icon-iris.svg` favicon (plus a 64 px `favicon-iris.png` fallback, also on `admin.html` / `vendor.html`).
   - "any" `icon-192/512.png` (rounded square).
   - **Separate** maskable `icon-maskable-192/512.png` (full bleed, artwork within a 34 % radius, inside the 40 % safe circle).
-  - `apple-touch-icon.png` 180, full bleed.
-  - `icon-mono-512.png` (`purpose: monochrome`, for Android themed icons).
+  - `apple-touch-icon-iris.png` 180, full bleed.
+  - `icon-iris-mono-512.png` (`purpose: monochrome`, for Android themed icons).
   - The lock-screen mark (`APP_MARK`) and the laptop sidebar logo use the same artwork.
   - `sw.js` caches all of them. `tests/sw.test.js` now reads the file list from `sw.js`, so a listed file that's missing fails the test (it would break offline install on phones).
 - **Shadows** (follow-up, same day): four tokens, each with a dark value. The one-off drop shadows (20 values, including an old maroon glow on the Add button) all map onto them; focus/selection rings are unchanged.
@@ -1029,7 +1034,7 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 
 ## How to update
 
-- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-7`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `lock.js`, `shops.js`, `search.js`, `billing.js`, `prices.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
+- **App change:** edit `index.html` (or other static files) and commit to `main`. GitHub Pages republishes in about a minute. Phones load the new `index.html` on next open (the service worker fetches pages network-first). If `sw.js`, the icons or the manifest change, bump `VERSION` in `sw.js` (currently `rb-shell-8`). **After editing `app.css`, `strings.js`, `app.js` or an area file (`print.js`, `reports.js`, `settings.js`, `lock.js`, `shops.js`, `search.js`, `billing.js`, `prices.js`, `bills.js`, `customers.js`, `vendors.js`), run `node tools/stamp.js`** (it updates their version stamps in `index.html`; `tests/assets.test.js` fails if you forget). Run `node tests/run-all.js` before merging (GitHub runs it too).
 - **Backend change:** with the admin dashboard, **Update script** (your shop first, then Update all shops). By hand: paste the new `Code.gs`, then **Manage deployments → Edit → New version**. Never use "New deployment": it changes the URL and breaks every installed app until `API_URL` is updated.
 - **Prices and settings:** changed inside the app (needs PIN) or directly in the sheet's `Items` tab. Phones notice within about 30 seconds.
 

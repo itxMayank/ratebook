@@ -23,11 +23,11 @@ const code = html.slice(html.indexOf('</head>')) + require('./browser').codeFile
   ok(/\.rph-d\{[^}]*transform:scaleY/.test(css) && !/transition:[^;}]*\b(width|height|left|top)\b/.test(css.replace(/\.rph-seg\{[^}]*\}/, '')), 'animations use transform, not width/height/left/top (split bar excepted)');
   const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8')), has = (p, sz) => man.icons.some(i => i.purpose === p && i.sizes === sz && fs.existsSync(path.join(ROOT, i.src)));
   ok(has('any', '192x192') && has('any', '512x512') && has('maskable', '192x192') && has('maskable', '512x512') && has('monochrome', '512x512'), 'manifest: any + maskable at 192 and 512, plus a monochrome icon; files exist');
-  ok(/rel="icon" type="image\/svg\+xml" href="icon.svg"/.test(html) && fs.existsSync(path.join(ROOT, 'icon.svg')), 'sharp SVG favicon');
+  ok(/rel="icon" type="image\/svg\+xml" href="icon-iris.svg"/.test(html) && fs.existsSync(path.join(ROOT, 'icon-iris.svg')), 'sharp SVG favicon');
   // maskable: everything outside the centred 80% circle is plain background
   const srv = http.createServer((q, r) => { if (q.url === '/') { r.writeHead(200, { 'Content-Type': 'text/html' }); return r.end('<!doctype html><title>t</title>'); } const f = path.join(ROOT, q.url.slice(1)); if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': 'image/png' }); r.end(fs.readFileSync(f)); }).listen(0);
   const port = srv.address().port, b = await launch(), p = await b.newPage(); await p.goto(`http://localhost:${port}/`);
-  for (const f of ['icon-maskable-512.png', 'icon-maskable-192.png']) {
+  for (const f of ['icon-iris-maskable-512.png', 'icon-iris-maskable-192.png']) {
     const out = await p.evaluate(async u => { const im = new Image(); im.src = u; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
       const d = x.getImageData(0, 0, c.width, c.height).data, W = c.width, bg = [d[0], d[1], d[2]]; let bad = 0;
       for (let y = 0; y < W; y++) for (let i = 0; i < W; i++) { const r = Math.hypot(i + .5 - W / 2, y + .5 - W / 2) / W; if (r > .4) { const k = (y * W + i) * 4; if (Math.abs(d[k] - bg[0]) + Math.abs(d[k + 1] - bg[1]) + Math.abs(d[k + 2] - bg[2]) > 12) bad++; } }

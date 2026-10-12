@@ -17,7 +17,7 @@ const bills = [bill(12, ago(0), { customer: 'Sunil Traders', mobile: '9876543210
   bill(3, ago(40), { customer: 'Old Customer', total: 700, cancelled: true, cancelReason: 'Wrong items' })];
 const dues = { total: 1234567, bills: 1, customers: [{ name: 'Sunil Traders', mobile: '9876543210', due: 1234567, oldest: iso(ago(40)), bills: [{ n: 12, id: 'b12', row: 13, date: iso(ago(40)), total: 1234567, paid: 0, due: 1234567, items: 'PP Bag 12x18 1 kg = 180', gst: false }] }] };
 const custs = [['9876543210', 'Sunil Traders', '09ABCDE1234F1Z5', 4, 3250, iso(ago(6)), 1234567, 'Main Road, Kanpur', 'Pays on the 5th', 12], ['9123456780', 'Ravi Stores', '', 1, 236, iso(ago(1)), 0, '', '', 5]];
-const vendors = [{ id: 'vA', name: 'Mahaveer Enterprises', mobile: '9876543210', opening: 0, openingDate: '2026-10-01', linkOn: true, token: 'l0123456789abcdef012345', createdAt: 1, updatedAt: 1, creditDays: 15 }];
+const vendors = ['Gupta Traders', 'Sharma Packaging', 'Delhi Foils', 'Raj Plastics', 'Om Containers'].map((name, i) => ({ id: 'v' + i, name, mobile: '98765432' + (10 + i), opening: 100 * i, openingDate: '2026-10-01', createdAt: 1, updatedAt: 1 })).concat([{ id: 'vA', name: 'Mahaveer Enterprises', mobile: '9876543210', opening: 0, openingDate: '2026-10-01', linkOn: true, token: 'l0123456789abcdef012345', createdAt: 1, updatedAt: 1, creditDays: 15 }]);
 const entries = [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', amount: 1180, gst: 180, billNo: 'MH-77', photos: [], alloc: {}, at: 10 },
   { id: 'e2', vendorId: 'vA', type: 'pay', date: '2026-10-05', amount: 700, mode: 'UPI', photos: [], alloc: { e1: 700 }, at: 20 }];
 const report = (from, to) => ({ from, to, totals: { sales: 5500, bills: 20, tax: 180, gstBills: 1, cancelled: 1, lineSale: 5500, pSale: 5000, pCost: 4000, estAmt: 0, noBuyAmt: 0, profit: 1000, cost: 4000 },
@@ -72,6 +72,10 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
       const cs = getComputedStyle(e); if (cs.overflowX === 'visible' && cs.textOverflow !== 'ellipsis' || /auto|scroll/.test(cs.overflowX)) continue;
       if (![...e.childNodes].some(x => x.nodeType === 3 && x.textContent.trim()) || !vis(e) || hid(e)) continue;
       if (e.scrollWidth > e.clientWidth + 1) cut.push('"' + e.textContent.trim().slice(0, 24) + '"'); }
+    // a text box left with the browser's own look (grey 1–2 px frame on white), e.g. the Vendors search before 12 Oct 2026
+    for (const e of (root || document).querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]):not([type=date]),textarea')) {
+      if (!vis(e) || hid(e)) continue; const cs = getComputedStyle(e);
+      if (/^rgb\(118, 118, 118\)|^rgb\(133, 133, 133\)/.test(cs.borderTopColor) && parseFloat(cs.borderTopWidth) > 0) cut.push('plain browser box ' + (e.id || e.placeholder)); }
     const de = document.documentElement, body = document.querySelector('#sheet-body');
     return { cut: [...new Set(cut)], open, title: (document.querySelector('#sheet-title') || {}).textContent || '', text: text.replace(/\s+/g, ' ').slice(0, 4000), keyish,
       spill: Math.max(de.scrollWidth - innerWidth, open && body ? body.scrollWidth - body.clientWidth : 0) }; }, where);
@@ -82,7 +86,7 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     if (where === undefined && (!r.open || !r.title.trim())) issues.push('not open / no title');
     if (r.spill > 1) issues.push('spills sideways by ' + r.spill + ' px');
     if (bad) issues.push('shows "' + bad + '"');
-    if (r.cut.length) issues.push('cut short: ' + r.cut.slice(0, 3).join(', '));
+    if (r.cut.length) issues.push('cut short or plain box: ' + r.cut.slice(0, 3).join(', '));
     if (r.keyish.length) issues.push('text key showing: ' + r.keyish.slice(0, 3).join(', '));
     if (process.env.SHOT) await p.screenshot({ path: `${process.env.SHOT}/${set.name.replace(/\W+/g, '-')}-${String(++n).padStart(2, '0')}-${name.replace(/\W+/g, '-')}.png` });
     ok(!issues.length, `${set.name} · ${name}` + (issues.length ? ': ' + issues.join('; ') : ''));

@@ -492,7 +492,7 @@ function openBulkEdit(){
   const changes=new Map(); const sel=new Set(); let filter="", which="both";
   const val=(it,f)=> changes.get(it.id)?.[f] ?? (f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]);
   const visible=()=>{ if(!filter.trim()) return [...S.items]; return runSearch(filter).res.filter(r=>!r.fuzzy).map(r=>r.e.it); };
-  const body=`<input id="be-f" type="search" placeholder="${esc(t("filter"))}" style="width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:var(--r-md);padding:10px 12px;font-size:16px">
+  const body=`<input id="be-f" type="search" placeholder="${esc(t("filter"))}">
     <div class="toolbar"><div class="seg" id="be-which"><button type="button" data-w="both" aria-pressed="true">${esc(t("both"))}</button><button type="button" data-w="sell" aria-pressed="false">${esc(t("onlySell"))}</button><button type="button" data-w="buy" aria-pressed="false">${esc(t("onlyBuy"))}</button></div>
       <input id="be-pct" inputmode="decimal" placeholder="${esc(t("pctPh"))}" style="width:110px">
       <button class="btn ghost" id="be-apply" type="button">${esc(t("apply"))}</button><span class="note" id="be-sel"></span></div>

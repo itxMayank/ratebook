@@ -3,8 +3,9 @@
 const { appHtml, launch, ok, done } = require('./browser');
 const html = appHtml('S,appUnlock,openNotices,checkRev,openSettings,NT');
 const now = Date.now();
+const yNoon = (() => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(12, 0, 0, 0); return +d; })();   // yesterday noon: "now − 1.2 days" fell on the day before yesterday when run before 4:48 am
 const N = (id, kind, o) => Object.assign({ id, at: now - 60000, kind, vendorId: 'vA', entryId: '', vname: 'Mahaveer', amount: null, billNo: '', extra: {}, by: 'Sanjay', read: false }, o);
-const base = [N('n2', 'bill', { amount: 1180, billNo: 'M-77', entryId: 'e1', extra: { due: '2026-10-17' } }), N('n1', 'vendor', { at: now - 86400000 * 1.2, extra: { days: 15 } }),
+const base = [N('n2', 'bill', { amount: 1180, billNo: 'M-77', entryId: 'e1', extra: { due: '2026-10-17' } }), N('n1', 'vendor', { at: yNoon, extra: { days: 15 } }),
   N('n0', 'pay', { amount: 500, extra: { mode: 'UPI', bills: ['M-77'] }, at: now - 86400000 * 3, read: true })];
 (async () => {
   const b = await launch();

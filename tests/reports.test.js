@@ -2,6 +2,9 @@
    Run: node tests/reports.test.js */
 const { appHtml, launch, ok, done, MAIN_API } = require('./browser');
 const html = appHtml('S,LOCK,appUnlock,openReports,switchEnv');
+/* The phone's date starts at Thursday 8 Oct 2026, 11 am: this week (Mon–Thu, 4 days), this month (8 days) and today are
+   then always different periods. Before, the test failed on Mondays (this week = today, so one request fewer). */
+const FIX = new Date(2026, 9, 8, 11, 0, 0);
 const items = [{ id: 'a', name: 'PP Bag', unit: 'kg', buy: 90, sell: 120, cat: 'Bags' }, { id: 'b', name: 'Paper Cup', unit: 'pc', buy: 1, sell: 2, cat: 'Cups' },
   { id: 'c', name: 'Foil Roll', unit: 'pc', buy: 50, sell: 70, cat: 'Foil' }, { id: 'd', name: 'Tape', unit: 'pc', buy: 10, sell: 15, cat: '' }];
 const it = (name, amount) => ({ name, unit: name === 'PP Bag' ? 'kg' : 'pc', qty: 1, amount, bills: 1 });
@@ -32,6 +35,9 @@ function report(from, to) {
       if (bd.action === 'verify') return send({ ok: true, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
       return send({ ok: true }); });
     await p.addInitScript(() => { if (!sessionStorage.done) { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); sessionStorage.done = 1; } });
+    await p.addInitScript(fix => { const D = Date, off = fix - D.now();   // only Date moves to FIX (and keeps running); animation timing stays real
+      class FD extends D { constructor(...a) { super(...(a.length ? a : [D.now() + off])); } static now() { return D.now() + off; } }
+      window.Date = FD; }, +FIX);
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(600);
     return p;
   }
@@ -49,7 +55,7 @@ function report(from, to) {
   const n0 = reqs.length; await p.click('[data-rp=week]'); await p.waitForTimeout(150);
   const mid = money(await txt(p, '#rph-sales'));
   await p.waitForTimeout(900);
-  const wd = (new Date().getDay() + 6) % 7 + 1;
+  const wd = (FIX.getDay() + 6) % 7 + 1;
   ok(reqs.length === n0 && mid > 1000 && mid < 5500 && await txt(p, '#rph-sales') === '₹5,500', 'switching period: no waiting, the total rolls ₹1,000 → ₹5,500 (seen ₹' + mid + ' on the way)');
   ok(JSON.stringify(await rows(p)) === '["Bags","Cups","Foil","No group"]' && (await p.$$('#rph-days .rph-d')).length === wd, 'week: four groups (item without a group shown as "No group"), one bar per day so far');
   const w = await p.$$eval('#rph-bar .rph-seg', els => els.map(e => parseFloat(e.style.width)));
@@ -59,7 +65,7 @@ function report(from, to) {
   await p.click('[data-rp=month]'); await p.waitForTimeout(120);
   const folding = await p.$$eval('#rph-rows .rph-rw[data-gone]', els => els.length);
   await p.waitForTimeout(900);
-  ok(folding === 2 && (await p.$$('#rph-rows .rph-rw')).length === 2 && JSON.stringify(await rows(p)) === '["Bags","Foil"]' && (await p.$$('#rph-days .rph-d')).length === new Date().getDate(),
+  ok(folding === 2 && (await p.$$('#rph-rows .rph-rw')).length === 2 && JSON.stringify(await rows(p)) === '["Bags","Foil"]' && (await p.$$('#rph-days .rph-d')).length === FIX.getDate(),
     'month: rows no longer in the period fold away and are removed; one bar per day of the month');
   // highlight a part of the split
   await p.click('#rph-bar .rph-seg[data-k="g:Bags"]'); await p.waitForTimeout(250);

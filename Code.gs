@@ -123,9 +123,11 @@ function perfNote_(obj) {
 function clientErr_(b) {
   try { const c = CacheService.getScriptCache(), d = String(b.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40) || 'nodev', rk = 'cerr_' + d, n = Number(c.get(rk) || 0);
     if (n >= 20) return { ok: true, skipped: true }; c.put(rk, String(n + 1), 3600);
+    const ga = Number(c.get('cerr_all') || 0); if (ga >= 60) return { ok: true, skipped: true }; c.put('cerr_all', String(ga + 1), 3600);   // (v46) at most 60 an hour in all: the phone id is the phone's own choice
+    let by = ''; if (b.tok) { const w = sessWho_(String(b.tok)); if (w && !w.error) by = w.name; } if (!by) by = '? ' + String(b.by == null ? '' : b.by);   // a name is trusted only from a sign-in; anything else is marked "?" 
     const s = (v, m) => String(v == null ? '' : v).replace(/[\u0000-\u001f]+/g, ' ').slice(0, m), e = b.e || {};
     let a = []; try { a = JSON.parse(c.get('CERRS') || '[]'); } catch (x) {}
-    a.push({ t: Date.now(), m: s(e.m, 300), w: s(e.w, 160), st: s(e.st, 500), by: s(b.by, 40), d: d.slice(0, 6), ua: s(e.ua, 90), tab: s(e.tab, 30) });
+    a.push({ t: Date.now(), m: s(e.m, 300), w: s(e.w, 160), st: s(e.st, 500), by: s(by, 40), d: d.slice(0, 6), ua: s(e.ua, 90), tab: s(e.tab, 30) });
     if (a.length > 40) a = a.slice(-40); c.put('CERRS', JSON.stringify(a), 21600);
   } catch (x) {}
   return { ok: true }; }
@@ -191,7 +193,7 @@ function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) {} 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
 function num_(v) { const n = Number(String(v).replace(/[₹,\s]/g, '')); return isFinite(n) ? n : 0; }
-function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@]/.test(s)) s = "'" + s; return s; }
+function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@\-]/.test(s)) s = "'" + s; return s; }   // a cell starting = + @ - would be read by Sheets as a formula
 
 /* ---------- reads ---------- */
 
@@ -642,8 +644,11 @@ function sessNew_(who, body) { const t = (Utilities.getUuid() + Utilities.getUui
   if (!sessEdit_(all => {
     /* New-phone approval (owner setting): a phone that hasn't had an approved sign-in here waits until the owner approves it.
        Owners never wait (they are the ones who approve). */
-    if (approve && !Object.keys(all).some(x => !all[x].p && dev && all[x].d === dev)) pending = true;
-    all[k] = { u: who.master ? 'm:' + mkey_(who.name) : who.id, n: who.name, l: str_(body.dl || '', 60), c: now, s: now, d: dev };
+    /* (v46) Approval is for this person on this phone: the phone's id is chosen by the phone and can be copied from an approved one,
+       so it only counts together with the same person who was approved on it. */
+    const uid = who.master ? 'm:' + mkey_(who.name) : who.id;
+    if (approve && !Object.keys(all).some(x => !all[x].p && dev && all[x].d === dev && all[x].u === uid)) pending = true;
+    all[k] = { u: uid, n: who.name, l: str_(body.dl || '', 60), c: now, s: now, d: dev };
     if (pending) all[k].p = 1; })) throw new Error('busy');
   return { tok: t, pending: pending }; }
 function sessEnd_(pick) { sessEdit_(all => Object.keys(all).forEach(k => { if (pick(k, all[k])) delete all[k]; })); }

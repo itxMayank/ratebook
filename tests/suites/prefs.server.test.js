@@ -7,8 +7,8 @@ const ctx={ console, PropertiesService:{getScriptProperties:()=>({getProperty:k=
 vm.createContext(ctx); vm.runInContext(fs.readFileSync(require('path').join(__dirname,'..','..','Code.gs'),'utf8'),ctx);
 const R=c=>vm.runInContext(c,ctx), ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
 props.PIN='9999';
-R("saveUser_({name:'Sanjay',pin:'1111',role:'staff'}); saveUser_({name:'Dad',pin:'2222',role:'manager',testOk:false});");
-const sanjay=R("auth_({pin:'1111',dev:'a'})"), dad=R("auth_({pin:'2222',dev:'b'})"), owner=R("auth_({pin:'9999',by:'Mayank',dev:'c'})");
+R("saveUser_({name:'Sanjay',pin:'5273',role:'staff'}); saveUser_({name:'Dad',pin:'826413',role:'manager',testOk:false});");
+const sanjay=R("auth_({pin:'5273',dev:'a'})"), dad=R("auth_({pin:'826413',dev:'b'})"), owner=R("auth_({pin:'9999',by:'Mayank',dev:'c'})");
 ok(sanjay.testOk===true && dad.testOk===false && owner.master, 'auth carries testOk');
 ctx.S1=sanjay; ctx.D1=dad; ctx.O1=owner;
 let r=R("setMyPrefs_(S1,{mode:'test',showProfit:true,hideBuy:true})");

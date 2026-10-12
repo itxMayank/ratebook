@@ -94,3 +94,19 @@ ok(ub({ id: 'b7', n: 7, total: 500, pay: 'paid', mobile: '9876543210' }, 'Sanjay
 ok(ub({ id: 'b8', n: 8, total: 320, pay: 'credit', mobile: '9876543210', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && !col(8, 'editedBy'), 'G5 the maker tweaking their own bill within 30 minutes: allowed, not marked Edited (as before)');
 ok(ub({ id: 'b9', n: 9, total: 150, pay: 'paid', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && col(9, 'editedBy') === 'Raju', 'G6 an old paid bill changed with "fresh": still marked Edited (fresh only counts within 30 minutes)');
 ok(R3('HIST.length') >= 4, 'G7 every change keeps the old text in BillHistory');
+
+// H. new-phone approval belongs to the person on that phone (v46): copying an approved phone's id doesn't skip it
+const g4 = gas([path.join(__dirname, '..', 'Code.gs')]), R4 = g4.R; g4.props.PIN = '4821';
+R4("readConfig_=()=>({approveNew:true}); saveUser_({name:'Raju',pin:'5273',role:'staff'}); saveUser_({name:'Mohan',pin:'6194',role:'staff'})");
+const s1 = R4("sessNew_(auth_({pin:'5273',dev:'counterA'}),{dev:'counterA'})"); R4("sessEdit_(all=>Object.keys(all).forEach(k=>{ delete all[k].p; }))");
+ok(s1.pending === true, 'H1 Raju on a new phone waits for the owner (then approved)');
+ok(R4("sessNew_(auth_({pin:'5273',dev:'counterA'}),{dev:'counterA'})").pending === false, 'H2 Raju signing in again on the same phone: no second wait');
+ok(R4("sessNew_(auth_({pin:'6194',dev:'counterA'}),{dev:'counterA'})").pending === true, 'H3 someone else using that phone\'s id (copied, or the same counter phone): waits for approval');
+
+// I. the error log (v46): at most 60 an hour in all (a stranger can change the phone id each time); a name only from a sign-in
+const ce = b => JSON.parse(R(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
+for (let i = 0; i < 80; i++) ce({ action: 'clientErr', dev: 'spam' + i, by: 'Owner', e: { m: 'fake ' + i } });
+const kept = JSON.parse(g.cache.CERRS || '[]');
+ok(kept.length <= 40 && Number(g.cache.cerr_all) === 60, 'I1 80 fake errors from "different phones": only 60 an hour get in');
+ok(kept.every(x => /^\? /.test(x.by)), 'I2 a name sent without a sign-in is marked "?", never shown as that person');
+ok(R("str_('-cmd|x',20)") === "'-cmd|x" && R("str_('=SUM(A1)',20)") === "'=SUM(A1)", 'I3 text starting with - or = is stored as text, never as a sheet formula');

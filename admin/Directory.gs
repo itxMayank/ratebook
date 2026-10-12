@@ -24,7 +24,7 @@ let T0_ = 0;
 
 function out_(o) { if (T0_ && o && typeof o === 'object') o.ms = Date.now() - T0_; return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function P_() { return PropertiesService.getScriptProperties(); }
-function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@]/.test(s)) s = "'" + s; return s; }
+function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200); if (/^[=+@\-]/.test(s)) s = "'" + s; return s; }   // a cell starting = + @ - would be read by Sheets as a formula
 function rand_(n, abc) { abc = abc || 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = ''; const b = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   for (let i = 0; i < n; i++) s += abc[parseInt(b.substr(i * 2, 2), 16) % abc.length]; return s; }
 function hash_(s) { return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, (P_().getProperty('DIR_SALT') || '') + ':' + s)); }

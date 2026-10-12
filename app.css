@@ -1763,3 +1763,28 @@ html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini{border-top:0!i
 #bill-search-results .mini .mprice{font-size:12px;color:var(--muted);white-space:nowrap}
 #bill-search-results .mini .mprice b{font:800 18px var(--f-display);color:var(--fg);letter-spacing:-.02em}
 #bill-search-results .mini .mrates b{font-weight:600}
+
+/* Screens inside sheets never get wider than the phone (12 Oct 2026, found by tests/screens.app.test.js at 320 px with the
+   largest text). A one-column grid used to grow to its widest child (a text box, a row of amounts, the customer header), so
+   the whole screen spilled sideways. Its column now stays the sheet's width; the children below wrap instead. No grid in the
+   app flows sideways, so at normal sizes nothing moves. */
+.sheet-b,.sheet-b *{grid-auto-columns:minmax(0,1fr)}
+.sheet-b input:not([type=checkbox]):not([type=radio]):not([type=date]){min-width:0}
+.sheet-b a{overflow-wrap:anywhere}
+.sendrow{grid-template-columns:minmax(0,1fr) auto}
+.paybox .kv3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.paybox .kv3 b,.cu-stat b,.dues-sum b{overflow-wrap:anywhere}
+.billcard{grid-template-columns:minmax(0,1fr) auto}
+.duecard{grid-template-columns:auto minmax(0,1fr) auto}
+.duecard .m{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bl-mh,.bl-day{flex-wrap:wrap}
+.cu-top{flex-wrap:wrap}.cu-top>div:not(.cu-av){min-width:0}
+/* Credit cards on a narrow screen (320 px with the largest text): the amount and age move under the name instead of
+   squeezing the name and mobile to nothing. */
+#du-list{container-type:inline-size}
+@container (max-width:300px){
+  #du-list .duecard{grid-template-areas:"av b" "av m" "av amt" "av age";grid-template-columns:auto minmax(0,1fr)}
+  #du-list .duecard .av{grid-area:av;align-self:start}
+  #du-list .duecard b{grid-area:b}#du-list .duecard .m{grid-area:m;white-space:normal}
+  #du-list .duecard .amt{grid-area:amt;text-align:left}#du-list .duecard .age{grid-area:age;text-align:left}
+}

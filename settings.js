@@ -34,7 +34,7 @@ function speedHTML(){ const a=ls.get("rb_perf",[]); if(!a.length) return `<p cla
   const by={}; a.forEach(x=>{ (by[x[0]]=by[x[0]]||[]).push(x); });
   const q=(v,f)=>{ const y=v.slice().sort((m,n)=>m-n); return y[Math.min(y.length-1,Math.floor(f*y.length))]; }, sec=ms=>ms==null?"—":(ms/1000).toFixed(ms<10000?1:0)+" s";
   return Object.keys(by).sort((m,n)=>by[n].length-by[m].length).slice(0,8).map(k=>{ const tot=by[k].map(x=>x[1]), srv=by[k].map(x=>x[2]).filter(x=>x!=null);
-    return `<div class="speed-row"><span>${esc(k)} <small style="color:var(--muted)">×${by[k].length}</small></span><b class="num">${sec(q(tot,.5))} / ${sec(q(tot,.95))}</b><small class="num" style="color:var(--muted)">${srv.length?"sheet "+sec(q(srv,.5)):""}</small></div>`; }).join(""); }
+    return `<div class="speed-row"><span>${esc(t("speedAct",k))} <small style="color:var(--muted)">×${by[k].length}</small></span><b class="num">${sec(q(tot,.5))} / ${sec(q(tot,.95))}</b><small class="num" style="color:var(--muted)">${srv.length?t("speedSheet")+" "+sec(q(srv,.5)):""}</small></div>`; }).join(""); }
 /** Owner: every signed-in phone, newest use first; sign any of them out. */
 function renderSessions(j){ const box=$("#sess-body"); if(!box) return; const L=(j&&j.sessions)||[];
   const appr=j&&j.approveNew!==undefined?`<label class="switch"><span><b>${esc(t("apprT"))}</b><br><span class="note">${esc(t("apprD"))}</span></span><input type="checkbox" id="sess-appr" ${j.approveNew?"checked":""}></label>`:"";

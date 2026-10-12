@@ -664,6 +664,11 @@ async function onUnitBtn(btn,cb){ const v=await pickUnit(btn.dataset.unit); if(v
 
 /* ---------------- Talking to the Google Sheet ---------------- */
 function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
+/** Price list and photos: asked for with this phone's sign-in (POST, script v44+; anonymous GETs get nothing since then). An older script answers bad_action: then the old GET. */
+async function apiRead(params){
+  if(S.auth && S.auth.tok && !S.auth.pending && !(S.sv>0 && S.sv<44)){
+    try{ return await apiPost0(params); }catch(e){ if(!(e && e.code==="bad_action")) throw e; } }
+  return apiGet0(params); }
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
 function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
 /** Request timings on this phone (per shop): Settings → Speed. rev/thumbs aren't kept (they're tiny and constant). */
@@ -734,7 +739,7 @@ const idb=(()=>{ let dbp=null;
 })();
 async function loadFull(it){
   const c=await idb.get("images",it.id); if(c && c.v===it.imgV) return c.d;
-  try{ const j=await apiGet({action:"image",id:it.id}); if(j.data){ idb.set("images",it.id,{v:it.imgV,d:j.data}); return j.data; } }catch{}
+  try{ const j=await netTrack(apiRead({action:"image",id:it.id})); if(j.data){ idb.set("images",it.id,{v:it.imgV,d:j.data}); return j.data; } }catch{}
   return c?c.d:null;
 }
 
@@ -819,9 +824,9 @@ function sync(){
       if(!bootTried && S.canWrite && S.auth && S.auth.tok && !S.auth.pending){ bootTried=true;
         try{ j=await netTrack(apiPost0({action:"boot"})); if(!j || !Array.isArray(j.items) || !j.config) j=null; }   /* only a real price list counts; anything else: the normal request */
         catch(e){ if(e && (e.code==="bad_session"||e.code==="pending"||e.code==="need_signin"||e.code==="wrong_shop")) throw e; j=null; } }
-      if(!j) j=await apiGet({action:"list"});
+      if(!j) j=await netTrack(apiRead({action:"list"}));
       S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; if(j.pop && typeof j.pop==="object") S.pop=j.pop; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); if(j.me){ meChecked=true; applyMe({me:j.me,view:j.view},j); } else refreshMe(j); }
-    catch{ S.online=false; renderNet(); }
+    catch(e){ if(!(e && e.code==="need_signin")) S.online=false; renderNet(); }   // not signed in yet (script v44+ shares the list only after sign-in): not "offline"
     finally{ syncing=null; }
   })();
   return syncing;
@@ -846,7 +851,7 @@ async function checkRev(){
 async function fetchThumbs(){
   const need=S.items.filter(it=>it.imgV && (!S.thumbs[it.id] || S.thumbs[it.id].v!==it.imgV)).map(it=>it.id);
   for(let i=0;i<need.length;i+=30){
-    try{ const j=await apiGet({action:"thumbs",ids:need.slice(i,i+30).join(",")});
+    try{ const j=await apiRead({action:"thumbs",ids:need.slice(i,i+30).join(",")});
       for(const x of j.thumbs||[]){ if(!x.thumb) continue; S.thumbs[x.id]={v:+x.imgV,d:x.thumb}; idb.set("thumbs",x.id,S.thumbs[x.id]); }
       renderList(); }catch{ break; }
   }

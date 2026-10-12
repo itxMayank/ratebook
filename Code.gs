@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 43;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 44;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -204,13 +204,12 @@ function doGet(e) {
       case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test') });
-      case 'list': { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); if (!codeOk_(p.k)) { L.items.forEach(it => { it.buy = null; }); L.limited = true; } L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
-      case 'thumbs': return out_(thumbs_(String(p.ids || '').split(',').filter(String)));
+      case 'list': { const c = listCached_().config || {};   /* the price list needs a signed-in phone (POST list, since v44); only the units, which the Directory copies into a new shop */
+        return out_({ ok: false, error: 'need_signin', config: { units: c.units, defaultUnit: c.defaultUnit, defaultHsn: c.defaultHsn }, sv: SCRIPT_VERSION, shop: shopCode_() }); }
+      case 'thumbs': case 'image': case 'images': return out_({ ok: false, error: 'need_signin' });   // photos: POST with a sign-in since v44
       case 'vpub': return out_(vPub_(p.t));
       case 'vpubprev': return out_(vPubPrev_(p.t));
       case 'vpubfile': return out_(vPubFile_(p.t, p.f));
-      case 'image': return out_(image_(String(p.id || '')));
-      case 'images': return out_(images_(String(p.id || '')));
       default: return out_({ ok: true, app: 'ratebook', rev: getRev_() });
     }
   } catch (err) {
@@ -486,7 +485,11 @@ function doPost(e) {
   try { ensureEnv_(); dedupeOnce_(); setEnv_(body.env); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   if (body.action === 'takeBill') {      // anyone making a bill can do this (with the shop code if one is set)
     if (shopPaused_()) return out_({ ok: false, error: 'paused' });   // the phone keeps the bill queued; nothing is lost
-    if (!codeOk_(body.k)) { const a0 = body.pin || body.tok ? auth_(body) : { error: 'x' }; if (a0.error) return out_({ ok: false, error: 'need_code' }); }
+    const a0 = auth_(body);      // since v44 only a signed-in person can save a bill (before: anyone with the link when no shop code was set)
+    if (a0.error) return out_({ ok: false, error: a0.error });
+    if (a0.viaPin && approveOn_()) return out_({ ok: false, error: 'need_signin' });
+    if (ENV_ === 'test' && a0.testOk === false) return out_({ ok: false, error: 'no_test' });
+    body.by = a0.name;   // the name on the bill is the signed-in person's (from their sign-in), not what the phone sends
     const tb = takeBill_(body); try { if (tb && tb.ok !== false) bumpB_(false, body.bill && body.bill.id); } catch (err) {}
     return out_(tb);
   }
@@ -497,6 +500,11 @@ function doPost(e) {
   if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs') return out_({ ok: false, error: 'no_test' });
   if (who.viaPin && approveOn_() && body.action !== 'verify') return out_({ ok: false, error: 'need_signin' });   // new-phone approval: only signed-in phones
   if (shopPaused_() && !PAUSE_OK_[body.action]) return out_({ ok: false, error: 'paused' });
+  if (body.action === 'list' || body.action === 'thumbs' || body.action === 'image' || body.action === 'images') {   // reads (v44), no lock
+    try { if (body.action === 'list') { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
+      if (body.action === 'thumbs') return out_(thumbs_((Array.isArray(body.ids) ? body.ids : String(body.ids || '').split(',')).map(String).filter(String).slice(0, 60)));
+      return out_(body.action === 'image' ? image_(str_(body.id, 60)) : images_(str_(body.id, 60))); }
+    catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'boot') {      // app start in one request; read-only, so no lock
     try { return out_(bootReply_(who, body)); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'vRead' || body.action === 'vCheck') {      // Gemini takes seconds: don't hold the script lock while it reads
@@ -582,7 +590,7 @@ function doPost(e) {
  * Wrong PINs lock only that phone (dev id) after MAX_FAILS in 15 min; GLOBAL_MAX_FAILS per hour locks everyone.
  */
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
-const NEEDS = { verify: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
+const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff', images: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
@@ -594,10 +602,10 @@ function hashPin_(pin) { return Utilities.base64Encode(Utilities.computeDigest(U
 function auth_(body) {
   const cache = CacheService.getScriptCache();
   const dev = String(body.dev || 'nodev').replace(/[^\w-]/g, '').slice(0, 40) || 'nodev';
+  const tok = String(body.tok || '');
+  if (tok) return sessWho_(tok);         // a signed-in phone: never held up by someone else's wrong PINs (before v44 the hourly lock blocked everyone); not counted as a wrong PIN, a 128-bit token can't be guessed
   const g = Number(cache.get('gfails') || 0), d = Number(cache.get('fails_' + dev) || 0);
   if (g >= GLOBAL_MAX_FAILS || d >= MAX_FAILS) return { error: 'locked' };
-  const tok = String(body.tok || '');
-  if (tok) return sessWho_(tok);         // not counted as a wrong PIN: a 128-bit token can't be guessed
   const pin = String(body.pin || '');
   if (pin) {
     const real = PropertiesService.getScriptProperties().getProperty('PIN') || String(DEFAULT_PIN);
@@ -654,7 +662,7 @@ function listSessions_(who) { const all = sessAll_();
 
 /* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
-const PAUSE_OK_ = { verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
+const PAUSE_OK_ = { verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
   vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */

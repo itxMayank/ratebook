@@ -1819,3 +1819,8 @@ header.top .bar{flex-wrap:wrap}header.top .brand{flex:1 1 7em}   /* too little r
 .top-acts{display:flex;align-items:center;gap:10px;flex:none;margin-left:auto}
 html.hdr-min header.top .bar{flex-wrap:nowrap}
 .vkv b,.vkv .cu-txt{overflow-wrap:anywhere;min-width:0}
+/* One look for every search box inside a screen (12 Oct 2026; the Vendors one was the browser's plain box). Form fields with a label (.field) keep the form look. */
+#sheet input[type=search]:not(.field input){display:block;width:100%;min-height:44px;margin:0;border:0!important;border-radius:var(--r-full)!important;background:var(--surface-2)!important;box-shadow:none!important;padding:10px 40px 10px 16px!important;font:500 16px var(--f-body);color:var(--fg);-webkit-appearance:none;appearance:none}
+#sheet input[type=search]:not(.field input):focus{outline:0;box-shadow:0 0 0 2px var(--ink)!important}
+#sheet input[type=search]::placeholder{color:var(--muted);opacity:1}
+#sheet .sx{margin:0 0 10px}#sheet .bl-bar .sx,#sheet .field .sx,#sheet .vi-pick .sx{margin-bottom:0}

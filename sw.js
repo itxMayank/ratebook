@@ -1,6 +1,6 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-7';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './icon-mono-512.png', './icon.svg', './apple-touch-icon.png', './favicon.png'];
+const VERSION = 'rb-shell-8';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-iris-192.png', './icon-iris-512.png', './icon-iris-maskable-192.png', './icon-iris-maskable-512.png', './icon-iris-mono-512.png', './icon-iris.svg', './apple-touch-icon-iris.png', './favicon-iris.png'];
 
 /* The page links its own files with a version stamp ("app.css?v=1a2b3c"). Whenever a copy of the page is saved, the files it
    names are saved with it, so the app also opens offline the first time after an update, and a new page never meets an old
@@ -9,7 +9,7 @@ const assetsOf = html => [...String(html).matchAll(/(?:href|src)="([a-z0-9_-]+\.
 const keepOnly = (c, url) => c.keys().then(ks => Promise.all(ks.filter(k => { const u = new URL(k.url); return u.pathname === url.pathname && u.search && u.search !== url.search; }).map(k => c.delete(k))));
 const saveAssets = (c, html) => Promise.all(assetsOf(html).map(a => c.match(a).then(hit => hit || fetch(a, { cache: 'no-store' }).then(r => r.ok ? c.put(a, r).then(() => keepOnly(c, new URL(a, self.location.href))) : null)).catch(() => null)));
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL).then(() => c.match('./index.html')).then(r => r ? r.text() : '').then(h => saveAssets(c, h))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).then(() => c.match('./index.html')).then(r => r ? r.text() : '').then(h => saveAssets(c, h))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));

@@ -287,7 +287,7 @@ async function loadAllPhotos(it){
   const keys=Array.from({length:n},(_,j)=>photoKey(it.id,j));
   const cached=await Promise.all(keys.map(k=>idb.get("images",k)));
   if(cached.every(c=>c&&c.v===it.imgV)) return keys.map((k,j)=>({k,data:cached[j].d}));
-  const j=await apiGet({action:"images",id:it.id});
+  const j=await netTrack(apiRead({action:"images",id:it.id}));
   const list=(j.images||[]).filter(x=>x.data);
   list.forEach(x=>idb.set("images",x.k,{v:it.imgV,d:x.data}));
   return list;

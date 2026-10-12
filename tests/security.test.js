@@ -1,0 +1,43 @@
+/* Server security rules (Code.gs v44, 12 Oct 2026): the price list, photos and saving a bill need a signed-in phone (before:
+   anyone with the script's address could read the list and, with no shop code set, save bills); the name on a saved bill is the
+   signed-in person's, not what the phone sends; and wrong PINs lock only PIN guessing, never phones that are already signed in
+   (before: 60 wrong PINs an hour from anyone locked the whole shop). Run: node tests/security.test.js */
+const path = require('path'), { gas } = require('./gas-mock');
+const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
+const g = gas([path.join(__dirname, '..', 'Code.gs')]), R = g.R;
+g.props.PIN = '4821';
+// the sheet itself isn't needed here: the list and the bill writer are stand-ins that record what reached them
+R(`ensureEnv_=()=>{}; dedupeOnce_=()=>{}; stripFyPrefixOnce_=()=>{}; ensureTriggers_=()=>{}; shopPaused_=()=>false; bumpB_=()=>{};
+   readConfig_=()=>({}); var TB=[];
+   listCached_=()=>({ok:true, rev:'1', items:[{id:'i1',name:'PP Bag',buy:150,sell:180}], config:{shopName:'Gupta', units:[{code:'kg'}], defaultUnit:'kg', defaultHsn:'3923', nextBill:5}});
+   thumbs_=ids=>({ok:true, thumbs:ids.map(id=>({id,thumb:'data:x'}))}); image_=id=>({ok:true,data:'IMG'+id}); images_=id=>({ok:true,photos:['P'+id]});
+   takeBill_=b=>{ TB.push(b.by); return {ok:true, n:b.bill.n}; };`);
+const get = q => JSON.parse(R(`doGet({parameter:${JSON.stringify(q)}}).text`));
+const post = b => JSON.parse(R(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
+
+// A. reading without signing in
+const L = get({ action: 'list' });
+ok(L.ok === false && L.error === 'need_signin' && !L.items, 'A1 price list by its public address: refused, no items');
+ok(L.config && L.config.units[0].code === 'kg' && L.config.defaultHsn === '3923' && L.config.shopName === undefined && L.config.nextBill === undefined, 'A2 …only the units (the dashboard copies them into a new shop), nothing else');
+ok(['thumbs', 'image', 'images'].every(a => get({ action: a, ids: 'i1', id: 'i1' }).error === 'need_signin'), 'A3 photos by the public address: refused');
+ok(post({ action: 'list' }).ok === false && post({ action: 'thumbs', ids: ['i1'] }).ok === false, 'A4 asking by POST without a sign-in: refused');
+ok(get({ action: 'rev' }).ok === true, 'A5 the change counter (numbers only) still answers, so phones notice changes');
+
+// B. signed in
+g.R("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
+const tok = R("sessNew_(auth_({pin:'5273',dev:'phoneR'}),{dev:'phoneR'})").tok;
+const l2 = post({ action: 'list', tok });
+ok(l2.ok && l2.items.length === 1 && l2.items[0].buy === 150 && l2.sv === 44, 'B1 signed-in phone: full price list (POST)');
+ok(post({ action: 'thumbs', ids: ['i1'], tok }).thumbs[0].id === 'i1' && post({ action: 'image', id: 'i1', tok }).data === 'IMGi1' && post({ action: 'images', id: 'i1', tok }).photos[0] === 'Pi1', 'B2 signed-in phone: thumbnails and photos');
+
+// C. saving a bill
+const bill = n => ({ action: 'takeBill', n, env: 'live', by: 'Mayank (owner)', bill: { n, id: 'b' + n, total: 100 } });
+ok(post(bill(1)).ok === false && R('TB.length') === 0, 'C1 a bill from someone not signed in (no shop code set): not saved');
+ok(post({ ...bill(2), k: '' }).ok === false && post({ ...bill(3), pin: '0000' }).error === 'bad_pin' && R('TB.length') === 0, 'C2 …nor with a wrong PIN');
+ok(post({ ...bill(4), tok }).ok === true && R('TB[0]') === 'Raju', 'C3 signed in: saved, under the signed-in name (Raju), not the name the phone sent');
+ok(post({ ...bill(5), tok: 'x'.repeat(40) }).error === 'bad_session' && R('TB.length') === 1, 'C4 a made-up token: refused');
+
+// D. wrong PINs: only PIN guessing waits
+for (let i = 0; i < 70; i++) post({ action: 'verify', pin: String(1000 + i), dev: 'rot' + i });   // a stranger changing the phone id each try
+ok(post({ action: 'verify', pin: '5273', dev: 'fresh' }).error === 'locked', 'D1 after 60 wrong PINs in an hour (phone id changed each time): PIN sign-in waits, even with the right PIN');
+ok(post({ action: 'list', tok }).ok === true && post({ ...bill(6), tok }).ok === true, 'D2 …but a signed-in phone keeps working: price list and bills (before: the whole shop was locked out)');

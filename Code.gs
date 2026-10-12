@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 44;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 45;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -693,19 +693,21 @@ function bootReply_(who, body) {
 function retire_(key, code) {
   const b = boot_(); if (!b) return { ok: false, error: 'not_a_shop' };
   const P = PropertiesService.getScriptProperties(), want = P.getProperty('HEALTH_KEY') || b.healthKey || '';
-  if (!want || String(key || '') !== String(want) || String(code || '') !== String(b.code)) return { ok: false, error: 'bad_key' };
+  if (!want || !keyEq_(key, want) || String(code || '') !== String(b.code)) return { ok: false, error: 'bad_key' };
   let n = 0; try { ScriptApp.getProjectTriggers().forEach(t => { ScriptApp.deleteTrigger(t); n++; }); } catch (e) { return { ok: false, error: 'triggers|' + (e && e.message) }; }
   P.setProperty('RETIRED', String(Date.now())); CacheService.getScriptCache().remove('TRIG_OK');
   return { ok: true, triggers: n, sheetId: P.getProperty('SHEET_ID') || b.sheetId || '' }; }
 
+/** Compares two secret keys by their digests, so the time taken doesn't hint at how much of a guess was right. */
+function keyEq_(a, b) { const d = x => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(x || ''))); return !!b && d(a) === d(b); }
 function health_(key) {
   const P = PropertiesService.getScriptProperties(), b = boot_();
   const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
-  if (!want || String(key || '') !== String(want)) return { ok: false, error: 'bad_key' };
+  if (!want || !keyEq_(key, want)) return { ok: false, error: 'bad_key' };
   const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION, hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
-  const ss = ss_(); out.sheetId = ss.getId(); let cells = 0; ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
+  const ss = ss_(); let cells = 0;   // the sheet's id isn't sent (v45): the dashboard doesn't need it, and an id is a key to a file in the owner's Drive ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
   const it = ss.getSheetByName(ITEMS); out.items = it ? Math.max(0, it.getLastRow() - 1) : 0;
   /* Bills today / this month (India time) for real bills and, separately, test bills (new shops start in test mode). Cancelled bills
      don't count. Rebuilt only when that mode's bills change or the day changes. */
@@ -1795,7 +1797,7 @@ function vToLive_(ids, by) {
     append(LL.s, VLED_COLS, ents); append(LD.s, VDOC_COLS, docs); append(LP.s, PUR_COLS, purs);
     // the files themselves go to the real-mode folder (they open by id either way, so a failure here only leaves them where they were)
     let files = 0, fileFail = 0; const fids = {};
-    ents.forEach(e => vjson_(e.photos, []).forEach(ph => { if (ph && ph.f) fids[String(ph.f)] = 1; })); docs.forEach(d => { if (d.fileId) fids[String(d.fileId)] = 1; });
+    docs.forEach(d => { if (d.fileId) fids[String(d.fileId)] = 1; });   // only files this script made (VendorDocs), never an id written on an entry
     if (Object.keys(fids).length) { let dest = null; try { dest = vFolder_(); } catch (e) {}
       Object.keys(fids).forEach(f => { try { if (dest) { DriveApp.getFileById(f).moveTo(dest); files++; } } catch (e) { fileFail++; } }); }
     ENV_ = 'test';
@@ -1827,7 +1829,7 @@ function vSave_(x, by) { const A = vAll_(), L = A.L, now = Date.now();
   let r = x.id ? L.rows.find(o => String(o.id) === String(x.id)) : null;
   const billIds = {}; G.calc.bills.forEach(b => billIds[b.id] = 1); if (type !== 'bill' && x.id) Object.keys(x.alloc || {}).forEach(k => { if (A.entries.some(e => e.id === k && e.vendorId === G.vendor.id && e.type === 'bill')) billIds[k] = 1; });
   const fields = { vendorId: G.vendor.id, type: type, date: vday_(x.date) || vday_(new Date()), amount: amount, gst: (x.gst === '' || x.gst == null) ? '' : Math.max(0, num_(x.gst)), billNo: str_(x.billNo, 40), mode: str_(x.mode, 20),
-    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f)).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
+    ref: str_(x.ref, 60), noteV: str_(x.noteV, 500), noteP: str_(x.noteP, 500), photos: JSON.stringify((own => (Array.isArray(x.photos) ? x.photos : []).filter(p => p && p.f && !/^local:/.test(p.f) && own[String(p.f)]))(vDocIds_()).slice(0, 6).map(p => ({ f: str_(p.f, 80), m: str_(p.m, 40) }))),
     alloc: type === 'bill' ? '' : JSON.stringify(vAllocClean_(x.alloc, billIds, amount)) };
   if (type === 'bill') {   // bill check: from what the phone already read, else the stored reading (re-done with the new amount), cleared when photos change
     const exIn = vExSafe_(x.ex);
@@ -1869,11 +1871,18 @@ function vUpload_(x) { const mime = /^(image\/jpeg|image\/png|application\/pdf)$
   const data = String(x.data || ''); if (!data || data.length > 14000000) throw new Error('bad_file');
   let file; try { file = vFolder_().createFile(Utilities.newBlob(Utilities.base64Decode(data), mime, str_(x.name, 80) || ('bill-' + Date.now() + (mime === 'application/pdf' ? '.pdf' : '.jpg')))); }
   catch (err) { if (/permission|authori|access/i.test(String(err && err.message || err))) throw new Error('drive_auth'); throw err; }
-  const D = vtab_('VendorDocs', VDOC_COLS); vwrite_(D.s, VDOC_COLS, { fileId: file.getId(), vendorId: str_(x.vendorId, 40), preview: String(x.preview || '').slice(0, 48000), mime: mime, at: Date.now() });
+  const D = vtab_('VendorDocs', VDOC_COLS); vwrite_(D.s, VDOC_COLS, { fileId: file.getId(), vendorId: str_(x.vendorId, 40), preview: vPrevOk_(x.preview), mime: mime, at: Date.now() });
   return { f: file.getId(), m: mime }; }
 function vPreviews_(ids) { const want = {}; (ids || []).forEach(i => want[String(i)] = 1); const out = {};
-  vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { if (want[r.fileId] && r.preview) out[r.fileId] = String(r.preview); }); return { previews: out }; }
-function vFile_(f) { const file = DriveApp.getFileById(String(f)); const b = file.getBlob(); return { data: Utilities.base64Encode(b.getBytes()), mime: b.getContentType() }; }
+  vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { const pv = want[r.fileId] && vPrevOk_(r.preview); if (pv) out[r.fileId] = pv; }); return { previews: out }; }
+/** Every shop's script runs as the Google account that deployed it, so a file id from a phone must never open just any Drive file
+    (another shop's sheet, backups, the Directory). Only files this script made itself for this mode's vendor bills count: those are
+    the ones listed in VendorDocs (written by vUpload_ alone, or moved by vToLive_). (v45) */
+function vDocIds_() { const set = {}; vtab_('VendorDocs', VDOC_COLS).rows.forEach(r => { if (r.fileId) set[String(r.fileId)] = 1; }); return set; }
+function vOwnFile_(f, set) { f = String(f || ''); if (!/^[\w-]{10,100}$/.test(f) || !(set || vDocIds_())[f]) throw new Error('not_found'); return DriveApp.getFileById(f); }
+/** A bill photo's small preview must be a real image (it's drawn on the vendor's link page). */
+function vPrevOk_(x) { x = String(x || ''); return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(x) && x.length <= 48000 ? x : ''; }
+function vFile_(f) { const file = vOwnFile_(f); const b = file.getBlob(); return { data: Utilities.base64Encode(b.getBytes()), mime: b.getContentType() }; }
 /* ---- the vendor's own read-only page ---- */
 function vPubFind_(t) { t = String(t || ''); if (!/^[tl][0-9a-f]{22}$/.test(t)) return null; ENV_ = t[0] === 't' ? 'test' : 'live';
   const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.token) === t && String(o.linkOn) === '1' && String(o.removed) !== '1'); return r || null; }
@@ -1949,7 +1958,7 @@ function aiCall_(parts, schema) { const key = aiKey_(); if (!key) throw new Erro
   throw new Error(last || 'ai_fail'); }
 /** Read the bill files (Drive ids) → normalised extraction. */
 function vRead_(fileIds) { if (!aiKey_()) throw new Error('ai_off'); const parts = [{ text: AI_PROMPT }];
-  (fileIds || []).slice(0, 6).forEach(f => { const b = DriveApp.getFileById(String(f)).getBlob(); const mime = b.getContentType();
+  const own = vDocIds_(); (fileIds || []).slice(0, 6).forEach(f => { const b = vOwnFile_(f, own).getBlob(); const mime = b.getContentType();
     if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(mime)) return; parts.push({ inline_data: { mime_type: mime, data: Utilities.base64Encode(b.getBytes()) } }); });
   if (parts.length < 2) return { readable: false, confidence: 0 };
   AI_T0 = Date.now(); const raw = aiCall_(parts);

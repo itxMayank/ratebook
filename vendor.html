@@ -130,7 +130,9 @@ function chkHTML(e){ const c=e&&e.check; if(!c||e.type!=="bill") return ""; if(c
   if(c.st!=="issues"||c.ack) return ""; const m=v=>rs(v), n=v=>Number(v).toLocaleString("en-IN",{maximumFractionDigits:3});
   const txt=i=>i.t==="line"?t("iLine",i.i,i.d?" ("+esc(i.d)+")":"",n(i.q),m(i.r),m(i.e),m(i.a)):i.t==="sum"?t("iSum",m(i.s),m(i.sub)):i.t==="tax"?t("iTax",esc(i.n||"GST"),n(i.r),m(i.b),m(i.e),m(i.a)):i.t==="cs"?t("iCs",m(i.c),m(i.s)):i.t==="total"?t("iTot",m(i.e),m(i.tot)):i.t==="entry"?t("iEnt",m(i.ent),m(i.tot)):i.t==="prev"?t("iPrev",m(i.ent),m(i.prev),m(i.tot)):"";
   return ` <span class="pill p-due">⚠ ${t("chkIss")}</span><ul class="iss">${c.issues.map(i=>`<li>${txt(i)}</li>`).join("")}</ul>`; }
-function photosHTML(e){ return e.photos&&e.photos.length?`<div class="ph">${e.photos.map((p,i)=>`<button type="button" data-f="${esc(p.f)}" data-m="${esc(p.m)}" data-lab="${esc(title(e)+" · "+dd(e.date))}" ${prev[p.f]?`style="background-image:url('${prev[p.f]}')"`:""}>${p.m==="application/pdf"?"PDF":""}</button>`).join("")}</div>`:""; }
+/* a preview is drawn only if it's a plain image data address (nothing that could break out of the style) */
+function okPrev(x){ x=String(x||""); return /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(x)?x:""; }
+function photosHTML(e){ return e.photos&&e.photos.length?`<div class="ph">${e.photos.map((p,i)=>`<button type="button" data-f="${esc(p.f)}" data-m="${esc(p.m)}" data-lab="${esc(title(e)+" · "+dd(e.date))}" ${okPrev(prev[p.f])?`style="background-image:url('${okPrev(prev[p.f])}')"`:""}>${p.m==="application/pdf"?"PDF":""}</button>`).join("")}</div>`:""; }
 function render(){
   const c=D.calc, v=D.vendor, bills={}; c.bills.forEach(b=>bills[b.id]=b);
   const bal=c.balance, lab=bal>0?t("balDue"):bal<0?t("balAdv"):t("balNil");

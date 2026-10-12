@@ -27,7 +27,7 @@ ok(get({ action: 'rev' }).ok === true, 'A5 the change counter (numbers only) sti
 g.R("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
 const tok = R("sessNew_(auth_({pin:'5273',dev:'phoneR'}),{dev:'phoneR'})").tok;
 const l2 = post({ action: 'list', tok });
-ok(l2.ok && l2.items.length === 1 && l2.items[0].buy === 150 && l2.sv === 44, 'B1 signed-in phone: full price list (POST)');
+ok(l2.ok && l2.items.length === 1 && l2.items[0].buy === 150 && l2.sv >= 44, 'B1 signed-in phone: full price list (POST)');
 ok(post({ action: 'thumbs', ids: ['i1'], tok }).thumbs[0].id === 'i1' && post({ action: 'image', id: 'i1', tok }).data === 'IMGi1' && post({ action: 'images', id: 'i1', tok }).photos[0] === 'Pi1', 'B2 signed-in phone: thumbnails and photos');
 
 // C. saving a bill
@@ -41,3 +41,16 @@ ok(post({ ...bill(5), tok: 'x'.repeat(40) }).error === 'bad_session' && R('TB.le
 for (let i = 0; i < 70; i++) post({ action: 'verify', pin: String(1000 + i), dev: 'rot' + i });   // a stranger changing the phone id each try
 ok(post({ action: 'verify', pin: '5273', dev: 'fresh' }).error === 'locked', 'D1 after 60 wrong PINs in an hour (phone id changed each time): PIN sign-in waits, even with the right PIN');
 ok(post({ action: 'list', tok }).ok === true && post({ ...bill(6), tok }).ok === true, 'D2 …but a signed-in phone keeps working: price list and bills (before: the whole shop was locked out)');
+
+// E. vendor bill files: only files this script made itself (v45). Every shop's script runs as the owner's Google account, so a
+//    file id from a phone must never open another shop's sheet, a backup or the Directory.
+R(`ENV_='live'; var OPENED=[]; DriveApp.getFileById=id=>{ OPENED.push(id); return { getBlob:()=>({getBytes:()=>[1,2,3], getContentType:()=>'image/jpeg'}) }; };
+   vtab_=(n)=>({ rows: n==='VendorDocs' ? [{fileId:'OWNBILLPHOTO123', preview:'data:image/jpeg;base64,AAAA'}, {fileId:'EVILPREVIEW1234', preview:"x')\\"><img src=x onerror=alert(1)>"}] : [] });`);
+ok(R("vFile_('OWNBILLPHOTO123').mime") === 'image/jpeg', 'E1 a bill photo this shop uploaded opens');
+let refused = 0; for (const id of ['OTHERSHOPSHEET1', 'DIRECTORYSHEET1', 'x/../../etc', '']) { try { R(`vFile_(${JSON.stringify(id)})`); } catch (e) { refused++; } }
+ok(refused === 4 && R('OPENED.join()') === 'OWNBILLPHOTO123', 'E2 any other Drive id (another shop\'s sheet, the Directory, junk): refused, never opened');
+R("aiKey_=()=>'key'; aiCall_=()=>{ throw new Error('should not be asked'); }"); let r2 = 0; try { R("vRead_(['OTHERSHOPSHEET1'])"); } catch (e) { r2 = /not_found/.test(e.message) ? 1 : 0; } ok(r2 === 1 && R('OPENED.length') === 1, 'E3 bill reading can\'t be pointed at another file either');
+const pv = R("vPreviews_(['OWNBILLPHOTO123','EVILPREVIEW1234']).previews");
+ok(pv.OWNBILLPHOTO123 && !pv.EVILPREVIEW1234, 'E4 a preview that isn\'t a plain image is never handed out (it would run on the vendor\'s link page)');
+ok(R("vPrevOk_('data:image/png;base64,iVBOR=')") && !R("vPrevOk_('javascript:alert(1)')") && !R(`vPrevOk_("data:image/png;base64,AA')x")`), 'E5 preview check: real image data only');
+ok(R("keyEq_('abc','abc')") === true && R("keyEq_('abd','abc')") === false && R("keyEq_('', '')") === false, 'E6 secret keys compared safely; an empty key never matches');

@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-<script>document.documentElement.classList.add("locked")</script>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-O0DdUv5SzPZxORAO0Huxk3kHwDS8xEzVXUN9AITphS4=' 'sha256-vpSOo+5UjEx5KYjLYBqOlggNHS2FzVE/oOc7H/H/Fms=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script>document.documentElement.classList.add("locked")</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <script>/* iPhone/iPad: Safari zooms the page when a box under 16px gets focus; maximum-scale stops that (pinch zoom still works on iOS) */
 if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)){ const m=document.querySelector('meta[name=viewport]'); if(m) m.content+=",maximum-scale=1"; }</script>
@@ -21,7 +22,8 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
+<script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
 <link rel="stylesheet" href="app.css?v=4882594634">
 </head>
 <body>
@@ -220,6 +222,6 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <script src="vendors.js?v=2836d8e6ea"></script>
 <script src="prices.js?v=6f33943fda"></script>
 <script src="billing.js?v=b51fbd8c58"></script>
-<script src="app.js?v=837ed1e6be"></script>
+<script src="app.js?v=040edb46d9"></script>
 </body>
 </html>

@@ -953,7 +953,7 @@ function renderInstall(){
   tb.hidden = !(installEvt || (isIOS && !isStandalone()));
   if(isStandalone() || ls.get("rb_inst_x",false) || S.tab!=="items"){ w.innerHTML=""; return; }
   const x=`<button class="x" data-instx aria-label="${esc(t("later"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
-  if(isFileCopy){ w.innerHTML=`<div class="banner"><img src="icon-iris-192.png" alt="" onerror="this.remove()"><div class="txt"><b>${esc(t("fileT"))}</b><span>${esc(t("fileD"))}</span></div>${x}</div>`; return; }
+  if(isFileCopy){ w.innerHTML=`<div class="banner"><img src="icon-iris-192.png" alt=""><div class="txt"><b>${esc(t("fileT"))}</b><span>${esc(t("fileD"))}</span></div>${x}</div>`; return; }
   if(installEvt){ w.innerHTML=`<div class="banner"><img src="icon-iris-192.png" alt=""><div class="txt"><b>${esc(t("installT"))}</b><span>${esc(t("installD"))}</span></div><button class="btn primary" data-inst>${esc(t("install"))}</button>${x}</div>`; return; }
   if(isIOS){ const share=`<svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v8h14v-8"/></svg>`;
     w.innerHTML=`<div class="banner ios"><img src="apple-touch-icon-iris.png" alt=""><div class="txt"><b>${esc(t("iosT"))}</b><span>${esc(t("iosD")).replace("Share","Share "+share).replace("Share "+share,"Share "+share)} ${esc(t("iosD2"))}</span></div>${x}</div>`; return; }

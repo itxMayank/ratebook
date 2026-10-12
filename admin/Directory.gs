@@ -99,7 +99,7 @@ function lookup_(code, dev) {
   if (!x || !x.apiUrl || x.code === 'main' || !(x.status === 'live' || x.status === 'paused')) { c.put(fk, String(Number(c.get(fk) || 0) + 1), 900); return { ok: false, error: 'bad_code' }; }
   const r = { ok: true, code: x.code, api: x.apiUrl, name: x.name, status: x.status }; c.put('shop:' + code, JSON.stringify(r), 600); return r; }
 /** For a shop's own script (its health key): is it paused? */
-function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || String(key) !== String(x.healthKey)) return { ok: false, error: 'bad_key' };
+function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || !x.healthKey || hash_('k:' + key) !== hash_('k:' + x.healthKey)) return { ok: false, error: 'bad_key' };
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */

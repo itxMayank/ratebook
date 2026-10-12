@@ -11,7 +11,7 @@ const app = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8'), files = codeFile
 ok(files.length >= 2 && files[files.length - 1] === 'app.js' && files.every(f => require('../tools/stamp').ASSETS.includes(f)), 'code files load in order with app.js last (it starts the app): ' + files.join(', '));
 ok(!/Object\.assign\(STR\.|const STR = \{/.test(html + code.join('')) && app.includes('const STR = window.RB_STR;'), 'no text tables left in the page or app code (they live in strings.js)');
 const inl = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-ok(inl.length <= 2 && inl.every(s => s.length < 400), 'no app code left inside index.html (only the two tiny start-up lines in <head>; the app lives in app.js)');
+ok(inl.length <= 3 && inl.every(s => s.length < 400), 'no app code left inside index.html (only the tiny start-up lines in <head> and the font switch; the app lives in app.js)');
 ok(files.every(f => html.indexOf('strings.js?v=') > 0 && html.indexOf('strings.js?v=') < html.indexOf(f + '?v=')), 'strings.js loads before the code files');
 ok(files.every(f => html.indexOf(f + '?v=') > html.indexOf('id="toast"')) && !/<script[^>]*src="[^"]*"[^>]*(defer|async|type="module")/.test(html), 'code files load at the end of the page as plain scripts (the page is built when they run)');
 ok(code.every(c => /^\/\*[\s\S]*?\*\/\n"use strict";/.test(c)), 'every code file runs in strict mode (its first statement)');

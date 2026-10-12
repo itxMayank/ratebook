@@ -20,10 +20,15 @@ const inlineFiles = (html, expose, opt = {}) => html
     if (f !== 'app.js') return '<script>' + js + '</script>';
     return '<script>' + js + tHook(expose) + '</script>';
   });
+/* The page's Content-Security-Policy stays on in tests: its script digests are worked out again for the scripts as served here
+   (inlined files, the test hook), and the test Directory address is allowed. So a script or request the policy would block on a
+   phone fails here too. */
+const { withCsp } = require('../tools/stamp');
+const testCsp = h => withCsp(h).replace("connect-src 'self'", "connect-src 'self' " + new URL(DIR).origin);
 function appHtml(expose = 'S,LOCK,appLock,appUnlock,apiPost0,flushBills,sync,shopsKnown', opt = {}) {
   const raw = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  if (!opt.files) return inlineFiles(raw, expose, { dir: DIR });
-  return raw.replace(/(<script src="app\.js\?v=[^"]*"><\/script>)/, (m) => m + '<script>' + tHook(expose) + '</script>');
+  if (!opt.files) return testCsp(inlineFiles(raw, expose, { dir: DIR }));
+  return testCsp(raw.replace(/(<script src="app\.js\?v=[^"]*"><\/script>)/, (m) => m + '<script>' + tHook(expose) + '</script>'));
 }
 /* The app's code files in load order, as index.html lists them (tests that read the code use this). */
 const codeFiles = () => [...fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').matchAll(/<script src="([a-z0-9_-]+\.js)\?v=/g)].map(m => m[1]).filter(f => f !== 'strings.js');
@@ -37,4 +42,4 @@ async function launch() {
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const done = () => process.exit(fails ? 1 : 0);
-module.exports = { pw, appHtml, inlineFiles, appJs, codeJs, codeFiles, launch, ok, done, MAIN_API, DIR, ROOT, exe };
+module.exports = { pw, testCsp, appHtml, inlineFiles: (h, e, o) => testCsp(inlineFiles(h, e, o)), appJs, codeJs, codeFiles, launch, ok, done, MAIN_API, DIR, ROOT, exe };

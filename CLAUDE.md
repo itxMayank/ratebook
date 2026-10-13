@@ -878,6 +878,11 @@ Reported on a Samsung Galaxy Ultra (384 px wide) at text size **Large**: the cus
 - Bill lines sit 6 px apart (was 10 px; `#bill-lines{gap:6px}`).
 - Test: `tests/billing.app.test.js` A3–A4.
 
+## "App updated" message (13 Oct 2026, `app.js` / `lock.js` / `strings.js`)
+
+- When the app loads a newer version (by itself on the lock screen, or from the "Update ready" pill), `updGo()` notes the time in `rb_updated`; the next unlock (`appUnlock`) shows "App updated to the latest version" once (toast) and clears it. Ignored if more than 6 hours old.
+- Test: `tests/sw.test.js` (shown after the quiet update, not again at the next unlock).
+
 ## Search boxes, app icon on installed phones (12 Oct 2026)
 
 - **One look for every search box inside a screen** (`#sheet input[type=search]`, end of `app.css`): grey pill, 44 px tall, 16 px text, room for the ✕. Reported: the Vendors list search (`#vl-q`, shown once there are 5+ vendors) was the browser's plain box with a black frame. The Credit and Bulk edit searches lost their own inline styles. Form fields with a label (`.field`, e.g. the vendor picker on a new vendor bill) keep the form look. `tests/screens.app.test.js` now has 6 vendors (so the Vendors search shows) and fails on any text box left with the browser's own frame.

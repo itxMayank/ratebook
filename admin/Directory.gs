@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 5;
+const DIR_VERSION = 6;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -103,7 +103,7 @@ function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || !x
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
-const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1 };
+const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1, shopHealth: 1 };
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
@@ -123,6 +123,7 @@ function doPost(e) {
         x.status = b.status; shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
       case 'setNotes': { const x = shopGet_(b.code); if (!x) throw new Error('no_shop'); ['notes', 'plan', 'paidUntil', 'owner', 'phone'].forEach(k => { if (b[k] !== undefined) x[k] = b[k]; }); shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
       case 'register': return out_(Object.assign({ ok: true }, registerMain_(b)));
+      case 'shopHealth': { const h = healthAll_(String(b.code || ''), true); return out_({ ok: true, health: h[String(b.code || '')] || { ok: false, error: 'no_shop' } }); }   // a shop's own page: + 14 days of speed
       case 'recheck': { const h = healthAll_(b.code); return out_({ ok: true, health: h, shops: shops_().map(pub_) }); }
       case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
       case 'deleteShop': return out_(Object.assign({ ok: true }, deleteShop_(b.code, b)));
@@ -154,10 +155,10 @@ function adminOk_(t) { if (!t) return false; const all = adminSess_(), k = hash_
 function adminSessEnd_(t) { const all = adminSess_(); delete all[hash_('t:' + t)]; adminSessSave_(all); }
 
 /* ---------- live health (each shop's own report, via its health key) ---------- */
-function healthAll_(onlyCode) {
+function healthAll_(onlyCode, full) {
   const list = shops_().filter(x => x.apiUrl && x.healthKey && (!onlyCode || x.code === onlyCode));
   if (!list.length) return {};
-  const reqs = list.map(x => ({ url: x.apiUrl + '?action=health&key=' + encodeURIComponent(x.healthKey) + '&_=' + Date.now(), muteHttpExceptions: true, followRedirects: true }));
+  const reqs = list.map(x => ({ url: x.apiUrl + '?action=health&key=' + encodeURIComponent(x.healthKey) + (full ? '&full=1' : '') + '&_=' + Date.now(), muteHttpExceptions: true, followRedirects: true }));
   let res = []; try { res = UrlFetchApp.fetchAll(reqs); } catch (e) { res = []; }
   const out = {};
   list.forEach((x, i) => { const r = res[i]; let h = null;

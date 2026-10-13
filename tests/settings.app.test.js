@@ -58,7 +58,7 @@ const html = appHtml('S,LOCK,appUnlock,openSettings');
     ok(await cards(p) === 'me,look,pr,shop,bills,items,ai', 'managers also see the shop cards, not the owner ones: ' + await cards(p)); await ctx.close(); }
 
   const { p } = await phone('owner');
-  ok(await cards(p) === 'me,look,pr,shop,bills,items,ai,ppl,bk,speed', 'owner sees every card: ' + await cards(p));
+  ok(await cards(p) === 'me,look,pr,shop,bills,items,ai,ppl,bk', 'owner sees every card (Speed moved to the admin dashboard, 13 Oct 2026): ' + await cards(p));
   ok(await p.$$eval('details.cg', x => x.every(e => !e.open)), 'all cards start closed');
   ok(/Mayank/.test(await txt(p, 'details[data-cg="me"] .cg-s')) && /Real/i.test(await txt(p, 'details[data-cg="me"] .cg-s')), 'Just for you summary: name and real billing');
 

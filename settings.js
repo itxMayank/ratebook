@@ -1,5 +1,5 @@
 /* Rate Book: Settings (the grouped cards, `openSettings`), Settings → Bill reading key, the owner's People & security cards
-   (people, PINs, signed-in phones, approval, speed) and Backups. Split out of app.js on 11 Oct 2026. A plain script in
+   (people, PINs, signed-in phones, approval) and Backups. Split out of app.js on 11 Oct 2026. A plain script in
    global scope, loaded before app.js: while loading it only declares things, so it needs nothing from app.js until
    Settings opens. Uses app.js helpers (S, t, apiPost, openSheet, setFz, applyTheme, renderPrCfg…) only when called.
    Run  node tools/stamp.js  after editing. */
@@ -32,12 +32,6 @@ async function loadOwnerCards(){
   catch(e){ const b=$("#ppl-body"); if(b) b.innerHTML=`<p class="err">${esc(errMsg(e))}</p>`; }
   apiPost({action:"listSessions"}).then(renderSessions).catch(()=>{ const b=$("#sess-body"); if(b) b.innerHTML=`<p class="note">${esc(t("oldScript"))}</p>`; });
 }
-/** Settings → Speed: this phone's request timings per action: typical (median) / slowest (95th), and the sheet's own share. */
-function speedHTML(){ const a=ls.get("rb_perf",[]); if(!a.length) return `<p class="note" style="margin:0">${esc(t("speedNone"))}</p>`;
-  const by={}; a.forEach(x=>{ (by[x[0]]=by[x[0]]||[]).push(x); });
-  const q=(v,f)=>{ const y=v.slice().sort((m,n)=>m-n); return y[Math.min(y.length-1,Math.floor(f*y.length))]; }, sec=ms=>ms==null?"—":(ms/1000).toFixed(ms<10000?1:0)+" s";
-  return Object.keys(by).sort((m,n)=>by[n].length-by[m].length).slice(0,8).map(k=>{ const tot=by[k].map(x=>x[1]), srv=by[k].map(x=>x[2]).filter(x=>x!=null);
-    return `<div class="speed-row"><span>${esc(t("speedAct",k))} <small style="color:var(--muted)">×${by[k].length}</small></span><b class="num">${sec(q(tot,.5))} / ${sec(q(tot,.95))}</b><small class="num" style="color:var(--muted)">${srv.length?t("speedSheet")+" "+sec(q(srv,.5)):""}</small></div>`; }).join(""); }
 /** Owner: every signed-in phone, newest use first; sign any of them out. */
 function renderSessions(j){ const box=$("#sess-body"); if(!box) return; const L=(j&&j.sessions)||[];
   const appr=j&&j.approveNew!==undefined?`<label class="switch"><span><b>${esc(t("apprT"))}</b><br><span class="note">${esc(t("apprD"))}</span></span><input type="checkbox" id="sess-appr" ${j.approveNew?"checked":""}></label>`:"";
@@ -177,8 +171,6 @@ ${w?cg("ppl","users",t("cgPpl"),t("cgPplD"),`
     <div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`):""}
 ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     <div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`):""}
-${w?cg("speed","gauge",t("speedT"),t("cgSpeedD"),`
-    <div class="cfg-sec bk-sec"><h3 style="margin:0" class="cg-hide">${esc(t("speedT"))}</h3><p class="note" style="margin:0">${esc(t("speedD"))}</p><div id="speed-body">${speedHTML()}</div></div>`):""}
     <div class="err" id="cf-err" role="alert"></div>`;
   sheetKey("settings"), openSheet(t("settings"), body, w?`<button class="btn ghost" id="cf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="cf-save">${esc(t("save"))}</button>`:"", {full:true});
   cgWire();

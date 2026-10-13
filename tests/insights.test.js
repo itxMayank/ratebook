@@ -51,6 +51,7 @@ R(`const P=vtab_('Purchases',PUR_COLS);
   const LL=vtab_('VendorLedger',VLED_COLS); vwrite_(LL.s,VLED_COLS,{id:'e1',vendorId:'vA',type:'bill',date:'${dayAgo(40)}',amount:1000,billNo:'M-1',at:3,check:JSON.stringify({st:'issues'})});`);
 
 const t0 = Date.now(); const I = R('insights_({tz:-330})'); const ms = Date.now() - t0;
+if (process.env.DUMP) require('fs').writeFileSync(process.env.DUMP, JSON.stringify(Object.assign({}, I, { shopName: 'Sharma Traders' }), null, 1));   // tests/fixtures/insights.json for the dashboard test
 ok(I.ok && I.today === today && I.env === 'live', 'A1 builds for today, in the mode asked (' + ms + ' ms)');
 ok(I.pulse.today.bills === 2 && I.pulse.today.sales === 620 && I.pulse.today.profit === 90 && I.pulse.today.pct === 30, 'A2 today: 2 bills, ₹620, profit ₹90 (Sugar has no buy price, so it is left out of profit)');
 ok(I.pulse.d30.bills > 20 && I.pulse.d30.noBuy === 230, 'A3 last 30 days: the cancelled bill is left out; ₹230 sold without a buy price');

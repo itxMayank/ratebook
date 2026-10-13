@@ -492,4 +492,5 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 
 - **Brand accent is Iris, not maroon** (Mayank, 11 Oct 2026: "maroon does not look that good, there should be a fresh colour"). Maroon stays only as an optional theme in Settings.
 - **Grey text `--muted` is #5F636B** (was #6E727A, which measured 4.2:1 on grey backgrounds).
+- **The business dashboard is a web page, not an app screen** (Mayank, 13 Oct 2026): `admin.html`, opened from a link or Tools → Business dashboard. Shop owners sign in there with their app name + PIN and see only their own shop; the admin sees all shops (other shops' business pages only while testing). It follows the app's rules (wrap or stack, English and Hindi, light and dark, a word with every colour) but keeps the dashboard's square corners.
 - **Bill-tab search sits at the far right of the total card** once the bill has items (Mayank, 11 Oct 2026), the same spot as the floating search button on an empty bill, so the thumb finds it in one place. Order: Total · Share · Done · ⌃ · search.

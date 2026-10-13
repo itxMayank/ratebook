@@ -33,13 +33,14 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   ok(await p.isVisible('#shops [data-act=open][data-code=main]'), 'A1 each card has a Details button');
   await p.click('#shops .card[data-open=main] .stats'); await p.waitForTimeout(600);
   ok(/#shop\/main$/.test(p.url()) && await p.isVisible('#s-shop') && !(await p.isVisible('#s-app')), 'A2 tapping the card opens the shop\'s own page (#shop/main)');
-  ok(/Gupta Plastics & Packaging/.test(await p.textContent('#sp .sp-head')) && await p.$$eval('.sp-nav a', a => a.map(x => x.textContent).join()) === 'Overview,Speed,Errors,Setup', 'A3 name in full, and the four sections listed at the top');
+  ok(/Gupta Plastics & Packaging/.test(await p.textContent('#sp .sp-head')) && await p.$$eval('.sp-nav a', a => a.map(x => x.textContent).join()) === 'Overview,Business,Speed,Errors,Setup', 'A3 name in full, and the five sections listed at the top');
   ok(asked.includes('shopHealth:main') && asked.includes('errors:main'), 'A4 the page asks for that shop\'s full health and its errors');
 
   // B. speed: tiles, chart, tooltip, table
   const tiles = await p.textContent('#sp-speed .tiles');
   ok(/Typical wait on phones/.test(tiles) && /In the script/.test(tiles) && /%/.test(tiles), 'B1 speed tiles: typical wait, script time, phone & internet share');
   ok(await p.$$eval('#sp-chart .hit', h => h.length) === 7 && await p.$$eval('#sp-chart .c1', h => h.length) === 7 && await p.$$eval('#sp-chart .c2', h => h.length) === 7, 'B2 7 days: one stacked column per day (script + phone & internet)');
+  await p.$eval('#sp-chart', e => e.scrollIntoView({ block: 'center' })); await p.waitForTimeout(100);
   const box = await p.$eval('#sp-chart .hit[data-i="4"]', e => { const r = e.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height - 10]; });
   await p.mouse.move(box[0], box[1]); await p.waitForTimeout(100);
   const tip = await p.textContent("#tip");

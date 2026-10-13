@@ -251,6 +251,7 @@ function doGet(e) {
   try {
     switch (p.action) {
       case 'health': return out_(health_(p.key, p.full === '1'));
+      case 'insights': return out_(insightsKey_(p));   // the admin dashboard (through the Directory), with this shop's health key
       case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test') });
@@ -1814,6 +1815,10 @@ function insights_(body) {
   const dayOf = d => isNaN(d) ? '' : new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
   const today = dayOf(new Date());
   return rcRead_('ins:' + ENV_ + ':' + tz, () => getRev_() + ':' + brevC_(ENV_) + ':' + vrevC_(ENV_) + ':' + today, () => insightsBuild_(dayOf, today)); }
+/** The admin dashboard asks for a shop's business page with the shop's own health key (the Directory holds it), real or test mode. */
+function insightsKey_(p) { const P = PropertiesService.getScriptProperties(), b = boot_(), want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
+  if (!want || !keyEq_(p.key, want)) return { ok: false, error: 'bad_key' };
+  ENV_ = p.env === 'test' ? 'test' : 'live'; return insights_({ tz: p.tz }); }
 function insDay_(d, n) { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
 function insGap_(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5); }
 function insightsBuild_(dayOf, today) {
@@ -1963,7 +1968,7 @@ function insightsBuild_(dayOf, today) {
   cand.sort((a, b) => b.score - a.score); const kinds = {}, todo = [];
   cand.forEach(c => { if (todo.length >= 5 || (kinds[c.k] || 0) >= 2) return; kinds[c.k] = (kinds[c.k] || 0) + 1; c.score = Math.round(c.score); todo.push(c); });
   const staff = Object.keys(STAFF).map(k => STAFF[k]).filter(x => x.bills || x.cancelled).sort((a, b) => b.bills - a.bills);
-  return { ok: true, at: Date.now(), env: ENV_, today, pulse, todo,
+  return { ok: true, at: Date.now(), env: ENV_, today, shopName: String(cfg.shopName || ''), pulse, todo,
     margins: { groups, below: belowList, soldBelow, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },

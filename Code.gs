@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 46;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 47;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -104,18 +104,66 @@ function shopCode_() { const b = boot_(); return b && b.code ? String(b.code) : 
 
 /* ---------- request timings and errors (for the admin dashboard's health view) ---------- */
 let T0_ = 0, ACT_ = '';
-const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1 };
+const PERF_SKIP_ = { rev: 1, health: 1, ping: 1, shopStatus: 1, clientErr: 1, perfIn: 1 };
 const ERR_QUIET_ = { bad_pin: 1, shop_pin_off: 1, needs_manager: 1, pin_short: 1, pin_easy: 1, bad_session: 1, pending: 1, need_code: 1, need_signin: 1, locked: 1, not_allowed: 1, no_test: 1, paused: 1, wrong_shop: 1, bill_changed: 1, ai_off: 1 };
+let RC_HIT_ = false;   // this request's reply came from the reply cache (rcRead_)
 function perfNote_(obj) {
-  if (!ACT_ || PERF_SKIP_[ACT_]) return;
+  if (!ACT_) return;
   try { const c = CacheService.getScriptCache(), now = Date.now();
+    /* "Cold": the first request after 10+ quiet minutes, when Google has to start the script again (slower). Every request
+       counts as activity (the phones' 25-second check too), but only real actions are timed. */
+    const last = Number(c.get('lastReq') || 0), cold = last && now - last > 600000 ? 1 : 0; if (now - last > 30000) c.put('lastReq', String(now), 21600);
+    if (PERF_SKIP_[ACT_]) return;
     let a = []; try { a = JSON.parse(c.get('PERF') || '[]'); } catch (e) {}
     a.push([ACT_, obj.ms, now, obj.ok === false ? 0 : 1]); if (a.length > 200) a = a.slice(-200); c.put('PERF', JSON.stringify(a), 21600);
+    let q = []; try { q = JSON.parse(c.get('PERFQ') || '[]'); } catch (e) {}
+    q.push([ACT_, obj.ms, now, obj.ok === false ? 0 : 1, RC_HIT_ ? 1 : 0, cold]); if (q.length > 400) q = q.slice(-400); c.put('PERFQ', JSON.stringify(q), 21600);
+    if (q.length >= 40 || now - q[0][2] > 600000) perfRoll_();
     if (obj.ok === false && !ERR_QUIET_[String(obj.error || '').split('|')[0]]) {
       let e = []; try { e = JSON.parse(c.get('ERRS') || '[]'); } catch (x) {}
       e.push([ACT_, String(obj.error || '').slice(0, 200), now]); if (e.length > 50) e = e.slice(-50); c.put('ERRS', JSON.stringify(e), 21600); }
   } catch (e) {}
 }
+
+/* ---------- speed history (admin dashboard → a shop's Speed section) ----------
+   One script property per India day, PERFD_yyyy-MM-dd (kept 14 days), small enough for the 9 KB limit:
+   a: script side, per action  [n, failed, from cache, cold, cold ms total, warm ms total, ...8 time buckets]
+   p: the phones' side, per action  [n, script ms total, whole-wait ms total, ...8 buckets of the whole wait, ...8 buckets of the wait outside the script]
+   l: per phone type  [n, whole-wait ms total]
+   Timings are counted into buckets (≤0.3 s, 0.6, 1, 1.5, 2.5, 4, 7, more) so typical and slow times can be read back without
+   keeping every request. Script timings are first queued in the short-term cache and moved here in batches (perfRoll_). */
+const PB_ = [300, 600, 1000, 1500, 2500, 4000, 7000];
+function pb_(ms) { ms = Number(ms) || 0; for (let i = 0; i < PB_.length; i++) if (ms <= PB_[i]) return i; return PB_.length; }
+function perfDay_(t) { return Utilities.formatDate(new Date(t), 'Asia/Kolkata', 'yyyy-MM-dd'); }
+function perfGet_(P, d) { try { const o = JSON.parse(P.getProperty('PERFD_' + d) || '{}'); return { a: o.a || {}, p: o.p || {}, l: o.l || {} }; } catch (e) { return { a: {}, p: {}, l: {} }; } }
+function perfPut_(P, d, o) { let s = JSON.stringify(o);
+  if (s.length > 8500) { const keep = k => Object.keys(o[k]).sort((x, y) => o[k][y][0] - o[k][x][0]).slice(0, 12); ['a', 'p', 'l'].forEach(k => { const ks = keep(k), n = {}; ks.forEach(x => n[x] = o[k][x]); o[k] = n; }); s = JSON.stringify(o); }
+  P.setProperty('PERFD_' + d, s);
+  if (P.getProperty('PERFD_LAST') !== d) { P.setProperty('PERFD_LAST', d); const cut = perfDay_(Date.now() - 14 * 864e5);
+    P.getKeys().forEach(k => { if (k.indexOf('PERFD_2') === 0 && k.slice(6) < cut) P.deleteProperty(k); }); } }
+/** Move queued script timings into the day summaries. Needs the script lock (doPost may already hold it); skips if busy. */
+function perfRoll_() {
+  const l = LOCKED_ ? null : LockService.getScriptLock(); if (l && !l.tryLock(100)) return;
+  try { const c = CacheService.getScriptCache(); let q = []; try { q = JSON.parse(c.get('PERFQ') || '[]'); } catch (e) {} if (!q.length) return;
+    c.remove('PERFQ'); const P = PropertiesService.getScriptProperties(), days = {};
+    q.forEach(r => { const d = perfDay_(r[2]), o = days[d] || (days[d] = perfGet_(P, d)), k = String(r[0]).slice(0, 30), x = o.a[k] || (o.a[k] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), ms = Math.max(0, Math.round(r[1]) || 0);
+      x[0]++; if (!r[3]) x[1]++; if (r[4]) x[2]++; if (r[5]) { x[3]++; x[4] += ms; } else x[5] += ms; x[6 + pb_(ms)]++; });
+    Object.keys(days).forEach(d => perfPut_(P, d, days[d])); }
+  catch (e) {} finally { if (l) try { l.releaseLock(); } catch (e) {} } }
+/** A phone's own timings since it last sent them: [action, whole wait ms, script ms or null, time]. */
+function perfIn_(b) {
+  const rows = Array.isArray(b.rows) ? b.rows.slice(-150) : [], P = PropertiesService.getScriptProperties(), days = {}, now = Date.now(), lab = String(b.dl || '?').replace(/[^\w ·.-]/g, '').slice(0, 40) || '?';
+  rows.forEach(r => { if (!Array.isArray(r)) return; const t = Number(r[3]) || 0, tot = Number(r[1]); if (!(t > now - 15 * 864e5 && t < now + 6e5) || !(tot >= 0 && tot < 6e5)) return;
+    const k = String(r[0] || '').replace(/[^\w]/g, '').slice(0, 30); if (!k) return; const d = perfDay_(t), o = days[d] || (days[d] = perfGet_(P, d)), srv = r[2] == null ? null : Math.max(0, Number(r[2]) || 0);
+    const x = o.p[k] || (o.p[k] = [0, 0, 0].concat(new Array(16).fill(0))); x[0]++; x[1] += srv == null ? tot : Math.min(srv, tot); x[2] += Math.round(tot); x[3 + pb_(tot)]++; x[11 + pb_(srv == null ? 0 : Math.max(0, tot - srv))]++;
+    const y = o.l[lab] || (o.l[lab] = [0, 0]); y[0]++; y[1] += Math.round(tot); });
+  Object.keys(days).forEach(d => perfPut_(P, d, days[d]));
+  return { n: rows.length }; }
+/** The last 14 days of speed summaries (today includes what's still queued). */
+function perfDays_() {
+  perfRoll_(); const P = PropertiesService.getScriptProperties(), out = [];
+  for (let i = 13; i >= 0; i--) { const d = perfDay_(Date.now() - i * 864e5), o = perfGet_(P, d); if (Object.keys(o.a).length || Object.keys(o.p).length) out.push(Object.assign({ d: d }, o)); }
+  return out; }
 
 /** Errors on the phones (the app reports its own script errors). Kept in CacheService only (6 h; the Directory copies them into
  *  its Errors tab whenever it checks health, so they're kept longer there). Never touches the sheet. At most 20 per phone per hour.
@@ -158,7 +206,7 @@ function rcPut_(key, obj) {
 /** Cached reply for `name` at version `ver()`: read the version first, build, store only if the version is unchanged. */
 function rcRead_(name, ver, build) {
   const v1 = ver(), key = name + ':' + SCRIPT_VERSION + ':' + v1;
-  const hit = rcGet_(key); if (hit) return hit;
+  const hit = rcGet_(key); if (hit) { RC_HIT_ = true; return hit; }
   const out = build();
   try { if (out && out.ok !== false && ver() === v1) rcPut_(key, out); } catch (e) {}
   return out; }
@@ -199,10 +247,10 @@ function str_(v, max) { let s = String(v == null ? '' : v).slice(0, max || 200);
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
-  T0_ = Date.now(); ACT_ = String(p.action || '');
+  T0_ = Date.now(); ACT_ = String(p.action || ''); RC_HIT_ = false;
   try {
     switch (p.action) {
-      case 'health': return out_(health_(p.key));
+      case 'health': return out_(health_(p.key, p.full === '1'));
       case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
       case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test') });
@@ -477,7 +525,7 @@ function readConfig_() {
 
 function doPost(e) {
   let body;
-  T0_ = Date.now(); ACT_ = '';
+  T0_ = Date.now(); ACT_ = ''; RC_HIT_ = false;
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); }
   catch (err) { return out_({ ok: false, error: 'bad_json' }); }
   ACT_ = String(body.action || '');
@@ -527,6 +575,7 @@ function doPost(e) {
       case 'listSessions': res = listSessions_(who); break;
       case 'endSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEnd_(k => k.indexOf(id) === 0); res = listSessions_(who); break; }
       case 'setMyPrefs': res = setMyPrefs_(who, body.prefs || {}); break;
+      case 'perfIn': res = perfIn_(body); break;
       case 'upsert': res = upsert_(body.items || [], by); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
@@ -576,7 +625,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -596,7 +645,7 @@ const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
-  setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
+  setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', perfIn: 'staff', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
 function salt_() { const p = PropertiesService.getScriptProperties(); let v = p.getProperty('SALT'); if (!v) { v = Utilities.getUuid(); p.setProperty('SALT', v); } return v; }
@@ -667,7 +716,7 @@ function listSessions_(who) { const all = sessAll_();
 
 /* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
-const PAUSE_OK_ = { verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
+const PAUSE_OK_ = { perfIn: 1, verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
   vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
@@ -705,11 +754,11 @@ function retire_(key, code) {
 
 /** Compares two secret keys by their digests, so the time taken doesn't hint at how much of a guess was right. */
 function keyEq_(a, b) { const d = x => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(x || ''))); return !!b && d(a) === d(b); }
-function health_(key) {
+function health_(key, full) {
   const P = PropertiesService.getScriptProperties(), b = boot_();
   const want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
   if (!want || !keyEq_(key, want)) return { ok: false, error: 'bad_key' };
-  const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION, hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION + (full ? ':f' : ''), hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
   const ss = ss_(); let cells = 0;   // the sheet's id isn't sent (v45): the dashboard doesn't need it, and an id is a key to a file in the owner's Drive ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
@@ -739,6 +788,9 @@ function health_(key) {
   try { out.triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction()); } catch (e) { out.triggers = null; }
   out.paused = shopPaused_(); out.approveNew = approveOn_(); out.noCache = rcOff_();
   out.backupLast = Number(P.getProperty('BK_LAST') || 0) || null;
+  if (full) {   // a shop's own page on the dashboard: 14 days of speed, and how big the main tabs are (for "What to fix")
+    out.perfDays = perfDays_(); out.rows = {};
+    ['Items', 'Bills', 'Test Bills', 'Customers', 'VendorLedger', 'Purchases', 'Images'].forEach(n => { const sh = ss.getSheetByName(n); if (sh) out.rows[n] = Math.max(0, sh.getLastRow() - 1); }); }
   try { c.put(HK, JSON.stringify(out), 50); } catch (e) {}
   return out; }
 /**

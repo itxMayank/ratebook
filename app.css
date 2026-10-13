@@ -1436,8 +1436,6 @@ html.cover body>*{visibility:hidden}
 html.locked #updpill{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 @media (min-width:1024px){ #updpill{bottom:24px;left:calc((100vw - var(--billw,0px)) / 2)} }
 .sess-row .pill.wait{background:color-mix(in srgb,var(--gold,#b8860b) 22%,transparent);color:var(--fg)}
-.speed-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
-.speed-row:last-child{border-bottom:0}
 .sess-row small{color:var(--muted);display:block}
 
 /* ---- Search at the bottom (phones; Settings → Search bar). The search box and the round Add button sit in #dock, just above the

@@ -134,7 +134,7 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     // every Settings card
     await tile(p, '#t-settings'); await p.waitForTimeout(600);
     const cards = await p.$$eval('details.cg', d => d.map(x => x.dataset.cg));
-    ok(owner ? cards.length === 10 : cards.length === 3, `${set.name} · Settings shows ${cards.length} cards (${cards.join(', ')})`);
+    ok(owner ? cards.length === 9 : cards.length === 3, `${set.name} · Settings shows ${cards.length} cards (${cards.join(', ')})`);
     for (const k of cards) await check(p, set, 'Settings → ' + k, undefined, () => p.click(`details[data-cg="${k}"] summary`));
     await closeAll(p);
     // the lock screen

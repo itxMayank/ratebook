@@ -59,7 +59,11 @@ function applyTheme(){
 }
 applyTheme();
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme); }catch{}
-const t = (k,...a) => { const v = (STR[S.lang]||STR.en)[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
+/* Technical details (Apps Script steps, script versions, error codes, the AI model's name) are only for the owner of the original
+   shop (Mayank, who runs Rate Book). Every other shop gets the plain "Rate Book support will fix this" version of a message
+   (strings with the same key + "_s"); the problem itself reaches the admin dashboard (error log, What to fix). */
+const TECH = () => SHOP_MAIN && can("owner");
+const t = (k,...a) => { const L=STR[S.lang]||STR.en; if(!TECH() && (k+"_s") in STR.en) k+="_s"; const v = L[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
 /* Small line icons used inside text (one icon style across the app; designinstructions §5). Size follows the text. */
 const ICS=p=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const IC={warn:ICS('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'),
@@ -227,7 +231,7 @@ function renderQueue(){
   const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); flushBills(); };
 }
 function renderSvNote(){
-  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && can("manager");
+  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && TECH();   // other shops: the admin updates their scripts
   el.hidden=!old; if(old) el.innerHTML=`<b>${IC.warn} ${esc(t("svT"))}</b><span>${esc(t("oldScript"))}</span>`;
 }
 function renderCodeNote(){
@@ -671,7 +675,7 @@ async function apiRead(params){
   return apiGet0(params); }
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
 function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
-/** Request timings on this phone (per shop): Settings → Speed. rev/thumbs aren't kept (they're tiny and constant). */
+/** Request timings on this phone (per shop), sent to the shop's script about once an hour (perfSend) for the admin dashboard's Speed section. rev/thumbs aren't kept (they're tiny and constant). */
 /** This phone's own script errors go to the shop's script (memory only there), so they show on the admin dashboard → Errors.
     Up to 10 different errors per app start; the app's expected failures (offline, wrong PIN…) aren't errors and aren't sent. */
 const ERR_SENT=new Set(); let errN=0;
@@ -683,8 +687,15 @@ function errReport(m,w,st){ try{ m=String(m||"").slice(0,300); w=String(w||""); 
     e:{m,w:w.slice(0,160),st:st.slice(0,500),ua:navigator.userAgent.slice(0,90),tab:S.tab||""}})}).catch(()=>{}); }catch{} }
 window.addEventListener("error",e=>{ if(e && e.message) errReport(e.message,(e.filename||"").split("/").pop().split("?")[0]+":"+e.lineno+":"+e.colno,e.error&&e.error.stack); });
 window.addEventListener("unhandledrejection",e=>{ const r=e&&e.reason; if(!r || (r.code && !r.stack)) return; errReport(r.message||String(r),"promise",r.stack); });
-function perfAdd(action,t0,j){ if(!action || action==="rev" || action==="thumbs") return;
-  try{ const a=ls.get("rb_perf",[]); a.push([action,Math.round(performance.now()-t0),j&&typeof j.ms==="number"?j.ms:null,Date.now()]); ls.set("rb_perf",a.slice(-100)); }catch{} }
+function perfAdd(action,t0,j){ if(!action || action==="rev" || action==="thumbs" || action==="perfIn" || action==="clientErr") return;
+  try{ const a=ls.get("rb_perf",[]); a.push([action,Math.round(performance.now()-t0),j&&typeof j.ms==="number"?j.ms:null,Date.now()]); ls.set("rb_perf",a.slice(-300)); }catch{} }
+/** About once an hour (from the 25-second check): this phone's timings since the last send go to the shop's script (v47+), which keeps 14 days
+    of daily summaries for the dashboard. Signed-in phones only; nothing is shown on the phone. */
+let perfSending=false;
+function perfSend(){ if(perfSending || !(S.auth&&S.auth.tok) || !(S.sv>=47) || navigator.onLine===false) return;
+  const sent=ls.get("rb_perf_sent",0), now=Date.now(); if(now-ls.get("rb_perf_try",0)<3600000) return; ls.set("rb_perf_try",now);
+  const rows=ls.get("rb_perf",[]).filter(r=>r[3]>sent); if(!rows.length) return;
+  perfSending=true; apiPost0({action:"perfIn",rows,dl:devLabel()}).then(j=>{ if(j&&j.ok) ls.set("rb_perf_sent",Math.max(...rows.map(r=>r[3]))); }).catch(()=>{}).finally(()=>{ perfSending=false; }); }
 async function apiGet0(params){
   const t0=performance.now();
   const u=apiUrl()+"?"+new URLSearchParams({...params,...(params.action==="list"&&params.k===undefined?{k:ls.get("rb_view","")}:{}),_:String(Date.now())});
@@ -846,7 +857,7 @@ async function checkRev(){
     if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
     if(vqGet().length && !vqBusy) vqFlush();
     const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true);
-    nCheck(j); }
+    nCheck(j); perfSend(); }
   catch{ S.online=false; renderNet(); }
 }
 async function fetchThumbs(){

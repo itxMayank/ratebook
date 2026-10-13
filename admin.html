@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-3RWHTOP2FKvBaCnWeTZbekODjJ1X4B+TNuc4TToXm4I='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-EEcv84PzawTm7OoCAegofIRmBkEfiOa49WOvZMGpgVU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -175,6 +175,72 @@ label{display:grid;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
 #toast{position:fixed;left:50%;bottom:24px;z-index:70;transform:translate(-50%,20px);background:var(--ink);color:var(--ink-fg);padding:11px 16px;font-size:14px;font-weight:600;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(560px,calc(100vw - 32px));display:flex;gap:8px;align-items:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.bad{background:var(--bad);color:#fff}
+/* shop cards open the shop's own page */
+.card.go{cursor:pointer;transition:border-color .15s}
+.card.go:hover{border-color:var(--line-2)}
+/* a shop's own page (#shop/<code>): sections stacked, nothing hidden behind a tap; on a laptop the small ones sit side by side */
+:root{--s1:#4F46E5;--s2:#0E9AA7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s1:#6E6BF0;--s2:#159AA6}}
+:root[data-theme="dark"]{--s1:#6E6BF0;--s2:#159AA6}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--muted);background:none;border:0;padding:4px 0;min-height:32px;cursor:pointer}
+.back:hover{background:none;color:var(--fg)}
+.sp-head{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:6px 0 14px}
+.sp-head .c-title b{white-space:normal;font-size:22px;letter-spacing:-.02em}
+.sp-head .c-side{justify-items:start;grid-auto-flow:column;align-items:center}
+.sp-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.sp-nav a{font-size:13px;font-weight:600;padding:6px 12px;border:1px solid var(--line-2);background:var(--surface);text-decoration:none}
+.sp-nav a:hover{background:var(--surface-2)}
+.sp-grid{display:grid;gap:16px}
+.sec{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;min-width:0;scroll-margin-top:76px}
+.sec>h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
+.sec>.sub{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.sec.dim{opacity:.6;transition:opacity .2s}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line)}
+@media (min-width:720px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.tiles .stat{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tiles .stat span,.tiles .stat b,.tiles .stat small{white-space:normal;overflow:visible}
+.row-f{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 14px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px}
+.chart{position:relative;margin-top:12px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{fill:var(--muted);font:11px/1 inherit;font-family:inherit}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .c1{fill:var(--s1)}.chart .c2{fill:var(--s2)}
+.chart .lbl{fill:var(--fg);font:600 11.5px/1 inherit;font-family:inherit}
+.chart .hit{fill:transparent;cursor:default;outline:none}
+.chart g,.chart text{pointer-events:none}   /* the hover area (.hit) is the whole column slot; the bars drawn over it mustn't catch the pointer */
+.chart .hit:hover+g,.chart .hit:focus-visible+g{opacity:.78}
+.chart .hit:focus-visible{stroke:var(--accent);stroke-width:2}
+#tip{position:fixed;z-index:65;pointer-events:none;background:var(--surface);color:var(--fg);border:1px solid var(--line-2);box-shadow:var(--shadow);padding:8px 10px;font-size:12.5px;min-width:150px}
+#tip b{display:block;font-size:15px}
+#tip .r{display:flex;align-items:center;gap:7px;color:var(--muted)}
+#tip .r i{width:12px;height:2px;flex:none}
+details.tbl{margin-top:12px;font-size:13px}
+details.tbl summary{cursor:pointer;color:var(--muted);font-weight:600}
+details.tbl table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}
+details.tbl th,details.tbl td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--line)}
+details.tbl th:first-child,details.tbl td:first-child{text-align:left}
+/* "What to fix" */
+.fixes{display:grid;gap:10px}
+.fix{border:1px solid var(--line);border-left:3px solid var(--line-2);padding:12px 14px;display:grid;gap:6px}
+.fix.high{border-left-color:var(--bad)}.fix.medium{border-left-color:var(--warn)}
+.fix .ft{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;justify-content:space-between}
+.fix .ft b{font-size:15px}
+.sev{display:inline-block;padding:1px 7px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:var(--surface-2);color:var(--muted)}
+.sev.high{background:var(--bad-bg);color:var(--bad)}.sev.medium{background:var(--warn-bg);color:var(--warn)}
+.fix p{margin:0;font-size:13.5px}.fix .why{color:var(--muted)}
+.lost{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* by action / by phone: rows that wrap instead of a wide table */
+.arows{border:1px solid var(--line)}
+.arow{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+.arow:last-child{border-bottom:0}
+.arow .an{flex:1 1 160px;font-weight:600;min-width:0}
+.arow .an small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.arow .av2{display:flex;flex-wrap:wrap;gap:4px 14px;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.arow .av2 b{color:var(--fg);font-weight:700}
+.arow.head{background:var(--surface-2);font-size:12px;color:var(--muted);font-weight:600}
+@media (min-width:980px){.sp-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}}
 @media (max-width:820px){.ov{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.hwrap,main{padding-left:16px;padding-right:16px}.grid{grid-template-columns:minmax(0,1fr)}.kpi b{font-size:22px}.brand small{display:none}.hacts .lbl{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -240,6 +306,11 @@ label{display:grid;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
       <button id="b-updall"><svg class="ic"><use href="#i-up"/></svg>Update all shops</button><button id="b-reg" class="ghost">Register my shop</button></div>
     <div class="err" id="app-err"></div>
     <div class="grid" id="shops"></div>
+  </section>
+
+  <section id="s-shop" hidden>
+    <button type="button" class="back" id="sp-back"><svg class="ic" style="transform:rotate(-90deg)"><use href="#i-up"/></svg>All shops</button>
+    <div id="sp"></div>
   </section>
 </main>
 
@@ -314,6 +385,7 @@ label{display:grid;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
   </section>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="tip" hidden></div>
 <script>
 (() => {
 "use strict";
@@ -374,7 +446,7 @@ $("#f-del").onsubmit = async e => { e.preventDefault(); const x = delShop, btn =
   try { const j = await call({ action: "deleteShop", code: x.code, confirm: $("#del-in").value.trim(), permanent: perm });
     $("#f-del").hidden = true; const d = $("#del-done"); d.hidden = false;
     d.innerHTML = `<b>${esc(x.name || x.code)} is deleted.</b><ul style="margin:6px 0 0;padding-left:18px">${(j.steps || []).map(t => `<li>${esc(t)}</li>`).join("")}${(j.warn || []).map(t => `<li style="color:var(--warn)">${esc(t)}</li>`).join("")}</ul>`;
-    delShop = null; toast("Shop deleted"); await load(); }
+    delShop = null; toast("Shop deleted"); if (curShop === x.code) location.hash = ""; await load(); }
   catch (er) { $("#del-err").textContent = errText(er); } finally { idle(btn); } };
 
 let errDays = 7;
@@ -395,7 +467,7 @@ $("#e-shop").onchange = loadErrors; document.querySelectorAll("#e-days button").
 function show() {
   const hasDir = !!dirUrl(), signed = !!store.get("tok", "");
   $("#s-setup").hidden = hasDir; $("#s-signin").hidden = !hasDir || signed; $("#s-app").hidden = !signed; $("#topbtns").hidden = !signed;
-  if (signed) { load(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) loadHealth(); }, 60000); } else closePanel();
+  if (signed) { load(); clearInterval(timer); timer = setInterval(() => { if (document.hidden) return; if (curShop) loadShopFull(curShop); else loadHealth(); }, 60000); route(); } else { closePanel(); if (curShop) closeShop(); }
 }
 $("#dir-save").onclick = () => { const u = $("#dir-url").value.trim(); if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(u)) { toast("That doesn't look like an Apps Script web app link (…/exec).", true); return; } store.set("dir", u); show(); };
 $("#b-chgdir").onclick = () => { store.set("dir", ""); $("#dir-url").value = dirUrl(); show(); };
@@ -429,11 +501,13 @@ function overview() {
   $("#k-month").textContent = rs(ma); $("#k-month2").textContent = `${mt} real bill${mt === 1 ? "" : "s"}`;
   $("#k-err").textContent = er; $("#k-err2").textContent = er ? "open the error log" : "all quiet"; $("#k-errw").classList.toggle("bad", er > 0); }
 function render() {
+  if (curShop) { renderShop(); overview(); return; }
   const list = shops.slice().sort((a, b) => (a.code === "main" ? -1 : b.code === "main" ? 1 : (b.createdAt || 0) - (a.createdAt || 0)));
   const open = [...document.querySelectorAll("details.more[open]")].map(d => d.dataset.code);   // keep an open menu open across refreshes
   $("#shops").innerHTML = list.map(x => card(x, health[x.code])).join("") || `<div class="empty">No shops yet. Register your own shop, then create one.</div>`;
   open.forEach(c => { const d = document.querySelector(`details.more[data-code="${CSS.escape(c)}"]`); if (d) d.open = true; });
-  document.querySelectorAll("[data-act]").forEach(b => b.onclick = ev => { ev.preventDefault(); act(b.dataset.act, b.dataset.code, b); });
+  document.querySelectorAll("#shops [data-act]").forEach(b => b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); act(b.dataset.act, b.dataset.code, b); });
+  document.querySelectorAll("#shops .card.go").forEach(c => c.onclick = ev => { if (ev.target.closest("button,a,summary,details,input,select,textarea")) return; location.hash = "#shop/" + encodeURIComponent(c.dataset.open); });
   overview(); }
 const stat = (label, big, small, cls) => `<div class="stat"><span>${esc(label)}</span><b>${big}</b>${small ? `<small class="${cls || ""}">${small}</small>` : ""}</div>`;
 function card(x, h) {
@@ -443,7 +517,7 @@ function card(x, h) {
     : `<span class="badge bad"><i></i>${esc(h.error === "needs_auth" || st === "needs-auth" ? "needs authorising" : (h.error || "unreachable"))}</span>`;
   const b = ok && h.bills || {}, tb = ok && h.tbills || {};
   const testLine = n => n ? `${n} test` : "";
-  return `<article class="card${main ? " main" : ""}">
+  return `<article class="card go${main ? " main" : ""}" data-open="${esc(x.code)}">
     <div class="c-head"><div class="av">${esc((x.name || x.code).trim().charAt(0).toUpperCase())}</div>
       <div class="c-title"><b title="${esc(x.name || x.code)}">${esc(x.name || x.code)}</b><div class="mono">${esc(main ? "your shop" : x.code)}${ok && h.mode === "test" ? ` <span class="badge test">TEST MODE</span>` : ""}</div></div>
       <div class="c-side">${badge}<span class="vchip${old ? " old" : ""}">script v${esc(x.version || (ok ? h.sv : "?"))}${old ? ` → v${esc(latest.sv)}` : ""}</span></div></div>
@@ -467,6 +541,7 @@ function card(x, h) {
     <div class="c-foot">
       ${!main ? `<button data-act="share" data-code="${esc(x.code)}" title="Copy shop link">${ic("link")}Copy link</button><button data-act="wa" data-code="${esc(x.code)}" title="Send the shop link on WhatsApp">${ic("wa")}WhatsApp</button>` : `<span class="muted small" style="padding-left:4px">Your shop</span>`}
       <span class="grow"></span>
+      <button data-act="open" data-code="${esc(x.code)}" class="primary">Details</button>
       <details class="more" data-code="${esc(x.code)}"><summary>${ic("dots")}More</summary><div class="menu">
         ${x.sheetUrl ? `<a class="btn ghost" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener" style="justify-content:flex-start;border:0">${ic("sheet")}Open sheet</a>` : ""}
         ${x.folderUrl ? `<a class="btn ghost" href="${esc(x.folderUrl)}" target="_blank" rel="noopener" style="justify-content:flex-start;border:0">${ic("folder")}Open folder</a>` : ""}
@@ -478,6 +553,158 @@ function card(x, h) {
       </div></details>
     </div></article>`;
 }
+/* ===================== A shop's own page (#shop/<code>) =====================
+   Overview, Speed (14 days kept by the shop's script, v47+, with "What to fix" worked out from it), Errors and Setup, stacked. */
+let curShop = "", full = {}, spDays = store.get("spd", 7), spSel = null;
+const ACTN = { boot: "App start", list: "Price list", verify: "Sign in", upsert: "Save items", delete: "Delete items", takeBill: "Save bill", updateBill: "Edit bill", getBill: "Open bill", listBills: "Past bills", findCustomer: "Customer lookup", listCustomers: "Customers", listDues: "Credit", recordPayment: "Record payment", undoPayment: "Undo payment", cancelBill: "Cancel bill", restoreBill: "Restore bill", report: "Reports", setConfig: "Save settings", setMyPrefs: "My settings", images: "Photos", image: "Photo", thumbs: "Photo thumbnails", setImages: "Save photos", notices: "Notifications", noticeRead: "Mark read", vSync: "Vendors", vSave: "Vendor entry", vSaveVendor: "Save vendor", vUpload: "Bill photo upload", vRead: "Read bill (AI)", vCheck: "Check bill (AI)", vApply: "Bill items", itemBuys: "Bought", backupInfo: "Backups", backupNow: "Back up now", listSessions: "Signed-in phones", listUsers: "People", saveUser: "Save person", saveCustomer: "Save customer", vFile: "Vendor bill file", vPreviews: "Vendor photos", vEx: "Bill reading", signOut: "Sign out" };
+const actName = k => ACTN[k] || k;
+const PB = [300, 600, 1000, 1500, 2500, 4000, 7000];
+/** Typical (f = .5) or slow (f = .95) time from bucket counts: the bucket where it falls, spread evenly inside it. */
+function bq(b, f) { const n = b.reduce((x, y) => x + y, 0); if (!n) return null; let want = f * n, c = 0;
+  for (let i = 0; i < b.length; i++) { if (c + b[i] >= want && b[i]) { const lo = i ? PB[i - 1] : 0, hi = PB[i] || 12000; return lo + (hi - lo) * ((want - c) / b[i]); } c += b[i]; } return PB[PB.length - 1]; }
+const addTo = (t, a) => { a.forEach((v, i) => t[i] = (t[i] || 0) + (+v || 0)); return t; };
+/** The chosen days, summed per action (script side a, phones' side p, phone types l). */
+function spAgg(days) { const A = {}, Pp = {}, L = {}; days.forEach(d => { Object.keys(d.a || {}).forEach(k => A[k] = addTo(A[k] || [], d.a[k])); Object.keys(d.p || {}).forEach(k => Pp[k] = addTo(Pp[k] || [], d.p[k])); Object.keys(d.l || {}).forEach(k => L[k] = addTo(L[k] || [], d.l[k])); }); return { A, P: Pp, L }; }
+function spRows(g) { const keys = [...new Set([...Object.keys(g.A), ...Object.keys(g.P)])];
+  return keys.map(k => { const a = g.A[k] || [], p = g.P[k] || [], an = a[0] || 0, pn = p[0] || 0;
+    const r = { k, n: Math.max(an, pn), an, pn, fail: a[1] || 0, hit: a[2] || 0, cold: a[3] || 0, coldAvg: a[3] ? a[4] / a[3] : null, warmAvg: an - (a[3] || 0) ? a[5] / (an - a[3]) : null,
+      srvAvg: an ? ((a[4] || 0) + (a[5] || 0)) / an : null, srv50: an ? bq(a.slice(6, 14), .5) : null, srv95: an ? bq(a.slice(6, 14), .95) : null,
+      whole: pn ? p[2] / pn : null, inScript: pn ? p[1] / pn : null, w50: pn ? bq(p.slice(3, 11), .5) : null, w95: pn ? bq(p.slice(3, 11), .95) : null, net50: pn ? bq(p.slice(11, 19), .5) : null };
+    r.wait = r.whole != null ? r.whole : r.srvAvg; return r; }).sort((x, y) => y.n * (y.wait || 0) - x.n * (x.wait || 0)); }
+/** "What to fix": plain rules over the speed history and the shop's size. Each says what was seen, what to do, and roughly how much
+    waiting it costs a day, so the biggest win is first. Written for whoever improves the script (Mayank or Claude). */
+const HINT = { takeBill: "Saving a bill checks the last 500 bills for repeats and the bill number, and updates the customer row. Read fewer rows (only the bill-id and number columns) or keep the last numbers in the cache.",
+  report: "Reports read every bill in the chosen period. Keep each finished day's figures (they don't change) and only read today fresh.",
+  listBills: "Past bills sends the phone a full copy when its copy is too old. Make the change log longer, or send pages.",
+  getBill: "Opening a bill reads its row and checks it. Should be quick: look for a very wide Bills tab.",
+  listDues: "Credit reads all bills with money due. Keep a small dues index (like the Customers tab) instead.",
+  vSync: "Vendors sends every vendor and entry when anything changed. Send only the vendors that changed.",
+  list: "The price list is rebuilt whenever prices, bills or settings change. Most-sold counts can be kept apart so a new bill doesn't rebuild it.",
+  upsert: "Saving items rewrites rows one by one. Write them in one block.",
+  vRead: "Reading a bill waits on Google's AI. Nothing to fix in the sheet; a lighter model is faster but reads less well.", vCheck: "Checking a bill waits on Google's AI (see Read bill)." };
+function spDiagnose(rows, h, nDays) {
+  const out = [], perDay = v => v / Math.max(1, nDays), mins = ms => ms >= 60000 ? Math.round(ms / 60000) + " min" : Math.round(ms / 1000) + " s";
+  const all = rows.reduce((t, r) => (t.cold += r.cold, t.coldMs += r.coldAvg != null ? r.coldAvg * r.cold : 0, t.warmMs += r.warmAvg != null ? r.warmAvg * (r.an - r.cold) : 0, t.warm += r.an - r.cold, t), { cold: 0, coldMs: 0, warm: 0, warmMs: 0 });
+  if (all.cold >= 5 && all.warm) { const extra = all.coldMs / all.cold - all.warmMs / all.warm; if (extra >= 1500) out.push({ sev: extra > 4000 ? "high" : "medium", t: "The script is often waking up",
+    why: `${all.cold} requests came after 10+ quiet minutes and took ${sec(extra)} longer than the rest (Google starts the script again).`,
+    fix: "Add a small timed job that calls the script every 5–10 minutes during shop hours, so it stays ready. It uses a little of the daily quota.", lost: perDay(all.cold * extra) }); }
+  const bills = h.rows ? (h.rows.Bills || 0) + (h.rows["Test Bills"] || 0) : 0;
+  rows.forEach(r => { if (!r.an || r.n < 10) return; const lostOver = (avg, target) => perDay(r.n * Math.max(0, avg - target));
+    if (r.fail / r.an > .05 && r.fail >= 3) out.push({ sev: "high", t: `${actName(r.k)} fails ${Math.round(r.fail / r.an * 100)}% of the time`, why: `${r.fail} of ${r.an} failed. The error log says why.`, fix: "Open the error log for this shop and fix the cause first: a failed request is also a slow one, because the phone tries again.", lost: perDay(r.fail * (r.srvAvg || 2000)) });
+    if (r.srv95 != null && r.srv95 > 8000) out.push({ sev: "high", t: `${actName(r.k)} is close to Google's limits`, why: `The slow ones take ${sec(r.srv95)} in the script (typical ${sec(r.srv50)}).`, fix: HINT[r.k] || "Look at what this action reads and write it to read less.", lost: lostOver(r.srvAvg, 1000) });
+    else if (r.srvAvg > 2500) { const big = bills >= 5000 && /^(listBills|report|takeBill|getBill|listDues|listCustomers)$/.test(r.k);
+      out.push({ sev: r.srvAvg > 4000 ? "high" : "medium", t: big ? `${actName(r.k)} is slow because the Bills tab is big` : `${actName(r.k)} is slow in the script`, why: `Typical ${sec(r.srv50)}, slow ${sec(r.srv95)} in the script, ${r.n} times.` + (big ? ` Bills has ${bills.toLocaleString("en-IN")} rows.` : ""),
+        fix: big ? "Move bills from earlier financial years into a separate Archive tab (or file), keeping this year's in Bills." + (HINT[r.k] ? " " + HINT[r.k] : "") : (HINT[r.k] || "Look at what this action reads and write it to read less."), lost: lostOver(r.srvAvg, 1000) }); }
+    if (/^(list|listCustomers|listDues|vSync)$/.test(r.k) && r.an >= 20 && r.hit / r.an < .5 && r.srvAvg > 800) out.push({ sev: "medium", t: `${actName(r.k)} is rarely served from the saved reply`, why: `Only ${Math.round(r.hit / r.an * 100)}% came from the saved copy; the rest were built from the sheet (typical ${sec(r.srv50)}).`, fix: "Something changes its version often (each bill, payment or edit). Find which change can leave this reply alone.", lost: perDay(r.n * (1 - r.hit / r.an) * Math.max(0, r.srvAvg - 300)) }); });
+  const ph = rows.filter(r => r.pn), pn = ph.reduce((t, r) => t + r.pn, 0), whole = ph.reduce((t, r) => t + r.whole * r.pn, 0), inS = ph.reduce((t, r) => t + r.inScript * r.pn, 0);
+  if (pn >= 20 && whole / pn > 2000 && (whole - inS) / whole > .6) out.push({ sev: "low", t: "Most of the wait is the phones' internet", why: `On the phones a request takes ${sec(whole / pn)} on average, and ${Math.round((whole - inS) / whole * 100)}% of that is outside the script (the connection and Google's front door).`, fix: "Not the script. Fewer requests help most: check the busiest actions below.", lost: perDay(whole - inS) * .2 });
+  if (Array.isArray(h.triggers) && h.triggers.indexOf("autoBackup") < 0) out.push({ sev: "high", t: "Automatic backups are off", why: "The shop's script has no backup job, so nothing is copied every 4 hours. (The shop's owner only sees \"Rate Book support will switch them on\".)", fix: "Open the shop's script and run setupShop once (your own shop: setupBackups), then allow.", lost: 0 });
+  else if (h.backupLast && Date.now() - h.backupLast > 2 * 864e5) out.push({ sev: "medium", t: "No backup for " + Math.floor((Date.now() - h.backupLast) / 864e5) + " days", why: "The backup job is there but the last copy is old. Backups only run when the sheet changed, so this can also mean nobody used the shop.", fix: "If the shop is in use, open the script's Executions and look for autoBackup failures.", lost: 0 });
+  if (h.noCache) out.push({ sev: "medium", t: "The saved replies are switched off", why: "The script property NO_CACHE is set, so every price list, customers and credit request reads the sheet.", fix: "Remove NO_CACHE in Apps Script → Project settings → Script properties once the problem it was set for is solved.", lost: 0 });
+  if (h.cells > 5e6) out.push({ sev: h.cells > 8e6 ? "high" : "medium", t: "The sheet is getting near Google's size limit", why: `${(h.cells / 1e6).toFixed(1)} million cells used of 10 million.`, fix: "Archive old bills, and delete empty rows and columns at the end of each tab.", lost: 0 });
+  const rank = { high: 0, medium: 1, low: 2 }; return out.sort((x, y) => rank[x.sev] - rank[y.sev] || y.lost - x.lost).map(f => Object.assign(f, { lostT: f.lost ? "≈ " + mins(f.lost) + " of waiting a day" : "" })); }
+
+function spDayLabel(d) { return new Date(d + "T12:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }); }
+/** Average wait per day: the script's part and the rest (phone & internet), stacked; one column per day. Hover or focus a column for its numbers. */
+function spChart(box, days) {
+  const W = Math.max(280, box.clientWidth || 600), H = 190, L = 40, B = 24, T = 18, plotW = W - L - 4, plotH = H - T - B;
+  const pts = days.map(d => { const g = spAgg([d]); let n = 0, s = 0, w = 0, an = 0, as = 0;
+    Object.values(g.P).forEach(p => { n += p[0]; s += p[1]; w += p[2]; }); Object.values(g.A).forEach(a => { an += a[0]; as += a[4] + a[5]; });
+    return n ? { d: d.d, n, script: s / n, rest: Math.max(0, w / n - s / n), ph: true } : an ? { d: d.d, n: an, script: as / an, rest: 0, ph: false } : { d: d.d, n: 0, script: 0, rest: 0 }; });
+  const max = Math.max(500, ...pts.map(p => p.script + p.rest)), step = [500, 1000, 2000, 5000, 10000].find(x => max / x <= 5) || 20000, top = Math.ceil(max / step) * step;
+  const y = v => T + plotH - v / top * plotH, slot = plotW / pts.length, bw = Math.min(24, slot * .6);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Average wait per day">`;
+  for (let v = 0; v <= top; v += step) svg += `<line class="gl" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v ? (v / 1000) + " s" : "0"}</text>`;
+  const tall = pts.reduce((m, p, i) => p.script + p.rest > (pts[m].script + pts[m].rest) ? i : m, 0);
+  pts.forEach((p, i) => { const x = L + i * slot + (slot - bw) / 2, h1 = p.script / top * plotH, h2 = p.rest / top * plotH, gap = h1 && h2 ? 2 : 0, r = 4;
+    const seg = (cls, y0, hh, round) => hh <= 0 ? "" : round && hh > r ? `<path class="${cls}" d="M${x} ${y0 + hh}V${y0 + r}Q${x} ${y0} ${x + r} ${y0}H${x + bw - r}Q${x + bw} ${y0} ${x + bw} ${y0 + r}V${y0 + hh}Z"/>` : `<rect class="${cls}" x="${x}" y="${y0}" width="${bw}" height="${hh}"/>`;
+    svg += `<rect class="hit" data-i="${i}" tabindex="0" x="${L + i * slot}" y="${T}" width="${slot}" height="${plotH}" aria-label="${esc(spDayLabel(p.d))}"/><g>` + seg("c1", y(p.script), h1, !h2) + seg("c2", y(p.script + p.rest), Math.max(0, h2 - gap), true) + `</g>`;
+    if (pts.length <= 7 || (pts.length - 1 - i) % 2 === 0) svg += `<text class="ax" x="${L + i * slot + slot / 2}" y="${H - 6}" text-anchor="middle">${esc(new Date(p.d + "T12:00:00").toLocaleDateString("en-IN", pts.length > 7 ? { day: "numeric" } : { weekday: "short" }))}</text>`;
+    if (i === tall && p.n) svg += `<text class="lbl" x="${x + bw / 2}" y="${y(p.script + p.rest) - 6}" text-anchor="middle">${sec(p.script + p.rest)}</text>`; });
+  box.innerHTML = svg + `</svg>`;
+  const tip = $("#tip"), showTip = (el, ev) => { const p = pts[+el.dataset.i]; tip.textContent = "";
+    const head = document.createElement("div"); head.className = "small muted"; head.textContent = spDayLabel(p.d); tip.appendChild(head);
+    const big = document.createElement("b"); big.textContent = p.n ? sec(p.script + p.rest) + " average wait" : "No requests"; tip.appendChild(big);
+    if (p.n) [[`${sec(p.script)} in the script`, "var(--s1)"], p.ph ? [`${sec(p.rest)} phone & internet`, "var(--s2)"] : ["phones didn't send timings", ""], [`${p.n} request${p.n === 1 ? "" : "s"}`, ""]].forEach(([t, c]) => {
+      const r = document.createElement("div"); r.className = "r"; const k = document.createElement("i"); if (c) k.style.background = c; r.appendChild(k); r.appendChild(document.createTextNode(t)); tip.appendChild(r); });
+    tip.hidden = false; const bx = el.getBoundingClientRect(), tx = ev && ev.clientX != null ? ev.clientX : bx.left + bx.width / 2, ty = ev && ev.clientY != null ? ev.clientY : bx.top + 20;
+    tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, Math.max(8, tx + 12)) + "px"; tip.style.top = Math.max(8, ty - tip.offsetHeight - 12) + "px"; };
+  box.querySelectorAll(".hit").forEach(el => { el.addEventListener("pointermove", ev => showTip(el, ev)); el.addEventListener("focus", () => showTip(el)); ["pointerleave", "blur"].forEach(e => el.addEventListener(e, () => { tip.hidden = true; })); });
+  return pts; }
+
+async function openShop(code) {
+  curShop = code; $("#s-app").hidden = true; $("#s-shop").hidden = false; window.scrollTo(0, 0);
+  const x = shops.find(y => y.code === code); if (!x && shops.length) { location.hash = ""; return; }
+  renderShop(); loadShopFull(code); }
+async function loadShopFull(code) {
+  document.querySelectorAll("#sp .sec.live").forEach(e => e.classList.add("dim"));
+  const [h, er] = await Promise.all([call({ action: "shopHealth", code }).then(j => j.health).catch(e => ({ ok: false, error: e.message })), call({ action: "errors", code, days: 7 }).then(j => j.errors || []).catch(() => null)]);
+  if (curShop !== code) return; full[code] = { h, er, at: Date.now() }; renderShop(); }
+function closeShop() { curShop = ""; $("#s-shop").hidden = true; $("#s-app").hidden = false; $("#tip").hidden = true; render(); }
+$("#sp-back").onclick = () => { location.hash = ""; };
+window.addEventListener("hashchange", route);
+function route() { const m = /^#shop\/(.+)$/.exec(location.hash); if (m && store.get("tok", "")) openShop(decodeURIComponent(m[1])); else if (curShop) closeShop(); }
+const errRows = L => `<div class="errs">${L.map(e => `<div class="erow"><div class="top"><span><span class="k ${esc(e.kind)}">${esc(e.kind)}</span> <span class="mono">${esc(e.where)}</span></span><span class="small muted">${esc(new Date(e.t).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }))} · ${ago(e.t)}</span></div>
+  <div style="margin-top:4px">${esc(e.m)}</div>${e.who || e.phone ? `<div class="small muted">${esc([e.who, e.phone].filter(Boolean).join(" · "))}</div>` : ""}${e.detail ? `<details><summary>Details</summary><pre>${esc(e.detail)}</pre></details>` : ""}</div>`).join("")}</div>`;
+function renderShop() {
+  const code = curShop, x = shops.find(y => y.code === code) || { code, name: code }, F = full[code] || {}, h = (F.h && F.h.ok ? F.h : null) || health[code], ok = h && h.ok, main = code === "main";
+  const old = latest && x.version && Number(x.version) < Number(latest.sv), st = x.status || "";
+  const b = ok && h.bills || {}, tb = ok && h.tbills || {};
+  let html = `<div class="sp-head"><div class="av" style="width:52px;height:52px;font-size:20px">${esc((x.name || x.code).trim().charAt(0).toUpperCase())}</div>
+    <div class="c-title"><b>${esc(x.name || x.code)}</b><div class="mono">${esc(main ? "your shop" : x.code)}${ok && h.mode === "test" ? ` <span class="badge test">TEST MODE</span>` : ""}</div></div>
+    <div class="c-side">${ok ? `<span class="badge ${esc(h.paused ? "paused" : st)}"><i></i>${esc(st === "live" ? (h.paused ? "paused" : "live") : st)}</span>` : h ? `<span class="badge bad"><i></i>${esc(h.error || "unreachable")}</span>` : ""}<span class="vchip${old ? " old" : ""}">script v${esc(x.version || (ok ? h.sv : "?"))}${old ? ` → v${esc(latest.sv)}` : ""}</span></div></div>
+    <nav class="sp-nav" aria-label="Sections"><a href="#" data-to="sp-ov">Overview</a><a href="#" data-to="sp-speed">Speed</a><a href="#" data-to="sp-err">Errors</a><a href="#" data-to="sp-set">Setup</a></nav>
+    <div class="c-msg" id="err-${esc(code)}"></div><div class="sp-grid">`;
+  html += `<section class="sec" id="sp-ov"><h3>Overview</h3><p class="sub">Updated ${ago(F.at || Date.now())}. Refreshes every minute while open.</p>` + (ok ? `<div class="tiles">
+      ${stat("Bills today", `${b.today || 0}`, rs(b.todayAmt) + (tb.today ? ` · +${tb.today} test` : ""))}${stat("This month", `${b.month || 0}`, rs(b.monthAmt) + (tb.month ? ` · +${tb.month} test` : ""))}
+      ${stat("Items", `${h.items || 0}`, "")}${stat("Phones", `${h.sessions || 0}`, h.pending ? `${h.pending} waiting for approval` : "signed in")}
+      ${stat("People", `${h.users || 0}`, "with their own PIN")}${stat("Last change", ago(h.lastChange), "")}${stat("Last backup", ago(h.backupLast), "")}${stat("Wrong PINs", `${h.wrongPins || 0}`, "this hour")}</div>`
+    : `<div class="skel" style="height:120px"></div>`) + `</section>`;
+  /* Speed */
+  const days = F.h && F.h.ok && Array.isArray(F.h.perfDays) ? F.h.perfDays : null;
+  spSel = null; html += `<section class="sec live" id="sp-speed"><h3>Speed</h3><p class="sub">How long things take, from the phones (whole wait) and inside the shop's script, kept for 14 days. Phones send their timings about once an hour.</p>`;
+  if (!F.h) html += `<div class="skel" style="height:220px"></div>`;
+  else if (!days) html += `<div class="callout">Speed history needs the shop's script on <b>v47 or newer</b> (it's on v${esc(ok ? h.sv : x.version || "?")}). Update the script; history starts from then.</div>`
+    + (ok && h.perf && h.perf.length ? `<p class="small muted" style="margin:12px 0 6px">Last ${h.reqs} requests in the script (6 hours):</p><div class="arows">${h.perf.map(p => `<div class="arow"><span class="an">${esc(actName(p.a))}</span><span class="av2"><span><b>${p.n}</b>×</span><span>typical <b>${sec(p.p50)}</b></span><span>slow <b>${sec(p.p95)}</b></span></span></div>`).join("")}</div>` : "");
+  else { const now = Date.now(), sel = []; spSel = sel;
+    for (let i = spDays - 1; i >= 0; i--) { const d = new Date(now - i * 864e5); const k = new Date(d.getTime() + 5.5 * 36e5).toISOString().slice(0, 10); sel.push(days.find(z => z.d === k) || { d: k, a: {}, p: {}, l: {} }); }
+    const g = spAgg(sel), rows = spRows(g), fixes = spDiagnose(rows, F.h, spDays);
+    const pn = rows.reduce((t, r) => t + r.pn, 0), an = rows.reduce((t, r) => t + r.an, 0), whole = rows.reduce((t, r) => t + (r.whole || 0) * r.pn, 0), inS = rows.reduce((t, r) => t + (r.inScript || 0) * r.pn, 0);
+    const wb = new Array(8).fill(0); Object.values(g.P).forEach(p => addTo(wb, p.slice(3, 11))); const sb = new Array(8).fill(0); Object.values(g.A).forEach(a => addTo(sb, a.slice(6, 14)));
+    html += `<div class="row-f"><div class="seg" id="sp-days" role="group" aria-label="Period"><button data-d="7" class="${spDays === 7 ? "on" : ""}">7 days</button><button data-d="14" class="${spDays === 14 ? "on" : ""}">14 days</button></div></div>
+      <div class="tiles">${stat("Typical wait on phones", pn ? sec(bq(wb, .5)) : "—", pn ? `slow ${sec(bq(wb, .95))}` : "no phone timings yet")}${stat("In the script", an ? sec(bq(sb, .5)) : "—", an ? `slow ${sec(bq(sb, .95))}` : "")}
+        ${stat("Phone & internet share", pn && whole ? Math.round((whole - inS) / whole * 100) + "%" : "—", "of the whole wait")}${stat("Requests", (Math.max(pn, an)).toLocaleString("en-IN"), `${spDays} days`)}</div>
+      <div class="chart" id="sp-chart"></div><div class="legend"><span><i style="background:var(--s1)"></i>In the script</span><span><i style="background:var(--s2)"></i>Phone &amp; internet</span></div>
+      <details class="tbl" id="sp-tbl"><summary>Show as table</summary></details>
+      <h3 style="margin:22px 0 4px;font-size:15px">What to fix</h3><p class="sub" style="margin:0 0 10px;color:var(--muted);font-size:13px">Worked out from the timings above. Biggest problems first.</p>
+      ${fixes.length ? `<div class="fixes">${fixes.map(f => `<div class="fix ${f.sev}"><div class="ft"><b>${esc(f.t)}</b><span class="sev ${f.sev}">${f.sev === "high" ? "Fix first" : f.sev === "medium" ? "Worth fixing" : "Good to know"}</span></div><p class="why">${esc(f.why)}</p><p>${esc(f.fix)}</p>${f.lostT ? `<span class="lost">${esc(f.lostT)}</span>` : ""}</div>`).join("")}</div>`
+        : `<div class="note">${an + pn >= 30 ? "Nothing slow enough to fix. Everything answers in good time." : "Not enough requests yet to judge. Check again after a day of use."}</div>`}
+      <div class="sp-two" style="margin-top:22px"><div><h3 style="margin:0 0 8px;font-size:15px">By action</h3><div class="arows">${rows.length ? rows.slice(0, 25).map(r => `<div class="arow"><span class="an">${esc(actName(r.k))}<small>${r.n.toLocaleString("en-IN")} request${r.n === 1 ? "" : "s"}${r.hit ? ` · ${Math.round(r.hit / r.an * 100)}% from saved reply` : ""}${r.cold ? ` · ${r.cold} cold` : ""}${r.fail ? ` · ${r.fail} failed` : ""}</small></span><span class="av2">${r.w50 != null ? `<span>phone <b>${sec(r.w50)}</b></span>` : ""}<span>script <b>${sec(r.srv50)}</b></span><span>slow <b>${sec(r.w95 != null ? r.w95 : r.srv95)}</b></span></span></div>`).join("") : `<div class="arow muted">No requests in this period.</div>`}</div></div>
+      <div><h3 style="margin:16px 0 8px;font-size:15px">By phone type</h3><div class="arows">${Object.keys(g.L).length ? Object.keys(g.L).sort((p, q) => g.L[q][0] - g.L[p][0]).map(k => `<div class="arow"><span class="an">${esc(k)}</span><span class="av2"><span><b>${g.L[k][0].toLocaleString("en-IN")}</b> requests</span><span>average <b>${sec(g.L[k][1] / g.L[k][0])}</b></span></span></div>`).join("") : `<div class="arow muted">No phone has sent timings yet (phones send them about once an hour, after the app update).</div>`}</div></div></div>`;
+  }
+  html += `</section>`;
+  /* Errors */
+  html += `<section class="sec live" id="sp-err"><h3>Errors · 7 days</h3><p class="sub">Sheet = the script refused or failed a request. Phone = the app hit an error on someone's phone.</p>`
+    + (F.er == null ? (F.h ? `<div class="err">Couldn't load the error log.</div>` : `<div class="skel" style="height:80px"></div>`) : F.er.length ? errRows(F.er.slice(0, 40)) : `<div class="note">No errors in 7 days.</div>`) + `</section>`;
+  /* Setup */
+  html += `<section class="sec" id="sp-set"><h3>Setup</h3><p class="sub">Links, plan and the shop's switches.</p>
+    ${ok ? `<div class="meta" style="margin-bottom:12px"><span>Approval for new phones <b>${h.approveNew ? "on" : "off"}</b></span><span>Saved replies <b>${h.noCache ? "off" : "on"}</b></span><span>Jobs <b>${esc(h.triggers ? h.triggers.join(", ") || "none" : "?")}</b></span><span>Sheet <b>${h.cells ? (h.cells / 1e6).toFixed(2) + "M cells" : "?"}</b></span>${F.h && F.h.rows ? `<span>Bills <b>${(F.h.rows.Bills || 0).toLocaleString("en-IN")}</b> rows</span><span>Test bills <b>${(F.h.rows["Test Bills"] || 0).toLocaleString("en-IN")}</b></span>` : ""}</div>` : ""}
+    ${x.plan || x.paidUntil || x.notes ? `<div class="meta" style="margin-bottom:12px">${x.plan ? `<span>Plan <b>${esc(x.plan)}</b></span>` : ""}${x.paidUntil ? `<span>Paid until <b>${esc(new Date(x.paidUntil).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }))}</b></span>` : ""}</div>${x.notes ? `<p class="small muted" style="margin:0 0 12px">${esc(x.notes)}</p>` : ""}` : ""}
+    <div class="p-acts">${x.sheetUrl ? `<a class="btn" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">${ic("sheet")}Open sheet</a>` : ""}${x.folderUrl ? `<a class="btn" href="${esc(x.folderUrl)}" target="_blank" rel="noopener">${ic("folder")}Open folder</a>` : ""}${x.editUrl ? `<a class="btn" href="${esc(x.editUrl)}" target="_blank" rel="noopener">${ic("code")}Open script</a>` : ""}
+      ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(code)}"${old ? ` class="primary"` : ""}>${ic("up")}Update script</button>` : ""}<button data-act="notes" data-code="${esc(code)}">${ic("note")}Notes & plan</button>
+      ${!main ? `<button data-act="share" data-code="${esc(code)}">${ic("link")}Copy link</button><button data-act="wa" data-code="${esc(code)}">${ic("wa")}WhatsApp</button>` : ""}
+      ${!main && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(code)}" class="${st === "paused" ? "" : "danger"}">${ic(st === "paused" ? "play" : "pause")}${st === "paused" ? "Resume shop" : "Pause shop"}</button>` : ""}
+      ${!main ? `<button data-act="delete" data-code="${esc(code)}" class="danger">${ic("trash")}Delete shop</button>` : ""}</div></section>`;
+  html += `</div>`;
+  const sp = $("#sp"), keepY = window.scrollY; sp.innerHTML = html; window.scrollTo(0, keepY);
+  sp.querySelectorAll("[data-act]").forEach(bt => bt.onclick = ev => { ev.preventDefault(); act(bt.dataset.act, bt.dataset.code, bt); });
+  sp.querySelectorAll(".sp-nav a").forEach(a => a.onclick = ev => { ev.preventDefault(); const t = document.getElementById(a.dataset.to); if (t) t.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); });
+  sp.querySelectorAll("#sp-days button").forEach(bt => bt.onclick = () => { spDays = +bt.dataset.d; store.set("spd", spDays); renderShop(); });
+  const cb = $("#sp-chart");
+  if (cb && spSel) { const sel = spSel, pts = spChart(cb, sel);
+    $("#sp-tbl").insertAdjacentHTML("beforeend", `<table><thead><tr><th>Day</th><th>Requests</th><th>In the script</th><th>Phone &amp; internet</th><th>Whole wait</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(spDayLabel(p.d))}</td><td>${p.n}</td><td>${p.n ? sec(p.script) : "—"}</td><td>${p.n && p.ph ? sec(p.rest) : "—"}</td><td>${p.n ? sec(p.script + p.rest) : "—"}</td></tr>`).join("")}</tbody></table>`);
+    cb._sel = sel; } }
+let spRT = 0; window.addEventListener("resize", () => { clearTimeout(spRT); spRT = setTimeout(() => { const cb = $("#sp-chart"); if (curShop && cb && cb._sel) spChart(cb, cb._sel); }, 150); });
 let notesShop = null;
 function openNotes(x) { notesShop = x; const f = $("#f-notes"); $("#nt-name").textContent = x.name || x.code; $("#nt-err").textContent = "";
   f.notes.value = x.notes || ""; f.plan.value = x.plan || ""; f.paidUntil.value = x.paidUntil ? new Date(x.paidUntil).toISOString().slice(0, 10) : ""; panel("s-notes"); }
@@ -488,6 +715,7 @@ async function act(a, code, btn) {
   const x = shops.find(y => y.code === code), er = document.getElementById("err-" + code); if (er) { er.textContent = ""; er.className = "c-msg"; }
   const menu = btn && btn.closest("details.more"); if (menu) menu.open = false;
   try {
+    if (a === "open") { location.hash = "#shop/" + encodeURIComponent(code); return; }
     if (a === "errors") { openErrors(code); return; }
     if (a === "delete") { openDelete(x); return; }
     if (a === "notes") { openNotes(x); return; }

@@ -19,7 +19,7 @@ const DriveApp = { createFolder: n => mkFolder(n, 'root'), getFolderById: id => 
 let retireReply = null, driveDeleted = [];
 const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 // --- Apps Script API + GitHub + shop endpoints ---
-const projects = {}; let apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
+const projects = {}; let healthUrls = [], apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
   if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
@@ -40,7 +40,7 @@ function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body 
   if (/action=retire/.test(url)) return respond(200, retireReply || { ok: true, triggers: 2, sheetId: '' });
   if (/action=ping/.test(url)) { pings++; const v = pingSvs.length ? pingSvs.shift() : null; return respond(200, shopAlive ? (v ? { ok: true, sv: v } : { ok: true }) : '<html>error</html>'); }
   if (/action=list/.test(url)) return respond(200, { ok: true, config: { units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'पीस' }], defaultUnit: 'kg', defaultHsn: '3923' } });
-  if (/action=health/.test(url)) return respond(200, authed ? Object.assign({ ok: true, sv: 35 }, /MAIN/.test(url) ? hx : {}) : '<html>Authorisation needed</html>');
+  if (/action=health/.test(url)) { healthUrls.push(url); } if (/action=health/.test(url)) return respond(200, authed ? Object.assign({ ok: true, sv: 35 }, /MAIN/.test(url) ? hx : {}) : '<html>Authorisation needed</html>');
   return respond(404, ''); }
 const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp, SpreadsheetApp, UrlFetchApp: { fetch, fetchAll: rs => rs.map(r => fetch(r.url, r)) },
   ScriptApp: { getOAuthToken: () => 'tok', getScriptId: () => 'dirscript', getService: () => ({ getUrl: () => 'https://dir/exec' }) } });
@@ -125,5 +125,8 @@ const del3 = post({ tok, action: 'deleteShop', code: sh3.code, confirm: sh3.code
 ok(del3.ok && files[s3.folderId].trashed && files[s3.sheetId].trashed && files[sh3.scriptId].trashed && !shopGet(sh3.code), 'Trash option: files moved to the Drive Trash instead (older shop script updated first)');
 ok(post({ tok, action: 'create', shop: { name: 'After Delete' } }).ok, 'creating a shop still works after deleting');
 apiOn = false; const off = post({ tok, action: 'create', shop: { name: 'X' } }); ok(!off.ok && /^script_api_off/.test(off.error), 'Apps Script API off: a clear message (and the folder/sheet are recorded on the dashboard)');
+healthUrls = []; post({ tok, action: 'recheck' }); const shH = post({ tok, action: 'shopHealth', code: 'main' });
+ok(shH.ok && shH.health && shH.health.ok && healthUrls.length >= 2 && !/full=1/.test(healthUrls[0]) && /MAIN.*full=1/.test(healthUrls[healthUrls.length - 1]), 'a shop\'s own page asks that shop for its full health (14 days of speed); the every-minute check stays small');
+ok(post({ tok, action: 'shopHealth', code: 'NOPE' }).health.error === 'no_shop', '…an unknown shop answers no_shop');
 ok(g.locks.n === 0, 'locks released');
 process.exit(fails ? 1 : 0);

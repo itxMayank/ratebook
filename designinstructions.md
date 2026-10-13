@@ -180,6 +180,12 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
 - On light backgrounds use deep shades (`--good` #2D7A4D, `--danger` #B3261E) so text passes 4.5:1.
 - Status goes in soft tinted pills; solid colour is only for the single most important figure.
 
+**Charts** (admin dashboard first; the same rules for any chart in the app):
+- Two-part charts use Iris `--s1` (#4F46E5, dark #6E6BF0) and teal `--s2` (#0E9AA7, dark #159AA6), checked for colour-blind readers in light and dark. A third series needs a new check, never a guessed colour. Status colours (green / amber / red) are never a series colour.
+- Columns at most 24 px wide, 4 px rounded top, a 2 px gap between stacked parts, hairline grid, axis text in `--muted`; label only the one value the chart is about (e.g. the tallest day).
+- Always a legend for two or more series, a hover **and** keyboard-focus readout for each mark, and a "Show as table" view, so no number is reachable only by hovering.
+- One question per chart; a single number is a stat tile, not a chart.
+
 **Dated, don't use:** neumorphism, gradient meshes behind text, full-screen glassmorphism, pure-black dark mode, palettes built in HSL with uneven brightness, CRED-style neon on black (a brand look, not right for a tool).
 
 ---

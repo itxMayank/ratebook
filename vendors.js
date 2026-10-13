@@ -556,7 +556,7 @@ function vCheckBox(e){ const c=e.check; let h="", cls="muted";
   else if(c.st==="issues"){ cls=c.ack?"muted":"bad"; h=`<b>${IC.warn} ${esc(t("vIssuesN",c.issues.length))}</b><ul>${c.issues.map(i=>`<li>${esc(vIssueText(i))}</li>`).join("")}</ul>${vDoneText(c)?`<small>${esc(vDoneText(c))}</small>`:""}${c.ack?`<small>✓ ${esc(t("vAckBy",c.ack.by||"",fmtDate(c.ack.at)))}</small>`:""}`; }
   else if(c.st==="unread") h=`<span>${esc(t("vUnreadShort"))}</span>`;
   else h=`<span>${esc(t(c.err==="ai_limit"?"vAiBusy":"vCheckFail"))}</span>`;
-  if(c && !e.checking && !(fail && (!c.at || fail.at>c.at)) && (c.kept || c.m)) h+=`<small class="vread-m">${c.kept?esc(t("vKept"))+" ":""}${c.m?esc(t("vReadBy",c.m)):""}</small>`;
+  if(c && !e.checking && !(fail && (!c.at || fail.at>c.at)) && (c.kept || (c.m && TECH()))) h+=`<small class="vread-m">${c.kept?esc(t("vKept"))+" ":""}${c.m&&TECH()?esc(t("vReadBy",c.m)):""}</small>`;
   if(c && !e.checking && c.m && /lite/i.test(c.m) && !(e.lines>0)) h+=`<small class="vread-m">${esc(t("vLiteNoLines"))}</small>`;   /* why "Items on this bill" isn't there */
   const btns=S.cfg.aiOn&&!e.checking?`<div class="vread-acts"><button type="button" class="btn ghost" id="ve-recheck">${esc(t("vRecheck"))}</button>${c&&c.st==="issues"?`<button type="button" class="btn ghost" id="ve-ack">${esc(t(c.ack?"vUnack":"vAck"))}</button>`:""}</div>`:"";
   return `<h4>${esc(t("vCheckT"))}</h4><div class="vread ${cls}">${h}</div>${btns}`; }

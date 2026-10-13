@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 6;
+const DIR_VERSION = 7;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -103,7 +103,7 @@ function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || !x
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
-const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1, shopHealth: 1 };
+const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1, shopHealth: 1, shopInsights: 1, bizViewOff: 1 };
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
@@ -114,7 +114,7 @@ function doPost(e) {
   try { lock.waitLock(30000);
     switch (b.action) {
       case 'signOut': adminSessEnd_(b.tok); return out_({ ok: true });
-      case 'list': { const ec = errCounts_(); return out_({ ok: true, shops: shops_().map(x => Object.assign(pub_(x), { err24: ec[x.code] || 0 })) }); }
+      case 'list': { const ec = errCounts_(); return out_({ ok: true, bizView: bizView_(), shops: shops_().map(x => Object.assign(pub_(x), { err24: ec[x.code] || 0 })) }); }
       case 'errors': return out_({ ok: true, errors: errList_(b.code ? String(b.code) : '', b.days) });
       case 'health': return out_({ ok: true, health: healthAll_(b.code) });
       case 'latest': return out_({ ok: true, latest: latestVersion_(b.ref) });
@@ -123,6 +123,8 @@ function doPost(e) {
         x.status = b.status; shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
       case 'setNotes': { const x = shopGet_(b.code); if (!x) throw new Error('no_shop'); ['notes', 'plan', 'paidUntil', 'owner', 'phone'].forEach(k => { if (b[k] !== undefined) x[k] = b[k]; }); shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
       case 'register': return out_(Object.assign({ ok: true }, registerMain_(b)));
+      case 'shopInsights': return out_(shopInsights_(String(b.code || ''), b.env, b.tz));
+      case 'bizViewOff': P_().setProperty('BIZ_VIEW', 'off'); return out_({ ok: true, bizView: false });
       case 'shopHealth': { const h = healthAll_(String(b.code || ''), true); return out_({ ok: true, health: h[String(b.code || '')] || { ok: false, error: 'no_shop' } }); }   // a shop's own page: + 14 days of speed
       case 'recheck': { const h = healthAll_(b.code); return out_({ ok: true, health: h, shops: shops_().map(pub_) }); }
       case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
@@ -155,6 +157,14 @@ function adminOk_(t) { if (!t) return false; const all = adminSess_(), k = hash_
 function adminSessEnd_(t) { const all = adminSess_(); delete all[hash_('t:' + t)]; adminSessSave_(all); }
 
 /* ---------- live health (each shop's own report, via its health key) ---------- */
+/* Business pages of the shops, for the admin. Other shops' business data is for testing only: once switched off (bizViewOff) the
+   dashboard shows only the original shop's; turning it back on needs the script property BIZ_VIEW removed by hand in the editor. */
+function bizView_() { return P_().getProperty('BIZ_VIEW') !== 'off'; }
+function shopInsights_(code, env, tz) { const x = shopGet_(code); if (!x || !x.apiUrl || !x.healthKey) throw new Error('no_shop');
+  if (code !== 'main' && !bizView_()) return { ok: false, error: 'biz_off' };
+  const r = UrlFetchApp.fetch(x.apiUrl + '?action=insights&key=' + encodeURIComponent(x.healthKey) + '&env=' + (env === 'test' ? 'test' : 'live') + '&tz=' + encodeURIComponent(isFinite(Number(tz)) ? Number(tz) : -330) + '&_=' + Date.now(), { muteHttpExceptions: true, followRedirects: true });
+  const txt = r.getContentText(); let j; try { j = JSON.parse(txt); } catch (e) { return { ok: false, error: r.getResponseCode() === 200 ? 'needs_auth' : 'http_' + r.getResponseCode() }; }
+  return j && j.ok && j.pulse ? { ok: true, insights: j } : { ok: false, error: j && j.ok ? 'old_script' : (j && j.error) || 'failed' }; }   // an older script answers GET with its plain hello
 function healthAll_(onlyCode, full) {
   const list = shops_().filter(x => x.apiUrl && x.healthKey && (!onlyCode || x.code === onlyCode));
   if (!list.length) return {};

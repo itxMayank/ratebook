@@ -1,0 +1,454 @@
+{
+ "ok": true,
+ "at": 1791894793154,
+ "env": "live",
+ "today": "2026-10-13",
+ "shopName": "Sharma Traders",
+ "pulse": {
+  "today": {
+   "sales": 620,
+   "bills": 2,
+   "avg": 310,
+   "profit": 90,
+   "pct": 30
+  },
+  "mtd": {
+   "sales": 2741,
+   "bills": 17,
+   "avg": 161.24,
+   "profit": 311,
+   "pct": 14.1
+  },
+  "lm": {
+   "sales": 1200,
+   "bills": 10,
+   "avg": 120,
+   "profit": 200,
+   "pct": 20
+  },
+  "d30": {
+   "sales": 3631,
+   "bills": 25,
+   "avg": 145.24,
+   "profit": 401,
+   "pct": 13.4,
+   "noBuy": 230,
+   "lineSale": 3631
+  },
+  "lmTo": "2026-09-13"
+ },
+ "todo": [
+  {
+   "k": "reorder",
+   "score": 2450,
+   "id": "i1",
+   "name": "PP Bag",
+   "unit": "kg",
+   "bought": 10,
+   "on": "2026-10-08",
+   "sold": 7,
+   "left": 3,
+   "perDay": 0.73,
+   "daysLeft": 4,
+   "gap": 20,
+   "since": 5,
+   "st": "soon",
+   "vendorId": "vA",
+   "vendor": "Mahaveer",
+   "abc": true
+  },
+  {
+   "k": "remind",
+   "score": 500,
+   "name": "Sunil Traders",
+   "mobile": "9876543210",
+   "due": 500,
+   "bills": 1,
+   "oldest": 45,
+   "newDue": 0,
+   "paid30": false,
+   "usual": null
+  },
+  {
+   "k": "payVendor",
+   "score": 500,
+   "id": "vA",
+   "name": "Mahaveer",
+   "mobile": "",
+   "balance": 1000,
+   "overdue": 1000,
+   "due7": 0,
+   "oldest": "2026-09-03"
+  },
+  {
+   "k": "raise",
+   "score": 286,
+   "id": "i1",
+   "name": "PP Bag",
+   "unit": "kg",
+   "was": 95,
+   "now": 105,
+   "up": 10.5,
+   "on": "2026-10-08",
+   "sell": 120,
+   "suggest": 133,
+   "pctNow": 14.3,
+   "pctWas": 26.3,
+   "q30": 22
+  },
+  {
+   "k": "below",
+   "score": 8,
+   "id": "i3",
+   "name": "Foil Roll",
+   "unit": "roll",
+   "lines": 1,
+   "lost": 8,
+   "buy": 50
+  }
+ ],
+ "margins": {
+  "groups": [
+   {
+    "cat": "Bags",
+    "sales": 2450,
+    "profit": 250,
+    "pct": 11.4,
+    "share": 67.5
+   },
+   {
+    "cat": "Cups",
+    "sales": 450,
+    "profit": 150,
+    "pct": 50,
+    "share": 12.4
+   },
+   {
+    "cat": "Tape",
+    "sales": 309,
+    "profit": 9,
+    "pct": 3,
+    "share": 8.5
+   },
+   {
+    "cat": "",
+    "sales": 230,
+    "profit": null,
+    "pct": null,
+    "share": 6.3
+   },
+   {
+    "cat": "Foil",
+    "sales": 192,
+    "profit": -8,
+    "pct": -4,
+    "share": 5.3
+   }
+  ],
+  "below": [
+   {
+    "id": "i3",
+    "name": "Foil Roll",
+    "unit": "roll",
+    "buy": 50,
+    "sell": 48,
+    "a30": 192
+   }
+  ],
+  "soldBelow": [
+   {
+    "id": "i3",
+    "name": "Foil Roll",
+    "unit": "roll",
+    "lines": 1,
+    "lost": 8,
+    "buy": 50
+   }
+  ],
+  "thin": [
+   {
+    "id": "i6",
+    "name": "Tape",
+    "unit": "pc",
+    "buy": 100,
+    "sell": 103,
+    "pct": 3,
+    "a30": 309
+   }
+  ],
+  "buyUp": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "was": 95,
+    "now": 105,
+    "up": 10.5,
+    "on": "2026-10-08",
+    "sell": 120,
+    "suggest": 133,
+    "pctNow": 14.3,
+    "pctWas": 26.3,
+    "q30": 22
+   }
+  ],
+  "spread": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "rates": 3,
+    "min": 100,
+    "max": 120,
+    "sell": 120,
+    "leak": 190
+   }
+  ],
+  "noBuy": {
+   "amt": 230,
+   "items": [
+    {
+     "id": "i4",
+     "name": "Sugar",
+     "unit": "kg",
+     "a30": 230
+    }
+   ]
+  }
+ },
+ "items": {
+  "abc": [
+   "i1",
+   "i2"
+  ],
+  "top": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "q30": 22,
+    "a30": 2450,
+    "bills30": 21,
+    "profit30": 250,
+    "pct": 11.4,
+    "abc": true
+   },
+   {
+    "id": "i2",
+    "name": "Paper Cup",
+    "unit": "pc",
+    "q30": 300,
+    "a30": 450,
+    "bills30": 2,
+    "profit30": 150,
+    "pct": 50,
+    "abc": true
+   },
+   {
+    "id": "i6",
+    "name": "Tape",
+    "unit": "pc",
+    "q30": 3,
+    "a30": 309,
+    "bills30": 1,
+    "profit30": 9,
+    "pct": 3,
+    "abc": false
+   },
+   {
+    "id": "i4",
+    "name": "Sugar",
+    "unit": "kg",
+    "q30": 5,
+    "a30": 230,
+    "bills30": 1,
+    "profit30": null,
+    "pct": null,
+    "abc": false
+   },
+   {
+    "id": "i3",
+    "name": "Foil Roll",
+    "unit": "roll",
+    "q30": 4,
+    "a30": 192,
+    "bills30": 1,
+    "profit30": -8,
+    "pct": -4,
+    "abc": false
+   }
+  ],
+  "rising": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "a30": 2450,
+    "aP": 1200,
+    "ch": 104
+   }
+  ],
+  "falling": [],
+  "stopped": [],
+  "unsold": {
+   "n": 1,
+   "items": [
+    {
+     "id": "i5",
+     "name": "Old Tray",
+     "unit": "pc"
+    }
+   ]
+  },
+  "noBuy": 1,
+  "noCat": 1,
+  "total": 6
+ },
+ "restock": {
+  "items": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "bought": 10,
+    "on": "2026-10-08",
+    "sold": 7,
+    "left": 3,
+    "perDay": 0.73,
+    "daysLeft": 4,
+    "gap": 20,
+    "since": 5,
+    "st": "soon",
+    "vendorId": "vA",
+    "vendor": "Mahaveer",
+    "abc": true
+   }
+  ],
+  "byVendor": [
+   {
+    "vendorId": "vA",
+    "vendor": "Mahaveer",
+    "items": [
+     {
+      "id": "i1",
+      "name": "PP Bag",
+      "unit": "kg",
+      "st": "soon"
+     }
+    ]
+   }
+  ],
+  "unknown": 1,
+  "purchases": 1
+ },
+ "credit": {
+  "total": 700,
+  "customers": 2,
+  "buckets": [
+   200,
+   500,
+   0,
+   0
+  ],
+  "debtors": [
+   {
+    "name": "Sunil Traders",
+    "mobile": "9876543210",
+    "due": 500,
+    "bills": 1,
+    "oldest": 45,
+    "newDue": 0,
+    "paid30": false,
+    "usual": null
+   },
+   {
+    "name": "Asha",
+    "mobile": "9123456780",
+    "due": 200,
+    "bills": 1,
+    "oldest": 5,
+    "newDue": 200,
+    "paid30": false,
+    "usual": null
+   }
+  ],
+  "growing": [],
+  "remind": [
+   {
+    "name": "Sunil Traders",
+    "mobile": "9876543210",
+    "due": 500,
+    "bills": 1,
+    "oldest": 45,
+    "newDue": 0,
+    "paid30": false,
+    "usual": null
+   }
+  ],
+  "given30": 200,
+  "collected30": 0,
+  "lost": [
+   {
+    "name": "Ravi Stores",
+    "mobile": "9000000001",
+    "last": "2026-07-05",
+    "total": 450,
+    "bills": 3
+   }
+  ]
+ },
+ "vendors": {
+  "owed": 1000,
+  "overdue": 1000,
+  "due7": 0,
+  "due30": 0,
+  "list": [
+   {
+    "id": "vA",
+    "name": "Mahaveer",
+    "mobile": "",
+    "balance": 1000,
+    "overdue": 1000,
+    "due7": 0,
+    "oldest": "2026-09-03"
+   }
+  ],
+  "flagged": 1,
+  "cheaper": [
+   {
+    "id": "i1",
+    "name": "PP Bag",
+    "unit": "kg",
+    "usual": "Mahaveer",
+    "usualBuy": 105,
+    "best": "Sharma",
+    "bestBuy": 95,
+    "bestOn": "2026-09-18",
+    "diff": 9.5
+   }
+  ]
+ },
+ "money": {
+  "modes30": {
+   "UPI": 390,
+   "Cash": 230,
+   "": 2811
+  }
+ },
+ "staff": [
+  {
+   "name": "Mayank",
+   "bills": 15,
+   "edited": 1,
+   "cancelled": 0,
+   "sales": 2531
+  },
+  {
+   "name": "Raju",
+   "bills": 10,
+   "edited": 0,
+   "cancelled": 1,
+   "sales": 1100
+  }
+ ]
+}

@@ -892,6 +892,23 @@ Step 1 of the admin analytics plan (step 2: one script action that works out the
 - Tests: `tests/perf.test.js` (server), `tests/perfsend.app.test.js` (phone), `tests/adminshop.test.js` (the page: card → page, chart, tooltip, table, fixes, by action/phone, errors, setup, back, older script, 360 px, dark), `tests/directory.test.js` (`shopHealth`). `tests/gas-mock.js` gained `getKeys`.
 - **Rollout:** merge; update each shop's script to v47 (your shop first) and the Directory (paste `admin/Directory.gs`, New version). History starts from then; phones start sending after they load the new app.
 
+## Owner's business page, step 2: the figures (13 Oct 2026, `SCRIPT_VERSION` 48 / `NEED_SV` unchanged)
+
+**Decision (Mayank):** each shop's owner sees the business insights inside their own app, signed in as usual; the admin dashboard and every technical detail stay Mayank's only. So the "brain" page goes in the app (step 3), not on the dashboard.
+- **`insights` action** (POST, **owner only**, read-only, outside the script lock, allowed while paused; `insights_` / `insightsBuild_` in `Code.gs`). Cached with `rcRead_` under `ins:<mode>:<tz>`, keyed by the price-list, bills and vendors versions **and today's date**, so it's fresh after any change and every morning.
+- **Reads:** this mode's bills from the first row in the last 180 days (the date column is read first to find it), the price list (`listCached_`), `Purchases`, `Vendors` / `VendorLedger` (`vAll_` + `vCalc_`) and the Credit list (`listDues_`, all open bills, not only the window). Tabs that don't exist are skipped, never created (`has()`); cancelled bills never count. Profit uses lines with a buy price (the saved one, else today's), the same rule as Reports.
+- **Returns** (numbers and keys only; the phone writes the words in English or Hindi):
+  - `pulse`: today, month so far (`mtd`), the same days last month (`lm`, up to `lmTo`), last 30 days: sales, bills, average, profit, % over cost; `d30.noBuy` = sales without a buy price.
+  - `margins`: by group (sales, profit, %, share); items priced below their buy price; lines sold below buy in 30 days (₹ lost); thin margins (under 5%); items sold at 3+ rates (₹ given away below the list price); sales with no buy price; **buyUp**: the cost went up on a vendor bill (Purchases: last vs previous, last within 60 days, ≥ 3%) and the selling price didn't follow → suggested price at the item's earlier margin, rounded with `roundTo`.
+  - `items`: the items making 80% of 90-day sales (`abc`, up to 30); top 10 of 30 days; rising / falling (30 days vs the 30 before, ≥ 30%, above a small floor); stopped selling (sold before, nothing in 60 days); not sold in 180 days (skips items edited in the last 60 days); counts without a buy price or group.
+  - `restock` (**estimate**, no stock counting): per item with a purchase, what came in on the last vendor bill (in the item's own unit: `qty ÷ f`) minus what was sold since, days left at the 30-day pace, the usual gap between purchases; status `out` / `soon` (≤ 7 days) / `habit` (usual gap passed) / `ok`; grouped by the last vendor as an order list; `unknown` = top items never matched on a vendor bill.
+  - `credit`: total due, ageing buckets (≤ 30 / 31–60 / 61–90 / 90+ days), top debtors (due, bills, oldest, usual days to pay from cleared bills), growing dues (new credit in 30 days, no payment in 30 days), who to remind (oldest bill ≥ 15 days and later than they usually pay), credit given vs collected in 30 days, regulars who stopped coming (3+ bills 61–180 days ago, none since).
+  - `vendors`: owed, overdue, due in 7 / 30 days, per vendor, bills flagged by the check, **cheaper elsewhere** (same item bought from another vendor ≥ 5% cheaper in 180 days).
+  - `money.modes30` (cash / UPI / cheque / not marked), `staff` (bills, sales, edited, cancelled per person in 30 days).
+  - **`todo`** ("Do this today"): up to 5, at most 2 of a kind, biggest money first: `raise`, `below`, `remind` (30+ days), `reorder` (top items out or running low), `payVendor` (overdue), `noBuy` (over 20% of sales without a buy price).
+- Test: `tests/insights.test.js` (29 checks on a made-up shop: every figure, the picks, caching, owner only, no tabs added). `tests/gas-mock.js` unchanged.
+- **Rollout:** nothing shows yet (step 3 is the page). Update the scripts to v48 when step 3 is merged.
+
 ## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)
 
 Mayank: "only me should see the errors and technical details of all the shops; no other shop owner should see the tech details."

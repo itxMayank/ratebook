@@ -24,7 +24,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
 <script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
-<link rel="stylesheet" href="app.css?v=4882594634">
+<link rel="stylesheet" href="app.css?v=90161a07c3">
 </head>
 <body>
 <header class="top">
@@ -117,7 +117,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
     </div>
     <div class="envnote" id="bill-envnote" hidden></div>
     <div class="lastbill" id="lastbill" hidden></div>
-    <div class="bi-head"><h2 class="section-title" data-t="billItems">Bill items</h2><button type="button" class="chip-t newb" id="bill-new" hidden><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-t="newBillChip">New bill</span></button></div>
+    <div class="bi-head"><div class="bi-t"><h2 class="section-title" data-t="billItems">Bill items</h2><span class="bi-n num" id="bill-n" hidden></span></div><button type="button" class="chip-t newb" id="bill-new" hidden><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-t="newBillChip">New bill</span></button></div>
     <div class="list" id="bill-lines"></div>
     <div class="total" id="bill-total" hidden>
       <div class="tot-row">
@@ -210,7 +210,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="strings.js?v=91e4285990"></script>
+<script src="strings.js?v=2332439a87"></script>
 <script src="shops.js?v=f905f8fb9e"></script>
 <script src="search.js?v=7cb50ca8ce"></script>
 <script src="print.js?v=3019d76774"></script>
@@ -221,7 +221,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <script src="lock.js?v=08a65a5f9a"></script>
 <script src="vendors.js?v=2836d8e6ea"></script>
 <script src="prices.js?v=6f33943fda"></script>
-<script src="billing.js?v=b51fbd8c58"></script>
+<script src="billing.js?v=7c763c0b2c"></script>
 <script src="app.js?v=040edb46d9"></script>
 </body>
 </html>

@@ -970,7 +970,7 @@ if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){ window.
      straight away on the lock screen, else the next time the app comes back to the screen. Tapping the pill always loads it. */
   let updWaiting=false;
   const updSafe=()=>$("#sheet").hidden && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName));
-  const updGo=()=>{ try{ saveBill(); }catch{} location.reload(); };
+  const updGo=()=>{ try{ saveBill(); }catch{} ls.set("rb_updated",Date.now()); location.reload(); };   // say "App updated" once after the next unlock (appUnlock)
   const updReady=()=>{ updWaiting=true; if(LOCK.on && updSafe()){ updGo(); return; }
     let el=$("#updpill"); if(!el){ el=document.createElement("button"); el.id="updpill"; el.type="button"; document.body.appendChild(el); }
     el.textContent=t("updReady"); el.onclick=updGo; };

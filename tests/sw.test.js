@@ -33,7 +33,11 @@ srv.listen(0, async () => {
   ok(seen.startsWith('1'), 'open is instant from the saved copy (the old version shows first: ' + seen + ')');
   ok(await p.evaluate(() => window.__ver) === 2 && seen === '12', 'new version noticed in the background and loaded while still on the lock screen');
   // mid-bill: never reloads, offers the update instead
-  await p.evaluate(() => { T.appUnlock(); T.addToBill('i1', 1); });
+  await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(700);
+  ok(/App updated/.test(await p.textContent('#toast')) && await p.evaluate(() => document.querySelector('#toast').classList.contains('on')), 'after the quiet update, unlocking says "App updated" once');
+  await p.evaluate(() => { T.LOCK.on = true; T.appUnlock(); }); await p.waitForTimeout(3600);
+  ok(!(await p.evaluate(() => document.querySelector('#toast').classList.contains('on'))), '…and not again at the next unlock');
+  await p.evaluate(() => { T.addToBill('i1', 1); });
   write(3); const v0 = await p.evaluate(() => window.__ver);
   await p.evaluate(() => fetch('./', { cache: 'no-store' }).catch(() => {}));   // a navigation-like fetch is not enough; trigger the SW's page fetch:
   const p2 = await ctx.newPage(); await p2.goto(URL0); await p2.waitForTimeout(1500);

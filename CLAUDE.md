@@ -872,6 +872,12 @@ Reported on a Samsung Galaxy Ultra (384 px wide) at text size **Large**: the cus
 - Groups tool rows stack the two boxes when narrow; a past bill's "Send to" box keeps room for the number; Settings cards use less side padding at larger text so a GSTIN fits.
 - **Test:** `tests/screens.app.test.js` now also fails on text cut with "…" / hidden overflow and on a short value (mobile, amount, GSTIN) wider than its box, has a sixth set (**384 px at Large**), and checks the customer ✕ sits beside the mobile and the grid button beside the sort switch.
 
+## Bill page: item count, closer lines (13 Oct 2026, `index.html` / `app.css` / `billing.js` / `strings.js`)
+
+- "Bill items" has a small pill with the number of **lines** on the bill ("3 items" / "3 सामान"), not the quantities: 2 kg of one item and 1 pc of another is "2 items". `#bill-n`, set in `renderBill()`, hidden on an empty bill; string `billN`.
+- Bill lines sit 6 px apart (was 10 px; `#bill-lines{gap:6px}`).
+- Test: `tests/billing.app.test.js` A3–A4.
+
 ## Search boxes, app icon on installed phones (12 Oct 2026)
 
 - **One look for every search box inside a screen** (`#sheet input[type=search]`, end of `app.css`): grey pill, 44 px tall, 16 px text, room for the ✕. Reported: the Vendors list search (`#vl-q`, shown once there are 5+ vendors) was the browser's plain box with a black frame. The Credit and Bulk edit searches lost their own inline styles. Form fields with a label (`.field`, e.g. the vendor picker on a new vendor bill) keep the form look. `tests/screens.app.test.js` now has 6 vendors (so the Vendors search shows) and fails on any text box left with the browser's own frame.

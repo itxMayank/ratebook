@@ -140,6 +140,7 @@ function billSum(){ return Math.round(S.bill.reduce((a,l)=>a+(+l.qty||0)*(+l.rat
 function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
 function renderBill(){
   const wrap=$("#bill-lines");
+  { const n=$("#bill-n"); if(n){ n.hidden=!S.bill.length; n.textContent=S.bill.length?t("billN",S.bill.length):""; } }   // items on the bill (lines, not quantities)
   if(!S.bill.length){
     wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t(DESK()?"billEmptyDesk":"billEmptyD"))}</p>${DESK()?"":`<button type="button" class="btn primary empty-find" id="empty-find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${esc(t("billEmptyBtn"))}</button>`}</div>`;
     { const f=$("#empty-find"); if(f) f.onclick=()=>bsOpen(); }

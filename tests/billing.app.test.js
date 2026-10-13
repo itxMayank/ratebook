@@ -32,6 +32,11 @@ let sent = [], off = false;
   const tx = await p.evaluate(() => T.billText());
   ok(/^\*Gupta Plastics\*\nBill No: 21 · /.test(tx) && tx.includes('1. PP Bag 12x18 — 2 kg × ₹180 = ₹360') && tx.includes('2. Paper Cup — 1 pc × ₹0.8 = ₹0.8') && tx.endsWith('*Total: ₹360.8*'), 'A2 WhatsApp text: shop, number, each line, total');
 
+  // count next to "Bill items": lines on the bill, not quantities (2 kg + 1 pc = 2 items); lines a little closer together
+  ok(await p.textContent('#bill-n') === '2 items' && await p.isVisible('#bill-n'), 'A3 "2 items" next to Bill items (2 lines, 3 units)');
+  { const g = await p.evaluate(() => { const L = [...document.querySelectorAll('#bill-lines .bill-line')]; return L[1].getBoundingClientRect().top - L[0].getBoundingClientRect().bottom; });
+    ok(g >= 4 && g <= 7, 'A4 gap between bill lines is 6 px (' + g + ')'); }
+
   // B. GST bill
   await p.click('#gst-chip'); await p.waitForTimeout(200);
   const gt = await p.evaluate(() => T.billText());

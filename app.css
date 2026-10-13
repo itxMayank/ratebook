@@ -1825,3 +1825,8 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 #sheet input[type=search]::placeholder{color:var(--muted);opacity:1}
 #sheet .sx{margin:0 0 10px}#sheet .bl-bar .sx,#sheet .field .sx,#sheet .vi-pick .sx{margin-bottom:0}
 .ppl-shop{margin:0 0 4px}.ppl-shop.warn{color:#8a5a00;font-weight:600}
+
+/* Bill page: number of items next to "Bill items" (lines, not quantities); lines a little closer together */
+.bi-t{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
+.bi-n{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);border-radius:var(--r-full);padding:2px 9px;line-height:1.4}
+#bill-lines{gap:6px}

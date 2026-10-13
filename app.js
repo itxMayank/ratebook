@@ -59,7 +59,11 @@ function applyTheme(){
 }
 applyTheme();
 try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyTheme); }catch{}
-const t = (k,...a) => { const v = (STR[S.lang]||STR.en)[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
+/* Technical details (Apps Script steps, script versions, error codes, the AI model's name) are only for the owner of the original
+   shop (Mayank, who runs Rate Book). Every other shop gets the plain "Rate Book support will fix this" version of a message
+   (strings with the same key + "_s"); the problem itself reaches the admin dashboard (error log, What to fix). */
+const TECH = () => SHOP_MAIN && can("owner");
+const t = (k,...a) => { const L=STR[S.lang]||STR.en; if(!TECH() && (k+"_s") in STR.en) k+="_s"; const v = L[k] ?? STR.en[k]; return typeof v==="function"? v(...a) : v; };
 /* Small line icons used inside text (one icon style across the app; designinstructions §5). Size follows the text. */
 const ICS=p=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const IC={warn:ICS('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>'),
@@ -227,7 +231,7 @@ function renderQueue(){
   const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); flushBills(); };
 }
 function renderSvNote(){
-  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && can("manager");
+  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && TECH();   // other shops: the admin updates their scripts
   el.hidden=!old; if(old) el.innerHTML=`<b>${IC.warn} ${esc(t("svT"))}</b><span>${esc(t("oldScript"))}</span>`;
 }
 function renderCodeNote(){

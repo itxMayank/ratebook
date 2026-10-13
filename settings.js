@@ -6,7 +6,7 @@
 "use strict";
 /** Why a Gemini key couldn't be saved: our own message, plus Google's exact words when there are any. */
 function aiErrText(e){ const c=String(e&&e.code||""); if(c==="ai_key") return t("aiBadKey"); if(c==="ai_auth") return t("aiNeedAuth"); if(c==="ai_limit") return t("aiLimitNow");
-  if(c==="bad_action") return t("aiOldScript"); const p=c.split("|"); if(p[0]==="ai_http") return t("aiGoogleSaid",p[1]&&p[1]!=="0"?p[1]:"",p.slice(2).join("|").replace(/[.\s]+$/,"")); return c&&c!=="offline"?t("aiFail")+" ("+c+")":t("aiFail"); }
+  if(c==="bad_action") return t("aiOldScript"); const p=c.split("|"); if(p[0]==="ai_http") return t("aiGoogleSaid",p[1]&&p[1]!=="0"?p[1]:"",p.slice(2).join("|").replace(/[.\s]+$/,"")); return c&&c!=="offline"&&TECH()?t("aiFail")+" ("+c+")":t("aiFail"); }
 /** Settings → Bill reading (Google Gemini key; owner only). */
 function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg.aiOn, w=can("owner");
   box.innerHTML=`<h3 style="margin:0">${esc(t("aiT"))} <span class="pill ${on?"paid":"open"}">${esc(t(on?"aiOnL":"aiOffL"))}</span></h3><p class="note" style="margin:0">${esc(t("aiD"))}</p>

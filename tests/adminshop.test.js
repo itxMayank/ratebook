@@ -14,7 +14,7 @@ const bk = (i, n) => { const b = new Array(8).fill(0); b[i] = n; return b; };
 const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5 + 5.5 * 36e5).toISOString().slice(0, 10);
   days.push({ d, a: { listBills: [200, 0, 0, 0, 0, 200 * 3200].concat(bk(5, 200)), list: [100, 0, 10, 0, 0, 100 * 1500].concat(bk(3, 100)), takeBill: [50, 0, 0, 10, 10 * 6000, 40 * 900].concat([0, 0, 40, 0, 0, 0, 10, 0]) },
     p: { listBills: [150, 150 * 3200, 150 * (4500 + (i === 2 ? 3000 : 0))].concat(bk(6, 150), bk(3, 150)), takeBill: [40, 40 * 900, 40 * 1400].concat(bk(3, 40), bk(1, 40)) }, l: { 'Android · Chrome · app': [190, 190 * 3900] } }); }
-const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450, month: 410, monthAmt: 512000, all: 900 }, tbills: {}, mode: 'live', sessions: 4, users: 3, cells: 1200000, triggers: ['autoBackup', 'watchSheet'], approveNew: false, perfDays: days, rows: { Bills: 9000, 'Test Bills': 40, Items: 412 } };
+const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450, month: 410, monthAmt: 512000, all: 900 }, tbills: {}, mode: 'live', sessions: 4, users: 3, cells: 1200000, triggers: ['watchSheet'], approveNew: false, perfDays: days, rows: { Bills: 9000, 'Test Bills': 40, Items: 412 } };
 (async () => {
   const b = await launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }), p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
@@ -57,6 +57,8 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   ok(has(/Past bills is slow because the Bills tab is big/) && /9,040 rows/.test(has(/Past bills/)[2]) && /Archive/.test(has(/Past bills/)[2]), 'C1 Past bills slow + a big Bills tab → archive old bills');
   ok(has(/waking up/) && /10\+ quiet minutes/.test(has(/waking up/)[2]), 'C2 slow first requests after quiet spells → keep the script ready');
   ok(has(/Price list is rarely served from the saved reply/) && /10%/.test(has(/Price list is rarely/)[2]), 'C3 price list mostly built from the sheet → find what keeps changing its version');
+  ok(/high/.test(fixes[0][0]) && fixes[0][1] === 'Automatic backups are off' && /Fix first/.test(fixes[0][2]) && /setupShop/.test(fixes[0][2]), 'C6 a shop without its backup job: "Automatic backups are off", first (its owner only sees "support will switch them on")');
+  fixes.shift();
   const lost = fixes.map(f => { const m = /≈ (\d+) (min|s) of waiting a day/.exec(f[2]); return m ? +m[1] * (m[2] === 'min' ? 60 : 1) : -1; });
   ok(fixes.every(f => /medium/.test(f[0]) && /Worth fixing/.test(f[2])) && lost.every(v => v > 0) && lost.every((v, i) => !i || v <= lost[i - 1]), 'C4 each says how much waiting it costs a day, biggest first (' + lost.join(', ') + ' s)');
   const rows = await p.$$eval('#sp-speed .arows', a => a.map(x => x.textContent));

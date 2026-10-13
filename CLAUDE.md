@@ -892,6 +892,15 @@ Step 1 of the admin analytics plan (step 2: one script action that works out the
 - Tests: `tests/perf.test.js` (server), `tests/perfsend.app.test.js` (phone), `tests/adminshop.test.js` (the page: card → page, chart, tooltip, table, fixes, by action/phone, errors, setup, back, older script, 360 px, dark), `tests/directory.test.js` (`shopHealth`). `tests/gas-mock.js` gained `getKeys`.
 - **Rollout:** merge; update each shop's script to v47 (your shop first) and the Directory (paste `admin/Directory.gs`, New version). History starts from then; phones start sending after they load the new app.
 
+## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)
+
+Mayank: "only me should see the errors and technical details of all the shops; no other shop owner should see the tech details."
+- Errors, speed and every shop's health were already only on the admin dashboard (admin PIN). In the app, a few messages still showed Apps Script steps, script versions, error codes or the AI model's name.
+- **`TECH()`** (`app.js`) = the original shop (`SHOP_MAIN`) **and** an owner signed in. For everyone else, `t(key)` uses `key + "_s"` when that string exists: a plain "Rate Book support will fix this" version (`oldScript_s`, `aiOldScript_s`, `vmOldScript_s`, `aiNeedAuth_s`, `aiGoogleSaid_s` (Google's reason kept, no editor step), `vDriveAuth_s`, `riOld_s`, `bkOff_s`, `bkPerm_s`; English and Hindi). The "Update the sheet script" note shows only when `TECH()`. The bill-reading error code in brackets and "Read by <model>" on a vendor bill show only when `TECH()`. `shopNotReady` no longer mentions `setupShop`.
+- The problems themselves still reach the admin: refused or failed requests (`bad_action`, `drive_auth`, `ai_auth`, backup permission) go to the shop's error log on the dashboard, and **What to fix** now also says when a shop's automatic backups are off ("Fix first": run `setupShop`, or `setupBackups` on your own shop) or the last backup is over 2 days old.
+- New strings needing the plain version: add `<key>_s` to `strings.js` (both languages); `t()` picks it up.
+- Tests: `tests/techhide.app.test.js`, `tests/adminshop.test.js` C6.
+
 ## "App updated" message (13 Oct 2026, `app.js` / `lock.js` / `strings.js`)
 
 - When the app loads a newer version (by itself on the lock screen, or from the "Update ready" pill), `updGo()` notes the time in `rb_updated`; the next unlock (`appUnlock`) shows "App updated to the latest version" once (toast) and clears it. Ignored if more than 6 hours old.

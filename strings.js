@@ -326,5 +326,18 @@ Object.assign(STR.en,{shopPinOff:"The shop PIN is switched off. Sign in with you
   pplShopOn:"Add yourself as Owner with your own PIN. The shop PIN then stops working, so every bill and change shows who really made it.",pplShopOff:"The shop PIN is switched off: everyone signs in with their own PIN.",needsManager:"This bill has money due or payments recorded. Only a manager or the owner can change its total or payment. To take money, use Record payment."});
 Object.assign(STR.hi,{shopPinOff:"दुकान का PIN बंद है। अपने PIN से साइन इन करें।",pinShort:"मालिक और मैनेजर का PIN 6 से 8 अंकों का होना चाहिए।",pinEasy:"यह PIN आसानी से अंदाज़ा लग सकता है (जैसे 1234, 0000 या कोई साल)। दूसरा चुनें।",
   pplShopOn:"अपने आप को अपने PIN के साथ मालिक के रूप में जोड़ें। फिर दुकान का PIN काम नहीं करेगा, और हर बिल व बदलाव में दिखेगा कि किसने किया।",pplShopOff:"दुकान का PIN बंद है: सब अपने PIN से साइन इन करते हैं।",needsManager:"इस बिल पर पैसा बाकी है या भुगतान दर्ज हैं। इसकी रकम या भुगतान सिर्फ़ मैनेजर या मालिक बदल सकते हैं। पैसे लेने के लिए \"भुगतान दर्ज करें\" इस्तेमाल करें।"});
+/* Plain versions of technical messages, for every shop except the original one's owner (see TECH() in app.js): key + "_s". */
+Object.assign(STR.en,{oldScript_s:"This needs an update from Rate Book support. We've been told; please try again later.",aiOldScript_s:"This needs an update from Rate Book support. We've been told; please try again later.",
+  vmOldScript_s:"This needs an update from Rate Book support first. Please try again later.",aiNeedAuth_s:"Bill reading isn't switched on for your shop yet. Rate Book support will finish setting it up.",
+  aiGoogleSaid_s:(c,m)=>`Google refused the key${c?" ("+c+")":""}: ${m||"no reason given"}. Check the key and try again.`,
+  vDriveAuth_s:"Bill photos can't be saved yet: Rate Book support needs to finish one setup step. Your entry is kept and will be sent once that's done.",
+  riOld_s:"Price and profit details will show after the next update from Rate Book support.",bkOff_s:"Automatic backups aren't switched on yet. Rate Book support will switch them on.",
+  bkPerm_s:"Backups need one setup step from Rate Book support. We've been told.",shopNotReady:"This shop isn't ready yet. Please try again in a little while.",shopNotReady_s:"This shop isn't ready yet. Please try again in a little while."});
+Object.assign(STR.hi,{oldScript_s:"इसके लिए Rate Book सपोर्ट से अपडेट चाहिए। उन्हें बता दिया गया है; थोड़ी देर बाद फिर कोशिश करें।",aiOldScript_s:"इसके लिए Rate Book सपोर्ट से अपडेट चाहिए। उन्हें बता दिया गया है; थोड़ी देर बाद फिर कोशिश करें।",
+  vmOldScript_s:"पहले Rate Book सपोर्ट से अपडेट चाहिए। थोड़ी देर बाद फिर कोशिश करें।",aiNeedAuth_s:"आपकी दुकान के लिए बिल पढ़ना अभी चालू नहीं है। Rate Book सपोर्ट इसे चालू कर देगा।",
+  aiGoogleSaid_s:(c,m)=>`Google ने key नहीं मानी${c?" ("+c+")":""}: ${m||"कारण नहीं बताया"}। key जाँचकर फिर कोशिश करें।`,
+  vDriveAuth_s:"बिल की फ़ोटो अभी सेव नहीं हो सकतीं: Rate Book सपोर्ट को एक सेटिंग पूरी करनी है। आपकी एंट्री रखी है और उसके बाद भेज दी जाएगी।",
+  riOld_s:"रेट और मुनाफ़े की जानकारी Rate Book सपोर्ट के अगले अपडेट के बाद दिखेगी।",bkOff_s:"अपने-आप बैकअप अभी चालू नहीं है। Rate Book सपोर्ट इसे चालू कर देगा।",
+  bkPerm_s:"बैकअप के लिए Rate Book सपोर्ट को एक सेटिंग पूरी करनी है। उन्हें बता दिया गया है।",shopNotReady:"यह दुकान अभी तैयार नहीं है। थोड़ी देर बाद फिर कोशिश करें।",shopNotReady_s:"यह दुकान अभी तैयार नहीं है। थोड़ी देर बाद फिर कोशिश करें।"});
 return STR;
 })();

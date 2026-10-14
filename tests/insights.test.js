@@ -28,6 +28,8 @@ const bill = (n, lines, o = {}) => { const r = {}; BC.forEach(k => r[k] = ''); b
   sheets.Bills.rows.push(BC.map(k => r[k])); };
 const L = (id, name, qty, rate, buy) => ({ id, name, qty, rate, buy });
 sheets.Bills = mkSheet('Bills'); sheets.Bills.rows.push(BC.slice());
+// an old credit bill, before the 180-day window: ₹300, ₹100 paid 150 days ago, the last ₹200 paid 10 days ago (cleared). Only the day-by-day credit chart reads it.
+bill(200, [L('i2', 'Paper Cup', 200, 1.5, 1)], { cust: 'Old Co', mob: '9000000009', pay: 'Cleared', payments: [{ d: at(150).toISOString(), a: 100 }, { d: at(10).toISOString(), a: 200 }], cleared: at(10).getTime() });
 // today: 2 bills
 bill(0, [L('i1', 'PP Bag', 2, 120, 100), L('i2', 'Paper Cup', 100, 1.5, 1)], { paidBy: 'upi' });
 bill(0, [L('i4', 'Sugar', 5, 46)], { paidBy: 'cash' });
@@ -83,6 +85,13 @@ ok(I.credit.given30 === 200 && I.money.modes30.UPI === 390 && I.money.modes30.Ca
 // vendors, staff
 ok(I.vendors.owed === 1000 && I.vendors.overdue === 1000 && I.vendors.flagged === 1 && I.vendors.list[0].name === 'Mahaveer', 'E1 vendors: ₹1,000 owed to Mahaveer, overdue; 1 bill flagged by the check');
 const raju = I.staff.find(x => x.name === 'Raju'); ok(raju && raju.cancelled === 1 && raju.bills === 10, 'E2 staff: Raju 10 bills, 1 cancelled');
+// day by day for the charts (v49)
+const S = I.series, last = S.sales.length - 1, sum = (A, k) => A.slice(A.length - k).reduce((t, x) => t + x, 0);
+ok(S.from === dayAgo(89) && S.sales.length === 90 && S.sales[last] === 620 && S.bills[last] === 2, 'H1 90 days, one value a day; today ₹620 in 2 bills');
+ok(Math.abs(sum(S.sales, 30) - I.pulse.d30.sales) < 0.01 && sum(S.bills, 30) === I.pulse.d30.bills, 'H2 the last 30 days add up to the 30-day figure (cancelled bill left out)');
+ok(Math.abs(sum(S.pSale, 30) - sum(S.pCost, 30) - I.pulse.d30.profit) < 0.01, 'H3 profit per day adds up too');
+ok(S.due[0] === 200 && S.due[last] === 700 && S.due[last] === I.credit.total && S.got[last - 10] === 200 && S.given[last - 45] === 500, 'H4 owed by customers: ₹200 from an old bill at the start, ₹500 given 45 days ago, ₹200 paid 10 days ago, ₹700 today (= the Credit total)');
+ok(I.vendors.sched.length === 5 && I.vendors.sched[0] === 1000 && I.vendors.sched.reduce((t, x) => t + x, 0) === I.vendors.owed, 'H5 vendor payments by when they fall due (₹1,000 overdue)');
 // do this today
 const kinds = I.todo.map(x => x.k);
 ok(I.todo.length <= 5 && kinds.includes('raise') && kinds.includes('remind') && kinds.includes('payVendor'), 'F1 do this today: ' + kinds.join(', '));

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 48;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 49;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1819,6 +1819,8 @@ function insights_(body) {
 function insightsKey_(p) { const P = PropertiesService.getScriptProperties(), b = boot_(), want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
   if (!want || !keyEq_(p.key, want)) return { ok: false, error: 'bad_key' };
   ENV_ = p.env === 'test' ? 'test' : 'live'; return insights_({ tz: p.tz }); }
+/** The charts' day-by-day figures: arrays from `from`, one value per day; `due` = what customers owed at the end of each day. */
+function insSeries_(SR, from, base) { let o = base; const due = SR.given.map((g, i) => (o = r2_(Math.max(0, o + g - SR.got[i])))); return Object.assign({ from, due }, SR); }
 function insDay_(d, n) { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); }
 function insGap_(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5); }
 function insightsBuild_(dayOf, today) {
@@ -1842,18 +1844,30 @@ function insightsBuild_(dayOf, today) {
   const s = SS.getSheetByName(tab_('Bills')), n = s ? s.getLastRow() - 1 : 0, B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const P = { today: { sales: 0, bills: 0, pSale: 0, pCost: 0 }, mtd: { sales: 0, bills: 0, pSale: 0, pCost: 0 }, lm: { sales: 0, bills: 0, pSale: 0, pCost: 0 }, d30: { sales: 0, bills: 0, pSale: 0, pCost: 0, lineSale: 0, noBuy: 0 } };
   const IT = {}, CUS = {}, STAFF = {}, GRP = {}, modes = {}; let given30 = 0, collected30 = 0;
+  /* day by day for the charts (v49): the last 90 days; credit owed is rebuilt from every credit bill, also older ones */
+  const SN = 90, sFrom = insDay_(today, -(SN - 1)), z = () => new Array(SN).fill(0);
+  const SR = { sales: z(), bills: z(), pSale: z(), pCost: z(), given: z(), got: z() }; let dueBase = 0;
+  const sIdx = day => { const i = insGap_(sFrom, day); return i >= 0 && i < SN ? i : -1; };
+  const creditEv = (day, total, pay, pays) => { if (pay !== 'Credit' && pay !== 'Part paid' && pay !== 'Cleared') return;
+    const L = payList_(pays), owed = r2_(total - L.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); if (!(owed > 0)) return;
+    const i = sIdx(day); if (day < sFrom) dueBase = r2_(dueBase + owed); else if (i >= 0) SR.given[i] = r2_(SR.given[i] + owed);
+    L.forEach(p => { if (p.at) return; const pd = dayOf(new Date(p.d)), j = pd ? sIdx(pd) : -1; if (pd && pd < sFrom) dueBase = r2_(dueBase - num_(p.a)); else if (j >= 0) SR.got[j] = r2_(SR.got[j] + num_(p.a)); }); };
   const addMode = (k, a) => { k = paidBy_(k) || (String(k || '') === 'Bank' ? 'Bank' : ''); modes[k] = r2_((modes[k] || 0) + num_(a)); };
   if (n > 0) {
     const dates = s.getRange(2, B.date + 1, n, 1).getValues(); let i0 = n;
     for (let i = 0; i < n; i++) { const d = dates[i][0] instanceof Date ? dates[i][0] : new Date(dates[i][0]); if (dayOf(d) >= start) { i0 = i; break; } }
     const rows = i0 < n ? s.getRange(2 + i0, 1, n - i0, BILL_COLS.length).getValues() : [];
+    if (i0 > 0) { const col = k => s.getRange(2, B[k] + 1, i0, 1).getValues(), st0 = col('status'), pa0 = col('payment'), to0 = col('total'), ps0 = col('payments');
+      for (let i = 0; i < i0; i++) { if (st0[i][0] === 'Cancelled') continue; const p0 = String(pa0[i][0] || ''); if (p0 !== 'Credit' && p0 !== 'Part paid' && p0 !== 'Cleared') continue;
+        const d = dates[i][0] instanceof Date ? dates[i][0] : new Date(dates[i][0]); creditEv(dayOf(d), num_(to0[i][0]), p0, ps0[i][0]); } }
     rows.forEach(r => {
       const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]), day = dayOf(d); if (!day) return;
       const by = String(r[B.by] || '').trim() || '?', in30 = day >= d30, isCan = r[B.status] === 'Cancelled', st = String(r[B.payment] || '');
       const sf = STAFF[by] || (STAFF[by] = { name: by, bills: 0, edited: 0, cancelled: 0, sales: 0 });
       payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd >= d30 && !isCan) { collected30 = r2_(collected30 + num_(p.a)); addMode(p.note, p.a); } });
       if (isCan) { if (in30) sf.cancelled++; return; }
-      const total = num_(r[B.total]);
+      const total = num_(r[B.total]), si = sIdx(day);
+      creditEv(day, total, st, r[B.payments]); if (si >= 0) { SR.sales[si] = r2_(SR.sales[si] + total); SR.bills[si]++; }
       if (in30) { sf.bills++; sf.sales = r2_(sf.sales + total); if (num_(r[B.edits]) > 0) sf.edited++;
         const atB = (!st || st === 'Paid' || st === 'Cleared') ? total : payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0); if (atB > 0) addMode(r[B.paidBy], atB);
         if (st === 'Credit' || st === 'Part paid') given30 = r2_(given30 + total - payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); }
@@ -1873,6 +1887,7 @@ function insightsBuild_(dayOf, today) {
         const alt = !!(l.alt && it && it.altQty > 0), qM = alt ? q / it.altQty : q, rM = alt ? rt * it.altQty : rt;
         let lb = num_(l.buy); if (!(lb > 0) && it && it.buy > 0) lb = alt ? it.buy / it.altQty : it.buy;
         per.forEach(x => { if (lb > 0) { x.pSale = r2_(x.pSale + amt); x.pCost = r2_(x.pCost + q * lb); } });
+        if (si >= 0 && lb > 0) { SR.pSale[si] = r2_(SR.pSale[si] + amt); SR.pCost[si] = r2_(SR.pCost[si] + q * lb); }
         if (in30) { P.d30.lineSale = r2_(P.d30.lineSale + amt); if (!(lb > 0)) P.d30.noBuy = r2_(P.d30.noBuy + amt); }
         if (!it) return;
         const a = IT[it.id] || (IT[it.id] = { q30: 0, a30: 0, qP: 0, aP: 0, a90: 0, a180: 0, q180: 0, last: '', bills30: 0, rates: {}, below: 0, belowAmt: 0, leak: 0, pSale30: 0, pCost30: 0, noBuy30: 0, sinceBuy: 0 });
@@ -1949,11 +1964,12 @@ function insightsBuild_(dayOf, today) {
   const lost = Object.keys(CUS).map(k => CUS[k]).filter(c => c.before >= 3 && c.recent === 0 && c.last).sort((a, b) => b.total - a.total).slice(0, 10).map(c => ({ name: c.name, mobile: c.mobile, last: c.last, total: c.total, bills: c.before }));
   const credit = { total: dues.total || 0, customers: debtors.length, buckets, debtors: debtors.slice(0, 10), growing, remind, given30, collected30, lost };
   /* vendors */
-  const vend = { owed: 0, overdue: 0, due7: 0, due30: 0, list: [], flagged: 0, cheaper: cheaper.slice(0, 10) };
+  const vend = { owed: 0, overdue: 0, due7: 0, due30: 0, list: [], flagged: 0, cheaper: cheaper.slice(0, 10), sched: [0, 0, 0, 0, 0] };   // sched: overdue, next 7 days, 8–14, 15–30, later or no due date
   if (VA) { const by = {}; VA.entries.forEach(e => { (by[e.vendorId] = by[e.vendorId] || []).push(e); if (!e.removed && e.check && e.check.st === 'issues' && !e.check.ack) vend.flagged++; });
     const in7 = insDay_(today, 7), in30 = insDay_(today, 30);
     VA.vendors.forEach(v0 => { const v = vVendorOut_(v0), c = vCalc_(v, by[v.id] || []); if (!(c.balance > 0)) return; let od = 0, due7 = 0, due30 = 0;
-      c.bills.forEach(b => { if (!(b.due > 0)) return; if (b.overdue) od = r2_(od + b.due); else if (b.dueDate && b.dueDate <= in7) due7 = r2_(due7 + b.due); else if (!b.dueDate || b.dueDate <= in30) due30 = r2_(due30 + b.due); });
+      c.bills.forEach(b => { if (!(b.due > 0)) return; const g = b.overdue ? 0 : !b.dueDate ? 4 : insGap_(today, b.dueDate) <= 7 ? 1 : insGap_(today, b.dueDate) <= 14 ? 2 : insGap_(today, b.dueDate) <= 30 ? 3 : 4; vend.sched[g] = r2_(vend.sched[g] + b.due);
+        if (b.overdue) od = r2_(od + b.due); else if (b.dueDate && b.dueDate <= in7) due7 = r2_(due7 + b.due); else if (!b.dueDate || b.dueDate <= in30) due30 = r2_(due30 + b.due); });
       vend.owed = r2_(vend.owed + c.balance); vend.overdue = r2_(vend.overdue + od); vend.due7 = r2_(vend.due7 + due7); vend.due30 = r2_(vend.due30 + due30);
       vend.list.push({ id: v.id, name: v.name, mobile: v.mobile, balance: c.balance, overdue: od, due7, oldest: c.oldest }); });
     vend.list.sort((a, b) => b.overdue - a.overdue || b.balance - a.balance); vend.list = vend.list.slice(0, 15); }
@@ -1972,7 +1988,7 @@ function insightsBuild_(dayOf, today) {
     margins: { groups, below: belowList, soldBelow, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },
-    credit, vendors: vend, money: { modes30: modes }, staff };
+    credit, vendors: vend, money: { modes30: modes }, staff, series: insSeries_(SR, sFrom, dueBase) };
 }
 
 const PUR_COLS = ['entryId', 'vendorId', 'itemId', 'date', 'desc', 'qty', 'unit', 'rate', 'f', 'buy', 'at', 'by'];   // Purchases tab: one row per bill line matched to an item

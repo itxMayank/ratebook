@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-oEItIQIjdroApmJv2rSOxJM0zlk1WikChVdf4OAOvgo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-k/lvHQq9tZ4OyHBT364/UufA1HJlFwg6AXB+VESvOLY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -257,6 +257,19 @@ details.tbl th:first-child,details.tbl td:first-child{text-align:left}
 .bz-age i,.bz-key{display:block;background:var(--a0)}
 .bz-age i:first-child{border-radius:2px 0 0 2px}.bz-age i:last-child{border-radius:0 2px 2px 0}
 .a0{background:var(--a0)!important}.a1{background:var(--a1)!important}.a2{background:var(--a2)!important}.a3{background:var(--a3)!important}
+.bz-ch{margin:16px 0 0}
+.bz-cht{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between}
+.bz-cht b{font-size:14px}
+.chart .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .ln.c1{stroke:var(--s1);fill:none}.chart .ln.c2{stroke:var(--s2);fill:none}
+.chart .ln.dash{stroke-dasharray:5 4}
+.chart .area{fill:var(--s1);opacity:.12}
+.chart .dot{stroke:var(--surface);stroke-width:2}
+.chart .gl.zero{stroke:var(--muted)}
+.chart .xh{opacity:0}.chart .xh line{stroke:var(--muted);stroke-width:1}
+.chart .hit:hover+.xh,.chart .hit:focus-visible+.xh{opacity:1}
+.legend i.dash,#tip .r i.dash{background:none!important;border-top:2px dashed var(--s2);height:0;width:14px}
+.bz-bar.od{background:var(--bad)}
 .bz-key{display:inline-block;width:10px;height:10px;margin-right:8px;vertical-align:-1px}
 .bz-wa{display:inline-grid;place-items:center;width:32px;height:32px;color:var(--good);vertical-align:middle}
 .bz-hab{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px}
@@ -773,7 +786,7 @@ function renderShop() {
   sp.querySelectorAll("[data-act]").forEach(bt => bt.onclick = ev => { ev.preventDefault(); act(bt.dataset.act, bt.dataset.code, bt); });
   sp.querySelectorAll(".sp-nav a").forEach(a => a.onclick = ev => { ev.preventDefault(); const t = document.getElementById(a.dataset.to); if (t) t.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); });
   sp.querySelectorAll("#sp-days button").forEach(bt => bt.onclick = () => { spDays = +bt.dataset.d; store.set("spd", spDays); renderShop(); });
-  { const bb = $("#spbz"); if (bb && F.bz && F.bz.ok) { bb.innerHTML = bzHTML(F.bz); bzWire(bb, env => { spEnv = env; store.set("spEnv", env); F.bz = null; renderShop(); loadShopFull(code); }); } }
+  { const bb = $("#spbz"); if (bb && F.bz && F.bz.ok) { bb.innerHTML = bzHTML(F.bz); bzWire(bb, env => { spEnv = env; store.set("spEnv", env); F.bz = null; renderShop(); loadShopFull(code); }, F.bz); } }
   const cb = $("#sp-chart");
   if (cb && spSel) { const sel = spSel, pts = spChart(cb, sel);
     $("#sp-tbl").insertAdjacentHTML("beforeend", `<table><thead><tr><th>Day</th><th>Requests</th><th>In the script</th><th>Phone &amp; internet</th><th>Whole wait</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(spDayLabel(p.d))}</td><td>${p.n}</td><td>${p.n ? sec(p.script) : "—"}</td><td>${p.n && p.ph ? sec(p.rest) : "—"}</td><td>${p.n ? sec(p.script + p.rest) : "—"}</td></tr>`).join("")}</tbody></table>`);
@@ -855,6 +868,16 @@ const BZ = {
 Object.assign(BZ.en, { profitT: "Profit (30 days)", ownT: "Your business dashboard", ownD: "Sign in with the same name and PIN you use in the app. You'll see only your own shop.", codeL: "Shop code", codePh: "From your shop link, e.g. SHARMA-…",
   nameL: "Your name", pinL: "PIN", signBtn: "Sign in", signing: "Signing in…", signBad: "Type your name and your 4–8 digit PIN.", signWrong: "Wrong name or PIN.", signLocked: "Too many tries. Wait 15 minutes and try again.",
   signCode: "That shop code wasn't found. Check it in your shop link.", signOwnPin: "The shop PIN is switched off. Use your own PIN." });
+Object.assign(BZ.en, { chSalesT: "Sales each day", chSalesW: "Sales each week", ch30: "30 days", ch90: "90 days", chRunT: "This month and last month, adding up",
+  chThis: "This month", chLast: "Last month", chDay: n => `Day ${n}`, chMarT: "Margin each week", chMarSub: "Profit over cost, on sales with a buy price.", chDueT: "Owed by customers, each day",
+  chSchT: "When vendor payments fall due", sched: ["Overdue", "Next 7 days", "8–14 days", "15–30 days", "Later or no due date"], tbl: "Show as table", chSales: "Sales", chBills: "Bills",
+  chProfit: (a, p) => `Profit ${a}` + (p != null ? ` · ${p}%` : ""), chNoBuy: "No buy price on these sales", chOwed: "Owed", chGiven: a => `${a} given on credit`, chGot: a => `${a} collected`,
+  chWeek: (a, b) => `${a} – ${b}`, chMargin: "Margin", chNoSales: "No sales", chDate: "Date", chWeekL: "Week", chEmpty: "Not enough bills yet to draw this." });
+Object.assign(BZ.hi, { chSalesT: "हर दिन की बिक्री", chSalesW: "हर हफ़्ते की बिक्री", ch30: "30 दिन", ch90: "90 दिन", chRunT: "इस महीने और पिछले महीने की कुल बिक्री",
+  chThis: "इस महीने", chLast: "पिछले महीने", chDay: n => `${n} तारीख`, chMarT: "हर हफ़्ते का मार्जिन", chMarSub: "लागत पर मुनाफ़ा, उन बिक्री पर जिनका खरीद रेट है।", chDueT: "ग्राहकों का उधार, हर दिन",
+  chSchT: "वेंडर को पैसे कब देने हैं", sched: ["समय निकल गया", "अगले 7 दिन", "8–14 दिन", "15–30 दिन", "बाद में या तारीख नहीं"], tbl: "टेबल में देखें", chSales: "बिक्री", chBills: "बिल",
+  chProfit: (a, p) => `मुनाफ़ा ${a}` + (p != null ? ` · ${p}%` : ""), chNoBuy: "इन बिक्री पर खरीद रेट नहीं", chOwed: "बाकी", chGiven: a => `${a} उधार दिया`, chGot: a => `${a} वसूल हुआ`,
+  chWeek: (a, b) => `${a} – ${b}`, chMargin: "मार्जिन", chNoSales: "कोई बिक्री नहीं", chDate: "तारीख", chWeekL: "हफ़्ता", chEmpty: "यह दिखाने के लिए अभी काफ़ी बिल नहीं हैं।" });
 Object.assign(BZ.hi, { profitT: "मुनाफ़ा (30 दिन)", ownT: "आपके कारोबार का डैशबोर्ड", ownD: "वही नाम और PIN डालें जो ऐप में डालते हैं। आपको सिर्फ़ अपनी दुकान दिखेगी।", codeL: "दुकान का कोड", codePh: "दुकान के लिंक से, जैसे SHARMA-…",
   nameL: "आपका नाम", pinL: "PIN", signBtn: "साइन इन", signing: "साइन इन हो रहा है…", signBad: "अपना नाम और 4–8 अंकों का PIN डालें।", signWrong: "नाम या PIN ग़लत है।", signLocked: "बहुत बार कोशिश हुई। 15 मिनट रुककर फिर कोशिश करें।",
   signCode: "यह दुकान का कोड नहीं मिला। अपनी दुकान के लिंक में देखें।", signOwnPin: "दुकान का PIN बंद है। अपना PIN डालें।" });
@@ -894,9 +917,13 @@ function bzHTML(I, opts) {
     ${stat(bt("d30"), bzRs(P.d30.sales), esc(bt("bills", P.d30.bills)) + " · " + esc(bt("avg", bzRs(P.d30.avg))))}
     ${stat(bt("profitT"), P.d30.pct != null ? bzRs(P.d30.profit) : bt("none"), P.d30.pct != null ? P.d30.pct + "%" : "")}</div>`
     + (P.d30.noBuy > 0 ? `<p class="small muted" style="margin:8px 0 0">${esc(bt("noBuyNote", bzRs(P.d30.noBuy)))}</p>` : "");
+  const SR = I.series;
+  if (SR) h += `<div class="bz-ch"><div class="bz-cht"><b>${esc(bt(bzPer === 90 ? "chSalesW" : "chSalesT"))}</b><div class="seg" id="bz-per" role="group" aria-label="${esc(bt("chSalesT"))}"><button data-per="30" class="${bzPer !== 90 ? "on" : ""}">${esc(bt("ch30"))}</button><button data-per="90" class="${bzPer === 90 ? "on" : ""}">${esc(bt("ch90"))}</button></div></div><div class="chart" data-ch="sales"></div></div>
+    <div class="bz-ch"><div class="bz-cht"><b>${esc(bt("chRunT"))}</b><div class="legend" style="margin:0"><span><i style="background:var(--s1)"></i>${esc(bt("chThis"))}</span><span><i class="dash"></i>${esc(bt("chLast"))}</span></div></div><div class="chart" data-ch="run"></div></div>`;
   /* margins */
   const gmax = Math.max(1, ...M.groups.map(g => g.sales));
   h += `<h4 class="bz-h">${esc(bt("marT"))}</h4><p class="small muted" style="margin:0 0 10px">${esc(bt("marSub"))}</p>`;
+  if (SR) h += `<div class="bz-ch"><div class="bz-cht"><b>${esc(bt("chMarT"))}</b><span class="small muted">${esc(bt("chMarSub"))}</span></div><div class="chart" data-ch="margin"></div></div>`;
   if (M.groups.length) h += `<div class="arows">${M.groups.slice(0, 8).map(g => `<div class="arow bz-g"><span class="an">${esc(g.cat || bt("noGroup"))}<small>${esc(bt("share", g.share))} · ${bzRs(g.sales)}</small></span><span class="av2"><b>${g.pct != null ? g.pct + "%" : bt("none")}</b></span><i class="bz-bar" style="--w:${Math.round(g.sales / gmax * 100)}%"></i></div>`).join("")}</div>`;
   const sub = (title, rows) => rows.length ? `<h5 class="bz-h5">${esc(title)}</h5>${bzList(rows)}` : "";
   h += sub(bt("buyUpT"), M.buyUp.map(x => bzRow(esc(x.name), esc(bt("buyUpL", bzRs(x.was), bzRs(x.now), bzRs(x.sell), bzRs(x.suggest))), "")))
@@ -924,6 +951,7 @@ function bzHTML(I, opts) {
   else { const tot = CR.buckets.reduce((a, b) => a + b, 0) || 1;
     h += `<p style="margin:0 0 8px"><b>${esc(bt("crTot", bzRs(CR.total), CR.customers))}</b></p><div class="bz-age" role="img" aria-label="${esc(bt("crT"))}">${CR.buckets.map((b, i) => b > 0 ? `<i class="a${i}" style="flex:${b / tot}" title="${esc(bt("age")[i])}: ${bzRs(b)}"></i>` : "").join("")}</div>
       <div class="arows" style="margin-top:8px">${CR.buckets.map((b, i) => `<div class="arow"><span class="an"><i class="bz-key a${i}"></i>${esc(bt("age")[i])}</span><span class="av2"><b>${bzRs(b)}</b></span></div>`).join("")}</div>
+      ${SR ? `<div class="bz-ch"><div class="bz-cht"><b>${esc(bt("chDueT"))}</b></div><div class="chart" data-ch="due"></div></div>` : ""}
       <p class="small" style="margin:10px 0 0">${esc(bt("gvc", bzRs(CR.given30), bzRs(CR.collected30)))}${CR.given30 > CR.collected30 ? ` <b style="color:var(--warn)">${esc(bt("gvcUp"))}</b>` : ""}</p>`;
     const remRow = c => { const m = bzWa(c.mobile); return bzRow(esc(c.name || c.mobile), esc(bt("debL", c.bills, c.oldest)), `<b>${bzRs(c.due)}</b>${m ? ` <a class="bz-wa" target="_blank" rel="noopener" href="https://wa.me/91${m}?text=${encodeURIComponent(bt("waText", c.name, bzRs(c.due), sn))}" aria-label="${esc(bt("wa"))}">${ic("wa")}</a>` : ""}`); };
     h += sub(bt("remindT"), CR.remind.map(remRow)) + sub(bt("growT"), CR.growing.map(remRow)) + sub(bt("debT"), CR.debtors.map(remRow)); }
@@ -932,6 +960,7 @@ function bzHTML(I, opts) {
   h += `<h4 class="bz-h">${esc(bt("venT"))}</h4>`;
   if (!V.owed && !V.cheaper.length) h += `<div class="note">${esc(bt("venNone"))}</div>`;
   else { h += `<div class="tiles">${stat(bt("owed"), bzRs(V.owed), "")}${stat(bt("overdue"), bzRs(V.overdue), "")}${stat(bt("due7"), bzRs(V.due7), "")}${stat(bt("due30"), bzRs(V.due30), "")}</div>`
+      + (V.sched && V.owed > 0 ? bzSched(V.sched) : "")
       + (V.list.length ? `<div style="margin-top:10px">${bzList(V.list.map(v => bzRow(esc(v.name), v.overdue ? esc(bt("overdue")) + " " + bzRs(v.overdue) : "", `<b>${bzRs(v.balance)}</b>`)))}</div>` : "")
       + sub(bt("cheapT"), V.cheaper.map(x => bzRow(esc(x.name), esc(bt("cheapL", x.best, bzRs(x.bestBuy), x.usual, bzRs(x.usualBuy), x.diff)), "")))
       + (V.flagged ? `<p class="small muted" style="margin:10px 0 0">${esc(bt("flagged", V.flagged))}</p>` : ""); }
@@ -943,7 +972,80 @@ function bzHTML(I, opts) {
   const hab = []; if (IT.noBuy) hab.push("hBuy"); if (!RS.purchases || RS.unknown) hab.push("hVendor"); if (CR.total) hab.push("hCredit"); if (M.below.length || M.soldBelow.length) hab.push("hBelow"); if (IT.noCat > IT.total / 2) hab.push("hGroup"); if (I.env === "test") hab.push("hTest");
   if (hab.length) h += `<h4 class="bz-h">${esc(bt("habT"))}</h4><ul class="bz-hab">${hab.map(k => `<li>${esc(bt(k))}</li>`).join("")}</ul>`;
   return h; }
-function bzWire(box, onEnv) { box.querySelectorAll("#bz-env button").forEach(b => b.onclick = () => { if (!b.classList.contains("on")) onEnv(b.dataset.env); }); }
+function bzWire(box, onEnv, I) { box.querySelectorAll("#bz-env button").forEach(b => b.onclick = () => { if (!b.classList.contains("on")) onEnv(b.dataset.env); });
+  box.querySelectorAll("#bz-per button").forEach(b => b.onclick = () => { bzPer = +b.dataset.per; store.set("bzPer", bzPer); box.querySelectorAll("#bz-per button").forEach(x => x.classList.toggle("on", x === b));
+    const t = b.closest(".bz-ch").querySelector(".bz-cht b"); t.textContent = bt(bzPer === 90 ? "chSalesW" : "chSalesT"); bzCharts(box, I, "sales"); });
+  if (I) bzCharts(box, I); }
+
+/* ---------- the business page's charts (v49 series: one value a day for 90 days) ----------
+   One SVG engine for bars and lines: one y-axis, recessive grid, a hover/focus area per slot with a tooltip, and a table view
+   under each chart. Colours: --s1 (Iris) and --s2 (teal), validated for colour-blind readers in light and dark; last month is
+   also dashed, so the two lines never depend on colour alone. */
+let bzPer = store.get("bzPer", 30) === 90 ? 90 : 30;
+const bzShort = v => { const a = Math.abs(v), sg = v < 0 ? "-" : ""; return a >= 1e7 ? sg + "₹" + +(a / 1e7).toFixed(1) + "Cr" : a >= 1e5 ? sg + "₹" + +(a / 1e5).toFixed(1) + "L" : a >= 1e3 ? sg + "₹" + +(a / 1e3).toFixed(1) + "k" : sg + "₹" + Math.round(a); };
+const bzPct = (s, c) => c > 0 ? Math.round((s - c) / c * 1000) / 10 : null;
+function bzNice(lo, hi) { if (hi <= lo) hi = lo + 1; const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(x => x >= raw);
+  return { lo: Math.floor(lo / step) * step, hi: Math.ceil(hi / step) * step, step }; }
+function bzSvg(box, o) {
+  const W = Math.max(280, box.clientWidth || 600), H = 200, L = 48, B = 24, T = 20, pw = W - L - 6, ph = H - T - B, n = o.n;
+  const vals = o.series.flatMap(s => s.vals.filter(v => v != null)); if (!vals.length || vals.every(v => !v)) { box.innerHTML = `<p class="small muted" style="margin:0">${esc(bt("chEmpty"))}</p>`; return; }
+  const sc = bzNice(Math.min(0, ...vals), Math.max(...vals)), y = v => T + ph - (v - sc.lo) / (sc.hi - sc.lo) * ph, slot = pw / n, cx = i => L + i * slot + slot / 2;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`;
+  for (let v = sc.lo; v <= sc.hi + sc.step / 2; v += sc.step) svg += `<line class="gl${Math.abs(v) < 1e-9 && sc.lo < 0 ? " zero" : ""}" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${esc(o.fmtY(v))}</text>`;
+  const tw = t => t.length * (/[\u0900-\u097F]/.test(t) ? 7 : 6.4), lw = Math.max(...Array.from({ length: n }, (_, i) => tw(String(o.xl(i))))) + 12, every = Math.ceil(n / Math.max(2, Math.floor(pw / lw)));
+  for (let i = 0; i < n; i++) if ((n - 1 - i) % every === 0) { const t = String(o.xl(i)), half = tw(t) / 2, a = cx(i) + half > W ? "end" : cx(i) - half < L ? "start" : "middle";
+    svg += `<text class="ax" x="${a === "end" ? W : a === "start" ? L : cx(i)}" y="${H - 6}" text-anchor="${a}">${esc(t)}</text>`; }
+  if (o.kind === "bar") { const bw = Math.max(2, Math.min(22, slot - 2)), s0 = o.series[0], top = s0.vals.reduce((m, v, i) => v > s0.vals[m] ? i : m, 0);
+    s0.vals.forEach((v, i) => { const x = cx(i) - bw / 2, y0 = y(Math.max(0, v)), hh = Math.abs(y(v) - y(0)), r = Math.min(4, bw / 2, hh);
+      svg += `<rect class="hit" data-i="${i}" tabindex="0" x="${L + i * slot}" y="${T}" width="${slot}" height="${ph}" aria-label="${esc(o.tipHead(i))}"/><g>` + (hh > 0 ? `<path class="${s0.cls}" d="M${x} ${y0 + hh}V${y0 + r}Q${x} ${y0} ${x + r} ${y0}H${x + bw - r}Q${x + bw} ${y0} ${x + bw} ${y0 + r}V${y0 + hh}Z"/>` : "") + `</g>`; });
+    if (s0.vals[top] > 0) svg += `<text class="lbl" x="${Math.min(W - 24, Math.max(L + 24, cx(top)))}" y="${y(s0.vals[top]) - 6}" text-anchor="middle">${esc(bzShort(s0.vals[top]))}</text>`; }
+  else { o.series.forEach(s => { let d = "", pen = false; s.vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + cx(i).toFixed(1) + " " + y(v).toFixed(1); pen = true; });
+      if (s.area) { const fi = s.vals.findIndex(v => v != null), la = s.vals.length - 1 - [...s.vals].reverse().findIndex(v => v != null); svg += `<path class="area" d="${d}L${cx(la)} ${y(Math.max(sc.lo, 0))}L${cx(fi)} ${y(Math.max(sc.lo, 0))}Z"/>`; }
+      svg += `<path class="ln ${s.cls}${s.dash ? " dash" : ""}" d="${d}"/>`;
+      const li = s.vals.length - 1 - [...s.vals].reverse().findIndex(v => v != null); if (o.endLabels && li < s.vals.length) s.endY = y(s.vals[li]), s.endX = cx(li); });
+    if (o.endLabels) { const ls = o.series.filter(s => s.endY != null).sort((a, b) => a.endY - b.endY); for (let k = 1; k < ls.length; k++) if (ls[k].endY - ls[k - 1].endY < 13) ls[k].endY = ls[k - 1].endY + 13;
+      ls.forEach(s => { svg += `<circle class="dot ${s.cls}" cx="${s.endX}" cy="${y(s.vals[s.vals.length - 1 - [...s.vals].reverse().findIndex(v => v != null)])}" r="4"/>`; }); }
+    for (let i = 0; i < n; i++) { svg += `<rect class="hit" data-i="${i}" tabindex="0" x="${L + i * slot}" y="${T}" width="${slot}" height="${ph}" aria-label="${esc(o.tipHead(i))}"/><g class="xh"><line x1="${cx(i)}" x2="${cx(i)}" y1="${T}" y2="${T + ph}"/>`
+      + o.series.map(s => s.vals[i] == null ? "" : `<circle class="dot ${s.cls}" cx="${cx(i)}" cy="${y(s.vals[i])}" r="4"/>`).join("") + `</g>`; } }
+  box.innerHTML = svg + `</svg>` + `<details class="tbl"><summary>${esc(bt("tbl"))}</summary><table><thead><tr>${o.table.head.map(x => `<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${o.table.rows.map(r => `<tr>${r.map(x => `<td>${esc(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></details>`;
+  const tip = $("#tip"), show = (el, ev) => { const i = +el.dataset.i; tip.textContent = "";
+    const hd = document.createElement("div"); hd.className = "small muted"; hd.textContent = o.tipHead(i); tip.appendChild(hd);
+    const [big, rows] = o.tip(i), b = document.createElement("b"); b.textContent = big; tip.appendChild(b);
+    rows.forEach(([t, c, dash]) => { const r = document.createElement("div"); r.className = "r"; const k = document.createElement("i"); if (c) k.style.background = c; if (dash) k.className = "dash"; r.appendChild(k); r.appendChild(document.createTextNode(t)); tip.appendChild(r); });
+    tip.hidden = false; const bx = el.getBoundingClientRect(), tx = ev && ev.clientX != null ? ev.clientX : bx.left + bx.width / 2, ty = ev && ev.clientY != null ? ev.clientY : bx.top + 20;
+    tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, Math.max(8, tx + 12)) + "px"; tip.style.top = Math.max(8, ty - tip.offsetHeight - 12) + "px"; };
+  box.querySelectorAll(".hit").forEach(el => { el.addEventListener("pointermove", ev => show(el, ev)); el.addEventListener("focus", () => show(el)); ["pointerleave", "blur"].forEach(e => el.addEventListener(e, () => { tip.hidden = true; })); }); }
+/** Draw the charts that have a box on the page (or only `only`). */
+function bzCharts(box, I, only) {
+  const S = I.series; if (!S) return; const N = S.sales.length, day = i => insDayJs(S.from, i), lc = bzLang === "hi" ? "hi-IN" : "en-IN";
+  const dShort = d => new Date(d + "T12:00:00").toLocaleDateString(lc, { day: "numeric", month: "short" }), dLong = d => new Date(d + "T12:00:00").toLocaleDateString(lc, { weekday: "short", day: "numeric", month: "short" });
+  const weeks = () => { const W = []; for (let e = N - 1; e >= 0 && W.length < 13; e -= 7) { const s0 = Math.max(0, e - 6), w = { a: day(s0), b: day(e), sales: 0, bills: 0, pSale: 0, pCost: 0 };
+    for (let i = s0; i <= e; i++) { w.sales += S.sales[i]; w.bills += S.bills[i]; w.pSale += S.pSale[i]; w.pCost += S.pCost[i]; } W.unshift(w); } return W; };
+  const draw = (k, f) => { if (only && only !== k) return; const el = box.querySelector(`.chart[data-ch="${k}"]`); if (el) f(el); };
+  draw("sales", el => { let P;
+    if (bzPer === 90) P = weeks().map(w => ({ head: bt("chWeek", dShort(w.a), dShort(w.b)), x: dShort(w.a), ...w }));
+    else P = Array.from({ length: 30 }, (_, k) => { const i = N - 30 + k; return { head: dLong(day(i)), x: new Date(day(i) + "T12:00:00").toLocaleDateString(lc, { day: "numeric" }), sales: S.sales[i], bills: S.bills[i], pSale: S.pSale[i], pCost: S.pCost[i] }; });
+    bzSvg(el, { kind: "bar", n: P.length, aria: bt(bzPer === 90 ? "chSalesW" : "chSalesT"), series: [{ cls: "c1", vals: P.map(p => p.sales) }], fmtY: v => v ? bzShort(v) : "0", xl: i => P[i].x, tipHead: i => P[i].head,
+      tip: i => { const p = P[i]; return [p.sales ? bzRs(p.sales) : bt("chNoSales"), [[bt("bills", p.bills), ""], p.pCost > 0 ? [bt("chProfit", bzRs(p.pSale - p.pCost), bzPct(p.pSale, p.pCost)), ""] : p.sales ? [bt("chNoBuy"), ""] : null].filter(Boolean)]; },
+      table: { head: [bzPer === 90 ? bt("chWeekL") : bt("chDate"), bt("chSales"), bt("chBills"), bt("profitT")], rows: P.slice().reverse().map(p => [p.head, bzRs(p.sales), String(p.bills), p.pCost > 0 ? bzRs(p.pSale - p.pCost) : "—"]) } }); });
+  draw("run", el => { const td = day(N - 1), dn = +td.slice(8, 10), mS = td.slice(0, 8) + "01", lmLast = insDayJs(mS, -1), lmS = lmLast.slice(0, 8) + "01", lmDays = +lmLast.slice(8, 10), len = Math.max(dn, lmDays);
+    const cum = (start, upto) => { const out = []; let t = 0, i0 = Math.round((Date.parse(start + "T00:00:00Z") - Date.parse(S.from + "T00:00:00Z")) / 864e5);
+      for (let d = 0; d < len; d++) { if (d >= upto) { out.push(null); continue; } const i = i0 + d; if (i >= 0 && i < N) t += S.sales[i]; out.push(i < 0 ? null : t); } return out; };
+    const a = cum(mS, dn), b = cum(lmS, lmDays);
+    bzSvg(el, { kind: "line", n: len, endLabels: true, aria: bt("chRunT"), series: [{ cls: "c2", dash: true, vals: b }, { cls: "c1", vals: a }], fmtY: v => v ? bzShort(v) : "0", xl: i => String(i + 1), tipHead: i => bt("chDay", i + 1),
+      tip: i => [a[i] != null ? bzRs(a[i]) : (b[i] != null ? bzRs(b[i]) : "—"), [a[i] != null ? [bt("chThis") + " " + bzRs(a[i]), "var(--s1)"] : null, b[i] != null ? [bt("chLast") + " " + bzRs(b[i]), "", true] : null].filter(Boolean)],
+      table: { head: [bt("chDay", "").trim() || "#", bt("chThis"), bt("chLast")], rows: Array.from({ length: len }, (_, i) => [String(i + 1), a[i] != null ? bzRs(a[i]) : "—", b[i] != null ? bzRs(b[i]) : "—"]) } }); });
+  draw("margin", el => { const P = weeks(), v = P.map(w => bzPct(w.pSale, w.pCost));
+    bzSvg(el, { kind: "line", n: P.length, aria: bt("chMarT"), series: [{ cls: "c1", vals: v }], fmtY: x => Math.round(x) + "%", xl: i => dShort(P[i].a), tipHead: i => bt("chWeek", dShort(P[i].a), dShort(P[i].b)),
+      tip: i => [v[i] != null ? v[i] + "%" : bt("chNoSales"), v[i] != null ? [[bt("chProfit", bzRs(P[i].pSale - P[i].pCost), null), ""], [bt("chSales") + " " + bzRs(P[i].sales), ""]] : []],
+      table: { head: [bt("chWeekL"), bt("chMargin"), bt("profitT"), bt("chSales")], rows: P.slice().reverse().map((w, k) => { const x = v[P.length - 1 - k]; return [bt("chWeek", dShort(w.a), dShort(w.b)), x != null ? x + "%" : "—", w.pCost > 0 ? bzRs(w.pSale - w.pCost) : "—", bzRs(w.sales)]; }) } }); });
+  draw("due", el => { bzSvg(el, { kind: "line", n: N, aria: bt("chDueT"), series: [{ cls: "c1", area: true, vals: S.due }], fmtY: v => v ? bzShort(v) : "0", xl: i => dShort(day(i)), tipHead: i => dLong(day(i)),
+      tip: i => [bzRs(S.due[i]), [S.given[i] ? [bt("chGiven", bzRs(S.given[i])), ""] : null, S.got[i] ? [bt("chGot", bzRs(S.got[i])), ""] : null].filter(Boolean)],
+      table: { head: [bt("chDate"), bt("chOwed"), bt("chGiven", "").trim(), bt("chGot", "").trim()], rows: S.due.map((d, i) => [dLong(day(i)), bzRs(d), S.given[i] ? bzRs(S.given[i]) : "", S.got[i] ? bzRs(S.got[i]) : ""]).filter(r => r[2] || r[3]).reverse() } }); }); }
+const insDayJs = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+/** Vendor payments by when they fall due: one row per period with a bar, the amount written out (no colour needed to read it). */
+function bzSched(s) { const max = Math.max(1, ...s), L = bt("sched");
+  return `<h5 class="bz-h5">${esc(bt("chSchT"))}</h5><div class="arows">${s.map((v, i) => `<div class="arow bz-g"><span class="an">${esc(L[i])}</span><span class="av2"><b>${bzRs(v)}</b></span><i class="bz-bar${i === 0 && v > 0 ? " od" : ""}" style="--w:${Math.round(v / max * 100)}%"></i></div>`).join("")}</div>`; }
 
 /* ===================== Shop owners on this page =====================
    A shop's owner opens admin.html?shop=<code> (from the app: Tools → Business dashboard, or a link) and signs in with their own
@@ -969,7 +1071,7 @@ function renderOwn() { const box = $("#bz"); if (!box) return; box.classList.rem
   $("#own-name").textContent = (OWN && (OWN.shopName || OWN.name)) || ""; $("#own-who").textContent = OWN ? OWN.by : "";
   document.querySelectorAll("#own-lang button").forEach(b => b.classList.toggle("on", b.dataset.l === bzLang));
   document.documentElement.lang = bzLang === "hi" ? "hi" : "en";
-  if (!ownData) return; box.innerHTML = bzHTML(ownData); bzWire(box, env => { ownEnv = env; store.set("ownEnv", env); ownData = null; ownLoad(); }); }
+  if (!ownData) return; box.innerHTML = bzHTML(ownData); bzWire(box, env => { ownEnv = env; store.set("ownEnv", env); ownData = null; ownLoad(); }, ownData); }
 /* Owner sign-in: the same name + PIN as the app. The phone label says it's this dashboard, so it shows up (and can be signed
    out) in the app's Settings → Signed-in phones. Only an owner gets in. */
 $("#f-own").onsubmit = async e => { e.preventDefault(); const b = $("#b-own"), er = $("#own-err"); er.textContent = "";

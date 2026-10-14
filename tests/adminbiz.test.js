@@ -1,4 +1,4 @@
-/* Business dashboard (admin.html, 13 Oct 2026): a shop owner opens admin.html?shop=<code> (from the app: Tools → Business dashboard),
+/* Business dashboard (admin.html, 13 Oct 2026; charts 14 Oct): a shop owner opens admin.html?shop=<code> (from the app: Tools → Business dashboard),
    signs in with their own app name + PIN and sees only their own business page, in English or Hindi, with no other shops and
    no technical details; staff and managers are refused. The admin sees each shop's business page on its shop page (through
    the Directory), and can switch other shops' business pages off for good. Run: node tests/adminbiz.test.js */
@@ -67,6 +67,25 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
   ok(await ph.isVisible('#bz .fixes') && await ph.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'A15 360 px wide in dark: fits, nothing spills sideways');
   ok(await ph.evaluate(() => [...document.querySelectorAll('#bz .fix b, #bz .stat b, #bz .arow .an')].every(e => e.scrollWidth <= e.clientWidth + 1)), 'A16 no title, amount or name cut off');
   if (process.env.SHOT) { await ph.screenshot({ path: process.env.SHOT + '/biz-phone-dark.png', fullPage: true }); await o.setViewportSize({ width: 1280, height: 900 }); }
+  // C. charts (v49 series)
+  const c = await page(`https://rb.test/admin.html?shop=${SH}`);
+  await c.fill('#own-n', 'Sharma ji'); await c.fill('#own-pin', '739164'); await c.click('#b-own'); await c.waitForTimeout(800);
+  ok(await c.$$eval('#bz .chart[data-ch]', E => E.map(e => e.dataset.ch + ':' + !!e.querySelector('svg')).join()) === 'sales:true,run:true,margin:true,due:true', 'C1 four charts: sales, this month vs last, margin each week, owed by customers');
+  ok(await c.$$eval('#bz .chart[data-ch="sales"] .hit', h => h.length) === 30 && /Sales each day/.test(await c.textContent('#bz')), 'C2 sales: one bar a day for 30 days');
+  const tipOf = async (ch, i) => { const h = await c.$$(`#bz .chart[data-ch="${ch}"] .hit`); await h[i < 0 ? h.length + i : i].scrollIntoViewIfNeeded(); await h[i < 0 ? h.length + i : i].hover(); await c.waitForTimeout(80); return c.textContent('#tip'); };
+  ok(/₹620/.test(await tipOf('sales', -1)) && /2 bills/.test(await c.textContent('#tip')) && /Profit ₹90/.test(await c.textContent('#tip')), 'C3 hover today: ₹620, 2 bills, profit ₹90');
+  await c.click('#bz .chart[data-ch="sales"] details summary');
+  const rows = await c.$$eval('#bz .chart[data-ch="sales"] tbody tr', R => R.map(r => r.textContent));
+  ok(rows.length === 30 && /₹620/.test(rows[0]), 'C4 "Show as table": 30 rows, newest first');
+  await c.click('#bz-per button[data-per="90"]'); await c.waitForTimeout(150);
+  ok(await c.$$eval('#bz .chart[data-ch="sales"] .hit', h => h.length) === 13 && /Sales each week/.test(await c.textContent('#bz .bz-ch .bz-cht b')) && await c.evaluate(() => localStorage.rbadm_bzPer) === '90', 'C5 90 days: one bar a week (13), remembered on this laptop');
+  ok(await c.$$eval('#bz .chart[data-ch="run"] path.ln', P => P.length === 2 && P.some(p => p.classList.contains('dash'))) && await c.$$eval('#bz .bz-cht .legend', L => L.some(l => /This month/.test(l.textContent) && /Last month/.test(l.textContent))), 'C6 this month vs last month: two lines, last month dashed, with a legend');
+  ok(/₹700/.test(await tipOf('due', -1)) && await c.$$eval('#bz .chart[data-ch="margin"] path.ln', P => P.length) === 1, 'C7 owed by customers ends at ₹700 today (= the credit total); margin line drawn');
+  ok(await c.$$eval('#bz .bz-h5', H => H.some(h => /When vendor payments fall due/.test(h.textContent))) && /Overdue[\s\S]*₹1,000/.test(await c.textContent('#bz')), 'C8 vendor payments by when they fall due: ₹1,000 overdue');
+  const ch = await page(`https://rb.test/admin.html?shop=${SH}`, { w: 360 }); await ch.evaluate(() => localStorage.setItem('rbadm_lang', '"hi"'));
+  await ch.reload(); await ch.waitForTimeout(500); await ch.fill('#own-n', 'Sharma ji'); await ch.fill('#own-pin', '739164'); await ch.click('#b-own'); await ch.waitForTimeout(800);
+  const lap = await ch.$$eval('#bz .chart svg', S => S.every(sv => { const t = [...sv.querySelectorAll('text.ax')].filter(x => +x.getAttribute('y') > 150).map(x => x.getBoundingClientRect()); return t.every((r, i) => !i || r.left >= t[i - 1].right - 1); }));
+  ok(/हर दिन की बिक्री/.test(await ch.textContent('#bz')) && lap && await ch.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'C9 360 px in Hindi: chart titles in Hindi, date labels never overlap, nothing spills sideways');
   // the original shop's own owner: ?shop=main, no shop code asked
   const mo = await page('https://rb.test/admin.html?shop=main');
   ok(await mo.isVisible('#s-ownsi') && !(await mo.isVisible('#own-codewrap')), 'A17 the original shop\'s link works the same (no code to type)');

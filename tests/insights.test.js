@@ -92,6 +92,7 @@ ok(Math.abs(sum(S.sales, 30) - I.pulse.d30.sales) < 0.01 && sum(S.bills, 30) ===
 ok(Math.abs(sum(S.pSale, 30) - sum(S.pCost, 30) - I.pulse.d30.profit) < 0.01, 'H3 profit per day adds up too');
 ok(S.due[0] === 200 && S.due[last] === 700 && S.due[last] === I.credit.total && S.got[last - 10] === 200 && S.given[last - 45] === 500, 'H4 owed by customers: ₹200 from an old bill at the start, ₹500 given 45 days ago, ₹200 paid 10 days ago, ₹700 today (= the Credit total)');
 ok(I.vendors.sched.length === 5 && I.vendors.sched[0] === 1000 && I.vendors.sched.reduce((t, x) => t + x, 0) === I.vendors.owed, 'H5 vendor payments by when they fall due (₹1,000 overdue)');
+ok(I.money.modesToday.UPI === 390 && I.money.modesToday.Cash === 230 && Object.keys(I.money.modesToday).length === 2, 'H6 money in today by method (for the daily summary): UPI ₹390, cash ₹230');
 // do this today
 const kinds = I.todo.map(x => x.k);
 ok(I.todo.length <= 5 && kinds.includes('raise') && kinds.includes('remind') && kinds.includes('payVendor'), 'F1 do this today: ' + kinds.join(', '));

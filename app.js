@@ -278,7 +278,8 @@ function renderAll(){
   $("#ro-note").hidden = S.canWrite || ls.get("rb_ro_x",false);
   document.querySelectorAll("#view-tools [data-w]").forEach(b=>b.disabled=!can("manager"));
   { const r=$("#t-reports"); if(r) r.hidden=!can("manager"); }
-  { const r=$("#t-biz"); if(r) r.hidden=!can("owner"); }   // the owner's business dashboard (admin.html, signed in there with the same name + PIN)
+  { const r=$("#t-biz"); if(r) r.hidden=!can("owner"); }
+  { const r=$("#t-sum"); if(r) r.hidden=!can("owner"); }   // today's summary, ready for WhatsApp (reports.js)   // the owner's business dashboard (admin.html, signed in there with the same name + PIN)
   renderQueue(); renderCodeNote();
   $("#t-unlock-t").textContent = S.canWrite ? t("lockNow") : t("unlockT");
   $("#t-unlock-d").textContent = S.canWrite ? t("lockNowD", (S.auth.by||"—")+(S.auth.role&&S.auth.role!=="owner"?` · ${t("role"+S.auth.role[0].toUpperCase()+S.auth.role.slice(1))}`:"")) : t("unlockD");
@@ -766,6 +767,7 @@ $("#t-dues").onclick=()=>openDues();
 $("#t-custs").onclick=()=>openCustomers();
 $("#t-vendors").onclick=()=>openVendors();
 $("#t-reports").onclick=()=>openReports();
+$("#t-sum").onclick=()=>openSummary();
 $("#t-biz").onclick=()=>{ const u=new URL("admin.html", location.href); u.search="?shop="+encodeURIComponent(SHOP_MAIN?"main":SHOP.code); window.open(u.href,"_blank","noopener"); };
 $("#bill-pdf").onclick=()=>pdfFor(invFromCurrent(), $("#bill-pdf"));
 $("#bill-print").onclick=()=>printInv(invFromCurrent(), $("#bill-print"));

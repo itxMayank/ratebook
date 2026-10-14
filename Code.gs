@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 49;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 50;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1852,7 +1852,7 @@ function insightsBuild_(dayOf, today) {
     const L = payList_(pays), owed = r2_(total - L.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); if (!(owed > 0)) return;
     const i = sIdx(day); if (day < sFrom) dueBase = r2_(dueBase + owed); else if (i >= 0) SR.given[i] = r2_(SR.given[i] + owed);
     L.forEach(p => { if (p.at) return; const pd = dayOf(new Date(p.d)), j = pd ? sIdx(pd) : -1; if (pd && pd < sFrom) dueBase = r2_(dueBase - num_(p.a)); else if (j >= 0) SR.got[j] = r2_(SR.got[j] + num_(p.a)); }); };
-  const addMode = (k, a) => { k = paidBy_(k) || (String(k || '') === 'Bank' ? 'Bank' : ''); modes[k] = r2_((modes[k] || 0) + num_(a)); };
+  const modesT = {}, addMode = (k, a, d) => { k = paidBy_(k) || (String(k || '') === 'Bank' ? 'Bank' : ''); modes[k] = r2_((modes[k] || 0) + num_(a)); if (d === today) modesT[k] = r2_((modesT[k] || 0) + num_(a)); };   // modesT: today only (v50, the owner's daily summary)
   if (n > 0) {
     const dates = s.getRange(2, B.date + 1, n, 1).getValues(); let i0 = n;
     for (let i = 0; i < n; i++) { const d = dates[i][0] instanceof Date ? dates[i][0] : new Date(dates[i][0]); if (dayOf(d) >= start) { i0 = i; break; } }
@@ -1864,12 +1864,12 @@ function insightsBuild_(dayOf, today) {
       const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]), day = dayOf(d); if (!day) return;
       const by = String(r[B.by] || '').trim() || '?', in30 = day >= d30, isCan = r[B.status] === 'Cancelled', st = String(r[B.payment] || '');
       const sf = STAFF[by] || (STAFF[by] = { name: by, bills: 0, edited: 0, cancelled: 0, sales: 0 });
-      payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd >= d30 && !isCan) { collected30 = r2_(collected30 + num_(p.a)); addMode(p.note, p.a); } });
+      payList_(r[B.payments]).forEach(p => { const pd = dayOf(new Date(p.d)); if (!p.at && pd >= d30 && !isCan) { collected30 = r2_(collected30 + num_(p.a)); addMode(p.note, p.a, pd); } });
       if (isCan) { if (in30) sf.cancelled++; return; }
       const total = num_(r[B.total]), si = sIdx(day);
       creditEv(day, total, st, r[B.payments]); if (si >= 0) { SR.sales[si] = r2_(SR.sales[si] + total); SR.bills[si]++; }
       if (in30) { sf.bills++; sf.sales = r2_(sf.sales + total); if (num_(r[B.edits]) > 0) sf.edited++;
-        const atB = (!st || st === 'Paid' || st === 'Cleared') ? total : payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0); if (atB > 0) addMode(r[B.paidBy], atB);
+        const atB = (!st || st === 'Paid' || st === 'Cleared') ? total : payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0); if (atB > 0) addMode(r[B.paidBy], atB, day);
         if (st === 'Credit' || st === 'Part paid') given30 = r2_(given30 + total - payList_(r[B.payments]).filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)); }
       const per = [];
       if (day === today) per.push(P.today); if (day >= mStart) per.push(P.mtd); if (day >= lmStart && day <= lmEnd) per.push(P.lm); if (in30) per.push(P.d30);
@@ -1988,7 +1988,7 @@ function insightsBuild_(dayOf, today) {
     margins: { groups, below: belowList, soldBelow, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },
-    credit, vendors: vend, money: { modes30: modes }, staff, series: insSeries_(SR, sFrom, dueBase) };
+    credit, vendors: vend, money: { modes30: modes, modesToday: modesT }, staff, series: insSeries_(SR, sFrom, dueBase) };
 }
 
 const PUR_COLS = ['entryId', 'vendorId', 'itemId', 'date', 'desc', 'qty', 'unit', 'rate', 'f', 'buy', 'at', 'by'];   // Purchases tab: one row per bill line matched to an item

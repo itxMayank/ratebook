@@ -345,13 +345,13 @@ Object.assign(STR.en, { smT:"Today's summary", smD:"Today's sales, profit, money
   smCredit:"Credit:", smGiven:a=>`${a} given`, smGot:a=>`${a} collected`, smPend:a=>`${a} pending`, smVend:"Vendors:", smOver:a=>`${a} overdue`, smDue7:a=>`${a} due in 7 days`, smTodo:"Do this:",
   smRaise:(n,p,u)=>`Raise ${n} to ${p}${u?" /"+u:""} (cost went up)`, smBelow:n=>`${n} is selling below its buy price`, smRemind:(n,a,d)=>`Remind ${n}: ${a} pending for ${d} days`,
   smReorder:n=>`Reorder ${n} (running low)`, smPayV:(n,a)=>`Pay ${n}: ${a} overdue`, smNoBuy:p=>`Add buy prices: ${p}% of sales have none`, smFoot:"_Rate Book_",
-  smSub:"Check it, then send it on WhatsApp: pick yourself (\"Message yourself\"), a family group, or anyone.", smSend:"Send on WhatsApp", smOld:"This needs the latest sheet script.", smOld_s:"Not ready yet for your shop. Rate Book support will switch it on." });
+  smSub:"Check it, then send it on WhatsApp: pick yourself (\"Message yourself\"), a family group, or anyone.", smSend:"Send", smSendL:"Send on WhatsApp", smOld:"This needs the latest sheet script.", smOld_s:"Not ready yet for your shop. Rate Book support will switch it on." });
 Object.assign(STR.hi, { smT:"आज का हिसाब", smD:"आज की बिक्री, मुनाफ़ा, आया पैसा, उधार और क्या करें, WhatsApp पर भेजने के लिए तैयार",
   smHead:d=>`आज का हिसाब · ${d}`, smTest:"टेस्ट मोड (अभ्यास के बिल)", smSales:(a,n)=>`बिक्री: ${a} · ${n} बिल`, smProfit:(a,p)=>`मुनाफ़ा: ${a} (लागत पर ${p}%)`,
   smMonth:(a,c)=>`इस महीने: ${a}`+(c==null?"":c>=0?` · पिछले महीने (इतने ही दिन) से ${c}% ज़्यादा`:` · पिछले महीने (इतने ही दिन) से ${-c}% कम`), smIn:"आया पैसा:", smNotMarked:"बिना बताए",
   smCredit:"उधार:", smGiven:a=>`${a} दिया`, smGot:a=>`${a} वसूला`, smPend:a=>`${a} बाकी`, smVend:"वेंडर:", smOver:a=>`${a} का समय निकल गया`, smDue7:a=>`${a} अगले 7 दिन में`, smTodo:"ये करें:",
   smRaise:(n,p,u)=>`${n} का रेट ${p}${u?" /"+u:""} करें (लागत बढ़ी है)`, smBelow:n=>`${n} खरीद रेट से कम में बिक रहा है`, smRemind:(n,a,d)=>`${n} को याद दिलाएं: ${a} बाकी, ${d} दिन से`,
   smReorder:n=>`${n} फिर मंगाएं (कम बचा है)`, smPayV:(n,a)=>`${n} को पैसे दें: ${a} समय निकल गया`, smNoBuy:p=>`खरीद रेट डालें: ${p}% बिक्री पर नहीं है`, smFoot:"_Rate Book_",
-  smSub:"देख लें, फिर WhatsApp पर भेजें: खुद को (\"Message yourself\"), परिवार के ग्रुप में या किसी को भी।", smSend:"WhatsApp पर भेजें", smOld:"इसके लिए शीट की नई स्क्रिप्ट चाहिए।", smOld_s:"आपकी दुकान के लिए अभी तैयार नहीं। Rate Book सपोर्ट इसे चालू करेगा।" });
+  smSub:"देख लें, फिर WhatsApp पर भेजें: खुद को (\"Message yourself\"), परिवार के ग्रुप में या किसी को भी।", smSend:"भेजें", smSendL:"WhatsApp पर भेजें", smOld:"इसके लिए शीट की नई स्क्रिप्ट चाहिए।", smOld_s:"आपकी दुकान के लिए अभी तैयार नहीं। Rate Book सपोर्ट इसे चालू करेगा।" });
 return STR;
 })();

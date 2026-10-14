@@ -203,6 +203,7 @@ Researched October 2026 from Apple HIG (iOS 26 / Liquid Glass), Material 3 and M
   - disabled: 40% opacity + `aria-disabled`;
   - loading: spinner inside the button, which keeps its width (`btnBusy()`).
 - Icon-only buttons need an `aria-label` and a visible tooltip on desktop.
+- **A screen's own buttons go straight into the sheet footer** (`openSheet(title, body, foot)` → `#sheet-foot`), side by side like Cancel · Save everywhere else. Don't wrap them in a new box with its own sizes. Each gets about half of a 320 px phone, so keep labels short: an icon and one word ("Copy", WhatsApp icon + "Send"), with the full wording in `aria-label`. *(Mayank, 14 Oct 2026, after Today's summary showed two tall stacked buttons.)*
 
 **Inputs.**
 - 44–48 px tall, 16 px text, **label above or a clear chip label; never a placeholder as the only label**.

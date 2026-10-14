@@ -44,6 +44,17 @@ const html = appHtml('S,t,setTab,openSummary,sumText,appUnlock');
 
   const m = await phone('manager');
   ok(!(await m.isVisible('#t-sum')), 'C1 managers and staff don\'t see it (owner only, like the business page)');
+  // D. the buttons: Copy and Send side by side in the sheet's usual footer, normal button size (designinstructions.md §5, §12)
+  const row = async p => p.evaluate(() => { const a = document.querySelector('#sm-copy').getBoundingClientRect(), b = document.querySelector('#sm-wa').getBoundingClientRect(), f = document.querySelector('#sheet-foot');
+    return { same: Math.abs(a.top - b.top) < 2 && Math.abs(a.height - b.height) < 2, h: Math.round(a.height), inFoot: f.contains(document.querySelector('#sm-copy')) && f.contains(document.querySelector('#sm-wa')), fit: b.right <= innerWidth && a.left >= 0 }; });
+  const r1 = await row(o);
+  ok(r1.inFoot && r1.same && r1.h >= 40 && r1.h <= 52 && r1.fit, 'D1 Copy and Send (WhatsApp icon) side by side in the sheet footer, normal height (' + r1.h + ' px)');
+  const r2 = await row(h);
+  ok(r2.same && r2.fit, 'D2 …also at 320 px in Hindi');
+  const big = await phone('owner', { w: 384 }); await big.evaluate(() => { localStorage.setItem('rb_fz', '1.38'); }); await big.reload(); await big.waitForTimeout(1200);
+  await big.evaluate(() => { T.appUnlock(); T.setTab('tools'); }); await big.waitForTimeout(250); await big.click('#t-sum'); await big.waitForTimeout(500);
+  const r3 = await row(big);
+  ok(r3.same && r3.fit && await big.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'D3 …and at the largest text size on a 384 px phone');
   const old = await phone('owner', { old: true }); await old.click('#t-sum'); await old.waitForTimeout(400);
   ok(/latest sheet script|Rate Book support/.test(await old.textContent('#sm-body')) && await old.getAttribute('#sm-wa', 'aria-disabled') === 'true', 'C2 an older script says it isn\'t ready; nothing to send');
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));

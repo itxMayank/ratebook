@@ -934,9 +934,9 @@ Step 1 of the admin analytics plan (step 2: one script action that works out the
   - money in today by method (`money.modesToday`, new in v50: at-billing amounts by Paid by + later payments by their note; biggest first);
   - credit given / collected today (`series`) and pending in all; vendors overdue and due in 7 days. Parts that are ₹0 are left out;
   - "Do this" (the business page's `todo`) as a numbered list in plain words; signed "_Rate Book_".
-- The text is shown in a box first; **Send on WhatsApp** opens `wa.me/?text=` so the owner picks any chat (themselves via "Message yourself", a family group…); **Copy** copies it. An older script (no `insights`) says it isn't ready (plain wording for other shops, `smOld_s`).
+- The text is shown in a box first; the footer has **Copy** and **Send** (WhatsApp icon + "Send", `aria-label` "Send on WhatsApp"), side by side in the shared sheet footer (fixed 14 Oct 2026: they were in their own box, 48 px and stacked). **Send** opens `wa.me/?text=` so the owner picks any chat (themselves via "Message yourself", a family group…); **Copy** copies it. An older script (no `insights`) says it isn't ready (plain wording for other shops, `smOld_s`).
 - Not automatic yet: WhatsApp has no free way to send by itself. Possible next steps: a reminder in the app in the evening, or a daily email from the script.
-- Tests: `tests/summary.app.test.js` (15: owner tile, the request, every line, ₹0 parts left out, WhatsApp link = the text, Copy, test mode, Hindi at 320 px, managers don't see it, older script), `tests/insights.test.js` H6. `tests/fixtures/insights.json` regenerated.
+- Tests: `tests/summary.app.test.js` (18; D1–D3: the two buttons side by side at 390 px, 320 px Hindi and the largest text on a 384 px phone; owner tile, the request, every line, ₹0 parts left out, WhatsApp link = the text, Copy, test mode, Hindi at 320 px, managers don't see it, older script), `tests/insights.test.js` H6. `tests/fixtures/insights.json` regenerated.
 - **Rollout:** merge; update each shop's script to v50 (dashboard → Update script, your shop first). On v48–49 the summary works without the "Money in" line.
 
 ## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)

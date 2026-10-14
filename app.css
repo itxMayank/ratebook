@@ -1833,3 +1833,6 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 .sm-txt{margin:0;padding:14px 16px;background:var(--surface-2);border-radius:var(--r-md);font:15px/1.55 inherit;font-family:inherit;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
 #sm-wa{text-decoration:none}
 #sm-wa[aria-disabled="true"]{opacity:.4;pointer-events:none}
+
+/* Lock screen: hidden for at most 0.4 s while the fonts load (lockFontsIn), so it never jumps from the phone's font to the app's */
+#applock.al-hold>*{opacity:0}

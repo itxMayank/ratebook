@@ -939,6 +939,14 @@ Step 1 of the admin analytics plan (step 2: one script action that works out the
 - Tests: `tests/summary.app.test.js` (18; D1–D3: the two buttons side by side at 390 px, 320 px Hindi and the largest text on a 384 px phone; owner tile, the request, every line, ₹0 parts left out, WhatsApp link = the text, Copy, test mode, Hindi at 320 px, managers don't see it, older script), `tests/insights.test.js` H6. `tests/fixtures/insights.json` regenerated.
 - **Rollout:** merge; update each shop's script to v50 (dashboard → Update script, your shop first). On v48–49 the summary works without the "Money in" line.
 
+## Lock screen holds still while it opens (14 Oct 2026, `lock.js` / `app.css`)
+
+Reported on an installed phone: when the app opens at the PIN screen, things shift (the EN | हि switch moves to the top right).
+- **EN | हि switch:** each lock screen draws it inside `.al-box`, which slides in (`al-enter`) and shakes on a wrong PIN (`al-shake`) with a `transform`. A transformed box becomes the anchor of an absolutely placed child, so the switch sat ~25 px off for the first second and then jumped to the corner. `lockEl()` now has a MutationObserver that moves `.al-lang` out of the box (first child of `#applock`) before the screen is painted, so it's in the corner from the first frame and during the shake.
+- **Fingerprint button:** it was added ~0.5 s after the screen (after `bioAvail()`), pushing the keypad down 48 px. On a phone with fingerprint set up (`rb_auth.bio`) it's now drawn with the screen; if the phone turns out not to offer it, it's removed.
+- **Fonts:** the font stylesheet is switched on after first paint, so the screen could paint in the phone's font and then jump. `lockFontsIn()` keeps the lock screen hidden (`al-hold`, opacity 0) until Plus Jakarta (and Mukta in Hindi) are ready, at most 0.4 s, then plays the usual fade-up.
+- Test: `tests/lockshift.app.test.js` (switch position while sliding in, after, during the shake and after switching to हि; one switch only; keypad doesn't move when the fingerprint button is there; 320 px doesn't cover the logo).
+
 ## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)
 
 Mayank: "only me should see the errors and technical details of all the shops; no other shop owner should see the tech details."

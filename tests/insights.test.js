@@ -36,6 +36,9 @@ bill(0, [L('i4', 'Sugar', 5, 46)], { paidBy: 'cash' });
 // last 30 days: PP Bag sells a lot, at three different rates (discounts); Foil sold below buy; a cancelled bill
 for (let d = 1; d <= 20; d++) bill(d, [L('i1', 'PP Bag', 1, d % 3 === 0 ? 100 : d % 3 === 1 ? 110 : 120, 100)], { by: d % 2 ? 'Raju' : 'Mayank', edits: d === 4 ? 1 : '' });
 bill(3, [L('i3', 'Foil Roll', 4, 48, 50)]);
+// from v52 each line saves the list price on the day (lp): 7 days ago PP Bag was listed at ₹100 and sold at ₹100 (no discount, though
+// today's list price is ₹120); 8 days ago listed at ₹115, sold at ₹110 (₹5 below)
+bill(7, [{ ...L('i1', 'PP Bag', 2, 100, 100), lp: 100 }]); bill(8, [{ ...L('i1', 'PP Bag', 1, 110, 100), lp: 115 }]);
 bill(2, [L('i1', 'PP Bag', 50, 120, 100)], { cancel: 1, by: 'Raju' });
 // 31-59 days ago: PP Bag sold less (so it's rising); Tape too
 for (let d = 31; d <= 40; d++) bill(d, [L('i1', 'PP Bag', 1, 120, 100)]);
@@ -64,6 +67,8 @@ ok(I.margins.below.some(x => x.id === 'i3' && x.sell === 48 && x.buy === 50) && 
 ok(I.margins.thin.some(x => x.id === 'i6' && x.pct === 3), 'B3 Tape: margin only 3%');
 const sp = I.margins.spread.find(x => x.id === 'i1');
 ok(sp && sp.rates === 3 && sp.min === 100 && sp.max === 120 && sp.leak > 0, 'B4 PP Bag sold at 3 different rates (₹100–120): ₹' + (sp && sp.leak) + ' below the list price');
+ok(sp && sp.leak === 195 && sp.est === 190, 'B5 below list: compared with the list price saved on the line (₹0 on the ₹100 day, ₹5 on the ₹115 day); older lines with today\'s, counted as an estimate (₹190): ' + JSON.stringify(sp && [sp.leak, sp.est]));
+ok(sp && JSON.stringify(sp.brk) === JSON.stringify([{ r: 120, q: 9, n: 8, lk: 0 }, { r: 110, q: 8, n: 8, lk: 75 }, { r: 100, q: 8, n: 7, lk: 120 }]), 'B6 each rate: qty, bills and ₹ below list, most sold first: ' + JSON.stringify(sp && sp.brk));
 ok(I.margins.noBuy.amt === 230 && I.margins.noBuy.items[0].id === 'i4', 'B5 sales with no buy price: Sugar');
 const bu = I.margins.buyUp.find(x => x.id === 'i1');
 ok(bu && bu.was === 95 && bu.now === 105 && bu.up === 10.5 && bu.suggest === 133 && bu.pctWas === 26.3, 'B6 PP Bag cost went up 95 → 105 on a vendor bill: suggest ₹133 to keep the earlier 26% margin');

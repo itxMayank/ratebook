@@ -99,6 +99,9 @@ function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
 function itemGst(x){ return (x && x.gst!=null && x.gst!=="" && !isNaN(+x.gst)) ? +x.gst : (+S.cfg.defaultGst||0); }
 /** Buy rate for one unit of this bill line (pack lines use buy ÷ packs). Saved on the line when it's added. */
 function itemBuyFor(it,alt){ if(!it) return null; const b=+it.buy||0; return alt && hasAlt(it) ? r2(b/(+it.altQty||1)) : b; }
+/** The item's list price (per its own unit) when the line was billed; lines from before 14 Oct 2026 use today's. Saved with the
+    bill so the business page compares a discount with the price on that day, not a later one. */
+function lineLp(l){ if(+l.lp>0) return +l.lp; const it=S.byId.get(l.id); return it && +it.sell>0 ? +it.sell : 0; }
 function lineBuy(l){ if(l.buy!=null && l.buy!=="" && !isNaN(+l.buy)) return +l.buy; return itemBuyFor(S.byId.get(l.id), l.alt); }
 /** Profit on the sale before GST. % is on cost, the same way margins are shown on price cards. */
 function profitOf(lines){ let sale=0, csale=0, cost=0, known=true; const per=[];
@@ -301,7 +304,7 @@ function startEdit(b){
   blankDraft();
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 /** Editing finished (saved or cancelled): the bill that was on screen when it started comes back if it's still open; otherwise a
@@ -329,7 +332,7 @@ async function saveEdit(opts){
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})) };
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
   if(ed.edits!==null && ed.edits!==undefined) rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
@@ -347,7 +350,7 @@ function draftRec(extra){
   const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; rec.paidBy=p.pm; }
@@ -363,7 +366,7 @@ function finishBill(opts){
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l)})),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
@@ -461,7 +464,7 @@ function decFromBill(id){
 function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
-  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false)});
+  if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false),lp:+it.sell||0});
   saveBill();
   const fromSearch = (DESK() || S.tab==="bill") && S.q;
   if(fromSearch){ const qi=$("#q"); qi.value=""; S.q=""; S.qTabs={}; S.limit=40; $("#q-clear").hidden=true; if(!DESK()) qi.blur(); renderBillSearch(); }

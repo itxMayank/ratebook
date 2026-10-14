@@ -1007,6 +1007,14 @@ Reported: on a laptop the lock screen showed "Mayank"; typing an old PIN opened 
 - Tests: `tests/security.test.js` J1–J6 (fail on v50), `tests/signin.app.test.js` A7a, A8, F1–F2.
 - **Rollout:** merge, then update every shop's script to v51 (your shop first).
 
+## "Sold at many different rates": price on the day, and each rate (14 Oct 2026, `SCRIPT_VERSION` 52 / `NEED_SV` unchanged, `billing.js` / `app.js` / `admin.html`)
+
+Mayank asked how "₹2,082.5 below your list price" is worked out. It's the last 30 days of real, not-cancelled bills: for every line sold below the list price, (list price − rate charged) × qty, added up; sales at or above the list price don't offset it. It's discount against the list price, not a loss (that's "Sold below cost"). It was compared with **today's** list price, so a price raised this month made older sales look discounted.
+- **Bill lines save the list price on the day** (`lp`, per the item's own unit, from `+it.sell` when the line is added; `lineLp()` in `billing.js` for lines without one; kept when a past bill is edited; Repeat as new bill takes today's). `insightsBuild_` compares with `lp`, else today's list price; the amount compared with today's price is returned as `est`.
+- **Each rate** (`spread[].brk`, up to 12, most sold first): `{r, q (in the item's own unit), n (bills), lk (₹ below list at that rate)}`. On the business page the row opens in place ("See each rate", `bzSpread`): Rate · Sold · Bills · Below list, "List price now", and how much of the total came from older bills compared with today's price. Older scripts send no breakdown (plain row).
+- Tests: `tests/insights.test.js` B5–B6, `tests/adminbiz.test.js` S1–S4 (incl. 360 px dark Hindi), `tests/billing.app.test.js` C1 (`lp` sent). `tests/fixtures/insights.json` regenerated.
+- **Rollout:** merge; update each shop's script to v52 (your shop first). Bills made from then on carry the price of the day; older ones stay marked as compared with today's price.
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).

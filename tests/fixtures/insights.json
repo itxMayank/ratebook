@@ -1,6 +1,6 @@
 {
  "ok": true,
- "at": 1791960224318,
+ "at": 1791982088203,
  "env": "live",
  "today": "2026-10-14",
  "shopName": "Sharma Traders",
@@ -13,11 +13,11 @@
    "pct": 30
   },
   "mtd": {
-   "sales": 2851,
-   "bills": 18,
-   "avg": 158.39,
-   "profit": 321,
-   "pct": 14
+   "sales": 3161,
+   "bills": 20,
+   "avg": 158.05,
+   "profit": 331,
+   "pct": 12.7
   },
   "lm": {
    "sales": 1200,
@@ -27,20 +27,20 @@
    "pct": 20
   },
   "d30": {
-   "sales": 3631,
-   "bills": 25,
-   "avg": 145.24,
-   "profit": 401,
-   "pct": 13.4,
+   "sales": 3941,
+   "bills": 27,
+   "avg": 145.96,
+   "profit": 411,
+   "pct": 12.5,
    "noBuy": 230,
-   "lineSale": 3631
+   "lineSale": 3941
   },
   "lmTo": "2026-09-14"
  },
  "todo": [
   {
    "k": "reorder",
-   "score": 2450,
+   "score": 2760,
    "id": "i1",
    "name": "PP Bag",
    "unit": "kg",
@@ -48,8 +48,8 @@
    "on": "2026-10-09",
    "sold": 7,
    "left": 3,
-   "perDay": 0.73,
-   "daysLeft": 4,
+   "perDay": 0.83,
+   "daysLeft": 3,
    "gap": 20,
    "since": 5,
    "st": "soon",
@@ -82,7 +82,7 @@
   },
   {
    "k": "raise",
-   "score": 286,
+   "score": 325,
    "id": "i1",
    "name": "PP Bag",
    "unit": "kg",
@@ -94,7 +94,7 @@
    "suggest": 133,
    "pctNow": 14.3,
    "pctWas": 26.3,
-   "q30": 22
+   "q30": 25
   },
   {
    "k": "below",
@@ -111,38 +111,38 @@
   "groups": [
    {
     "cat": "Bags",
-    "sales": 2450,
-    "profit": 250,
-    "pct": 11.4,
-    "share": 67.5
+    "sales": 2760,
+    "profit": 260,
+    "pct": 10.4,
+    "share": 70
    },
    {
     "cat": "Cups",
     "sales": 450,
     "profit": 150,
     "pct": 50,
-    "share": 12.4
+    "share": 11.4
    },
    {
     "cat": "Tape",
     "sales": 309,
     "profit": 9,
     "pct": 3,
-    "share": 8.5
+    "share": 7.8
    },
    {
     "cat": "",
     "sales": 230,
     "profit": null,
     "pct": null,
-    "share": 6.3
+    "share": 5.8
    },
    {
     "cat": "Foil",
     "sales": 192,
     "profit": -8,
     "pct": -4,
-    "share": 5.3
+    "share": 4.9
    }
   ],
   "below": [
@@ -189,7 +189,7 @@
     "suggest": 133,
     "pctNow": 14.3,
     "pctWas": 26.3,
-    "q30": 22
+    "q30": 25
    }
   ],
   "spread": [
@@ -201,7 +201,28 @@
     "min": 100,
     "max": 120,
     "sell": 120,
-    "leak": 190
+    "leak": 195,
+    "est": 190,
+    "brk": [
+     {
+      "r": 120,
+      "q": 9,
+      "n": 8,
+      "lk": 0
+     },
+     {
+      "r": 110,
+      "q": 8,
+      "n": 8,
+      "lk": 75
+     },
+     {
+      "r": 100,
+      "q": 8,
+      "n": 7,
+      "lk": 120
+     }
+    ]
    }
   ],
   "noBuy": {
@@ -226,11 +247,11 @@
     "id": "i1",
     "name": "PP Bag",
     "unit": "kg",
-    "q30": 22,
-    "a30": 2450,
-    "bills30": 21,
-    "profit30": 250,
-    "pct": 11.4,
+    "q30": 25,
+    "a30": 2760,
+    "bills30": 23,
+    "profit30": 260,
+    "pct": 10.4,
     "abc": true
    },
    {
@@ -283,9 +304,9 @@
     "id": "i1",
     "name": "PP Bag",
     "unit": "kg",
-    "a30": 2450,
+    "a30": 2760,
     "aP": 1200,
-    "ch": 104
+    "ch": 130
    }
   ],
   "falling": [],
@@ -314,8 +335,8 @@
     "on": "2026-10-09",
     "sold": 7,
     "left": 3,
-    "perDay": 0.73,
-    "daysLeft": 4,
+    "perDay": 0.83,
+    "daysLeft": 3,
     "gap": 20,
     "since": 5,
     "st": "soon",
@@ -439,7 +460,7 @@
   "modes30": {
    "UPI": 390,
    "Cash": 230,
-   "": 2811
+   "": 3121
   },
   "modesToday": {
    "UPI": 390,
@@ -449,10 +470,10 @@
  "staff": [
   {
    "name": "Mayank",
-   "bills": 15,
+   "bills": 17,
    "edited": 1,
    "cancelled": 0,
-   "sales": 2531
+   "sales": 2841
   },
   {
    "name": "Raju",
@@ -638,8 +659,8 @@
    120,
    419,
    100,
-   120,
-   110,
+   230,
+   310,
    100,
    420,
    110,
@@ -730,8 +751,8 @@
    1,
    2,
    1,
-   1,
-   1,
+   2,
+   2,
    1,
    2,
    1,
@@ -822,8 +843,8 @@
    120,
    419,
    100,
-   120,
-   110,
+   230,
+   310,
    100,
    420,
    110,
@@ -914,8 +935,8 @@
    100,
    400,
    100,
-   100,
-   100,
+   200,
+   300,
    100,
    300,
    100,

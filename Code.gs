@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 51;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 52;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1900,8 +1900,12 @@ function insightsBuild_(dayOf, today) {
         if (day >= d90) a.a90 = r2_(a.a90 + amt);
         if (lastPur[it.id] && day >= lastPur[it.id].d) a.sinceBuy = r2_(a.sinceBuy + qM);
         if (in30) { a.q30 = r2_(a.q30 + qM); a.a30 = r2_(a.a30 + amt); if (!seen[it.id]) { seen[it.id] = 1; a.bills30++; }
-          a.rates[String(r2_(rM))] = 1; if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (it.buy - rM) * qM); }
-          if (it.sell > 0 && rM < it.sell - 0.005) a.leak = r2_(a.leak + (it.sell - rM) * qM);
+          if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (it.buy - rM) * qM); }
+          /* "below your list price": compared with the list price saved on the line when it was billed (lp, per main unit, from
+             v52), else today's list price (older bills: counted separately as an estimate, since the price may have changed) */
+          const lpS = num_(l.lp), lpM = lpS > 0 ? lpS : it.sell, rk = String(r2_(rM)), bk = String(r[B.billId] || r[B.billNo]);
+          const RR = a.rates[rk] || (a.rates[rk] = { r: r2_(rM), q: 0, n: 0, lk: 0, _b: {} }); RR.q = r2_(RR.q + qM); if (!RR._b[bk]) { RR._b[bk] = 1; RR.n++; }
+          if (lpM > 0 && rM < lpM - 0.005) { const d = r2_((lpM - rM) * qM); a.leak = r2_(a.leak + d); RR.lk = r2_(RR.lk + d); if (!(lpS > 0)) a.leakEst = r2_((a.leakEst || 0) + d); }
           if (lb > 0) { a.pSale30 = r2_(a.pSale30 + amt); a.pCost30 = r2_(a.pCost30 + q * lb); } else a.noBuy30 = r2_(a.noBuy30 + amt);
           const g = it.cat || '', G = GRP[g] || (GRP[g] = { cat: g, sales: 0, pSale: 0, pCost: 0, items: 0 }); G.sales = r2_(G.sales + amt); if (lb > 0) { G.pSale = r2_(G.pSale + amt); G.pCost = r2_(G.pCost + q * lb); } }
         else if (day >= p30) { a.qP = r2_(a.qP + qM); a.aP = r2_(a.aP + amt); }
@@ -1928,7 +1932,10 @@ function insightsBuild_(dayOf, today) {
   const belowList = ITEMS_.filter(it => it.buy > 0 && it.sell > 0 && it.sell < it.buy).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, a30: IT[it.id] ? IT[it.id].a30 : 0 })).sort((a, b) => b.a30 - a.a30).slice(0, 15);
   const soldBelow = sold.filter(x => x.below > 0).sort((a, b) => b.belowAmt - a.belowAmt).slice(0, 10).map(x => ({ ...ref(x.it), lines: x.below, lost: x.belowAmt, buy: x.it.buy }));
   const thin = ITEMS_.filter(it => { const m = mg(it); return m !== null && m >= 0 && m < 5 && IT[it.id] && IT[it.id].a30 > 0; }).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, pct: mg(it), a30: IT[it.id].a30 })).sort((a, b) => b.a30 - a.a30).slice(0, 10);
-  const spread = sold.filter(x => Object.keys(x.rates).length >= 3 && x.leak > 0).sort((a, b) => b.leak - a.leak).slice(0, 10).map(x => { const rs = Object.keys(x.rates).map(Number); return { ...ref(x.it), rates: rs.length, min: Math.min(...rs), max: Math.max(...rs), sell: x.it.sell, leak: x.leak }; });
+  /* each rate charged: qty (in the item's own unit), bills, and how much below the list price at that rate; most sold first */
+  const spread = sold.filter(x => Object.keys(x.rates).length >= 3 && x.leak > 0).sort((a, b) => b.leak - a.leak).slice(0, 10).map(x => { const R = Object.keys(x.rates).map(k => x.rates[k]), rs = R.map(v => v.r);
+    return { ...ref(x.it), rates: rs.length, min: Math.min(...rs), max: Math.max(...rs), sell: x.it.sell, leak: x.leak, est: x.leakEst || 0,
+      brk: R.sort((a, b) => b.q - a.q || b.r - a.r).slice(0, 12).map(v => ({ r: v.r, q: v.q, n: v.n, lk: v.lk })) }; });
   const noBuyItems = sold.filter(x => x.noBuy30 > 0).sort((a, b) => b.noBuy30 - a.noBuy30).slice(0, 10).map(x => ({ ...ref(x.it), a30: x.noBuy30 }));
   /* buy price went up on a vendor bill but the selling price didn't follow: suggest the price at the item's earlier margin */
   const buyUp = [];

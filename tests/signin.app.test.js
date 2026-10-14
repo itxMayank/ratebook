@@ -47,10 +47,15 @@ let tokens = {}, sent = [], n = 0, pend = {}, roleNow = {}, gone = {};
   ok(!sent.length && await locked(p), 'A5 a PIN under 4 digits is not sent');
   await p.fill('#al-name', ''); await p.fill('#al-pin', '1234'); await p.click('#al-go'); await p.waitForTimeout(700);
   ok(await locked(p) && /Enter your name/.test(await err(p)) && !(await auth(p)), 'A6 shop PIN without a name: asks for the name, not signed in');
-  sent = []; await p.fill('#al-name', 'x'); await p.fill('#al-pin', '2222'); await p.click('#al-go'); await p.waitForTimeout(1500);
+  /* Seen 14 Oct 2026: a laptop showing "Mayank" signed in as Dad when an old PIN (now Dad's own) was typed. This mock, like a
+     script before v51, ignores the name, so the phone itself must refuse and end the token it was given. */
+  sent = []; await p.fill('#al-name', 'Mayank'); await p.fill('#al-pin', '2222'); await p.click('#al-go'); await p.waitForTimeout(1500);
+  const tk0 = (sent.find(x => x.action === 'verify') || {}).pin && 'tok' + n;
+  ok(await locked(p) && !(await auth(p)) && /Wrong PIN/.test(await err(p)) && sent.some(x => x.action === 'signOut' && x.tok === tk0), 'A7a Dad\'s PIN typed with the name Mayank: wrong PIN, not signed in as Dad, the token given is ended');
+  sent = []; await p.fill('#al-name', 'dad'); await p.fill('#al-pin', '2222'); await p.click('#al-go'); await p.waitForTimeout(1500);
   const v = sent.find(x => x.action === 'verify'), a1 = await auth(p);
   ok(v && v.wantTok && v.pin === '2222' && /Chrome/.test(v.dl || ''), 'A7 sign-in asks for a token with a phone label');
-  ok(!(await locked(p)) && a1.by === 'Dad' && a1.role === 'manager' && a1.tok && !a1.pin && a1.pinLen === 4 && a1.pinH, 'A8 signed in as Dad (name from his PIN): token + check value, no PIN kept');
+  ok(!(await locked(p)) && a1.by === 'Dad' && a1.role === 'manager' && a1.tok && !a1.pin && a1.pinLen === 4 && a1.pinH, 'A8 signed in as Dad (his name, any case): token + check value, no PIN kept');
   ok((await p.evaluate(() => localStorage.rb_name)) === '"Dad"' && (await p.evaluate(() => localStorage.rb_view)) === '"4821"', 'A9 name remembered; shop code from the sign-in reply kept');
 
   // B. Lock now, wrong PINs and the wait
@@ -94,6 +99,12 @@ let tokens = {}, sent = [], n = 0, pend = {}, roleNow = {}, gone = {};
   ok(!(await locked(r)) && await r.evaluate(() => T.S.auth.role) === 'manager', 'E2 opens with the new role');
   const tk = (await auth(r)).tok; gone[tk] = 1; await r.reload(); await r.waitForTimeout(1800);
   ok(await locked(r) && await r.$('#al-f') && /signed out/i.test(await err(r)) && !(await auth(r)), 'E3 signed out on another phone: next start shows sign-in with the reason');
+
+  // F. phones from before sign-in tokens kept the PIN: it must still be this person's own
+  const o = await phone({ by: 'Mayank', role: 'owner', pin: '2222', personal: false });
+  await o.waitForTimeout(800);
+  ok(await locked(o) && await o.$('#al-f') && !(await auth(o)), 'F1 an old phone for Mayank whose PIN is now Dad\'s: signed out at start (before any PIN is typed), never Dad');
+  ok(!(await o.evaluate(() => T.S.auth)), 'F2 …nothing of Dad\'s kept on the phone');
 
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();

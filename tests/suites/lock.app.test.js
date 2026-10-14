@@ -52,8 +52,8 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
   // D. a new phone signs in
   const dad = await phone(null);
   ok(await dad.evaluate(() => !!document.querySelector('#al-f')), 'D1 new phone: sign-in form, nothing else');
-  await dad.fill('#al-name', 'x'); await dad.fill('#al-pin', '2222'); await dad.click('#al-go'); await dad.waitForTimeout(900);
-  const a2 = await auth(dad); ok(!(await locked(dad)) && a2.tok && !a2.pin && a2.by === 'Dad', 'D2 signed in: token kept, PIN not stored, name from personal PIN');
+  await dad.fill('#al-name', ''); await dad.fill('#al-pin', '2222'); await dad.click('#al-go'); await dad.waitForTimeout(900);
+  const a2 = await auth(dad); ok(!(await locked(dad)) && a2.tok && !a2.pin && a2.by === 'Dad', 'D2 signed in: token kept, PIN not stored, name from personal PIN (no name typed)');
   // E. owner signs Dad's phone out remotely
   delete tokens[a2.tok]; await dad.evaluate(() => T.apiPost0({ action: 'listDues' }).catch(() => {})); await dad.waitForTimeout(300);
   ok(await locked(dad) && /signed out/i.test(await dad.textContent('#al-err')) && !(await auth(dad)), 'E1 signed out remotely: back to sign-in, token forgotten');

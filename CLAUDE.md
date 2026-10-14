@@ -999,6 +999,14 @@ From a review of the whole system after step 1. **Why it matters:** every shop's
 - **Rollout:** merge, then update the script (your shop first). Then in the app: Settings → People → add yourself as **Owner** with a 6–8 digit PIN, sign in with it, and give everyone else their own PIN. Update the Directory script too (paste `admin/Directory.gs`, New version).
 - **Not code, but needed:** 2-step verification on the Google account that owns the scripts and on GitHub; never share the sheets, the Drive folders or the script projects with anyone; the admin PIN only on your own laptop.
 
+## A PIN opens only its own person's account (14 Oct 2026, `SCRIPT_VERSION` 51 / `NEED_SV` unchanged, `lock.js` / `app.js` / `admin.html`)
+
+Reported: on a laptop the lock screen showed "Mayank"; typing an old PIN opened Dad's account. Cause: the script matched a personal PIN by its digest alone and ignored the name sent with it, and the sign-in screen (and the start-up check on phones from before sign-in tokens) took whatever name came back. An old PIN that had since become Dad's own PIN therefore signed in as Dad.
+- **Script (`auth_`):** when a name comes with a PIN (lock screen, sign-in screen, owner dashboard), the PIN must belong to the person with that name (no case, extra spaces ignored); otherwise it's `bad_pin` and counts as a wrong PIN. No name typed: the PIN alone finds its person (PINs are unique). `setPin_` refuses a shop PIN equal to someone's own PIN (`pin_taken`, shown as "That PIN is already used").
+- **App (for older scripts too):** the sign-in screen refuses a reply for a different person (wrong PIN) and ends the token it was given; a phone that still keeps a PIN from before tokens is signed out at start if that PIN now belongs to someone else; `shop_pin_off` at start signs out with its reason. The owner dashboard sign-in does the same check.
+- Tests: `tests/security.test.js` J1–J6 (fail on v50), `tests/signin.app.test.js` A7a, A8, F1–F2.
+- **Rollout:** merge, then update every shop's script to v51 (your shop first).
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).

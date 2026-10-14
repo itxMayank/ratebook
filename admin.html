@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-X6r0XgEQtlWBvbbiLRyq5NpiQBJNRETTFnCbTSCM/dU='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-ddSMDMizdfX4Tnuigze2BNpdUbrNc0ki6cBz8R2TXDo='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -1109,6 +1109,8 @@ $("#f-own").onsubmit = async e => { e.preventDefault(); const b = $("#b-own"), e
   try { const sh = await shopApi(code);
     const r = await fetch(sh.api, { method: "POST", redirect: "follow", body: JSON.stringify({ action: "verify", shop: sh.code, pin, by: name, dev: DEV, wantTok: true, dl: "Laptop · dashboard" }) }); const j = await r.json();
     if (!j.ok) throw new Error(j.error || "failed");
+    const nk = v => String(v || "").trim().replace(/\s+/g, " ").toLowerCase();
+    if (j.me && j.me.personal && nk(j.me.name) !== nk(name)) { if (j.tok) fetch(sh.api, { method: "POST", body: JSON.stringify({ action: "signOut", shop: sh.code, tok: j.tok, dev: DEV }) }).catch(() => {}); throw new Error("bad_pin"); }   // someone else's PIN never opens their page (the script checks too from v51)
     if (!j.me || j.me.role !== "owner") { if (j.tok) fetch(sh.api, { method: "POST", body: JSON.stringify({ action: "signOut", shop: sh.code, tok: j.tok, dev: DEV }) }).catch(() => {}); throw new Error("not_owner"); }
     OWN = { code: sh.code, api: sh.api, tok: j.tok, by: j.me.name || name, name: sh.name, shopName: sh.name }; store.set("own", OWN); $("#own-pin").value = ""; ownData = null; show(); }
   catch (x) { const m = String(x.message); er.textContent = bt(m === "bad_pin" ? "signWrong" : m === "not_owner" ? "ownerOnly" : m === "locked" ? "signLocked" : m === "bad_code" || m === "no_dir" ? "signCode" : m === "dir_locked" ? "signLocked" : m === "shop_pin_off" ? "signOwnPin" : "err"); }

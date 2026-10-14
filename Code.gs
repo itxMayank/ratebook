@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 50;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 51;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -664,7 +664,11 @@ function auth_(body) {
   if (pin) {
     if (shopPinIs_(pin)) { if (shopPinOff_()) return { error: 'shop_pin_off' };   // the owner has their own PIN: the shop PIN no longer opens anything
       return { name: str_(body.by, 60), role: 'owner', master: true, viaPin: true }; }
-    const h = hashPin_(pin), u = users_().filter(x => x.active !== false && x.h === h)[0];
+    /* (v51) A personal PIN opens only its own person's account. When a name comes with it (the lock screen's name, or the name
+       typed on the sign-in screen), it must be that person's PIN: before, the name was ignored, so a PIN that happened to be
+       someone else's (e.g. your old PIN, later given to your dad) signed you in as them. A name that doesn't match is a wrong PIN. */
+    const h = hashPin_(pin), nm = String(body.by || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const u = users_().filter(x => x.active !== false && x.h === h && (!nm || String(x.name || '').trim().replace(/\s+/g, ' ').toLowerCase() === nm))[0];
     if (u) return { name: u.name, role: ROLE_RANK[u.role] ? u.role : 'staff', id: u.id, testOk: u.testOk !== false, viaPin: true };
   }
   cache.put('fails_' + dev, String(d + 1), FAIL_WINDOW_SEC);
@@ -1087,6 +1091,7 @@ function setConfig_(cfg) {
 function setPin_(p) {
   if (shopPinOff_()) throw new Error('shop_pin_off');
   pinRule_(p, 'owner');
+  const h = hashPin_(p); if (users_().some(u => u.h === h)) throw new Error('pin_taken');   // (v51) never the same as someone's own PIN
   const P = PropertiesService.getScriptProperties(); P.setProperty('PINH', hashPin_(p)); P.deleteProperty('PIN');   // kept only as a digest
   return {};
 }

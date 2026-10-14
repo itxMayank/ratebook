@@ -53,6 +53,13 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
   ok(['How sales are going', 'Margins', 'Items', 'Never run short', 'Customer credit', 'Vendors', 'Money in', 'People', 'Good habits'].every(t => page1.includes(t)), 'A8 all sections: sales, margins, items, never run short, credit, vendors, money in, people, good habits');
   ok(!/Speed|Errors|script v|Apps Script|health/i.test(page1) && !(await o.isVisible('#s-app')) && !(await o.isVisible('#topbtns')) && !o.log.dir.some(x => !/^GET shop/.test(x)), 'A9 nothing technical and no other shops: no speed, errors, versions or admin requests');
   ok(await o.$$eval('.bz-age i', a => a.length) === 2 && /31–60 days/.test(page1), 'A10 credit by age: a bar with the two ages that have money, and each age written out');
+  // "Sold at many different rates": each row opens in place to show every rate (v52)
+  const spRow = '#bz details.bz-sp';
+  ok(await o.$$eval(spRow, D => D.length) >= 1 && !(await o.$eval(spRow, d => d.open)) && /See each rate/.test(await o.textContent(spRow + ' summary')), 'S1 a row under "Sold at many different rates" says "See each rate", closed at first');
+  await o.click(spRow + ' summary'); await o.waitForTimeout(150);
+  const spT = await o.$$eval(spRow + ' tbody tr', R => R.map(r => [...r.cells].map(c => c.textContent.trim()).join('|')));
+  ok(spT.join(' / ') === '₹120 /kg|9 kg|8|— / ₹110 /kg|8 kg|8|₹75 / ₹100 /kg|8 kg|7|₹120', 'S2 tap: each rate with qty, bills and ₹ below list, adding up to the row\'s total: ' + spT.join(' / '));
+  ok(/List price now: ₹120 \/kg/.test(await o.textContent(spRow)) && /₹190 of this is from bills made before 14 Oct 2026/.test(await o.textContent(spRow)), 'S3 the list price now, and how much was compared with today\'s price (older bills)');
   await o.click('#own-lang button[data-l="hi"]'); await o.waitForTimeout(200);
   ok(/आज ये करें/.test(await o.textContent('#bz')) && /कारोबार का डैशबोर्ड/.test(await o.textContent('#sub')) && await o.evaluate(() => document.documentElement.lang) === 'hi', 'A11 in Hindi too (the switch at the top)');
   await o.click('#own-lang button[data-l="en"]'); await o.click('#bz-env button[data-env="test"]'); await o.waitForTimeout(500);
@@ -66,6 +73,12 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
   await ph.fill('#own-n', 'Sharma ji'); await ph.fill('#own-pin', '739164'); await ph.click('#b-own'); await ph.waitForTimeout(700);
   ok(await ph.isVisible('#bz .fixes') && await ph.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'A15 360 px wide in dark: fits, nothing spills sideways');
   ok(await ph.evaluate(() => [...document.querySelectorAll('#bz .fix b, #bz .stat b, #bz .arow .an')].every(e => e.scrollWidth <= e.clientWidth + 1)), 'A16 no title, amount or name cut off');
+  await ph.click('#bz details.bz-sp summary'); await ph.click('#own-lang button[data-l="hi"]'); await ph.waitForTimeout(200);
+  await ph.evaluate(() => document.querySelectorAll('#bz details.bz-sp').forEach(d => d.open = true));
+  ok(await ph.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth && [...document.querySelectorAll('#bz .bz-spb td, #bz .bz-spb th')].every(e => e.scrollWidth <= e.clientWidth + 1)) && /लिस्ट से कम/.test(await ph.textContent('#bz details.bz-sp')), 'S4 the rate table at 360 px, dark, in Hindi: fits, nothing cut');
+  if (process.env.SHOT) await (await ph.$('#bz details.bz-sp')).screenshot({ path: process.env.SHOT + '/biz-rates-hi-dark.png' });
+  await ph.click('#own-lang button[data-l="en"]'); await ph.waitForTimeout(200);
+  if (process.env.SHOT) { await ph.emulateMedia({ colorScheme: 'light' }); await ph.evaluate(() => document.querySelectorAll('#bz details.bz-sp').forEach(d => d.open = true)); await (await ph.$('#bz details.bz-sp')).screenshot({ path: process.env.SHOT + '/biz-rates-en.png' }); await ph.emulateMedia({ colorScheme: 'dark' }); }
   if (process.env.SHOT) { await ph.screenshot({ path: process.env.SHOT + '/biz-phone-dark.png', fullPage: true }); await o.setViewportSize({ width: 1280, height: 900 }); }
   // C. charts (v49 series)
   const c = await page(`https://rb.test/admin.html?shop=${SH}`);

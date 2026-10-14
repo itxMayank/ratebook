@@ -49,7 +49,7 @@ let sent = [], off = false;
   // C. Done
   sent = []; await p.click('#bill-done'); await p.waitForTimeout(1200);
   const b1 = bills()[0] || {};
-  ok(b1.n === 21 && b1.total === 360.8 && b1.env === 'live' && !b1.gst && b1.lines.length === 2 && b1.lines[0].qty === 2 && b1.lines[0].buy === 150 && /Bill No: 21/.test(b1.text), 'C1 Done sends the bill: number, total, real mode, lines with qty and buy rate, the text');
+  ok(b1.n === 21 && b1.total === 360.8 && b1.env === 'live' && !b1.gst && b1.lines.length === 2 && b1.lines[0].qty === 2 && b1.lines[0].buy === 150 && b1.lines[0].lp === 180 && /Bill No: 21/.test(b1.text), 'C1 Done sends the bill: number, total, real mode, lines with qty, buy rate and the list price that day, the text');
   ok(await p.evaluate(() => T.S.bill.length) === 0 && /Last bill: No\. 21/.test(await p.textContent('#lastbill')) && (await p.inputValue('#bill-no') || await p.getAttribute('#bill-no', 'placeholder')) === '22', 'C2 the bill clears, "Last bill 21" shows, next number 22');
 
   // D. offline: waits in the queue, sent later

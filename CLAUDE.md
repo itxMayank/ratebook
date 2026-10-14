@@ -947,6 +947,14 @@ Reported on an installed phone: when the app opens at the PIN screen, things shi
 - **Fonts:** the font stylesheet is switched on after first paint, so the screen could paint in the phone's font and then jump. `lockFontsIn()` keeps the lock screen hidden (`al-hold`, opacity 0) until Plus Jakarta (and Mukta in Hindi) are ready, at most 0.4 s, then plays the usual fade-up.
 - Test: `tests/lockshift.app.test.js` (switch position while sliding in, after, during the shake and after switching to हि; one switch only; keypad doesn't move when the fingerprint button is there; 320 px doesn't cover the logo).
 
+## Dashboard refreshes quietly (14 Oct 2026, `admin.html`)
+
+Reported: the shop's detail page became unusable every minute and jumped the page down.
+- **Why:** the every-minute refresh dimmed every section while it read, then rebuilt the whole page and put the scroll position back *before* the Business part and the charts were drawn, so the page grew above the reader and pushed them down; open "Show as table" / "Show more" closed.
+- **Now:** the timed refresh (`loadShopFull(code, true)`; owner page `ownLoad(true)`) reads in the background with nothing dimmed. If the figures came back the same (`sameData`, ignoring read times) nothing is redrawn, only "Updated just now". If they changed, the page is redrawn in place: `keepView()` keeps the scroll position (restored after everything, charts included, is drawn), open `<details>` (by section and order) and keyboard focus. Opening a shop, the Real/Test switch and the 7/14-day switch also keep the view.
+- **Pill:** `refreshPill()` shows a small "↻ Updated 10:52 am" pill at the bottom centre for 2.5 s (`#rfpill`, `role=status`, doesn't take taps; English/Hindi on the owner page).
+- Test: `tests/adminrefresh.test.js` (10; the old page fails 5 of them: dimming, redraw with the same figures, the jump, the pill).
+
 ## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)
 
 Mayank: "only me should see the errors and technical details of all the shops; no other shop owner should see the tech details."

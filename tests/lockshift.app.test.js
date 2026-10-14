@@ -29,8 +29,10 @@ const html = appHtml('S');
   await a.click('#applock [data-al-lang="hi"]'); await a.waitForTimeout(150);
   ok(await a.evaluate(() => document.documentElement.lang) === 'hi' && JSON.stringify(await pos(a, '#applock .al-lang')) === JSON.stringify(after) && await a.evaluate(() => document.querySelectorAll('#applock .al-lang').length === 1 && document.querySelector('#applock [data-al-lang="hi"]').getAttribute('aria-pressed') === 'true'), 'A4 switching to हि redraws the screen in Hindi; the switch stays put and shows हि chosen');
 
-  const f = await phone({ bio: true }); await f.waitForSelector('#al-pad'); await f.waitForTimeout(450);
-  const p1 = await pos(f, '#al-pad'), bio1 = await f.isVisible('#al-bio'); await f.waitForTimeout(1000); const p2 = await pos(f, '#al-pad');
+  const f = await phone({ bio: true }); await f.waitForSelector('#al-pad', { state: 'attached' });
+  const bio1 = await f.evaluate(() => !!document.querySelector('#al-bio'));   // drawn together with the keypad, not later
+  await f.waitForFunction(() => { const l = document.querySelector('#applock'); return l && !l.classList.contains('al-hold') && !l.classList.contains('al-enter'); }, null, { timeout: 4000 });
+  const p1 = await pos(f, '#al-pad'); await f.waitForTimeout(1000); const p2 = await pos(f, '#al-pad');
   ok(bio1 && p1 && p2 && p1[1] === p2[1], 'A5 with fingerprint set up, its button is there from the start and the keypad doesn\'t drop (' + p1 + ' → ' + p2 + ')');
   const g = await phone({ w: 320 }); await g.waitForSelector('#applock .al-lang'); await g.waitForTimeout(1500);
   ok(await g.evaluate(() => { const l = document.querySelector('#applock .al-lang').getBoundingClientRect(), s = document.querySelector('#applock .al-mark, #applock .al-shop').getBoundingClientRect(); return l.right <= innerWidth && (l.bottom <= s.top || l.right <= s.left || l.left >= s.right); }), 'A6 at 320 px the switch doesn\'t cover the logo or the shop name');

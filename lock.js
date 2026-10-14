@@ -41,10 +41,22 @@ async function bioRegister(){ const nm=(S.auth&&S.auth.by)||"Rate Book";
     pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}], authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"}, timeout:60000, attestation:"none"}});
   S.auth={...S.auth,bio:b64(c.rawId)}; ls.set("rb_auth",S.auth); ls.set("rb_bio_"+(S.auth.by||""),S.auth.bio); }
 async function bioCheck(){ await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)), allowCredentials:[{type:"public-key",id:unb64(S.auth.bio)}], userVerification:"required", timeout:60000}}); }
-function lockEl(){ let el=$("#applock"); if(!el){ el=document.createElement("div"); el.id="applock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.hidden=true; document.body.appendChild(el); } return el; }
+/** The lock screen fades in only once the app's fonts are ready (at most 0.4 s), so it never paints in the phone's own font and
+    then jumps when Plus Jakarta / Mukta arrive. Fonts come from the phone's offline copy, so this is usually one frame. */
+function lockFontsIn(el){ el.classList.remove("al-enter"); el.classList.add("al-hold");
+  const fonts=()=>new Promise(res=>{ const l=document.getElementById("fontcss"), go=()=>{ const F=document.fonts; if(!F||!F.load) return res();
+      Promise.all(['400 16px "Plus Jakarta Sans"','700 16px "Plus Jakarta Sans"'].concat(S.lang==="hi"?['400 16px "Mukta"']:[]).map(f=>F.load(f))).then(res,res); };
+    if(!l || l.media==="all") go(); else { l.addEventListener("load",()=>setTimeout(go,0)); l.addEventListener("error",res); } });
+  Promise.race([fonts(), new Promise(r=>setTimeout(r,400))]).then(()=>{ el.classList.remove("al-hold"); el.classList.add("al-enter"); setTimeout(()=>el.classList.remove("al-enter"),900); }); }
+function lockEl(){ let el=$("#applock"); if(!el){ el=document.createElement("div"); el.id="applock"; el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.hidden=true; document.body.appendChild(el);
+    /* The EN | हि switch belongs to the screen's top-right corner. Each screen draws it inside .al-box, which slides in (and shakes
+       on a wrong PIN) with a transform; a transformed box becomes the switch's anchor, so it sat 25 px off and then jumped when the
+       animation ended (seen on an installed phone, 14 Oct 2026). Move it out of the box before the screen is painted. */
+    new MutationObserver(()=>{ const l=el.querySelector(".al-box .al-lang"); if(l) el.prepend(l); }).observe(el,{childList:true,subtree:true}); }
+  return el; }
 function lockInert(on){ for(const c of document.body.children){ if(c.id!=="applock" && c.id!=="toast" && c.id!=="updpill"){ if(on) c.setAttribute("inert",""); else c.removeAttribute("inert"); } } }
 /** Lock the app (or show sign-in when nobody is signed in on this phone). */
-function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false; if(!el.dataset.lw){ el.dataset.lw=1; el.addEventListener("click",e=>{ const b=e.target.closest("[data-al-lang]"); if(!b) return; S.lang=b.dataset.alLang; ls.set("rb_lang",S.lang); applyLang(); if(LOCK.re) LOCK.re(); else el.querySelectorAll("[data-al-lang]").forEach(x=>x.setAttribute("aria-pressed",x===b)); }); } el.classList.add("al-enter"); setTimeout(()=>el.classList.remove("al-enter"),900);
+function appLock(msg){ LOCK.on=true; document.documentElement.classList.add("locked"); lockInert(true); const el=lockEl(); el.hidden=false; if(!el.dataset.lw){ el.dataset.lw=1; el.addEventListener("click",e=>{ const b=e.target.closest("[data-al-lang]"); if(!b) return; S.lang=b.dataset.alLang; ls.set("rb_lang",S.lang); applyLang(); if(LOCK.re) LOCK.re(); else el.querySelectorAll("[data-al-lang]").forEach(x=>x.setAttribute("aria-pressed",x===b)); }); } lockFontsIn(el);
   if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if(S.canWrite && S.auth.pending) pendingUI(msg); else if(S.canWrite && (S.auth.pinH || S.auth.pin || S.auth.bio)) lockPinUI(msg); else signInUI(msg); }
 /** Signed in, but the owner hasn't approved this phone yet: nothing opens; checks again every 15 s. */
@@ -130,9 +142,12 @@ function lockPinUI(msg){ LOCK.re=()=>lockPinUI(); const el=lockEl(), a=S.auth, p
   el.onkeydown=e=>{ if(/^\d$/.test(e.key)){ $(`#al-pad [data-k="${e.key}"]`).click(); } else if(e.key==="Backspace") $('#al-pad [data-k="del"]').click(); else if(e.key==="Enter") $('#al-pad [data-k="ok"]').click(); };
   $("#al-other").onclick=()=>{ if(confirm(t("alOtherQ",a.by||""))) lockPhone(); };
   dots(); wait(); el.tabIndex=-1; el.focus();
-  if(a.bio) bioAvail().then(ok=>{ if(!ok || !$("#al-biobox")) return; $("#al-biobox").innerHTML=`<button type="button" class="al-bio" id="al-bio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 11v3M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M9 14c0 3 1 5 2 6M15 13c0 3-.5 5-1.5 7"/></svg>${esc(t("alBio"))}</button>`;
+  /* Fingerprint: the button is drawn with the screen (not half a second later), so the keypad doesn't drop when it appears.
+     If the phone turns out not to offer it any more, it's taken away again. */
+  if(a.bio){ $("#al-biobox").innerHTML=`<button type="button" class="al-bio" id="al-bio"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 11v3M8.5 8.5a5 5 0 0 1 7 0M6 6a8.5 8.5 0 0 1 12 0M9 14c0 3 1 5 2 6M15 13c0 3-.5 5-1.5 7"/></svg>${esc(t("alBio"))}</button>`;
     const go=async()=>{ try{ await bioCheck(); appUnlock(); }catch{ const er=$("#al-err"); if(er && LOCK.on) er.textContent=t("bioFail"); } };
-    $("#al-bio").onclick=go; if(!/iPhone|iPad/.test(navigator.userAgent) && document.visibilityState==="visible") go(); }); }
+    $("#al-bio").onclick=go;
+    bioAvail().then(ok=>{ const bx=$("#al-biobox"); if(!bx) return; if(!ok){ bx.innerHTML=""; return; } if(!/iPhone|iPad/.test(navigator.userAgent) && document.visibilityState==="visible") go(); }); } }
 /** After a PIN unlock: offer fingerprint once per person per phone, then open. */
 async function afterPinUnlock(){ const a=S.auth; if(a && a.pending){ pendingUI(); return; }
   shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); if(a.bio || ls.get("rb_bio_no_"+(a.by||""),false) || !(await bioAvail())){ appUnlock(); return; }

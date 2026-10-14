@@ -256,3 +256,34 @@ function exportCsv(kind){
   const csv="﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n");
   shareFile(new Blob([csv],{type:"text/csv"}), `${name}_${R.from||"all"}_to_${R.to||"all"}.csv`, `${S.cfg.shopName||"Rate Book"} · ${name}`);
 }
+
+/* ---------- Today's summary (owner, 14 Oct 2026): today's figures as one ready WhatsApp message ----------
+   Built on the phone from the business page's figures (`insights`, owner only, script v48+; money in by method today from v50),
+   in the app's language. One tap sends it on WhatsApp (pick a chat, e.g. "Message yourself" or a family group) or copies it. */
+let SUM = null;
+function sumText(I){
+  const P=I.pulse, CR=I.credit||{}, V=I.vendors||{}, S0=I.series, last=S0?S0.sales.length-1:-1, L=[], lc=S.lang==="hi"?"hi-IN":"en-IN";
+  const day=new Date(I.today+"T12:00:00").toLocaleDateString(lc,{weekday:"short",day:"numeric",month:"short"});
+  L.push(`*${I.shopName||S.cfg.shopName||""}*`.replace(/^\*\*$/,""), t("smHead",day));
+  if(I.env==="test") L.push(t("smTest"));
+  L.push("", t("smSales",rs(P.today.sales),P.today.bills));
+  if(P.today.pct!=null) L.push(t("smProfit",rs(P.today.profit),P.today.pct));
+  const ch=P.lm.sales>0?Math.round((P.mtd.sales-P.lm.sales)/P.lm.sales*100):null;
+  L.push(t("smMonth",rs(P.mtd.sales),ch));
+  const md=(I.money&&I.money.modesToday)||null;
+  if(md){ const ks=Object.keys(md).filter(k=>md[k]>0).sort((a,b)=>md[b]-md[a]); if(ks.length) L.push(t("smIn")+" "+ks.map(k=>(k==="Cash"?t("pmCash"):k==="UPI"?t("pmUpi"):k==="Cheque"?t("pmCheque"):k||t("smNotMarked"))+" "+rs(md[k])).join(" · ")); }
+  { const g=S0?S0.given[last]:0, c=S0?S0.got[last]:0, p=[g>0?t("smGiven",rs(g)):"", c>0?t("smGot",rs(c)):"", CR.total>0?t("smPend",rs(CR.total)):""].filter(Boolean); if(p.length) L.push(t("smCredit")+" "+p.join(" · ")); }
+  { const od=V.overdue||0, w=(V.sched?V.sched[1]:V.due7)||0, p=[od>0?t("smOver",rs(od)):"", w>0?t("smDue7",rs(w)):""].filter(Boolean); if(p.length) L.push(t("smVend")+" "+p.join(" · ")); }
+  const todo=(I.todo||[]).map(x=> x.k==="raise"?t("smRaise",x.name,rs(x.suggest),x.unit||"") : x.k==="below"?t("smBelow",x.name) : x.k==="remind"?t("smRemind",x.name||x.mobile,rs(x.due),x.oldest)
+    : x.k==="reorder"?t("smReorder",x.name) : x.k==="payVendor"?t("smPayV",x.name,rs(x.overdue)) : x.k==="noBuy"?t("smNoBuy",x.share) : "").filter(Boolean);
+  if(todo.length) L.push("", t("smTodo"), ...todo.map((x,i)=>`${i+1}. ${x}`));
+  L.push("", t("smFoot"));
+  return L.filter((x,i,a)=>!(x===""&&a[i-1]==="")).join("\n"); }
+async function openSummary(){
+  sheetKey("summary"), openSheet(t("smT"), `<div id="sm-body">${ldBlock()}</div>`, `<div class="sm-acts"><button class="btn ghost" id="sm-copy" disabled>${esc(t("copy"))}</button><a class="btn wa" id="sm-wa" target="_blank" rel="noopener" aria-disabled="true">${esc(t("smSend"))}</a></div>`);
+  try{ SUM=await apiPost({action:"insights", tz:new Date().getTimezoneOffset()}); }
+  catch(e){ const b=$("#sm-body"); if(b) b.innerHTML=`<p class="err">${esc(e&&e.code==="bad_action"?t("smOld"):errMsg(e))}</p>`; return; }
+  const b=$("#sm-body"); if(!b) return; const txt=sumText(SUM);
+  b.innerHTML=`<p class="muted small" style="margin:0 0 10px">${esc(t("smSub"))}</p><pre class="sm-txt" id="sm-txt">${esc(txt)}</pre>`;
+  const wa=$("#sm-wa"); wa.href="https://wa.me/?text="+encodeURIComponent(txt); wa.removeAttribute("aria-disabled");
+  const cp=$("#sm-copy"); cp.disabled=false; cp.onclick=async()=>{ try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#sm-txt")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast(t("copyFail")); } }; }

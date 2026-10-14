@@ -1828,3 +1828,9 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 .bi-t{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0}
 .bi-n{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);border-radius:var(--r-full);padding:2px 9px;line-height:1.4}
 #bill-lines{gap:6px}
+
+/* Today's summary (Tools, owner): the message as it will look on WhatsApp, then Copy · Send */
+.sm-txt{margin:0;padding:14px 16px;background:var(--surface-2);border-radius:var(--r-md);font:15px/1.55 inherit;font-family:inherit;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+.sm-acts{display:flex;flex-wrap:wrap;gap:8px}
+.sm-acts .btn{flex:1 1 140px;min-height:48px;justify-content:center;text-decoration:none}
+.sm-acts a[aria-disabled="true"]{opacity:.5;pointer-events:none}

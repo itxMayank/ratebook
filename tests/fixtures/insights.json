@@ -1,6 +1,6 @@
 {
  "ok": true,
- "at": 1791955533932,
+ "at": 1791960224318,
  "env": "live",
  "today": "2026-10-14",
  "shopName": "Sharma Traders",
@@ -440,6 +440,10 @@
    "UPI": 390,
    "Cash": 230,
    "": 2811
+  },
+  "modesToday": {
+   "UPI": 390,
+   "Cash": 230
   }
  },
  "staff": [

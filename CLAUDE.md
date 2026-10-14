@@ -925,6 +925,20 @@ Step 1 of the admin analytics plan (step 2: one script action that works out the
 - Tests: `tests/insights.test.js` H1–H5 (series add up to the 30-day figures; credit owed from an old bill outside the window; vendor schedule), `tests/adminbiz.test.js` C1–C9 (four charts, today's tooltip, table, 90-day weekly bars, dashed last month, owed ends at the credit total, vendor schedule, 360 px Hindi with no overlapping labels). `tests/fixtures/insights.json` regenerated.
 - **Rollout:** merge; update each shop's script to v49 (dashboard → Update script, your shop first). No Directory change.
 
+## Today's summary for the owner (14 Oct 2026, `SCRIPT_VERSION` 50 / `NEED_SV` unchanged, `reports.js` / `index.html` / `app.js` / `strings.js` / `app.css`)
+
+- **Tools → Today's summary** (`#t-sum`, owner only, like the business page): `openSummary()` asks `insights` (owner, read-only, cached) and `sumText()` writes one WhatsApp message in the app's language:
+  - shop name, "Today's summary · date", TEST MODE line in test mode;
+  - sales and bills today, profit and % over cost (when lines have buy prices);
+  - this month so far, ahead / behind the same days last month;
+  - money in today by method (`money.modesToday`, new in v50: at-billing amounts by Paid by + later payments by their note; biggest first);
+  - credit given / collected today (`series`) and pending in all; vendors overdue and due in 7 days. Parts that are ₹0 are left out;
+  - "Do this" (the business page's `todo`) as a numbered list in plain words; signed "_Rate Book_".
+- The text is shown in a box first; **Send on WhatsApp** opens `wa.me/?text=` so the owner picks any chat (themselves via "Message yourself", a family group…); **Copy** copies it. An older script (no `insights`) says it isn't ready (plain wording for other shops, `smOld_s`).
+- Not automatic yet: WhatsApp has no free way to send by itself. Possible next steps: a reminder in the app in the evening, or a daily email from the script.
+- Tests: `tests/summary.app.test.js` (15: owner tile, the request, every line, ₹0 parts left out, WhatsApp link = the text, Copy, test mode, Hindi at 320 px, managers don't see it, older script), `tests/insights.test.js` H6. `tests/fixtures/insights.json` regenerated.
+- **Rollout:** merge; update each shop's script to v50 (dashboard → Update script, your shop first). On v48–49 the summary works without the "Money in" line.
+
 ## Technical details only for the admin (13 Oct 2026, `app.js` / `settings.js` / `vendors.js` / `strings.js` / `admin.html`)
 
 Mayank: "only me should see the errors and technical details of all the shops; no other shop owner should see the tech details."

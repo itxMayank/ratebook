@@ -110,3 +110,18 @@ const kept = JSON.parse(g.cache.CERRS || '[]');
 ok(kept.length <= 40 && Number(g.cache.cerr_all) === 60, 'I1 80 fake errors from "different phones": only 60 an hour get in');
 ok(kept.every(x => /^\? /.test(x.by)), 'I2 a name sent without a sign-in is marked "?", never shown as that person');
 ok(R("str_('-cmd|x',20)") === "'-cmd|x" && R("str_('=SUM(A1)',20)") === "'=SUM(A1)", 'I3 text starting with - or = is stored as text, never as a sheet formula');
+
+// J. a PIN opens only its own person's account (v51). Seen 14 Oct 2026: on a laptop showing "Mayank", typing an old PIN that is
+//    now Dad's own PIN signed in as Dad (the name sent with the PIN was ignored).
+const g5 = gas([path.join(__dirname, '..', 'Code.gs')]), R5 = g5.R; g5.props.PIN = '4821';
+R5("readConfig_=()=>({}); shopPaused_=()=>false; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; saveUser_({name:'Mayank',pin:'739164',role:'owner'}); saveUser_({name:'Dad',pin:'582947',role:'owner'})");
+const v5 = b => JSON.parse(R5(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
+const j1 = v5({ action: 'verify', pin: '582947', by: 'Mayank', wantTok: true, dev: 'lap' });
+ok(j1.ok === false && j1.error === 'bad_pin' && !j1.tok, 'J1 Dad\'s PIN with the name Mayank: wrong PIN, no sign-in, no token');
+ok(Object.keys(JSON.parse(g5.props.SESS || '{}')).length === 0, 'J2 …and no session was made for Dad');
+ok(Number(g5.cache.fails_lap) === 1, 'J3 …counted as a wrong PIN (so it can\'t be used to try names)');
+ok(v5({ action: 'verify', pin: '582947', by: ' dad ' }).me.name === 'Dad' && v5({ action: 'verify', pin: '739164', by: 'MAYANK' }).me.name === 'Mayank', 'J4 the right name (any case, extra spaces) still signs in');
+ok(v5({ action: 'verify', pin: '582947' }).me.name === 'Dad', 'J5 no name typed: the PIN alone finds its person (PINs are unique)');
+const g6 = gas([path.join(__dirname, '..', 'Code.gs')]), R6 = g6.R; g6.props.PIN = '4821'; R6("readConfig_=()=>({}); saveUser_({name:'Sonu',pin:'615283',role:'staff'})");
+let t8 = ''; try { R6("setPin_('615283')"); } catch (e) { t8 = e.message; } let t9 = 'x'; try { R6("setPin_('817364')"); t9 = ''; } catch (e) { t9 = e.message; }
+ok(t8 === 'pin_taken' && t9 === '', 'J6 the shop PIN can\'t be changed to someone\'s own PIN (another one is fine)');

@@ -8,9 +8,12 @@ let meChecked=false;
 async function refreshMe(j){
   if(meChecked || !S.canWrite) return; meChecked=true;
   try{ const old=S.auth.pin && !S.auth.tok, r=await apiPost({action:"verify",by:(S.auth&&S.auth.by)||"",...(old?{wantTok:true,dl:devLabel()}:{})}); const me=r.me||{};
+    /* A phone from before sign-in tokens kept its PIN: the PIN must still be this person's own, else it's signed out (it never
+       becomes whoever that PIN now belongs to). */
+    if(old && me.personal && !samePerson(me.name,S.auth.by)){ if(r.tok) apiPost0({action:"signOut",tok:r.tok}).catch(()=>{}); signedOut("siGone"); return; }
     if(old && r.tok){ const pin=S.auth.pin, chk=await pinCheckSet(pin); S.auth={...S.auth,...chk,tok:r.tok,pinLen:pin.length,personal:!!me.personal}; delete S.auth.pin; ls.set("rb_auth",S.auth); }
     applyMe(r,j);
-  }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); }
+  }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); else if(e&&e.code==="shop_pin_off") signedOut("shopPinOff"); }
 }
 /** Use who-am-I from the sheet (verify, or the boot reply): role, name, own settings, shop code. */
 function applyMe(r,j){ const me=r.me||{}; if(!S.auth) return;
@@ -166,6 +169,9 @@ function signInUI(msg){ LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=
     if(!/^\d{4,8}$/.test(pin)){ $("#al-pin").focus(); return; } if(navigator.onLine===false){ err.textContent=t("siNet"); return; }
     btnBusy($("#al-go"),true);
     try{ const j=await apiPost0({action:"verify",tok:"",pin,by,wantTok:true,dl:devLabel()}); const me=j.me||{};
+      /* A personal PIN opens only its own person's account: with a name typed, it must be theirs (the sheet checks this from
+         v51; this covers older scripts). Before, the name was ignored and someone else's PIN signed you in as them. */
+      if(me.personal && by && !samePerson(me.name,by)){ if(j.tok) apiPost0({action:"signOut",tok:j.tok}).catch(()=>{}); throw {code:"bad_pin"}; }
       if(!me.personal && !by){ btnBusy($("#al-go"),false); err.textContent=t("needYourName"); $("#al-name").focus(); return; }
       await adoptSignIn(j,pin,by); afterPinUnlock(); }
     catch(er){ btnBusy($("#al-go"),false); err.textContent=errMsg(er); $("#al-pin").value=""; $("#al-pin").focus(); } };

@@ -1870,3 +1870,10 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 #printroot .pi-sign{display:flex;flex-direction:column;align-items:flex-end;gap:34px;margin-top:18px;break-inside:avoid}
 #printroot .pi-sign span{border-top:1px solid #000;padding-top:3px;min-width:150px;text-align:right}
 #ce-gst::placeholder,#cust-gstin::placeholder{text-transform:none}   /* the box upper-cases what's typed, not its hint */
+/* Date chip on every date box (addDateChip): the app's calendar icon + dd/mm/yyyy over the phone's invisible date picker */
+.dchip{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid var(--fieldline,var(--line));border-radius:var(--r-md);background:var(--surface-2);color:var(--muted);font:600 15px var(--f-body);white-space:nowrap;cursor:pointer;min-width:0;box-sizing:border-box}
+.dchip.on{color:var(--fg)}
+.dchip:focus-within{border-color:var(--ink)}
+.dchip .dchip-t{overflow:hidden;text-overflow:clip}
+.dchip input[type=date]{position:absolute;inset:0;width:100%!important;height:100%!important;opacity:0;border:0!important;padding:0!important;margin:0;cursor:pointer;font-size:16px;min-height:0!important}
+.field .dchip{display:flex;width:100%}

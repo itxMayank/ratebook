@@ -1075,7 +1075,7 @@ Reported: the app went blank for a few minutes, then showed prices 10–15 min o
 ## Credit order, vendor mobile and private note (15 Oct 2026, `SCRIPT_VERSION` 56 / `NEED_SV` unchanged, `customers.js` / `vendors.js` / `strings.js` / `app.css`)
 
 - **Credit screen order:** two buttons under the search (`#du-sort`, `data-ds`): **Oldest due first** (default, by each customer's oldest unpaid bill) and **Most due first**. Opening Credit always starts on Oldest due first (`duesSort`, `duesSorted`); a search keeps the order. Test: `tests/duesort.app.test.js`.
-- **Vendor page:** under the balance card, the vendor's **mobile** ("+91 98765 01234", tap to call, `#vd-mob`, `vMobShow`) and **private note** (`#vd-note`, 🔒) when present (`.vd-info`).
+- **Vendor page:** the vendor's **mobile** inside the balance card, under the balance ("+91 98765 01234", tap to call, `#vd-mob`, `vMobShow`; moved there from its own line at Mayank's request), and the **private note** (`#vd-note`, 🔒) on a line under the card when present (`.vd-info`).
 - **Vendor add / edit:** a **Private note** box (`#vf-note`, up to 300) with "Only people in your shop see this. It never goes on the vendor's link or statement." Saved in the existing `Vendors.note` column; `vPub_` (the vendor's link) and the statement PDF never include it. v56: `vSaveVendor_` keeps the note when an edit doesn't send one (an older app copy), so it isn't wiped. Tests: `tests/vendors.app.test.js`, `tests/vendornote.test.js`.
 - **Rollout:** merge; update each shop's script to v56 (optional but stops older app copies wiping the note).
 

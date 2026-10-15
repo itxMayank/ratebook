@@ -270,7 +270,7 @@ function showRenumbered(r){
    letter tile), 2 = in the "Recently billed" panel (also a ✕ to forget it). */
 const RC_CLOCK='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 function miniHTML(it,q,rc){ const inB=billQty(it.id), img=!!thumbOf(it);
-  return `<div class="mini${inB?" inb":""}${img||rc?"":" noimg"}${rc?" rcrow":""}" role="button" tabindex="0" data-add="${esc(it.id)}">${img?thumbHTML(it,40):rc?`<span class="rcic">${RC_CLOCK}</span>`:""}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="msub" lang="hi">${highlight(it.nameHi,q)}</span>`:""}${hideBuy()?"":`<span class="msub mrates num">${esc(t("buy"))} <b>${rs(it.buy)}</b>${marginPct(it)?` · ${esc(t("margin"))} <b>${marginPct(it)}</b>`:""}</span>`}</span>
+  return `<div class="mini${inB?" inb":""}${img||rc?"":" noimg"}${rc?" rcrow":""}" role="button" tabindex="0" data-add="${esc(it.id)}">${img?thumbHTML(it,40):rc?`<span class="rcic">${RC_CLOCK}</span>`:""}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="msub" lang="hi">${highlight(it.nameHi,q)}</span>`:""}${hideBuy()||rc?"":`<span class="msub mrates num">${esc(t("buy"))} <b>${rs(it.buy)}</b>${marginPct(it)?` · ${esc(t("margin"))} <b>${marginPct(it)}</b>`:""}</span>`}</span>
     <span class="mright"><span class="mprice"><b class="num">${rs(it.sell)}</b> /${esc(unitL(it.unit))}</span>${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
          :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</span>${rc===2?`<button type="button" class="rcx" data-rcx="${esc(it.id)}" aria-label="${esc(t("rcRm",it.name))}">✕</button>`:""}</div>`; }
 /* Recent items panel: open while the search box has focus and nothing is typed (phones). With the search at the bottom the
@@ -336,7 +336,16 @@ function kbTrack(){ const w=window.innerWidth, h=vv?vv.height:window.innerHeight
   if(kbWas && !open){ const a=document.activeElement; if(a && a.matches && a.matches("input:not([type=checkbox]):not([type=file]):not([readonly]),textarea") && !a.closest("#sheet,#picker,#applock")) a.blur(); }
   kbWas=open; }
 window.addEventListener("resize",kbTrack);
-function vvSet(){ kbTrack(); if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); try{ dockPos(); }catch{} }
+/* The keyboard opening (or closing) changes the screen height after the results / recent items were placed: put the best
+   match (or the newest recent item) back right above the search bar. Only on a big change, so a scroll while the address bar
+   moves never pulls the list back. */
+let resH=0;
+function resAnchor(){ const h=vv?vv.height:window.innerHeight, big=Math.abs(h-resH)>100; resH=h;
+  if(!big || DESK() || !root.classList.contains("sbot") || !document.body.classList.contains("qtyp")) return;
+  const top=root.classList.contains("sres-top");
+  requestAnimationFrame(()=>{ if(S.tab==="bill"){ const r=$("#rise"); if(r && r.classList.contains("on")) r.scrollTop=top?0:r.scrollHeight; }
+    else if(S.q.trim() || $("#list").classList.contains("rclist")) window.scrollTo(0,top?0:document.documentElement.scrollHeight); }); }
+function vvSet(){ kbTrack(); try{ resAnchor(); }catch{} if(!vv) return; const kb=Math.max(0,Math.round(window.innerHeight-vv.height-vv.offsetTop)); root.style.setProperty("--kb",(kb>60?kb:0)+"px"); root.style.setProperty("--vvh",Math.round(vv.height+(kb>60?0:kb))+"px"); try{ dockPos(); }catch{} }
 if(vv){ vv.addEventListener("resize",vvSet); vv.addEventListener("scroll",vvSet); vvSet(); }
 /* ---------------- Back button (installed app / Android) ----------------
  * One extra history entry acts as a guard. Each Back press: close what's open, else step back inside a sheet,

@@ -1094,7 +1094,8 @@ Asked for after Samsung's "Recent searches"; four mock-ups were shown and Mayank
 - **While typing:** results that are recent items come first under "Recent", then "All items" (`recentSplit`: only real matches in the top 30 results; Prices only with the "All" filter). With the search at the bottom (results running up from the bar), a heading goes after its rows in the page, so it shows above them (`rcGroup`, `recRev`).
 - **Remembered** by `addToBill` and the + in search rows (`recentAdd`), in `rb_recent` (per phone, per shop through `ls`), item ids only; deleted items drop out (`recentIds` keeps only items still in the list).
 - On the Prices tab the panel is drawn into `#list` (class `rclist`, `qhas` set so the chips step aside and it anchors above the bar). Narrow rows (container under 300 px: small phone, large text) hide the clock and put price + under the name.
-- Test: `tests/recent.app.test.js` (27: panel, order, + / tap / ✕ / Clear all with the keyboard kept, frozen order, Recent / All items while typing and their position by the bar, Bill tab, deleted items, storage, top search + Hindi + 320 px largest text).
+- **Compact and anchored (15 Oct 2026, after trying it):** recent rows show no Buy · Margin and put price and + on one line (≈ 49 px, was 85). When the keyboard opens after the panel (or results) are shown, Chrome shrinks the app and the newest item ended up hidden below the keyboard; `resAnchor()` (from `vvSet`, only on a height change over 100 px) puts the newest / best match back right above the search bar.
+- Test: `tests/recent.app.test.js` (H1–H2 for the above; 27: panel, order, + / tap / ✕ / Clear all with the keyboard kept, frozen order, Recent / All items while typing and their position by the bar, Bill tab, deleted items, storage, top search + Hindi + 320 px largest text).
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

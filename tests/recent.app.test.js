@@ -96,6 +96,20 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   if (process.env.SHOT) { await q2.screenshot({ path: process.env.SHOT + '/recent-320-hi.png' }); }
   await q2.context().close();
 
+  /* H. compact rows; the keyboard opening keeps the newest item right above the search bar (Prices and Bill) */
+  const k = await phone(390, 844, { rec: ['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8'] });
+  for (const tab of ['items', 'bill']) {
+    if (tab === 'bill') { await k.evaluate(() => { T.addToBill('i9'); T.setTab('bill'); }); await k.waitForTimeout(300); await k.tap('#tot-find'); } else await k.focus('#q');
+    await k.waitForTimeout(300);
+    if (tab === 'items') { const rr = await k.$$eval('#list .rcrow', els => els.map(e => ({ h: e.getBoundingClientRect().height, t: e.textContent })));
+      ok(rr.length === 8 && rr.every(r => r.h <= 56 && !/Buy|Margin/.test(r.t)), 'H1 recent rows are compact (≤ 56 px) with no Buy · Margin ' + JSON.stringify(rr.map(r => Math.round(r.h)))); }
+    await k.setViewportSize({ width: 390, height: 520 }); await k.waitForTimeout(600);   // keyboard opens: Chrome shrinks the app
+    const at = await k.evaluate(() => { const d = document.querySelector('#dock').getBoundingClientRect().top, rows = [...document.querySelectorAll('.rcrow')], lo = rows.reduce((a, e) => e.getBoundingClientRect().bottom > a.b ? { b: e.getBoundingClientRect().bottom, id: e.dataset.add } : a, { b: 0 }); return { gap: d - lo.b, id: lo.id, vh: innerHeight }; });
+    ok(at.gap >= 0 && at.gap < 24 && at.id === (tab === 'bill' ? 'i9' : 'i1'), `H2 ${tab === 'bill' ? 'Bill' : 'Prices'}: after the keyboard opens, the newest item sits right above the search bar ` + JSON.stringify(at));
+    await k.evaluate(() => document.querySelector('#q').blur()); await k.setViewportSize({ width: 390, height: 844 }); await k.waitForTimeout(400);
+  }
+  await k.context().close();
+
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();
 })();

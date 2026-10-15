@@ -1777,6 +1777,11 @@ html.sbot:not(.sres-top) body.qtyp :is(#list,#bill-search-results) :is(.mini,.ca
 .mini .rcx{flex:none;width:36px;height:36px;margin:0 -8px 0 -4px;border:0;background:none;color:var(--muted);font-size:15px;border-radius:50%;display:grid;place-items:center;cursor:pointer;position:relative}
 .mini .rcx::after{content:"";position:absolute;inset:-4px}
 #list.rclist{display:flex;flex-direction:column;gap:0}
+/* recent rows are compact (no Buy · Margin; price and + on one line), so more fit above the keyboard */
+:is(#bill-search-results,#list.rclist) .mini.rcrow{min-height:48px;padding-top:6px;padding-bottom:6px;gap:10px}
+:is(#bill-search-results,#list.rclist) .mini.rcrow .mright{display:flex;align-items:center;gap:10px}
+:is(#bill-search-results,#list.rclist) .mini.rcrow .msub{margin-top:0}
+.mini .rcic{height:36px}
 
 
 /* Screens inside sheets never get wider than the phone (12 Oct 2026, found by tests/screens.app.test.js at 320 px with the

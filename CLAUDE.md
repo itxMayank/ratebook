@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 15 October 2026 (Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 15 October 2026 (add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -93,7 +93,7 @@ Files in this repository should match the latest copies sent in the Claude conve
 
 Made so the app stays fast as the sheet grows (thousands of bills and items). Nothing changes on screen.
 - **Past bills list** (`listBills`) skips the large `text` and `lines` columns and returns each bill's sheet `row`. Opening a bill calls `getBill` (POST, PIN, `{row, id, n}`), which reads that one row and checks the bill id (or the number, for old bills) so a moved row isn't misread. `showBill()` in `index.html` fetches it when `b.text` is undefined.
-- **Customers tab** (`mobile | name | gstin | bills | total | lastDate | lastBillNo`): one row per mobile (last 10 digits). `findCustomer` reads only this tab. `takeBill` adds or updates the row; `updateBill` refreshes the name and GSTIN. If the tab is missing, `customersSheet_()` builds it once from the existing `Bills` rows. `takeBill` builds it before appending the new bill, so that bill isn't counted twice. Safe to delete the tab: it rebuilds itself.
+- **Customers tab** (`mobile | name | gstin | bills | total | lastDate | lastBillNo`): one row per mobile (last 10 digits). `findCustomer` reads only this tab. `takeBill` adds or updates the row; `updateBill` refreshes the name and GSTIN. If the tab is missing, `customersSheet_()` builds it once from the existing `Bills` rows. `takeBill` builds it before appending the new bill, so that bill isn't counted twice. Since 15 Oct 2026 it also holds customers added by hand (address, contact, email, companies without a mobile), so **don't delete it**: it would rebuild only from bills, losing those.
 - **Price list** (`list`) no longer reads the `thumb` column (photos come through `thumbs`, only for changed ones). `thumbs` reads just the id column plus the thumb and imgV columns.
 - **Change counter** (`rev`) and the sheet id are kept in Apps Script's CacheService (6 hours), so the 25-second checks from every phone don't use up the daily Properties quota. `bump_()` writes both the property and the cache.
 - Still to do (when needed): yearly archive of `Bills` into a separate tab or file, possibly with the GST bill series restarting each financial year (April 1).
@@ -1044,6 +1044,28 @@ Two phones can show the same next number (both read it before either bill reache
 - Still possible: two bills made **offline** on different phones can get the same number on screen; the sheet renumbers one and the note asks to send it again. Avoiding that would need numbers set aside per phone, which leaves gaps in the GST invoice series.
 - Test: `tests/billno.app.test.js` (fails 4 checks on the version before).
 
+## Customer's purchase order (PO) on bills (15 Oct 2026, `SCRIPT_VERSION` 54 / `NEED_SV` unchanged, `billing.js` / `app.js` / `bills.js` / `print.js` / `index.html` / `app.css` / `strings.js`)
+
+Asked for by a company customer (Balkrishna Industries) who needs the GST bill to quote their purchase order. Optional: most bills never use it.
+- **Bill page:** in the bill's extra details (⌄, under Customer GSTIN), a link **+ Customer's purchase order (PO)** (`#po-add`) opens **PO number** (`#po-no`, full row, up to 40 characters) and **PO date** (`#po-date`, the phone's date picker) with **Remove PO** (`#po-x`). Folded again after each bill. Works on GST and normal bills. State `S.po = {no, date (yyyy-mm-dd)}` (`rb_po`), helpers `poNorm`, `poHas`, `poOut`, `poDate`, `poTextLine`, `poSet`, `poRender` in `billing.js`.
+- **Shown:** WhatsApp text "PO No: 1100-4500253480 · PO date: 15/10/2026" under the customer's GSTIN (normal bills: under the customer); PDF, A4/A5 and roll printouts next to the invoice number (`prPoLines`, English; wrapped to 32 columns on 58 mm).
+- **Kept with:** drafts (`draftState`), open bills, Share's "saved" state (`draftSig` adds the PO only when set, so older saved signatures still match), editing a past bill (`startEdit` → `po:b.po`). **Repeat as new bill doesn't carry it** (a new order has its own PO); Clear removes it.
+- **Sheet:** new last Bills column **`po`** ("number|yyyy-mm-dd", written as text; `poCell_` / `poOut_` / `poClean_`). `takeBill` writes it, `updateBill` changes or clears it (an older app that sends no `po` leaves it as it was), `listBills` / `getBill` / `listDues` return it. An older script ignores it: the PO is still in the bill's saved text, but not in its own column.
+- Tests: `tests/po.app.test.js` (21), `tests/po.test.js` (server, 13), `tests/print.app.test.js` (the PDF has "PO No" and "PO date").
+- **Rollout:** merge; update each shop's script to v54 (your shop first).
+- Not done (ask if needed): the customer's item code per line (the PO's "Item Code" column), and the PO in the invoice-register CSV.
+
+## Add customer, company details, address on bills, GST invoice format (15 Oct 2026, `SCRIPT_VERSION` 55 / `NEED_SV` unchanged, `customers.js` / `billing.js` / `app.js` / `bills.js` / `print.js` / `index.html` / `app.css` / `strings.js`)
+
+- **Tools → Customers → + Add customer** (`#cu-add`, manager and owner, like Edit): `cuEdit(null)`. **Name is needed**; mobile, address (up to 300, several lines), private note, and in a **Company (GST registered)** part GSTIN (its state shown under it), contact person and email are optional. A duplicate (same mobile, or same GSTIN for a customer without a mobile) is refused with "Already saved as X" and **Open it**.
+- **Customers without a mobile** (companies): kept in the Customers tab under an id `c-` + 10 letters (`custNewId_`, letters only so it's never read as a mobile; `custId_`). The phone's list entries now have `key` (mobile or id), `id`, `contact`, `email` (`listCustomers` rows gained `[10] contact, [11] email, [12] id`). Their page shows "No mobile number" and no Call/WhatsApp; their bills are matched by GSTIN (else exact name). Bills without a mobile count for a saved customer with that GSTIN (`touchCustomer_`, `recountCustomers_`; counted once even after the company gets a mobile).
+- **`saveCustomer`** (v55): `{key, newMobile, name, gstin, address, note, contact, email}` edits (key = mobile or id); no `key` and no `newMobile` = a new customer (`{mobile?}`); errors `bad_name`, `bad_mobile`, `bad_gstin`, `bad_email`, `cust_exists` (with `existing {name, key}`), `cust_not_found`. A mobile can be added or changed, not removed. Older apps editing by `{mobile, newMobile}` still work; the app sends `mobile` too, so an older script can still edit. Customers tab gains `contact | email`.
+- **On the bill:** picking a saved customer (name / mobile / GSTIN suggestions, or Customers → Start a bill) fills name, mobile, GSTIN **and address**; a lookup by mobile fills an empty address. **Customer address (optional)** box (`#cust-addr`, `S.custAddr`, `rb_caddr`, `caddrSet`) in the bill's extra details, under GSTIN. On both bill types: WhatsApp "Address: …" (one line, `addrOneLine`), PDF / A4 / roll printouts; saved in a new last Bills column **`custAddr`**; kept with drafts, open bills, edits and Repeat; the customer ✕, Clear and each finished bill empty it. The PO (above) still shows only when given.
+- **GST invoice format** (checked against GST rules 46 and 48): the PDF and A4/A5 now add **ORIGINAL FOR RECIPIENT**, **Reverse charge: No**, the buyer's **address** (each line) and **state** (from their GSTIN), and a **For <shop> / Authorised Signatory** block (`prBuyerLines`; a new page if there's no room). PDF money columns are headed "(Rs.)" with plain numbers, so amounts no longer break over two lines. Already there: supplier name, address, GSTIN and state; invoice number and date; place of supply; HSN, qty and unit, rate, taxable value, tax rate and amount per line; CGST/SGST or IGST; round off; total in figures and words; HSN summary.
+- Tests: `tests/addcust.app.test.js` (27), `tests/customers.test.js` (server, 21), `tests/print.app.test.js` (format), `tests/po.test.js` D1–D3, `tests/po.app.test.js` H1b, `tests/server-cache.test.js` (column order).
+- **Rollout:** merge; update each shop's script to v55 (your shop first). Until then, adding a customer without a mobile says the script needs updating; everything else works.
+- Not done (ask if needed): staff adding customers (manager+ now), deleting a customer, a "duplicate / triplicate" copy choice on the PDF.
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).
@@ -1221,7 +1243,7 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 - `Items`: `id | name | nameHi | unit | buy | sell | thumb | imgV | updatedAt | updatedBy | hsn | gst | altUnit | altQty | altSell | imgs`
 - `Config` (key/value): `shopName`, `units` (JSON list of `{code, hi}`), `defaultUnit`, `roundTo` (1, 0.5 or 0), `billFooter`, `nextBill`
 - Bills tabs (`Bills` for real, `Test Bills` for test; same for `BillHistory` and `Customers`): `billNo | date | customer | mobile | total | items | by | gstBill | taxable | tax | customerGstin | igst | text | lines | billId | editedAt | editedBy | edits | cost | profit | payment | paid | due | payments | clearedAt`
-- `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo | due` (lookup index, rebuilt from `Bills` if deleted)
+- `Customers`: `mobile | name | gstin | bills | total | lastDate | lastBillNo | due | address | note | updatedAt | updatedBy | contact | email` (`mobile` holds `c-…` for a customer saved without one; stats rebuilt from `Bills` if deleted, but customers added by hand are lost with the tab)
 - `BillHistory`: `billId | billNo | changedAt | by | oldText` (previous version of each edited bill)
 - `Images`: `id | data` (base64 JPEG; one row per photo, keyed `itemId`, `itemId#2` … `itemId#5`)
 

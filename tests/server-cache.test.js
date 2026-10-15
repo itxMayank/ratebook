@@ -47,6 +47,6 @@ ok(rt.ok && rt.triggers === 2 && g2.R('TR.length') === 0 && !!g2.props.RETIRED, 
 ok(R("paidBy_('upi')") === 'UPI' && R("paidBy_('CASH')") === 'Cash' && R("paidBy_('check')") === 'Cheque' && R("paidBy_('bitcoin')") === '' && R("paidBy_('')") === '', 'paidBy_: only Cash / UPI / Cheque, anything else = not marked');
 const pcU = R("payCalc_(500, 'part', 200, [], 'Raju', 'UPI')"), pcN = R("payCalc_(500, 'part', 200, [], 'Raju')"), pcP = R("payCalc_(500, 'paid', 0, [], 'Raju', 'Cash')");
 ok(pcU.pays[0].note === 'UPI' && pcU.pays[0].at === 1 && pcU.due === 300 && pcN.pays[0].note === undefined && pcP.status === 'Paid' && pcP.pays.length === 0, 'part paid: the amount taken at billing remembers how it was paid; nothing changes when not marked');
-ok(R("BILL_COLS[BILL_COLS.length - 1]") === 'paidBy', 'Bills tab gains a paidBy column at the end (old rows simply have it empty)');
+ok(R("BILL_COLS.indexOf('paidBy')") === R("BILL_COLS.indexOf('pos')") + 1 && R("BILL_COLS.slice(BILL_COLS.indexOf('paidBy') + 1).join()") === 'po,custAddr', 'Bills tab gains a paidBy column after pos (old rows simply have it empty); later columns (po, custAddr) only ever come after it');
 ok(g2.locks.n === 0 && g.locks.n === 0, 'all locks released');
 process.exit(fails ? 1 : 0);

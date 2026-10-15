@@ -4,7 +4,7 @@
    wand's screen (preview, then apply) and Convert names to Hindi. Checks what each sends to the sheet. Any page error fails.
    Run: node tests/prices.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
-const html = appHtml('S,sync,addToBill,billText,saveBill,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
+const html = appHtml('S,setFz,sync,addToBill,billText,saveBill,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
 const now = Date.now() - 864e5;
 const items0 = () => [
   { id: 'i1', name: 'PP Bag 12x18', nameHi: 'पीपी बैग 12x18', unit: 'kg', buy: 150, sell: 180, cat: 'Bags', updatedAt: now },
@@ -24,6 +24,10 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved and,
     const bd = JSON.parse(q.postData()); sent.push(bd);
     if (bd.action === 'boot') return send({ rev: '1', items: items(), config: cfg, sv: 43, pop: { i2: 9, i1: 5, i5: 2 }, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
     if (bd.action === 'upsert') { items(); const out = bd.items.filter(x => db.some(y => y.id === x.id) || String(x.name || '').trim()).map(x => { const id = x.id || 'n' + (++nid), o = db.find(y => y.id === id), r = { ...(o || {}), ...x, id, updatedAt: Date.now() }; delete r.tmp; delete r.base; if (o) Object.assign(o, r); else db.push(r); return { ...r, tmp: x.tmp }; }); return send({ items: out }); }
+    if (bd.action === 'priceHist') { if (bd.id !== 'i1') return send({ hist: [], count: 0 }); const d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+      const H = [['sell', 180, 200, 'Mayank', 'edit', 1], ['buy', 150, 165, 'Dad', 'vendor', 2], ['sell', 170, 180, '', 'bills', 9], ['buy', 140, 150, '', 'bills', 10], ['sell', 160, 170, '', 'bills', 20],
+        ['buy', 130, 140, '', 'bills', 21], ['sell', 150, 160, '', 'bills', 40], ['sell', null, 150, 'Dad', 'new', 60]].map(([f, o, n, by, src, a]) => ({ at: Date.now() - a * 864e5, day: d(a), f, o, n, by, src }));
+      return send({ hist: (bd.role === 'staff' ? H.filter(x => x.f !== 'buy') : H), count: H.length }); }
     if (bd.action === 'delete') { items(); db = db.filter(y => !bd.ids.includes(y.id)); return send({}); }
     return send({}); });
   await p.addInitScript(() => { if (!sessionStorage.x) { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })); sessionStorage.x = 1; } });
@@ -131,6 +135,24 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved and,
   sent = []; await p.evaluate(() => T.openBulkEdit()); await p.waitForTimeout(400);
   await p.fill('#be-hsn-i3', ''); await p.click('#be-save'); await p.waitForTimeout(800);
   ok((ups().find(x => x.id === 'i3') || {}).hsn === 'NA', 'H8 Bulk edit: an emptied HSN cell saves "no HSN" too');
+
+  // I. price history on the item screen (15 Oct 2026)
+  await p.evaluate(() => T.openDetail('i1')); await p.waitForTimeout(700);
+  const ph = await p.evaluate(() => [...document.querySelectorAll('#d-ph > .ph-row')].map(r => r.innerText.replace(/\s+/g, ' ').trim()));
+  ok(/Price history/.test(await p.textContent('#d-ph')) && ph.length === 6 && /^Sell · .* Mayank · Edit item ₹180 → ₹200 \+₹20 · 11\.1%$/.test(ph[0]) && /^Buy · .* Dad · Vendor bill ₹150 → ₹165 \+₹15 · 10%$/.test(ph[1]), 'I1 the item screen shows its price history, newest first: who, how, from → to and the change: ' + ph.slice(0, 2).join(' | '));
+  ok(/Worked out from past bills/.test(ph[2]) && /Show 2 more/.test(await p.textContent('#d-ph .ph-more summary')), 'I2 rows worked out from bills say so; 6 shown, "Show 2 more" opens the rest in place');
+  await p.click('#d-ph .ph-more summary'); await p.waitForTimeout(150);
+  ok(/Set at ₹150/.test(await p.textContent('#d-ph .ph-more')), 'I3 the first price of an item reads "Set at ₹150"');
+  await p.evaluate(() => { T.S.hideBuy = true; T.openDetail('i1'); }); await p.waitForTimeout(500);
+  ok(await p.evaluate(() => [...document.querySelectorAll('#d-ph .ph-row')].every(r => r.dataset.f !== 'buy') && document.querySelectorAll('#d-ph .ph-row').length > 0), 'I4 "Hide buy rate" also hides buy price changes');
+  await p.evaluate(() => { T.S.hideBuy = false; T.openDetail('i2'); }); await p.waitForTimeout(600);
+  ok(/No price changes yet/.test(await p.textContent('#d-ph')), 'I5 an item that never changed says so');
+  await p.setViewportSize({ width: 320, height: 700 }); await p.evaluate(() => { localStorage.setItem('rb_lang', '"hi"'); T.S.lang = 'hi'; T.setFz(1.38); T.openDetail('i1'); }); await p.waitForTimeout(700);
+  await p.evaluate(() => { const m = document.querySelector('#d-ph .ph-more'); if (m) m.open = true; });
+  ok(/रेट का इतिहास/.test(await p.textContent('#d-ph')) && await p.evaluate(() => { const sh = document.querySelector('#sheet-body'); return sh.scrollWidth <= sh.clientWidth + 1 && [...document.querySelectorAll('#d-ph .ph-row > b')].every(b => { const r = b.getBoundingClientRect(); return r.right <= innerWidth + 1 && b.scrollWidth <= b.clientWidth + 1; }); }), 'I6 Hindi, 320 px, largest text: the history fits, amounts are never cut');
+  if (process.env.SHOT) await (await p.$('#d-ph')).screenshot({ path: process.env.SHOT + '/ph-320-hi-largest.png' });
+  await p.setViewportSize({ width: 390, height: 844 }); await p.evaluate(() => { localStorage.setItem('rb_lang', '"en"'); T.S.lang = 'en'; T.setFz(1); T.openDetail('i1'); }); await p.waitForTimeout(700);
+  if (process.env.SHOT) await (await p.$('#sheet')).screenshot({ path: process.env.SHOT + '/ph-390.png' });
 
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();

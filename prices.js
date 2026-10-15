@@ -245,6 +245,7 @@ async function openDetail(id){
     ${!hideBuy()&&marginPct(it)?`<p class="note">${esc(t("margin"))}: ${rs((+it.sell)-(+it.buy))} / ${esc(unitL(it.unit))} (${marginPct(it)})</p>`:""}
     <p class="note" id="d-upd">${esc(t("updatedAgo",ago(it.updatedAt),it.updatedBy||""))}</p>
     ${can("manager")&&!hideBuy()?`<div class="d-buys" id="d-buys" hidden></div>`:""}
+    <div class="d-ph" id="d-ph" aria-live="polite"></div>
     <div class="qtyrow"><div class="step"><button id="dq-dec">−</button><input id="dq" class="num" inputmode="decimal" value="1"><button id="dq-inc">+</button></div><span class="note">${esc(unitL(it.unit))}</span>${inB?`<span class="note">· ${esc(t("inBill"))}: ${fmtN(inB)}</span>`:""}</div>`;
   const foot=`${can("manager")?`<button class="btn ghost" id="d-edit">${esc(t("edit"))}</button>`:""}<button class="btn primary" id="d-add">${esc(t("addToBill"))}</button>`;
   sheetKey("item:"+id), openSheet(itemTitle(it), body, foot);
@@ -254,6 +255,7 @@ async function openDetail(id){
   $("#d-add").onclick=()=>{ const v=toNum($("#dq").value); addToBill(id, v>0?v:1); closeSheet(); };
   if(can("manager")) $("#d-edit").onclick=()=>openEdit(id);
   if($("#d-buys")) itemBuysInto(id,$("#d-buys"));
+  priceHistInto(id,$("#d-ph"));
   if(it.imgV){
     const g=$("#d-gal"); if(g && (it.imgs||1)>1) g.addEventListener("scroll",()=>{ const n=$("#d-gn"); if(n) n.textContent=`${Math.round(g.scrollLeft/g.clientWidth)+1}/${it.imgs}`; },{passive:true});
     const list=await loadAllPhotos(it).catch(()=>[]);
@@ -261,6 +263,23 @@ async function openDetail(id){
     list.forEach((x,j)=>{ const el=j?$(`#d-gal [data-gi="${j}"]`):$("#d-img"); if(el && x.data) el.src=x.data; });
   }
 }
+/* Price history on the item screen (script v53, priceHist): newest first, 6 shown and the rest one tap away. Buy prices only for
+   people who can see them (the sheet leaves them out for staff). Kept for the session; read again when the item changed. */
+const PHC={};
+async function priceHistInto(id,el){ if(!el) return; const it=S.byId.get(id); if(!it) return;
+  let r=PHC[id]; if(!r || r.upd!==it.updatedAt || Date.now()-r.at>60000){ el.innerHTML=`<h4>${esc(t("phT"))}</h4>${LD("sm")}`;
+    try{ const j=await apiPost0({action:"priceHist",id}); r=PHC[id]={at:Date.now(),upd:it.updatedAt,hist:Array.isArray(j.hist)?j.hist:null}; }catch{ r=null; } }
+  if(!el.isConnected) return;
+  if(!r || !r.hist){ el.remove(); return; }   // an older sheet script, or no connection: nothing to show
+  const L=r.hist.filter(x=>x.f!=="buy" || !hideBuy());
+  if(!L.length){ el.innerHTML=`<h4>${esc(t("phT"))}</h4><p class="note">${esc(t("phNone"))}</p>`; return; }
+  const fl=f=>f==="buy"?t("buy"):f==="altSell"?unitL(it.altUnit||""):t("sell");
+  const row=x=>{ const d=x.o!=null&&x.n!=null?x.n-x.o:null, pc=d!=null&&x.o>0?Math.round(d/x.o*1000)/10:null, src=t("phSrc_"+x.src);
+    const ch=d==null?"":`${d>0?"+":"−"}${rs(Math.abs(Math.round(d*100)/100))}${pc!=null?" · "+fmtN(Math.abs(pc))+"%":""}`;
+    return `<div class="vkv ph-row" data-f="${esc(x.f)}"><span><b class="ph-f">${esc(fl(x.f))}</b> · ${esc(vDate(x.day))}<small>${esc([x.by,src].filter(s=>s&&!/^phSrc_/.test(s)).join(" · "))}</small></span>
+      <b class="num">${x.o==null?esc(t("phSet",rs(x.n))):`${rs(x.o)} → ${rs(x.n)}`}${ch?`<small>${esc(ch)}</small>`:""}</b></div>`; };
+  const head=L.slice(0,6).map(row).join(""), rest=L.slice(6);
+  el.innerHTML=`<h4>${esc(t("phT"))}</h4>${head}${rest.length?`<details class="ph-more"><summary>${esc(t("phMore",rest.length))}</summary>${rest.map(row).join("")}</details>`:""}`; }
 /* ---------------- Image processing ---------------- */
 function loadImg(file){
   const viaImg=()=>new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>{ res(im); setTimeout(()=>URL.revokeObjectURL(url),1000); }; im.onerror=()=>{ URL.revokeObjectURL(url); rej(); }; im.src=url; });
@@ -414,7 +433,7 @@ function openEdit(id,prefill=""){
     const rec={ base: it?it.updatedAt:undefined, id: id||undefined, tmp: id?undefined:key, name, nameHi:hiFinal, unit, buy:isNaN(buy)?0:buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, aliases, cat };
     const imgChange=photosChanged ? photos.slice() : null;
     closeSheet(); toast(t("saving"));
-    write({action:"upsert",items:[rec]},()=>{
+    write({action:"upsert",src:"edit",items:[rec]},()=>{
       upsertLocal({ id:key, name, nameHi:hiFinal, unit, buy:rec.buy, sell, hsn, gst:gstV, altUnit, altQty, altSell, aliases, cat, imgV: imgChange ? (imgChange.length?Date.now():0) : (it?it.imgV:0), imgs: imgChange ? imgChange.length : (it?it.imgs||0:0), updatedAt:Date.now(), updatedBy:byName(), pending:true });
       if(imgChange && imgChange.length) S.thumbs[key]={v:S.items.find(x=>x.id===key).imgV,d:imgChange[0].thumb||imgChange[0].src||""};
       const bl=S.bill.find(l=>l.id===key); if(bl){ bl.name=name; bl.nameHi=hiFinal; bl.unit=unit; saveBill(); }
@@ -481,7 +500,7 @@ function openBulkAdd(){
       return withCat({ tmp:tmpId(), name:r.name.trim(), nameHi:r.hi.trim()||toHindi(r.name.trim()), unit:r.unit||S.cfg.defaultUnit, buy, sell:toNum(r.sell), hsn:hsn||S.cfg.defaultHsn||"3923", gst:+S.cfg.defaultGst });
     });
     try{
-      for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",items:part}); mergeSaved(j.items); const p=$("#ba-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
+      for(let i=0;i<recs.length;i+=100){ const part=recs.slice(i,i+100); const j=await write({action:"upsert",src:"bulkAdd",items:part}); mergeSaved(j.items); const p=$("#ba-prog"); if(p) p.textContent=t("savingN",Math.min(i+100,recs.length),recs.length); }
       closeSheet(); toast(t("savedN",recs.length)); resyncSoon();
     }catch{ const b=$("#ba-save"); if(b) b.disabled=false; }
   };
@@ -518,7 +537,7 @@ function openBulkEdit(){
   $("#be-save").onclick=()=>{ if(!changes.size) return; if(navigator.onLine===false){ toast(t("offlineWrite")); return; }
     const recs=[...changes].map(([id,ch])=>({id,...ch})); const n=recs.length; const snapshot=S.items.map(x=>({...x}));
     closeSheet(); toast(t("saving"));
-    write({action:"upsert",items:recs},()=>{ recs.forEach(r=>upsertLocal({...r,pending:true,updatedAt:Date.now(),updatedBy:byName()})); })
+    write({action:"upsert",src:"bulk",items:recs},()=>{ recs.forEach(r=>upsertLocal({...r,pending:true,updatedAt:Date.now(),updatedBy:byName()})); })
       .then(j=>{ mergeSaved(j.items); toast(t("savedN",n)); resyncSoon(); }).catch(()=>{ S.items=snapshot; afterLocal(); }); };
   draw();
 }
@@ -585,7 +604,7 @@ async function applyActions(actions){
     ups.push(withCat({ tmp:tmpId(), name:a.name.trim(), nameHi:a.nameHi||toHindi(a.name.trim()), unit:a.unit||S.cfg.defaultUnit, buy:a.buy==null?0:a.buy, sell:a.sell }));
   }
   try{
-    if(ups.length){ const j=await write({action:"upsert",items:ups}); mergeSaved(j.items); }
+    if(ups.length){ const j=await write({action:"upsert",src:"wand",items:ups}); mergeSaved(j.items); }
     if(dels.length){ await write({action:"delete",ids:dels},()=>{ S.items=S.items.filter(x=>!dels.includes(x.id)); S.bill=S.bill.filter(l=>!dels.includes(l.id)); saveBill(); }); }
     closeSheet(); toast(t("appliedN",todo.length)); resyncSoon();
     if(looksLikeCommand(S.q)){ $("#q").value=""; onQuery(""); }

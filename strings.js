@@ -355,5 +355,11 @@ Object.assign(STR.hi, { smT:"आज का हिसाब", smD:"आज की 
   smSub:"देख लें, फिर WhatsApp पर भेजें: खुद को (\"Message yourself\"), परिवार के ग्रुप में या किसी को भी।", smSend:"भेजें", smSendL:"WhatsApp पर भेजें", smOld:"इसके लिए शीट की नई स्क्रिप्ट चाहिए।", smOld_s:"आपकी दुकान के लिए अभी तैयार नहीं। Rate Book सपोर्ट इसे चालू करेगा।" });
 Object.assign(STR.en,{ hsnNone:"No HSN", billFollowed:"Bill updated with the new item details" });
 Object.assign(STR.hi,{ hsnNone:"HSN नहीं", billFollowed:"सामान की नई जानकारी बिल में आ गई" });
+Object.assign(STR.en,{ smCheck:(n,p,u)=>p?`Check the sell price of ${n}: cost went up, ${p}${u?" /"+u:""} keeps the old margin`:`Check the sell price of ${n}: it costs more than it sells for` });
+Object.assign(STR.hi,{ smCheck:(n,p,u)=>p?`${n} का बिक्री रेट जाँचें: लागत बढ़ी, ${p}${u?" /"+u:""} पर पुराना मार्जिन रहेगा`:`${n} का बिक्री रेट जाँचें: ख़रीद, बिक्री से ज़्यादा है` });
+Object.assign(STR.en,{ phT:"Price history", phNone:"No price changes yet.", phSet:p=>`Set at ${p}`, phMore:n=>`Show ${n} more`,
+  phSrc_edit:"Edit item", phSrc_bulk:"Bulk edit", phSrc_bulkAdd:"Bulk add", phSrc_wand:"Typed or spoken change", phSrc_vendor:"Vendor bill", phSrc_sheet:"Changed in the sheet", phSrc_bills:"Worked out from past bills", phSrc_new:"New item", phSrc_app:"" });
+Object.assign(STR.hi,{ phT:"रेट का इतिहास", phNone:"अभी तक कोई रेट नहीं बदला।", phSet:p=>`${p} रखा गया`, phMore:n=>`${n} और देखें`,
+  phSrc_edit:"सामान बदला", phSrc_bulk:"एक साथ बदला", phSrc_bulkAdd:"एक साथ जोड़ा", phSrc_wand:"लिखकर या बोलकर", phSrc_vendor:"वेंडर बिल", phSrc_sheet:"शीट में बदला", phSrc_bills:"पुराने बिलों से अंदाज़ा", phSrc_new:"नया सामान", phSrc_app:"" });
 return STR;
 })();

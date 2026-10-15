@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 52;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 53;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -556,6 +556,8 @@ function doPost(e) {
       if (body.action === 'thumbs') return out_(thumbs_((Array.isArray(body.ids) ? body.ids : String(body.ids || '').split(',')).map(String).filter(String).slice(0, 60)));
       return out_(body.action === 'image' ? image_(str_(body.id, 60)) : images_(str_(body.id, 60))); }
     catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
+  if (body.action === 'priceHist') {   // an item's price history: read-only (the one-time backfill takes the lock itself)
+    try { return out_(Object.assign({ ok: true }, priceHist_(str_(body.id, 40), who.role))); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'insights') {  // the owner's business page: read-only, a few seconds on a big sheet, so no lock
     try { return out_(insights_(body)); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'boot') {      // app start in one request; read-only, so no lock
@@ -579,7 +581,7 @@ function doPost(e) {
       case 'endSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEnd_(k => k.indexOf(id) === 0); res = listSessions_(who); break; }
       case 'setMyPrefs': res = setMyPrefs_(who, body.prefs || {}); break;
       case 'perfIn': res = perfIn_(body); break;
-      case 'upsert': res = upsert_(body.items || [], by); break;
+      case 'upsert': res = upsert_(body.items || [], by, str_(body.src || 'app', 12)); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
       case 'setImages': res = setImages_(str_(body.id, 40), String(body.thumb || ''), body.photos, by); break;
@@ -647,7 +649,7 @@ const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
 const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff', images: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
-  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', aiSetKey: 'owner',
+  vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', priceHist: 'staff', aiSetKey: 'owner',
   setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', perfIn: 'staff', insights: 'owner', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
@@ -725,7 +727,7 @@ function listSessions_(who) { const all = sessAll_();
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
 const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
-  vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, getAccess: 1, notices: 1, noticeRead: 1 };
+  vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, priceHist: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
 function shopPaused_() { const b = boot_(); if (!b || !b.dirUrl) return false;
   const c = CacheService.getScriptCache(); let v = c.get('SHOP_STATUS');
@@ -921,6 +923,9 @@ function editTrigger_() {
 function onSheetEdit(e) {
   try {
     const n = String(e && e.range ? e.range.getSheet().getName() : '').replace(/^Test /, '');
+    try { const g = e.range; if (n === ITEMS && g.getRow() > 1 && g.getNumRows() === 1 && g.getNumColumns() === 1 && e.oldValue !== undefined) {   // one price typed in the sheet
+      const f = ['buy', 'sell', 'altSell'].filter(k => C[k] + 1 === g.getColumn())[0];
+      if (f) { const r = g.getSheet().getRange(g.getRow(), 1, 1, COLS.length).getValues()[0]; const L = []; phPush_(L, Date.now(), r, f, e.oldValue, e.value, 'sheet', 'sheet'); phWrite_(L); } } } catch (err) {}
     if (/^(Bills|BillHistory|Customers)$/.test(n)) bumpB_(true);
     else if (/^(Vendors|VendorLedger|VendorDocs|Purchases)$/.test(n)) vbumpAll_();
     else { bump_(); if (n !== ITEMS && n !== CONFIG && n !== IMAGES) { bumpB_(true); vbumpAll_(); } }
@@ -943,8 +948,8 @@ function fy_(d) {
   return start + '-' + String(start + 1).slice(2);
 }
 
-function upsert_(items, by) {
-  const { s, values } = rows_();
+function upsert_(items, by, src) {
+  const { s, values } = rows_(); const plog = [];
   const rowOf = {};
   values.forEach((r, i) => { if (r[C.id]) rowOf[String(r[C.id])] = i; });
   const now = Date.now();
@@ -957,6 +962,7 @@ function upsert_(items, by) {
     if (id) {
       const r = values[rowOf[id]];
       if (it.base && num_(r[C.updatedAt]) > num_(it.base)) { conflicts.push({ id: id, by: str_(r[C.updatedBy], 60), at: num_(r[C.updatedAt]) }); return; }
+      const was = { buy: r[C.buy], sell: r[C.sell], altSell: r[C.altSell] };
       ['name', 'nameHi', 'unit'].forEach(k => { if (it[k] !== undefined) r[C[k]] = str_(it[k], k === 'unit' ? 30 : 200); });
       ['buy', 'sell'].forEach(k => { if (it[k] !== undefined && it[k] !== null) r[C[k]] = num_(it[k]); });
       if (it.hsn !== undefined) { const h = hsn_(it.hsn); r[C.hsn] = h ? "'" + h : ''; }
@@ -967,6 +973,7 @@ function upsert_(items, by) {
       if (it.aliases !== undefined) r[C.aliases] = str_(it.aliases, 300);
       if (it.cat !== undefined) r[C.cat] = str_(it.cat, 40).trim();
       r[C.updatedAt] = now; r[C.updatedBy] = by;
+      ['buy', 'sell', 'altSell'].forEach(f => phPush_(plog, now, r, f, was[f], r[C[f]], by, src));
       s.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([r]);
       saved.push(pub_(r, it.tmp));
     } else {
@@ -982,9 +989,11 @@ function upsert_(items, by) {
       r[C.aliases] = str_(it.aliases || '', 300); r[C.cat] = str_(it.cat || '', 40).trim();
       r[C.updatedAt] = now; r[C.updatedBy] = by;
       appended.push(r); saved.push(pub_(r, it.tmp));
+      ['buy', 'sell', 'altSell'].forEach(f => phPush_(plog, now, r, f, '', r[C[f]], by, src || 'new'));
     }
   });
   if (appended.length) s.getRange(s.getLastRow() + 1, 1, appended.length, COLS.length).setValues(appended);
+  phWrite_(plog);
   return { items: saved, conflicts: conflicts };
 }
 
@@ -1819,6 +1828,7 @@ function insights_(body) {
   const tz = isFinite(Number(body.tz)) ? Math.round(Number(body.tz)) : -330;
   const dayOf = d => isNaN(d) ? '' : new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
   const today = dayOf(new Date());
+  try { phEnsure_(); } catch (e) {}   // the price history's one-time start from past bills
   return rcRead_('ins:' + ENV_ + ':' + tz, () => getRev_() + ':' + brevC_(ENV_) + ':' + vrevC_(ENV_) + ':' + today, () => insightsBuild_(dayOf, today)); }
 /** The admin dashboard asks for a shop's business page with the shop's own health key (the Directory holds it), real or test mode. */
 function insightsKey_(p) { const P = PropertiesService.getScriptProperties(), b = boot_(), want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
@@ -1838,6 +1848,8 @@ function insightsBuild_(dayOf, today) {
   const ITEMS_ = (listCached_().items || []), byId = {}, byName = {};
   ITEMS_.forEach(it => { byId[it.id] = it; const nm = String(it.name || '').trim().toLowerCase(); if (nm && !byName[nm]) byName[nm] = it; });
   const ref = it => ({ id: it.id, name: it.name, unit: it.unit });
+  /* price history: each item's latest buy-price change (earlier price and when) */
+  const PHR = phRows_(), PHI = {}; PHR.filter(x => x.f === 'buy' && x.o > 0).sort((a, b) => a.at - b.at).forEach(x => { PHI[x.id] = { pb: x.o, on: x.day, n: x.n }; });
   /* purchases (matched vendor-bill lines): per item, by date, in the item's own unit */
   const SS = ss_(), has = nm => !!SS.getSheetByName(tab_(nm));   // read only what exists: this page never adds tabs to the sheet
   const pur = {}; if (has('Purchases')) try { const P = vtab_('Purchases', PUR_COLS);
@@ -1897,10 +1909,15 @@ function insightsBuild_(dayOf, today) {
         if (!it) return;
         const a = IT[it.id] || (IT[it.id] = { q30: 0, a30: 0, qP: 0, aP: 0, a90: 0, a180: 0, q180: 0, last: '', bills30: 0, rates: {}, below: 0, belowAmt: 0, leak: 0, pSale30: 0, pCost30: 0, noBuy30: 0, sinceBuy: 0 });
         a.a180 = r2_(a.a180 + amt); a.q180 = r2_(a.q180 + qM); if (day > a.last) a.last = day;
+        { const sbl = num_(l.buy); if (sbl > 0) { const sbM = r2_(alt ? sbl * it.altQty : sbl); if (Math.abs(sbM - (+it.buy || 0)) >= 0.005 && (!a.pbD || day >= a.pbD)) { a.pb = sbM; a.pbD = day; } } }
         if (day >= d90) a.a90 = r2_(a.a90 + amt);
         if (lastPur[it.id] && day >= lastPur[it.id].d) a.sinceBuy = r2_(a.sinceBuy + qM);
         if (in30) { a.q30 = r2_(a.q30 + qM); a.a30 = r2_(a.a30 + amt); if (!seen[it.id]) { seen[it.id] = 1; a.bills30++; }
-          if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (it.buy - rM) * qM); }
+          /* (v53) sold below cost: judged by the buy price saved on the line when it was billed (a buy price raised later
+             doesn't turn an old sale into a loss); lines that saved none use today's, counted separately as an estimate */
+          const sb = num_(l.buy);
+          if (sb > 0) { if (rt < sb - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (sb - rt) * q); a.belowBuy = alt ? r2_(sb * it.altQty) : sb; } }
+          else if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; const d = r2_((it.buy - rM) * qM); a.belowAmt = r2_(a.belowAmt + d); a.belowEst = r2_((a.belowEst || 0) + d); a.belowBuy = it.buy; }
           /* "below your list price": compared with the list price saved on the line when it was billed (lp, per main unit, from
              v52), else today's list price (older bills: counted separately as an estimate, since the price may have changed) */
           const lpS = num_(l.lp), lpM = lpS > 0 ? lpS : it.sell, rk = String(r2_(rM)), bk = String(r[B.billId] || r[B.billNo]);
@@ -1930,7 +1947,7 @@ function insightsBuild_(dayOf, today) {
   const groups = Object.keys(GRP).map(k => { const g = GRP[k]; return { cat: g.cat, sales: g.sales, profit: g.pSale ? r2_(g.pSale - g.pCost) : null, pct: pct(g.pSale, g.pCost), share: tot30 ? Math.round(g.sales / tot30 * 1000) / 10 : 0 }; }).sort((a, b) => b.sales - a.sales);
   const mg = it => it.buy > 0 && it.sell > 0 ? Math.round((it.sell - it.buy) / it.buy * 1000) / 10 : null;
   const belowList = ITEMS_.filter(it => it.buy > 0 && it.sell > 0 && it.sell < it.buy).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, a30: IT[it.id] ? IT[it.id].a30 : 0 })).sort((a, b) => b.a30 - a.a30).slice(0, 15);
-  const soldBelow = sold.filter(x => x.below > 0).sort((a, b) => b.belowAmt - a.belowAmt).slice(0, 10).map(x => ({ ...ref(x.it), lines: x.below, lost: x.belowAmt, buy: x.it.buy }));
+  const soldBelow = sold.filter(x => x.below > 0).sort((a, b) => b.belowAmt - a.belowAmt).slice(0, 10).map(x => ({ ...ref(x.it), lines: x.below, lost: x.belowAmt, buy: x.belowBuy || x.it.buy, est: x.belowEst || 0 }));
   const thin = ITEMS_.filter(it => { const m = mg(it); return m !== null && m >= 0 && m < 5 && IT[it.id] && IT[it.id].a30 > 0; }).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, pct: mg(it), a30: IT[it.id].a30 })).sort((a, b) => b.a30 - a.a30).slice(0, 10);
   /* each rate charged: qty (in the item's own unit), bills, and how much below the list price at that rate; most sold first */
   const spread = sold.filter(x => Object.keys(x.rates).length >= 3 && x.leak > 0).sort((a, b) => b.leak - a.leak).slice(0, 10).map(x => { const R = Object.keys(x.rates).map(k => x.rates[k]), rs = R.map(v => v.r);
@@ -1945,6 +1962,22 @@ function insightsBuild_(dayOf, today) {
     const want = rnd(last.buy * (1 + m)); if (!(want > it.sell)) return;
     buyUp.push({ ...ref(it), was: r2_(prev.buy), now: r2_(last.buy), up: Math.round(up * 1000) / 10, on: last.d, sell: it.sell, suggest: want, pctNow: Math.round((it.sell - last.buy) / last.buy * 1000) / 10, pctWas: Math.round(m * 1000) / 10, q30: IT[id] ? IT[id].q30 : 0 }); });
   buyUp.sort((a, b) => (b.suggest - b.sell) * (b.q30 || 1) - (a.suggest - a.sell) * (a.q30 || 1));
+  /* (v53) the buy price is now at or above the sell price (often just raised): "check the sell price", with the price at the
+     earlier margin when an earlier buy price is known (from bill lines; from v53's price history too) */
+  const checkSell = ITEMS_.filter(it => it.buy > 0 && it.sell > 0 && it.sell <= it.buy + 0.005).map(it => { const a = IT[it.id] || {}, ph = PHI[it.id] && Math.abs(PHI[it.id].n - it.buy) < 0.005 ? PHI[it.id] : null;
+    const pb = ph && ph.pb > 0 ? ph.pb : a.pb > 0 ? a.pb : 0, pbOn = ph && ph.pb > 0 ? ph.on : (a.pbD || '');
+    const m = pb > 0 && pb < it.buy && it.sell > pb ? (it.sell - pb) / pb : 0, suggest = m > 0 ? rnd(it.buy * (1 + m)) : 0;
+    return { ...ref(it), buy: it.buy, sell: it.sell, was: pb || null, on: pbOn, pctWas: m > 0 ? Math.round(m * 1000) / 10 : null, suggest: suggest > it.sell ? suggest : 0,
+      q30: a.q30 || 0, a30: a.a30 || 0, lost: a.belowAmt || 0 }; }).sort((a, b) => b.a30 - a.a30 || b.buy - b.sell - (a.buy - a.sell));
+  const chk = {}; checkSell.forEach(x => chk[x.id] = 1);
+  /* price changes in the last 30 days (price history): per item, buy and sell from → to, and the margin then and now */
+  const pch = {}; PHR.filter(x => x.day >= d30 && (x.f === 'buy' || x.f === 'sell') && byId[x.id]).sort((a, b) => a.at - b.at).forEach(x => {
+    const c = pch[x.id] || (pch[x.id] = { ...ref(byId[x.id]), buy: null, sell: null, on: '', est: true });
+    if (!c[x.f]) c[x.f] = { o: x.o, n: x.n }; else c[x.f].n = x.n; c.on = x.day; if (x.src !== 'bills') c.est = false; });
+  const mOf = (b, s) => b > 0 && s > 0 ? Math.round((s - b) / b * 1000) / 10 : null;
+  const priceChanges = Object.keys(pch).map(id => { const c = pch[id], it = byId[id], b0 = c.buy && c.buy.o != null ? c.buy.o : it.buy, s0 = c.sell && c.sell.o != null ? c.sell.o : it.sell;
+    return Object.assign(c, { buyNow: it.buy, sellNow: it.sell, mWas: mOf(b0, s0), mNow: mOf(it.buy, it.sell) }); })
+    .sort((a, b) => a.on < b.on ? 1 : a.on > b.on ? -1 : 0).slice(0, 30);
   /* restock (estimate, no stock counting): what came in on the last vendor bill, minus what was sold since; habit = usual gap between purchases */
   const vNames = {}; let VA = null; if (has('Vendors') && has('VendorLedger')) try { VA = vAll_(); VA.vendors.forEach(v => vNames[String(v.id)] = String(v.name)); } catch (e) {}
   const restock = [];
@@ -1987,8 +2020,9 @@ function insightsBuild_(dayOf, today) {
     vend.list.sort((a, b) => b.overdue - a.overdue || b.balance - a.balance); vend.list = vend.list.slice(0, 15); }
   /* do this today: up to 5, at most 2 of a kind, biggest money first */
   const cand = [];
-  buyUp.slice(0, 3).forEach(x => cand.push({ k: 'raise', score: (x.suggest - x.sell) * Math.max(1, x.q30), ...x }));
-  soldBelow.slice(0, 3).forEach(x => cand.push({ k: 'below', score: x.lost, ...x }));
+  checkSell.slice(0, 3).forEach(x => cand.push({ k: 'checkSell', score: Math.max(x.lost, x.suggest ? (x.suggest - x.sell) * Math.max(1, x.q30) : 0, x.a30 * 0.2, 1), ...x }));
+  buyUp.filter(x => !chk[x.id]).slice(0, 3).forEach(x => cand.push({ k: 'raise', score: (x.suggest - x.sell) * Math.max(1, x.q30), ...x }));
+  soldBelow.filter(x => !chk[x.id]).slice(0, 3).forEach(x => cand.push({ k: 'below', score: x.lost, ...x }));
   remind.slice(0, 3).filter(c => c.oldest >= 30).forEach(c => cand.push({ k: 'remind', score: c.due, ...c }));
   restock.filter(r => r.abc && (r.st === 'out' || r.st === 'soon')).slice(0, 3).forEach(r => cand.push({ k: 'reorder', score: (IT[r.id] ? IT[r.id].a30 : 0), ...r }));
   vend.list.filter(v => v.overdue > 0).slice(0, 2).forEach(v => cand.push({ k: 'payVendor', score: v.overdue * 0.5, ...v }));
@@ -1997,7 +2031,7 @@ function insightsBuild_(dayOf, today) {
   cand.forEach(c => { if (todo.length >= 5 || (kinds[c.k] || 0) >= 2) return; kinds[c.k] = (kinds[c.k] || 0) + 1; c.score = Math.round(c.score); todo.push(c); });
   const staff = Object.keys(STAFF).map(k => STAFF[k]).filter(x => x.bills || x.cancelled).sort((a, b) => b.bills - a.bills);
   return { ok: true, at: Date.now(), env: ENV_, today, shopName: String(cfg.shopName || ''), pulse, todo,
-    margins: { groups, below: belowList, soldBelow, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
+    margins: { groups, below: belowList, soldBelow, checkSell: checkSell.slice(0, 10), priceChanges, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },
     credit, vendors: vend, money: { modes30: modes, modesToday: modesT }, staff, series: insSeries_(SR, sFrom, dueBase) };
@@ -2376,20 +2410,80 @@ function vApply_(x, by) { const lock = LockService.getScriptLock(); lock.waitLoc
     const { s: is, values } = rows_(); const rowOf = {}; values.forEach((r, i) => { if (r[C.id]) rowOf[String(r[C.id])] = i; });
     const now = Date.now(), map = vjson_(vr.map, {}), rows = (Array.isArray(x.rows) ? x.rows : []).slice(0, 120);
     const P = vtab_('Purchases', PUR_COLS); for (let i = P.rows.length - 1; i >= 0; i--) if (String(P.rows[i].entryId) === String(e.id)) P.s.deleteRow(P.rows[i]._r);
-    const add = [], upd = []; let matched = 0;
+    const add = [], upd = [], PL = []; let matched = 0;
     rows.forEach(r => { const k = vKey_(r.d); if (!k) return;
       if (r.skip) { map[k] = { skip: 1 }; return; }
       const id = String(r.itemId || ''); if (rowOf[id] === undefined) return;
       const f = num_(r.f) > 0 ? num_(r.f) : 1, buy = Math.round(num_(r.buy) * 1000) / 1000; if (!(buy > 0)) return;
       map[k] = { id: id, f: f }; matched++;
       add.push([String(e.id), String(e.vendorId), id, "'" + vday_(e.date), str_(r.d, 80), num_(r.q) || '', str_(r.un, 12), num_(r.r) || '', f, buy, now, by]);
-      if (r.upd) { const v = values[rowOf[id]]; v[C.buy] = buy; v[C.updatedAt] = now; v[C.updatedBy] = by; is.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([v]); upd.push(id); } });
+      if (r.upd) { const v = values[rowOf[id]]; phPush_(PL, now, v, 'buy', v[C.buy], buy, by, 'vendor'); v[C.buy] = buy; v[C.updatedAt] = now; v[C.updatedBy] = by; is.getRange(rowOf[id] + 2, 1, 1, COLS.length).setValues([v]); upd.push(id); } });
     if (add.length) P.s.getRange(P.s.getLastRow() + 1, 1, add.length, PUR_COLS.length).setValues(add);
+    phWrite_(PL);
     const keys = Object.keys(map); if (keys.length > 400) keys.slice(0, keys.length - 400).forEach(k => delete map[k]);   // keep the map small
     vr.map = JSON.stringify(map).slice(0, 45000); vwrite_(A.V.s, VEND_COLS, vr);
     e.applied = JSON.stringify({ at: now, by: by, n: matched, u: upd.length }); vwrite_(A.L.s, VLED_COLS, e); vSet_(A, e);
     vbump_(); return Object.assign(vOne_(A, String(e.vendorId)), { updated: upd, matched: matched }); }
   finally { lock.releaseLock(); } }
+/* ---------- price history (v53) ----------
+   PriceHistory tab (shared by test and real mode, like the price list): one row per change of an item's buy, sell or pack price,
+   written by every save (Edit item, Bulk add/edit, wand, a vendor bill's "update buy price", one price typed in the sheet).
+   src: edit / bulk / bulkAdd / wand / app / new / vendor / sheet, or 'bills' for rows worked out once from past bills
+   (phBackfill_), which are estimates. Never stops a save. */
+const PH_TAB = 'PriceHistory', PH_COLS = ['at', 'day', 'itemId', 'name', 'unit', 'field', 'old', 'new', 'by', 'src'];
+const phDay_ = ms => Utilities.formatDate(new Date(ms), BK_TZ, 'yyyy-MM-dd');
+function phPush_(L, at, r, f, o, n, by, src) { const oo = o === '' || o === null || o === undefined ? '' : num_(o), nn = n === '' || n === null || n === undefined ? '' : num_(n);
+  if (oo === nn || (oo !== '' && nn !== '' && Math.abs(oo - nn) < 0.0005) || (oo === '' && !(nn > 0))) return;
+  L.push([at, "'" + phDay_(at), String(r[C.id]), str_(r[C.name], 200), str_(r[C.unit], 30), f, oo, nn, str_(by, 60), str_(src || 'app', 12)]); }
+function phWrite_(L) { if (!L || !L.length) return; try { const s = sheet_(PH_TAB, PH_COLS); s.getRange(s.getLastRow() + 1, 1, L.length, PH_COLS.length).setValues(L); } catch (e) {} }
+function phRows_() { const s = ss_().getSheetByName(PH_TAB); if (!s) return []; const n = s.getLastRow() - 1; if (n <= 0) return [];
+  return s.getRange(2, 1, n, PH_COLS.length).getValues().map(r => ({ at: num_(r[0]), day: String(r[1]).replace(/^'/, ''), id: String(r[2]), name: String(r[3]), unit: String(r[4]),
+    f: String(r[5]), o: r[6] === '' ? null : num_(r[6]), n: r[7] === '' ? null : num_(r[7]), by: String(r[8]), src: String(r[9]) })); }
+/** Once per shop: work out earlier price changes from past bills (both modes). Buy: the buy price each bill line saved, which is
+    the item's buy price on that day. Sell: the list price saved on the line (from v52), else the rate charged; a different rate
+    counts as a new price only when it holds (2+ bills that day, the next day with sales, or it's today's price), so a one-off
+    discount isn't taken for a price change. Finally, a price that differs from the last one seen on bills changed when the item
+    was last edited. Only bills from before the history began are read; rows are marked src 'bills'. */
+function phEnsure_() { const P = PropertiesService.getScriptProperties(); if (P.getProperty('PH_BF')) return;
+  const l = LockService.getScriptLock(), mine = !LOCKED_; if (mine && !l.tryLock(30000)) return;
+  try { if (P.getProperty('PH_BF')) return; phBackfill_(); P.setProperty('PH_BF', String(Date.now())); }
+  catch (e) { try { const c = CacheService.getScriptCache(); let a = []; try { a = JSON.parse(c.get('ERRS') || '[]'); } catch (x) {} a.push(['phBackfill', String(e && e.message || e).slice(0, 200), Date.now()]); c.put('ERRS', JSON.stringify(a.slice(-50)), 21600); } catch (x) {} }
+  finally { if (mine) l.releaseLock(); } }
+function phBackfill_() {
+  const live = phRows_(), start = live.length ? Math.min.apply(null, live.map(x => x.at)) : Date.now(), liveIds = {}; live.forEach(x => liveIds[x.id + '|' + x.f] = 1);
+  const { values } = rows_(); const items = {}, byName = {}; values.forEach(r => { if (!r[C.id]) return; items[String(r[C.id])] = r; byName[String(r[C.name]).trim().toLowerCase()] = r; });
+  const obs = {};   // itemId -> [{at, day, buy, sell, lp, bill}]
+  ['Bills', 'Test Bills'].forEach(tn => { const s = ss_().getSheetByName(tn); if (!s) return; const n = s.getLastRow() - 1; if (n <= 0) return;
+    const col = k => BILL_COLS.indexOf(k) + 1, read = k => s.getRange(2, col(k), n, 1).getValues();
+    const D = read('date'), Ls = read('lines'), Id = read('billId'), No = read('billNo');
+    for (let i = 0; i < n; i++) { const d = D[i][0], at = d && typeof d.getTime === 'function' ? d.getTime() : num_(d); if (!(at > 0) || at >= start) continue;
+      let lines = []; try { lines = JSON.parse(Ls[i][0] || '[]'); } catch (e) {} if (!Array.isArray(lines)) continue;
+      const bill = tn + ':' + (Id[i][0] || No[i][0] || i);
+      lines.forEach(ln => { const r = items[String(ln.id || '')] || byName[String(ln.name || '').trim().toLowerCase()]; if (!r) return;
+        const aq = num_(r[C.altQty]), alt = !!ln.alt && aq > 0, b = num_(ln.buy), rt = num_(ln.rate), lp = num_(ln.lp);
+        (obs[String(r[C.id])] = obs[String(r[C.id])] || []).push({ at, day: phDay_(at), bill, buy: b > 0 ? Math.round((alt ? b * aq : b) * 1000) / 1000 : 0,
+          sell: !alt && rt > 0 ? rt : 0, lp: lp > 0 ? lp : 0 }); }); } });
+  const out = [];
+  Object.keys(obs).forEach(id => { const r = items[id], O = obs[id].sort((a, b) => a.at - b.at), push = (at, f, o, nv) => phPush_(out, at, r, f, o, nv, '', 'bills');
+    /* buy: every change of the saved buy price */
+    let cb = null, lastBuyAt = 0; O.forEach(x => { if (!(x.buy > 0)) return; if (cb !== null && Math.abs(x.buy - cb) >= 0.0005) push(x.at, 'buy', cb, x.buy); cb = x.buy; lastBuyAt = x.at; });
+    const curBuy = num_(r[C.buy]), upd = num_(r[C.updatedAt]);
+    if (cb !== null && curBuy > 0 && Math.abs(curBuy - cb) >= 0.0005 && !liveIds[id + '|buy']) push(Math.max(upd, lastBuyAt + 1), 'buy', cb, curBuy);
+    /* sell: one value a day (the list price saved on the line, else the most common rate, the higher on a tie) */
+    const days = []; O.forEach(x => { const v = x.lp || x.sell; if (!(v > 0)) return; let d = days[days.length - 1]; if (!d || d.day !== x.day) days.push(d = { day: x.day, at: x.at, c: {}, lp: !!x.lp });
+      const k = String(v); (d.c[k] = d.c[k] || { v, n: 0, bills: {} }).n++; d.c[k].bills[x.bill] = 1; if (x.lp) d.lp = true; });
+    days.forEach(d => { const best = Object.keys(d.c).map(k => d.c[k]).sort((a, b) => b.n - a.n || b.v - a.v)[0]; d.v = best.v; d.nb = Object.keys(best.bills).length; });
+    const curSell = num_(r[C.sell]); let cs = null, lastSellAt = 0;
+    days.forEach((d, i) => { if (cs === null) { cs = d.v; lastSellAt = d.at; return; }
+      if (Math.abs(d.v - cs) >= 0.005) { const nx = days[i + 1], holds = d.lp || d.nb >= 2 || (nx && Math.abs(nx.v - d.v) < 0.005) || (!nx && Math.abs(d.v - curSell) < 0.005);
+        if (holds) { push(d.at, 'sell', cs, d.v); cs = d.v; } }
+      if (Math.abs(d.v - cs) < 0.005) lastSellAt = d.at; });
+    if (cs !== null && curSell > 0 && Math.abs(curSell - cs) >= 0.005 && !liveIds[id + '|sell']) push(Math.max(upd, lastSellAt + 1), 'sell', cs, curSell); });
+  out.sort((a, b) => a[0] - b[0]); phWrite_(out); return out.length; }
+/** One item's price history, newest first. Staff see sell and pack prices only. */
+function priceHist_(id, role) { phEnsure_(); const buyOk = ROLE_RANK[role] >= ROLE_RANK.manager;
+  const L = phRows_().filter(x => x.id === String(id) && (buyOk || x.f !== 'buy')).sort((a, b) => b.at - a.at);
+  return { hist: L.slice(0, 60).map(x => ({ at: x.at, day: x.day, f: x.f, o: x.o, n: x.n, by: x.by, src: x.src })), count: L.length }; }
 /** Last purchases of one item (both from every vendor), newest first, for the item screen. */
 function itemBuys_(id) { const P = vtab_('Purchases', PUR_COLS), V = vtab_('Vendors', VEND_COLS); const name = {}; V.rows.forEach(v => name[String(v.id)] = String(v.name));
   const list = P.rows.filter(r => String(r.itemId) === String(id)).map(r => ({ date: vday_(r.date), vendor: name[String(r.vendorId)] || '', vendorId: String(r.vendorId), qty: num_(r.qty), unit: String(r.unit || ''), rate: num_(r.rate), f: num_(r.f) || 1, buy: num_(r.buy), at: num_(r.at) }))

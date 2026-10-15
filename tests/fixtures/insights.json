@@ -1,8 +1,8 @@
 {
  "ok": true,
- "at": 1791982088203,
+ "at": 1792051976978,
  "env": "live",
- "today": "2026-10-14",
+ "today": "2026-10-15",
  "shopName": "Sharma Traders",
  "pulse": {
   "today": {
@@ -13,11 +13,11 @@
    "pct": 30
   },
   "mtd": {
-   "sales": 3161,
-   "bills": 20,
-   "avg": 158.05,
-   "profit": 331,
-   "pct": 12.7
+   "sales": 5036,
+   "bills": 23,
+   "avg": 218.96,
+   "profit": 486,
+   "pct": 11.3
   },
   "lm": {
    "sales": 1200,
@@ -27,15 +27,15 @@
    "pct": 20
   },
   "d30": {
-   "sales": 3941,
-   "bills": 27,
-   "avg": 145.96,
-   "profit": 411,
-   "pct": 12.5,
+   "sales": 5696,
+   "bills": 29,
+   "avg": 196.41,
+   "profit": 546,
+   "pct": 11.1,
    "noBuy": 230,
-   "lineSale": 3941
+   "lineSale": 5696
   },
-  "lmTo": "2026-09-14"
+  "lmTo": "2026-09-15"
  },
  "todo": [
   {
@@ -45,7 +45,7 @@
    "name": "PP Bag",
    "unit": "kg",
    "bought": 10,
-   "on": "2026-10-09",
+   "on": "2026-10-10",
    "sold": 7,
    "left": 3,
    "perDay": 0.83,
@@ -78,7 +78,23 @@
    "balance": 1000,
    "overdue": 1000,
    "due7": 0,
-   "oldest": "2026-09-04"
+   "oldest": "2026-09-05"
+  },
+  {
+   "k": "checkSell",
+   "score": 351,
+   "id": "i7",
+   "name": "PVC 500 ml",
+   "unit": "pc",
+   "buy": 200,
+   "sell": 195,
+   "was": 180,
+   "on": "2026-10-12",
+   "pctWas": 8.3,
+   "suggest": 217,
+   "q30": 9,
+   "a30": 1755,
+   "lost": 0
   },
   {
    "k": "raise",
@@ -89,22 +105,12 @@
    "was": 95,
    "now": 105,
    "up": 10.5,
-   "on": "2026-10-09",
+   "on": "2026-10-10",
    "sell": 120,
    "suggest": 133,
    "pctNow": 14.3,
    "pctWas": 26.3,
    "q30": 25
-  },
-  {
-   "k": "below",
-   "score": 8,
-   "id": "i3",
-   "name": "Foil Roll",
-   "unit": "roll",
-   "lines": 1,
-   "lost": 8,
-   "buy": 50
   }
  ],
  "margins": {
@@ -114,38 +120,53 @@
     "sales": 2760,
     "profit": 260,
     "pct": 10.4,
-    "share": 70
+    "share": 48.5
+   },
+   {
+    "cat": "Bottles",
+    "sales": 1755,
+    "profit": 135,
+    "pct": 8.3,
+    "share": 30.8
    },
    {
     "cat": "Cups",
     "sales": 450,
     "profit": 150,
     "pct": 50,
-    "share": 11.4
+    "share": 7.9
    },
    {
     "cat": "Tape",
     "sales": 309,
     "profit": 9,
     "pct": 3,
-    "share": 7.8
+    "share": 5.4
    },
    {
     "cat": "",
     "sales": 230,
     "profit": null,
     "pct": null,
-    "share": 5.8
+    "share": 4
    },
    {
     "cat": "Foil",
     "sales": 192,
     "profit": -8,
     "pct": -4,
-    "share": 4.9
+    "share": 3.4
    }
   ],
   "below": [
+   {
+    "id": "i7",
+    "name": "PVC 500 ml",
+    "unit": "pc",
+    "buy": 200,
+    "sell": 195,
+    "a30": 1755
+   },
    {
     "id": "i3",
     "name": "Foil Roll",
@@ -162,7 +183,56 @@
     "unit": "roll",
     "lines": 1,
     "lost": 8,
-    "buy": 50
+    "buy": 50,
+    "est": 0
+   }
+  ],
+  "checkSell": [
+   {
+    "id": "i7",
+    "name": "PVC 500 ml",
+    "unit": "pc",
+    "buy": 200,
+    "sell": 195,
+    "was": 180,
+    "on": "2026-10-12",
+    "pctWas": 8.3,
+    "suggest": 217,
+    "q30": 9,
+    "a30": 1755,
+    "lost": 0
+   },
+   {
+    "id": "i3",
+    "name": "Foil Roll",
+    "unit": "roll",
+    "buy": 50,
+    "sell": 48,
+    "was": null,
+    "on": "",
+    "pctWas": null,
+    "suggest": 0,
+    "q30": 4,
+    "a30": 192,
+    "lost": 8
+   }
+  ],
+  "priceChanges": [
+   {
+    "id": "i7",
+    "name": "PVC 500 ml",
+    "unit": "pc",
+    "buy": {
+     "o": 180,
+     "n": 200
+    },
+    "sell": null,
+    "on": "2026-10-12",
+    "est": false,
+    "buyNow": 200,
+    "sellNow": 195,
+    "mWas": 8.3,
+    "mNow": -2.5
    }
   ],
   "thin": [
@@ -184,7 +254,7 @@
     "was": 95,
     "now": 105,
     "up": 10.5,
-    "on": "2026-10-09",
+    "on": "2026-10-10",
     "sell": 120,
     "suggest": 133,
     "pctNow": 14.3,
@@ -240,6 +310,7 @@
  "items": {
   "abc": [
    "i1",
+   "i7",
    "i2"
   ],
   "top": [
@@ -252,6 +323,17 @@
     "bills30": 23,
     "profit30": 260,
     "pct": 10.4,
+    "abc": true
+   },
+   {
+    "id": "i7",
+    "name": "PVC 500 ml",
+    "unit": "pc",
+    "q30": 9,
+    "a30": 1755,
+    "bills30": 2,
+    "profit30": 135,
+    "pct": 8.3,
     "abc": true
    },
    {
@@ -323,7 +405,7 @@
   },
   "noBuy": 1,
   "noCat": 1,
-  "total": 6
+  "total": 7
  },
  "restock": {
   "items": [
@@ -332,7 +414,7 @@
     "name": "PP Bag",
     "unit": "kg",
     "bought": 10,
-    "on": "2026-10-09",
+    "on": "2026-10-10",
     "sold": 7,
     "left": 3,
     "perDay": 0.83,
@@ -359,7 +441,7 @@
     ]
    }
   ],
-  "unknown": 1,
+  "unknown": 2,
   "purchases": 1
  },
  "credit": {
@@ -412,7 +494,7 @@
    {
     "name": "Ravi Stores",
     "mobile": "9000000001",
-    "last": "2026-07-06",
+    "last": "2026-07-07",
     "total": 450,
     "bills": 3
    }
@@ -431,7 +513,7 @@
     "balance": 1000,
     "overdue": 1000,
     "due7": 0,
-    "oldest": "2026-09-04"
+    "oldest": "2026-09-05"
    }
   ],
   "flagged": 1,
@@ -444,7 +526,7 @@
     "usualBuy": 105,
     "best": "Sharma",
     "bestBuy": 95,
-    "bestOn": "2026-09-19",
+    "bestOn": "2026-09-20",
     "diff": 9.5
    }
   ],
@@ -460,7 +542,7 @@
   "modes30": {
    "UPI": 390,
    "Cash": 230,
-   "": 3121
+   "": 4876
   },
   "modesToday": {
    "UPI": 390,
@@ -470,10 +552,10 @@
  "staff": [
   {
    "name": "Mayank",
-   "bills": 17,
+   "bills": 19,
    "edited": 1,
    "cancelled": 0,
-   "sales": 2841
+   "sales": 4596
   },
   {
    "name": "Raju",
@@ -484,7 +566,7 @@
   }
  ],
  "series": {
-  "from": "2026-07-17",
+  "from": "2026-07-18",
   "due": [
    200,
    200,
@@ -661,9 +743,9 @@
    100,
    230,
    310,
-   100,
+   1270,
    420,
-   110,
+   695,
    292,
    120,
    110,
@@ -753,9 +835,9 @@
    1,
    2,
    2,
-   1,
    2,
-   1,
+   2,
+   2,
    2,
    1,
    1,
@@ -845,9 +927,9 @@
    100,
    230,
    310,
-   100,
+   1270,
    420,
-   110,
+   695,
    292,
    120,
    110,
@@ -937,9 +1019,9 @@
    100,
    200,
    300,
-   100,
+   1180,
    300,
-   100,
+   640,
    300,
    100,
    100,

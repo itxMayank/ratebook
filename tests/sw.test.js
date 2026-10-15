@@ -7,7 +7,8 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rbsw-'));
 const SHELLF = JSON.parse(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8').match(/const SHELL = (\[[^\]]*\])/)[1].replace(/'/g, '"')).map(x => x.replace('./', '')).filter(x => x && x !== 'index.html');
 for (const f of ['sw.js', ...SHELLF, ...require('../tools/stamp').ASSETS]) fs.copyFileSync(path.join(ROOT, f), path.join(dir, f));   // + the stamped app.css / strings.js / app.js, served as real files
 fs.writeFileSync(path.join(dir, 'shops.js'), codeJs('shops.js'));   // with the test Directory link (same stamp as the page names; only the address matters here)
-const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill', { files: true }).replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
+const fh = f => require('crypto').createHash('sha256').update(fs.readFileSync(path.join(dir, f))).digest('hex').slice(0, 10);   // the phone checks each file against its stamp (15 Oct 2026)
+const write = ver => fs.writeFileSync(path.join(dir, 'index.html'), appHtml('S,LOCK,appUnlock,addToBill', { files: true }).replace(/shops\.js\?v=[^"]*/, 'shops.js?v=' + fh('shops.js')).replace('<head>', `<head><script>window.__ver=${ver}; sessionStorage.vers=(sessionStorage.vers||'')+${ver}</script>`));
 write(1);
 let netHits = 0;
 const srv = http.createServer((q, r) => { const f = path.join(dir, q.url === '/' ? 'index.html' : q.url.split('?')[0]); if (/index\.html$|\/$/.test(q.url.split('?')[0])) netHits++;
@@ -57,5 +58,18 @@ srv.listen(0, async () => {
     const got = await p.evaluate(() => getComputedStyle(document.body).getPropertyValue('--swtest').trim());
     const keys = await p.evaluate(() => caches.keys().then(async ks => { const out = []; for (const k of ks) for (const r of await (await caches.open(k)).keys()) if (r.url.includes('app.css')) out.push(r.url); return out; }));
     ok(got === '1' && keys.length === 1 && keys[0].includes(h), 'a changed app.css reaches the phone under its new stamp, and the old copy is dropped (' + keys.length + ' saved)'); }
+  // a release still publishing (15 Oct 2026: the app went blank for minutes): the new page is out but one of its files is still
+  // the old one. The phone keeps the working version instead of saving a page it can't run, and switches once the file is there.
+  { const bf = path.join(dir, 'billing.js'), oldB = fs.readFileSync(bf, 'utf8'), newB = oldB + '\n/* release 5 */\n';
+    const h5 = require('crypto').createHash('sha256').update(newB).digest('hex').slice(0, 10);
+    fs.writeFileSync(path.join(dir, 'index.html'), fs.readFileSync(path.join(dir, 'index.html'), 'utf8').replace(/billing\.js\?v=[^"]*/, 'billing.js?v=' + h5).replace(/window\.__ver=\d+/, 'window.__ver=5'));
+    await p.reload(); await p.waitForTimeout(1500); await p.reload(); await p.waitForTimeout(1500);
+    const st = await p.evaluate(() => ({ v: window.__ver, ok: typeof T === 'object' && typeof T.appUnlock === 'function' && /PIN/.test(document.querySelector('#applock').textContent) }));
+    ok(st.v === 4 && st.ok, 'a release still publishing (new page, old billing.js): the phone keeps the working version, never a blank app (' + JSON.stringify(st) + ')');
+    fs.writeFileSync(bf, newB);
+    await p.reload(); await p.waitForFunction(() => window.__ver === 5, null, { timeout: 8000 }).catch(() => {});
+    if (await p.evaluate(() => window.__ver) !== 5) { await p.reload(); await p.waitForTimeout(1500); }
+    await p.waitForFunction(() => typeof T === 'object' && typeof T.appUnlock === 'function', null, { timeout: 8000 }).catch(() => {});
+    ok(await p.evaluate(() => window.__ver === 5 && typeof T === 'object' && typeof T.appUnlock === 'function'), 'once the file is published, the update comes through and works'); }
   await b.close(); srv.close(); done();
 });

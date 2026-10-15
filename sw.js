@@ -1,5 +1,5 @@
 /* Rate Book service worker: keeps the app opening offline. Prices themselves are cached by the page. */
-const VERSION = 'rb-shell-8';
+const VERSION = 'rb-shell-9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-iris-192.png', './icon-iris-512.png', './icon-iris-maskable-192.png', './icon-iris-maskable-512.png', './icon-iris-mono-512.png', './icon-iris.svg', './apple-touch-icon-iris.png', './favicon-iris.png'];
 
 /* The page links its own files with a version stamp ("app.css?v=1a2b3c"). Whenever a copy of the page is saved, the files it
@@ -7,9 +7,17 @@ const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-iris-192.
    stylesheet. Older stamps of the same file are dropped. */
 const assetsOf = html => [...String(html).matchAll(/(?:href|src)="([a-z0-9_-]+\.(?:css|js)\?v=[^"]+)"/gi)].map(m => './' + m[1]);
 const keepOnly = (c, url) => c.keys().then(ks => Promise.all(ks.filter(k => { const u = new URL(k.url); return u.pathname === url.pathname && u.search && u.search !== url.search; }).map(k => c.delete(k))));
-const saveAssets = (c, html) => Promise.all(assetsOf(html).map(a => c.match(a).then(hit => hit || fetch(a, { cache: 'no-store' }).then(r => r.ok ? c.put(a, r).then(() => keepOnly(c, new URL(a, self.location.href))) : null)).catch(() => null)));
+/* A stamped file is only kept if its content really is the version the page asks for: the stamp is the first 10 hex of its
+   SHA-256 (tools/stamp.js). Right after a release GitHub Pages can briefly serve the new page while a file is still missing (404)
+   or still the old one; saving that page anyway opened a blank app until the release finished (seen 15 Oct 2026). */
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+const stampOk = async (res, url) => { if (!res || !res.ok) return false; const v = new URL(url, self.location.href).searchParams.get('v');
+  if (!/^[0-9a-f]{10}$/.test(v || '')) return true; try { return hex(await crypto.subtle.digest('SHA-256', await res.clone().arrayBuffer())).slice(0, 10) === v; } catch (e) { return true; } };
+/* Saves every file the page names; true only if all of them are here and right (the page is adopted only then). */
+const saveAssets = (c, html) => Promise.all(assetsOf(html).map(a => c.match(a).then(hit => hit ? true : fetch(a, { cache: 'no-store' }).then(async r => (await stampOk(r, a)) ? c.put(a, r).then(() => true) : false)).catch(() => false))).then(all => all.every(Boolean));
+const dropOld = (c, html) => Promise.all(assetsOf(html).map(a => keepOnly(c, new URL(a, self.location.href)))).catch(() => {});
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).then(() => c.match('./index.html')).then(r => r ? r.text() : '').then(h => saveAssets(c, h))).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).then(() => c.match('./index.html')).then(r => r ? r.text() : '').then(h => saveAssets(c, h).then(ok => ok && dropOld(c, h)))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
@@ -32,9 +40,12 @@ self.addEventListener('fetch', e => {
           const net = fetch(url.origin + url.pathname, { cache: 'no-store', credentials: 'same-origin' }).then(async res => {   // a plain fetch (a navigation request can't take options)
             if (res && res.ok) {
               const fresh = await res.clone().text(), old = await oldText;
-              await saveAssets(c, fresh);   // its stylesheet and texts first, so the new page is complete when it's offered
-              await c.put('./index.html', res.clone());
-              if (old !== null && old !== fresh) self.clients.matchAll({ type: 'window' }).then(cs => cs.forEach(cl => cl.postMessage({ type: 'rb-update' })));
+              const complete = await saveAssets(c, fresh);   // every file it names first, so the new page is complete when it's offered
+              if (complete || old === null) {   // a release still publishing: keep the working copy, try again on the next open
+                await c.put('./index.html', res.clone());
+                if (complete) dropOld(c, fresh);
+                if (old !== null && old !== fresh) self.clients.matchAll({ type: 'window' }).then(cs => cs.forEach(cl => cl.postMessage({ type: 'rb-update' })));
+              }
             }
             return res;
           });
@@ -47,7 +58,7 @@ self.addEventListener('fetch', e => {
       }
     } else if (url.search.startsWith('?v=')) {
       // a stamped file: the stamp changes whenever the file does, so the saved copy is always right
-      e.respondWith(caches.open(VERSION).then(c => c.match(req).then(r => r || fetch(req).then(res => { if (res.ok) { const copy = res.clone(); c.put(req, copy).then(() => keepOnly(c, url)); } return res; }))));
+      e.respondWith(caches.open(VERSION).then(c => c.match(req).then(r => r || fetch(req).then(async res => { if (await stampOk(res, req.url)) { const copy = res.clone(); c.put(req, copy); } return res; }))));   // older stamps go only when a complete newer page is saved
     } else {
       e.respondWith(caches.match(req).then(r => r || fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); return res; })));
     }

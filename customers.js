@@ -119,13 +119,17 @@ function cuEdit(c){
       if(e&&e.code==="cust_exists" && e.existing){ err.innerHTML=`${esc(t("cuExists",e.existing.name||e.existing.key))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=async()=>{ await custdRefresh(true).catch(()=>{}); custIdx=null; openCustomer(e.existing.key); }; return; }
       err.textContent=e&&e.code==="bad_gstin"?t("gstinBad"):e&&e.code==="bad_mobile"?t("mobBad"):e&&e.code==="bad_name"?t("cuNameNeed"):e&&e.code==="bad_email"?t("emailBad"):e&&e.code==="not_allowed"?t("notAllowed"):errMsg(e); } };
 }
-async function openDues(){
+async function openDues(){ duesSort="date";   // opens with the oldest dues first
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
   sheetKey("dues"), openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
   const have=await duesLocal(); if(have){ duesCache=have; duesShow(); }   // the saved list at once; the fresh one replaces it below
   try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el && !have) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
   duesShow();
 }
+/* Credit list order (15 Oct 2026): oldest unpaid bill first by default (who has waited longest), or most owed first. */
+let duesSort="date";
+const duesSorted=L=>{ const ts=c=>c.oldest?Date.parse(c.oldest)||0:Infinity;
+  return L.slice().sort(duesSort==="amt" ? (a,b)=>(b.c.due||0)-(a.c.due||0) || ts(a.c)-ts(b.c) : (a,b)=>ts(a.c)-ts(b.c) || (b.c.due||0)-(a.c.due||0)); };
 function renderDues(){
   const box=$("#du-body"); if(!box||!duesCache) return;
   const j=duesCache, list=j.customers||[];
@@ -133,14 +137,16 @@ function renderDues(){
   box.innerHTML=`<div style="display:grid;gap:10px">
     <div class="dues-sum"><b class="num">${rs(j.total)}</b><span>${esc(t("duesFrom",list.length,j.bills))}</span></div>
     <input id="du-q" type="search" placeholder="${esc(t("duesSearch"))}" autocomplete="off" value="${esc(duesQ)}">
+    <div class="bl-chips" id="du-sort" role="group" aria-label="${esc(t("duSortL"))}">${["date","amt"].map(k=>`<button type="button" class="chip" data-ds="${k}" aria-pressed="${duesSort===k}">${esc(t(k==="date"?"duSortDate":"duSortAmt"))}</button>`).join("")}</div>
     <div class="bills-list" id="du-list" style="margin-top:0"></div></div>`;
   const draw=()=>{ const q=duesQ.trim().toLowerCase(), dq=q.replace(/\D/g,"");
-    const rows=list.map((c,i)=>({c,i})).filter(({c})=>!q || (c.name||"").toLowerCase().includes(q) || (dq.length>=3 && (c.mobile||"").includes(dq)));
+    const rows=duesSorted(list.map((c,i)=>({c,i})).filter(({c})=>!q || (c.name||"").toLowerCase().includes(q) || (dq.length>=3 && (c.mobile||"").includes(dq))));
     $("#du-list").innerHTML = rows.map(({c,i})=>{ const days=daysSince(c.oldest);
       return `<button type="button" class="duecard" data-dc="${i}"><span class="av">${esc((c.name||"?").trim().charAt(0).toUpperCase())}</span><b>${esc(c.name||c.mobile||"?")}</b><span class="amt num">${rs(c.due)}</span>
         <span class="m">${esc(c.mobile||"")}${c.mobile?" · ":""}${esc(t("billsN",c.bills.length))}</span><span class="age${days>30?" old":""}">${esc(t("since",fmtShort(c.oldest),days))}</span></button>`; }).join("") || `<p class="note">${esc(t("billsNone"))}</p>`; };
   draw();
   $("#du-q").addEventListener("input",e=>{ duesQ=e.target.value; draw(); });
+  $("#du-sort").addEventListener("click",e=>{ const b=e.target.closest("[data-ds]"); if(!b) return; duesSort=b.dataset.ds; $("#du-sort").querySelectorAll("[data-ds]").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
   $("#du-list").addEventListener("click",e=>{ const c=e.target.closest("[data-dc]"); if(c) openDueCustomer(list[+c.dataset.dc]); });
 }
 const fmtShort=d=>d?new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";

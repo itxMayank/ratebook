@@ -327,6 +327,7 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
       <span class="vd-tools">${v.mobile?`<a class="iconbtn" href="${esc(telHref(v.mobile))}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>`:""}
         <button type="button" class="iconbtn" id="vd-share" aria-label="${esc(t("vShare"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg></button>
         <button type="button" class="iconbtn" id="vd-edit" aria-label="${esc(t("vEditVendor"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button></span></div>
+    ${v.mobile||v.note?`<div class="vd-info">${v.mobile?`<div class="vkv"><span>${esc(t("mobL"))}</span><a class="num" id="vd-mob" href="${esc(telHref(v.mobile))}">${esc(vMobShow(v.mobile))}</a></div>`:""}${v.note?`<div class="vkv"><span>${IC.lock} ${esc(t("vNoteL"))}</span><span class="cu-txt" id="vd-note">${esc(v.note)}</span></div>`:""}</div>`:""}
     <div class="vd-acts"><button type="button" class="btn primary" id="vd-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vd-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vd-adj">${esc(t("vReturnShort"))}</button></div>
     <div class="vq-note" id="vq-note" hidden></div>
     ${flagN&&VD.tab!=="bills"?`<button type="button" class="vflagbar" id="vd-flags">${IC.warn} ${esc(t("vFlagBar",flagN))}</button>`:""}
@@ -343,6 +344,8 @@ function vRenderVendor(id,keepScroll){ const D=VD.det[id], body=$("#vd-body"); i
   if(keepScroll && sc) sc.scrollTop=st; vNoteUpd();
 }
 /* ---- vendor add / edit ---- */
+/** "+91 73853 27108" for a saved 10-digit mobile; anything else as typed. */
+function vMobShow(m){ const k=mob10(m); return k ? "+91 "+k.slice(0,5)+" "+k.slice(5) : String(m||""); }
 function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"",mobile:"",gstin:"",address:"",creditDays:"",opening:"",openingDate:vToday(),note:""};
   const back=id?()=>openVendor(id):()=>openVendors();
   openSheet(id?t("vEditVendor"):t("vNewVendor"), `<form class="form" id="vf" novalidate><button type="button" class="btn ghost bl-back" id="vf-back">← ${esc(t("back"))}</button>
@@ -354,13 +357,14 @@ function vVendorForm(id,after){ const v=id&&VD.det[id]?VD.det[id].vendor:{name:"
       <div class="field"><label for="vf-opd">${esc(t("vOpeningDate"))}</label><input id="vf-opd" type="date" value="${esc(v.openingDate||vToday())}"></div></div>
     <p class="note" style="margin:0">${esc(t("vOpeningD"))}</p>
     <div class="field"><label for="vf-addr">${esc(t("vAddress"))}</label><input id="vf-addr" value="${esc(v.address)}" maxlength="200" autocomplete="off"></div>
+    <div class="field"><label for="vf-note">${IC.lock} ${esc(t("vNoteL"))}</label><textarea id="vf-note" rows="2" maxlength="300" placeholder="${esc(t("vNotePh"))}">${esc(v.note||"")}</textarea><small class="note">${esc(t("vNoteD"))}</small></div>
     <div class="err" id="vf-err" role="alert"></div></form>`, `<button class="btn ghost" id="vf-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="vf-save">${esc(t("save"))}</button>`, {full:true});
   $("#vf-back").onclick=back; $("#vf-cancel").onclick=back; if(!id) setTimeout(()=>$("#vf-name")&&$("#vf-name").focus(),250);
   $("#vf-save").onclick=async()=>{ const name=$("#vf-name").value.trim(); if(!name){ $("#vf-err").textContent=t("needName"); return; } const mv=$("#vf-mob").value.trim(); if(mv && normMobile(mv)===null){ $("#vf-err").textContent=t("mobBad"); $("#vf-mob").focus(); return; }
     const op=toNum($("#vf-op").value||"0"); if(isNaN(op)){ $("#vf-err").textContent=t("needRate"); return; }
     if((VD.list?VD.list.vendors:[]).some(x=>x.id!==id && x.name.toLowerCase()===name.toLowerCase())){ $("#vf-err").textContent=t("vDup"); return; }
     const vid=id||vId("v"), cd=Math.max(0,Math.min(365,Math.floor(toNum($("#vf-cd").value||"0"))||0));
-    vqAdd({k:"vendor", v:{id:vid,name,mobile:mob10($("#vf-mob").value)||$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim().toUpperCase(),creditDays:cd,opening:op||0,openingDate:$("#vf-opd").value||vToday(),address:$("#vf-addr").value.trim()}});
+    vqAdd({k:"vendor", v:{id:vid,name,mobile:mob10($("#vf-mob").value)||$("#vf-mob").value.trim(),gstin:$("#vf-gst").value.trim().toUpperCase(),creditDays:cd,opening:op||0,openingDate:$("#vf-opd").value||vToday(),address:$("#vf-addr").value.trim(),note:$("#vf-note").value.trim()}});
     toast(t("saved")); if(after) after(vid); else openVendor(vid); };
 }
 /* ---- + Bill / + Payment / Return ---- */

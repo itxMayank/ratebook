@@ -23,7 +23,7 @@ bill(2, '', '27AAACB3333J1ZW', 19205, 'Balkrishna');   // a company billed befor
 const save = x => { try { return R(`saveCustomer_(${JSON.stringify(x)}, 'Mayank')`); } catch (e) { return { thrown: String(e.message || e) }; } };
 const list = () => R(`listCustomers_('')`).customers;
 const COLS = R('CUST_COLS');
-ok(COLS.slice(-2).join() === 'contact,email' && R('SCRIPT_VERSION') === 55, 'A0 Customers tab gains contact and email; script v55');
+ok(COLS.slice(-2).join() === 'contact,email' && R('SCRIPT_VERSION') >= 55, 'A0 Customers tab gains contact and email; script v55');
 
 // A. new customers
 ok(save({ name: '', mobile: '9000000001' }).thrown === 'bad_name', 'A1 a name is needed');

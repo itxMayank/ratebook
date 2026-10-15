@@ -30,6 +30,7 @@ const html = appHtml('S,t,setTab,openSummary,sumText,appUnlock');
   ok(/This month: ₹[\d,]+/.test(txt) && /Money in: UPI ₹390 · Cash ₹230/.test(txt), 'A5 this month, and money in today by method (biggest first)');
   ok(/\nCredit: ₹700 pending\n/.test(txt) && /\nVendors: ₹1,000 overdue\n/.test(txt) && !/₹0 /.test(txt), 'A6 credit pending and vendor money overdue; parts that are ₹0 today (given, collected, due this week) are left out');
   ok(/Do this:\n1\. /.test(txt) && /Raise PP Bag to ₹133 \/kg/.test(txt) && /Remind Sunil Traders: ₹500 pending for 45 days/.test(txt) && /Pay Mahaveer: ₹1,000 overdue/.test(txt), 'A7 "Do this" as a numbered list in plain words');
+  ok(/Check the sell price of PVC 500 ml: cost went up, ₹217 \/pc keeps the old margin/.test(txt), 'B2b the summary says to check PVC\'s sell price, with the price that keeps the old margin');
   ok(!/undefined|NaN|null|\[object/.test(txt) && /_Rate Book_$/.test(txt), 'A8 nothing broken in the text; signed "Rate Book"');
   const wa = await o.getAttribute('#sm-wa', 'href');
   ok(wa.startsWith('https://wa.me/?text=') && decodeURIComponent(wa.slice(20)) === txt && await o.getAttribute('#sm-wa', 'aria-disabled') === null, 'A9 Send on WhatsApp: opens WhatsApp with exactly this message (pick any chat, yourself included)');

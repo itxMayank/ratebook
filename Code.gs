@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 52;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 53;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1897,10 +1897,15 @@ function insightsBuild_(dayOf, today) {
         if (!it) return;
         const a = IT[it.id] || (IT[it.id] = { q30: 0, a30: 0, qP: 0, aP: 0, a90: 0, a180: 0, q180: 0, last: '', bills30: 0, rates: {}, below: 0, belowAmt: 0, leak: 0, pSale30: 0, pCost30: 0, noBuy30: 0, sinceBuy: 0 });
         a.a180 = r2_(a.a180 + amt); a.q180 = r2_(a.q180 + qM); if (day > a.last) a.last = day;
+        { const sbl = num_(l.buy); if (sbl > 0) { const sbM = r2_(alt ? sbl * it.altQty : sbl); if (Math.abs(sbM - (+it.buy || 0)) >= 0.005 && (!a.pbD || day >= a.pbD)) { a.pb = sbM; a.pbD = day; } } }
         if (day >= d90) a.a90 = r2_(a.a90 + amt);
         if (lastPur[it.id] && day >= lastPur[it.id].d) a.sinceBuy = r2_(a.sinceBuy + qM);
         if (in30) { a.q30 = r2_(a.q30 + qM); a.a30 = r2_(a.a30 + amt); if (!seen[it.id]) { seen[it.id] = 1; a.bills30++; }
-          if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (it.buy - rM) * qM); }
+          /* (v53) sold below cost: judged by the buy price saved on the line when it was billed (a buy price raised later
+             doesn't turn an old sale into a loss); lines that saved none use today's, counted separately as an estimate */
+          const sb = num_(l.buy);
+          if (sb > 0) { if (rt < sb - 0.005) { a.below++; a.belowAmt = r2_(a.belowAmt + (sb - rt) * q); a.belowBuy = alt ? r2_(sb * it.altQty) : sb; } }
+          else if (it.buy > 0 && rM < it.buy - 0.005) { a.below++; const d = r2_((it.buy - rM) * qM); a.belowAmt = r2_(a.belowAmt + d); a.belowEst = r2_((a.belowEst || 0) + d); a.belowBuy = it.buy; }
           /* "below your list price": compared with the list price saved on the line when it was billed (lp, per main unit, from
              v52), else today's list price (older bills: counted separately as an estimate, since the price may have changed) */
           const lpS = num_(l.lp), lpM = lpS > 0 ? lpS : it.sell, rk = String(r2_(rM)), bk = String(r[B.billId] || r[B.billNo]);
@@ -1930,7 +1935,7 @@ function insightsBuild_(dayOf, today) {
   const groups = Object.keys(GRP).map(k => { const g = GRP[k]; return { cat: g.cat, sales: g.sales, profit: g.pSale ? r2_(g.pSale - g.pCost) : null, pct: pct(g.pSale, g.pCost), share: tot30 ? Math.round(g.sales / tot30 * 1000) / 10 : 0 }; }).sort((a, b) => b.sales - a.sales);
   const mg = it => it.buy > 0 && it.sell > 0 ? Math.round((it.sell - it.buy) / it.buy * 1000) / 10 : null;
   const belowList = ITEMS_.filter(it => it.buy > 0 && it.sell > 0 && it.sell < it.buy).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, a30: IT[it.id] ? IT[it.id].a30 : 0 })).sort((a, b) => b.a30 - a.a30).slice(0, 15);
-  const soldBelow = sold.filter(x => x.below > 0).sort((a, b) => b.belowAmt - a.belowAmt).slice(0, 10).map(x => ({ ...ref(x.it), lines: x.below, lost: x.belowAmt, buy: x.it.buy }));
+  const soldBelow = sold.filter(x => x.below > 0).sort((a, b) => b.belowAmt - a.belowAmt).slice(0, 10).map(x => ({ ...ref(x.it), lines: x.below, lost: x.belowAmt, buy: x.belowBuy || x.it.buy, est: x.belowEst || 0 }));
   const thin = ITEMS_.filter(it => { const m = mg(it); return m !== null && m >= 0 && m < 5 && IT[it.id] && IT[it.id].a30 > 0; }).map(it => ({ ...ref(it), buy: it.buy, sell: it.sell, pct: mg(it), a30: IT[it.id].a30 })).sort((a, b) => b.a30 - a.a30).slice(0, 10);
   /* each rate charged: qty (in the item's own unit), bills, and how much below the list price at that rate; most sold first */
   const spread = sold.filter(x => Object.keys(x.rates).length >= 3 && x.leak > 0).sort((a, b) => b.leak - a.leak).slice(0, 10).map(x => { const R = Object.keys(x.rates).map(k => x.rates[k]), rs = R.map(v => v.r);
@@ -1945,6 +1950,14 @@ function insightsBuild_(dayOf, today) {
     const want = rnd(last.buy * (1 + m)); if (!(want > it.sell)) return;
     buyUp.push({ ...ref(it), was: r2_(prev.buy), now: r2_(last.buy), up: Math.round(up * 1000) / 10, on: last.d, sell: it.sell, suggest: want, pctNow: Math.round((it.sell - last.buy) / last.buy * 1000) / 10, pctWas: Math.round(m * 1000) / 10, q30: IT[id] ? IT[id].q30 : 0 }); });
   buyUp.sort((a, b) => (b.suggest - b.sell) * (b.q30 || 1) - (a.suggest - a.sell) * (a.q30 || 1));
+  /* (v53) the buy price is now at or above the sell price (often just raised): "check the sell price", with the price at the
+     earlier margin when an earlier buy price is known (from bill lines; from v53's price history too) */
+  const checkSell = ITEMS_.filter(it => it.buy > 0 && it.sell > 0 && it.sell <= it.buy + 0.005).map(it => { const a = IT[it.id] || {}, ph = (typeof PH_ !== 'undefined' && PH_[it.id]) || null;
+    const pb = ph && ph.pb > 0 ? ph.pb : a.pb > 0 ? a.pb : 0, pbOn = ph && ph.pb > 0 ? ph.on : (a.pbD || '');
+    const m = pb > 0 && pb < it.buy && it.sell > pb ? (it.sell - pb) / pb : 0, suggest = m > 0 ? rnd(it.buy * (1 + m)) : 0;
+    return { ...ref(it), buy: it.buy, sell: it.sell, was: pb || null, on: pbOn, pctWas: m > 0 ? Math.round(m * 1000) / 10 : null, suggest: suggest > it.sell ? suggest : 0,
+      q30: a.q30 || 0, a30: a.a30 || 0, lost: a.belowAmt || 0 }; }).sort((a, b) => b.a30 - a.a30 || b.buy - b.sell - (a.buy - a.sell));
+  const chk = {}; checkSell.forEach(x => chk[x.id] = 1);
   /* restock (estimate, no stock counting): what came in on the last vendor bill, minus what was sold since; habit = usual gap between purchases */
   const vNames = {}; let VA = null; if (has('Vendors') && has('VendorLedger')) try { VA = vAll_(); VA.vendors.forEach(v => vNames[String(v.id)] = String(v.name)); } catch (e) {}
   const restock = [];
@@ -1987,8 +2000,9 @@ function insightsBuild_(dayOf, today) {
     vend.list.sort((a, b) => b.overdue - a.overdue || b.balance - a.balance); vend.list = vend.list.slice(0, 15); }
   /* do this today: up to 5, at most 2 of a kind, biggest money first */
   const cand = [];
-  buyUp.slice(0, 3).forEach(x => cand.push({ k: 'raise', score: (x.suggest - x.sell) * Math.max(1, x.q30), ...x }));
-  soldBelow.slice(0, 3).forEach(x => cand.push({ k: 'below', score: x.lost, ...x }));
+  checkSell.slice(0, 3).forEach(x => cand.push({ k: 'checkSell', score: Math.max(x.lost, x.suggest ? (x.suggest - x.sell) * Math.max(1, x.q30) : 0, x.a30 * 0.2, 1), ...x }));
+  buyUp.filter(x => !chk[x.id]).slice(0, 3).forEach(x => cand.push({ k: 'raise', score: (x.suggest - x.sell) * Math.max(1, x.q30), ...x }));
+  soldBelow.filter(x => !chk[x.id]).slice(0, 3).forEach(x => cand.push({ k: 'below', score: x.lost, ...x }));
   remind.slice(0, 3).filter(c => c.oldest >= 30).forEach(c => cand.push({ k: 'remind', score: c.due, ...c }));
   restock.filter(r => r.abc && (r.st === 'out' || r.st === 'soon')).slice(0, 3).forEach(r => cand.push({ k: 'reorder', score: (IT[r.id] ? IT[r.id].a30 : 0), ...r }));
   vend.list.filter(v => v.overdue > 0).slice(0, 2).forEach(v => cand.push({ k: 'payVendor', score: v.overdue * 0.5, ...v }));
@@ -1997,7 +2011,7 @@ function insightsBuild_(dayOf, today) {
   cand.forEach(c => { if (todo.length >= 5 || (kinds[c.k] || 0) >= 2) return; kinds[c.k] = (kinds[c.k] || 0) + 1; c.score = Math.round(c.score); todo.push(c); });
   const staff = Object.keys(STAFF).map(k => STAFF[k]).filter(x => x.bills || x.cancelled).sort((a, b) => b.bills - a.bills);
   return { ok: true, at: Date.now(), env: ENV_, today, shopName: String(cfg.shopName || ''), pulse, todo,
-    margins: { groups, below: belowList, soldBelow, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
+    margins: { groups, below: belowList, soldBelow, checkSell: checkSell.slice(0, 10), thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },
     credit, vendors: vend, money: { modes30: modes, modesToday: modesT }, staff, series: insSeries_(SR, sFrom, dueBase) };

@@ -274,7 +274,7 @@ function sumText(I){
   if(md){ const ks=Object.keys(md).filter(k=>md[k]>0).sort((a,b)=>md[b]-md[a]); if(ks.length) L.push(t("smIn")+" "+ks.map(k=>(k==="Cash"?t("pmCash"):k==="UPI"?t("pmUpi"):k==="Cheque"?t("pmCheque"):k||t("smNotMarked"))+" "+rs(md[k])).join(" · ")); }
   { const g=S0?S0.given[last]:0, c=S0?S0.got[last]:0, p=[g>0?t("smGiven",rs(g)):"", c>0?t("smGot",rs(c)):"", CR.total>0?t("smPend",rs(CR.total)):""].filter(Boolean); if(p.length) L.push(t("smCredit")+" "+p.join(" · ")); }
   { const od=V.overdue||0, w=(V.sched?V.sched[1]:V.due7)||0, p=[od>0?t("smOver",rs(od)):"", w>0?t("smDue7",rs(w)):""].filter(Boolean); if(p.length) L.push(t("smVend")+" "+p.join(" · ")); }
-  const todo=(I.todo||[]).map(x=> x.k==="raise"?t("smRaise",x.name,rs(x.suggest),x.unit||"") : x.k==="below"?t("smBelow",x.name) : x.k==="remind"?t("smRemind",x.name||x.mobile,rs(x.due),x.oldest)
+  const todo=(I.todo||[]).map(x=> x.k==="raise"?t("smRaise",x.name,rs(x.suggest),x.unit||"") : x.k==="below"?t("smBelow",x.name) : x.k==="checkSell"?t("smCheck",x.name,x.suggest?rs(x.suggest):"",x.unit||"") : x.k==="remind"?t("smRemind",x.name||x.mobile,rs(x.due),x.oldest)
     : x.k==="reorder"?t("smReorder",x.name) : x.k==="payVendor"?t("smPayV",x.name,rs(x.overdue)) : x.k==="noBuy"?t("smNoBuy",x.share) : "").filter(Boolean);
   if(todo.length) L.push("", t("smTodo"), ...todo.map((x,i)=>`${i+1}. ${x}`));
   L.push("", t("smFoot"));

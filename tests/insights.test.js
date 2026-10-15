@@ -18,7 +18,8 @@ const at = n => new Date(Date.parse(dayAgo(n) + 'T12:00:00+05:30'));
 const items = [
   { id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120, cat: 'Bags' }, { id: 'i2', name: 'Paper Cup', unit: 'pc', buy: 1, sell: 1.5, cat: 'Cups' },
   { id: 'i3', name: 'Foil Roll', unit: 'roll', buy: 50, sell: 48, cat: 'Foil' }, { id: 'i4', name: 'Sugar', unit: 'kg', buy: 0, sell: 46, cat: '' },
-  { id: 'i5', name: 'Old Tray', unit: 'pc', buy: 10, sell: 15, cat: 'Trays', updatedAt: Date.now() - 200 * 864e5 }, { id: 'i6', name: 'Tape', unit: 'pc', buy: 100, sell: 103, cat: 'Tape' }];
+  { id: 'i5', name: 'Old Tray', unit: 'pc', buy: 10, sell: 15, cat: 'Trays', updatedAt: Date.now() - 200 * 864e5 }, { id: 'i6', name: 'Tape', unit: 'pc', buy: 100, sell: 103, cat: 'Tape' },
+  { id: 'i7', name: 'PVC 500 ml', unit: 'pc', buy: 200, sell: 195, cat: 'Bottles' }];
 R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; stripFyPrefixOnce_=()=>{}; ensureTriggers_=()=>{}; shopPaused_=()=>false; readConfig_=()=>({roundTo:1, mode:'live'});
    listCached_ = () => ({ ok:true, items: ${JSON.stringify(items)} }); ENV_='live';`);
 const BC = R('BILL_COLS'); let bid = 0;
@@ -38,6 +39,8 @@ for (let d = 1; d <= 20; d++) bill(d, [L('i1', 'PP Bag', 1, d % 3 === 0 ? 100 : 
 bill(3, [L('i3', 'Foil Roll', 4, 48, 50)]);
 // from v52 each line saves the list price on the day (lp): 7 days ago PP Bag was listed at ₹100 and sold at ₹100 (no discount, though
 // today's list price is ₹120); 8 days ago listed at ₹115, sold at ₹110 (₹5 below)
+// PVC: sold 6 and 4 days ago when its buy price was ₹180 (saved on the line); the buy price was raised to ₹200 since, sell still ₹195
+bill(6, [L('i7', 'PVC 500 ml', 6, 195, 180)]); bill(4, [L('i7', 'PVC 500 ml', 3, 195, 180)]);
 bill(7, [{ ...L('i1', 'PP Bag', 2, 100, 100), lp: 100 }]); bill(8, [{ ...L('i1', 'PP Bag', 1, 110, 100), lp: 115 }]);
 bill(2, [L('i1', 'PP Bag', 50, 120, 100)], { cancel: 1, by: 'Raju' });
 // 31-59 days ago: PP Bag sold less (so it's rising); Tape too
@@ -67,6 +70,10 @@ ok(I.margins.below.some(x => x.id === 'i3' && x.sell === 48 && x.buy === 50) && 
 ok(I.margins.thin.some(x => x.id === 'i6' && x.pct === 3), 'B3 Tape: margin only 3%');
 const sp = I.margins.spread.find(x => x.id === 'i1');
 ok(sp && sp.rates === 3 && sp.min === 100 && sp.max === 120 && sp.leak > 0, 'B4 PP Bag sold at 3 different rates (₹100–120): ₹' + (sp && sp.leak) + ' below the list price');
+ok(!I.margins.soldBelow.some(x => x.id === 'i7'), 'B7 PVC sold at ₹195 when it cost ₹180: not "sold below cost" (judged by the buy price saved on the bill, not today\'s ₹200)');
+const cs = I.margins.checkSell.find(x => x.id === 'i7');
+ok(cs && cs.buy === 200 && cs.sell === 195 && cs.was === 180 && cs.pctWas === 8.3 && cs.suggest === 217, 'B8 PVC: buy ₹200 now above sell ₹195; earlier buy ₹180, margin 8.3% → suggest ₹217: ' + JSON.stringify(cs));
+ok(I.todo.some(x => x.k === 'checkSell' && x.id === 'i7') && !I.todo.some(x => x.k === 'below' && x.id === 'i3') && I.margins.checkSell.some(x => x.id === 'i3'), 'B9 "Do this today": check PVC\'s sell price; Foil (priced below cost) appears once, as "check the sell price", not twice');
 ok(sp && sp.leak === 195 && sp.est === 190, 'B5 below list: compared with the list price saved on the line (₹0 on the ₹100 day, ₹5 on the ₹115 day); older lines with today\'s, counted as an estimate (₹190): ' + JSON.stringify(sp && [sp.leak, sp.est]));
 ok(sp && JSON.stringify(sp.brk) === JSON.stringify([{ r: 120, q: 9, n: 8, lk: 0 }, { r: 110, q: 8, n: 8, lk: 75 }, { r: 100, q: 8, n: 7, lk: 120 }]), 'B6 each rate: qty, bills and ₹ below list, most sold first: ' + JSON.stringify(sp && sp.brk));
 ok(I.margins.noBuy.amt === 230 && I.margins.noBuy.items[0].id === 'i4', 'B5 sales with no buy price: Sugar');
@@ -76,7 +83,7 @@ ok(bu && bu.was === 95 && bu.now === 105 && bu.up === 10.5 && bu.suggest === 133
 ok(I.items.abc[0] === 'i1' && I.items.abc.indexOf('i3') < 0, 'C1 the few items that make most of the sales (PP Bag first)');
 ok(I.items.rising.some(x => x.id === 'i1'), 'C2 PP Bag is rising (last 30 days vs the 30 before)');
 ok(I.items.unsold.items.some(x => x.id === 'i5') && !I.items.unsold.items.some(x => x.id === 'i1'), 'C3 Old Tray: not sold in 180 days');
-ok(I.items.noBuy === 1 && I.items.noCat === 1 && I.items.total === 6, 'C4 counts: items without a buy price or a group');
+ok(I.items.noBuy === 1 && I.items.noCat === 1 && I.items.total === 7, 'C4 counts: items without a buy price or a group');
 // restock
 const rs = I.restock.items.find(x => x.id === 'i1');
 ok(rs && rs.bought === 10 && rs.sold > 0 && rs.on === dayAgo(5) && rs.vendor === 'Mahaveer' && rs.abc, 'C5 restock: 10 kg came in 5 days ago from Mahaveer; ' + (rs && rs.sold) + ' kg sold since (estimate)');

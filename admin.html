@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-XQWQnUmJL8TLnrF49Lj+9BqR1XKH0HgHGE8j2WS3NPc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-49htMH+PX57N8y3Wq1ZUwm8pum1AQ6ceD+HSfCyMKFA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -838,6 +838,7 @@ const BZ = {
   en: { title: "Your business", sub: "Worked out from your bills, price list, vendor bills and credit. Updates by itself.", real: "Real", test: "Test", updated: t => `Updated ${t}`,
     todoT: "Do this today", todoNone: "Nothing urgent today. Good work.",
     raise: (n, p, u) => `Raise ${n} to ${p}${u ? " /" + u : ""}`, raiseW: (w, nw, up, d, s, pn, pw) => `Its cost went up from ${w} to ${nw} (+${up}%) on the bill of ${d}. At ${s} your margin is ${pn}%; it was ${pw}%.`,
+    checkSell: n => `Check the sell price of ${n}`, checkSellW: (b, was, on, s, sug, pct) => `Buy price is now ${b}` + (was ? ` (it was ${was}${on ? " on " + on : ""})` : "") + `, but the sell price is still ${s}.` + (sug ? ` At your earlier margin (${pct}%) it would be ${sug}.` : " Selling at this price makes no profit."),
     below: n => `${n} is being sold below cost`, belowW: (k, b, l) => `${k} sale${k === 1 ? "" : "s"} under the buy price ${b} in 30 days: ${l} lost.`,
     remind: (n, d) => `Remind ${n}: ${d} pending`, remindW: (o, u) => `Oldest bill is ${o} days old${u != null ? `; usually pays in ${u} days` : ""}.`,
     reorder: n => `Order ${n} again`, reorderOut: (b, u, d, s) => `Probably finished: ${b} ${u} came on ${d}, ${s} sold since (estimate).`, reorderSoon: (k, v) => `About ${k} day${k === 1 ? "" : "s"} left at the current pace (estimate)${v ? ` · usually from ${v}` : ""}.`,
@@ -873,6 +874,7 @@ const BZ = {
   hi: { title: "आपका कारोबार", sub: "आपके बिल, रेट लिस्ट, वेंडर बिल और उधार से निकाला गया। अपने-आप अपडेट होता है।", real: "असली", test: "टेस्ट", updated: t => `${t} पर अपडेट`,
     todoT: "आज ये करें", todoNone: "आज कुछ ज़रूरी नहीं। बढ़िया।",
     raise: (n, p, u) => `${n} का रेट ${p}${u ? " /" + u : ""} करें`, raiseW: (w, nw, up, d, s, pn, pw) => `${d} के बिल पर इसकी ख़रीद ${w} से ${nw} हो गई (+${up}%)। ${s} पर आपका मुनाफ़ा ${pn}% है; पहले ${pw}% था।`,
+    checkSell: n => `${n} का बिक्री रेट जाँचें`, checkSellW: (b, was, on, s, sug, pct) => `ख़रीद रेट अब ${b} है` + (was ? ` (पहले ${was}${on ? ", " + on : ""})` : "") + `, पर बिक्री रेट अभी भी ${s} है।` + (sug ? ` पहले के मार्जिन (${pct}%) पर यह ${sug} होगा।` : " इस रेट पर बेचने से मुनाफ़ा नहीं होता।"),
     below: n => `${n} ख़रीद से कम में बिक रहा है`, belowW: (k, b, l) => `30 दिन में ${k} बार ख़रीद रेट ${b} से कम में बिका: ${l} का नुकसान।`,
     remind: (n, d) => `${n} को याद दिलाएँ: ${d} बाकी`, remindW: (o, u) => `सबसे पुराना बिल ${o} दिन पुराना है${u != null ? `; आमतौर पर ${u} दिन में देते हैं` : ""}।`,
     reorder: n => `${n} फिर से मँगाएँ`, reorderOut: (b, u, d, s) => `शायद ख़त्म: ${d} को ${b} ${u} आया, उसके बाद ${s} बिका (अंदाज़ा)।`, reorderSoon: (k, v) => `इस रफ़्तार से लगभग ${k} दिन का बचा है (अंदाज़ा)${v ? ` · आमतौर पर ${v} से` : ""}।`,
@@ -946,6 +948,7 @@ function bzTodo(x, shopName) {
   const n = esc(x.name || ""), act = [];
   let t = "", w = "", sev = "medium";
   if (x.k === "raise") { t = bt("raise", n, bzRs(x.suggest), esc(x.unit)); w = bt("raiseW", bzRs(x.was), bzRs(x.now), x.up, bzDay(x.on), bzRs(x.sell), x.pctNow, x.pctWas); }
+  if (x.k === "checkSell") { sev = "high"; const u = x.unit ? " /" + esc(x.unit) : ""; t = bt("checkSell", n); w = bt("checkSellW", bzRs(x.buy) + u, x.was ? bzRs(x.was) : "", x.on ? bzDay(x.on) : "", bzRs(x.sell) + u, x.suggest ? bzRs(x.suggest) + u : "", x.pctWas); }
   if (x.k === "below") { sev = "high"; t = bt("below", n); w = bt("belowW", x.lines, bzRs(x.buy), bzRs(x.lost)); }
   if (x.k === "remind") { t = bt("remind", n, bzRs(x.due)); w = bt("remindW", x.oldest, x.usual); const m = bzWa(x.mobile);
     if (m) act.push(`<a class="btn" target="_blank" rel="noopener" href="https://wa.me/91${m}?text=${encodeURIComponent(bt("waText", x.name, bzRs(x.due), shopName || ""))}">${ic("wa")}${esc(bt("wa"))}</a>`, `<a class="btn ghost" href="tel:+91${m}">${esc(bt("call"))}</a>`); }

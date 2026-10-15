@@ -184,6 +184,13 @@ function renderList(){
     list.innerHTML=`<div class="empty"><h2>${esc(t("emptyT"))}</h2><p>${esc(t("emptyD"))}</p>${can("manager")?`<div class="row-btns"><button class="btn primary" data-act="add">${esc(t("addItem"))}</button><button class="btn ghost" data-act="bulkadd">${esc(t("bulkAdd"))}</button><button class="btn ghost" data-act="cmd">${esc(t("cmdTitle"))}</button></div>`:`<div class="row-btns"><button class="btn primary" data-act="unlock">${esc(t("unlockT"))}</button></div>`}</div>`;
     return;
   }
+  /* search box tapped with nothing typed (phones): the recent items panel instead of the list, same rows as the Bill search */
+  const rec=S.tab==="items" && !q && recMode();
+  list.classList.toggle("rclist",rec);
+  if(rec){ sug.innerHTML=""; more.innerHTML=""; $("#meta-l").textContent=""; $("#meta-r").innerHTML="";
+    document.body.classList.add("qhas"); list.classList.remove("gridv","rows"); list.innerHTML=recPanel();
+    if(renderList.lastQ!=="\u0001" && root.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,root.classList.contains("sres-top")?0:document.documentElement.scrollHeight));
+    renderList.lastQ="\u0001"; return; }
   let {res,suggest,exact}=runSearch(q);
   renderFilters();
   if(S.filter==="bill") res=res.filter(r=>billQty(r.e.it.id)>0);
@@ -203,7 +210,10 @@ function renderList(){
       ${can("manager")?`<div><button class="btn ghost" data-act="addq">${esc(t("addAsNew",q))}</button></div>`:""}</div>`;
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
-  list.innerHTML = shown.map(r=>cardHTML(r.e.it,q)).join("");
+  /* while typing, recent items that match come first under "Recent", then "All items" */
+  const sp=q && S.filter==="all" ? recentSplit(shown,exact) : {rec:[]};
+  list.innerHTML = sp.rec.length ? rcGroup(rcHead(t("rcRecent")), sp.rec.map(r=>cardHTML(r.e.it,q)).join("")) + (sp.rest.length?rcGroup(rcHead(t("rcAll")), sp.rest.map(r=>cardHTML(r.e.it,q)).join("")):"")
+    : shown.map(r=>cardHTML(r.e.it,q)).join("");
   list.classList.toggle("rows", !gridOn() && shown.length>0);   /* phones: one grouped list with dividers */
   /* jump to the best match only when the search text changes, never on a redraw (photos arriving, a sync), so scrolling the results isn't pulled back */
   if(q && q!==renderList.lastQ && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));

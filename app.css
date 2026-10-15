@@ -1747,22 +1747,37 @@ html[lang="hi"] body{line-height:1.5}
 @media (min-width:1024px){ .side-logo{background:none!important;padding:0}.side-logo svg{display:block;width:40px;height:40px} }
 /* Bill-tab search results look like the Prices search (11 Oct 2026): one grouped list with dividers, no letter tiles,
    name on top and Hindi name · price under it; the panel's background reaches behind the search bar, so the bill never shows through. */
-#bill-search-results:not(:empty){background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;gap:0!important}
-#bill-search-results .mini{border:0!important;border-radius:0;background:transparent;box-shadow:none;padding:10px 14px;min-height:60px;gap:12px}
-#bill-search-results .mini + .mini{border-top:1px solid var(--line)!important}
-html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini{border-top:0!important;border-bottom:1px solid var(--line)!important}
-#bill-search-results .mini:active{background:var(--surface-2)}
-#bill-search-results .mini.inb{background:color-mix(in srgb,var(--accent) 7%,transparent)}
-#bill-search-results .mini .thumb{width:44px!important;height:44px!important;border-radius:var(--r-md)}
-#bill-search-results .mini .name{font-size:16px;font-weight:700;line-height:1.3}
-#bill-search-results .mini .msub{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px;line-height:1.45}
-#bill-search-results .mini .msub b{color:var(--fg);font-weight:700}
+#bill-search-results:not(:empty),#list.rclist{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;gap:0!important}
+:is(#bill-search-results,#list.rclist) .mini{border:0!important;border-radius:0;background:transparent;box-shadow:none;padding:10px 14px;min-height:60px;gap:12px}
+:is(#bill-search-results,#list.rclist) .mini + .mini{border-top:1px solid var(--line)!important}
+html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini,html.sbot:not(.sres-top) body.qtyp #list.rclist .mini + .mini{border-top:0!important;border-bottom:1px solid var(--line)!important}
+:is(#bill-search-results,#list.rclist) .mini:active{background:var(--surface-2)}
+:is(#bill-search-results,#list.rclist) .mini.inb{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+:is(#bill-search-results,#list.rclist) .mini .thumb{width:44px!important;height:44px!important;border-radius:var(--r-md)}
+:is(#bill-search-results,#list.rclist) .mini .name{font-size:16px;font-weight:700;line-height:1.3}
+:is(#bill-search-results,#list.rclist) .mini .msub{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px;line-height:1.45}
+:is(#bill-search-results,#list.rclist) .mini .msub b{color:var(--fg);font-weight:700}
 #bill-search-results > .note{padding:14px 16px;margin:0}
 .sheet #bill-search-results:not(:empty){box-shadow:none;border:1.5px solid var(--line)}
-#bill-search-results .mini .mright{flex:none;display:grid;justify-items:end;gap:6px}
-#bill-search-results .mini .mprice{font-size:12px;color:var(--muted);white-space:nowrap}
-#bill-search-results .mini .mprice b{font:800 18px var(--f-display);color:var(--fg);letter-spacing:-.02em}
-#bill-search-results .mini .mrates b{font-weight:600}
+:is(#bill-search-results,#list.rclist) .mini .mright{flex:none;display:grid;justify-items:end;gap:6px}
+:is(#bill-search-results,#list.rclist) .mini .mprice{font-size:12px;color:var(--muted);white-space:nowrap}
+:is(#bill-search-results,#list.rclist) .mini .mprice b{font:800 18px var(--f-display);color:var(--fg);letter-spacing:-.02em}
+:is(#bill-search-results,#list.rclist) .mini .mrates b{font-weight:600}
+/* Recent items (15 Oct 2026): "Recently billed" panel when the search is tapped with nothing typed, and "Recent" / "All items"
+   headings while typing. Same rows as the Bill search; a clock where there's no photo, ✕ to forget one, "Clear all". */
+.rchead{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px 4px;font-size:13px;color:var(--muted);min-height:36px}
+.rchead b{font-weight:700}
+.mini + .rchead,.card + .rchead{border-top:1px solid var(--line)}
+html.sbot:not(.sres-top) body.qtyp :is(#list,#bill-search-results) :is(.mini,.card) + .rchead{border-top:0}
+.rcclr{border:0;background:none;color:var(--accent);font:700 14px var(--f-body,inherit);padding:0 4px;min-height:44px;margin:-6px -4px -6px 0;cursor:pointer}
+.mini .rcic{flex:none;width:24px;height:44px;color:var(--muted);display:grid;place-items:center}
+/* narrow rows (small phone, large text): no clock; name and ✕ on the first line, price and + under them on the right */
+#list.rclist,#bill-search-results{container-type:inline-size}
+@container (max-width:300px){ .mini.rcrow{flex-wrap:wrap;row-gap:4px} .mini.rcrow .rcic{display:none} .mini.rcrow .name{flex:1 1 calc(100% - 44px)} .mini.rcrow .rcx{order:2} .mini.rcrow .mright{order:3;margin-left:auto;display:flex!important;align-items:center;gap:10px} }
+.mini .rcx{flex:none;width:36px;height:36px;margin:0 -8px 0 -4px;border:0;background:none;color:var(--muted);font-size:15px;border-radius:50%;display:grid;place-items:center;cursor:pointer;position:relative}
+.mini .rcx::after{content:"";position:absolute;inset:-4px}
+#list.rclist{display:flex;flex-direction:column;gap:0}
+
 
 /* Screens inside sheets never get wider than the phone (12 Oct 2026, found by tests/screens.app.test.js at 320 px with the
    largest text). A one-column grid used to grow to its widest child (a text box, a row of amounts, the customer header), so

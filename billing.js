@@ -545,8 +545,8 @@ function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
   if(l) l.qty=Math.round((+l.qty+qty)*1000)/1000; else S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false),lp:+it.sell||0});
-  saveBill();
-  const fromSearch = (DESK() || S.tab==="bill") && S.q;
+  saveBill(); recentAdd(id);
+  const fromSearch = (DESK() || S.tab==="bill") && (S.q || renderBillSearch.rec);   // (a recent item tapped in the Bill search counts too)
   if(fromSearch){ const qi=$("#q"); qi.value=""; S.q=""; S.qTabs={}; S.limit=40; $("#q-clear").hidden=true; if(!DESK()) qi.blur(); renderBillSearch(); }
   if(DESK()){ renderBill(); renderList(); const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
   if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); renderBill(); if(fromSearch){ const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),120); } } }

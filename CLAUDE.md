@@ -1075,13 +1075,17 @@ Reported: the app went blank for a few minutes, then showed prices 10–15 min o
 ## Credit order, vendor mobile and private note (15 Oct 2026, `SCRIPT_VERSION` 56 / `NEED_SV` unchanged, `customers.js` / `vendors.js` / `strings.js` / `app.css`)
 
 - **Credit screen order:** two buttons under the search (`#du-sort`, `data-ds`): **Oldest due first** (default, by each customer's oldest unpaid bill) and **Most due first**. Opening Credit always starts on Oldest due first (`duesSort`, `duesSorted`); a search keeps the order. Test: `tests/duesort.app.test.js`.
-- **Vendor page:** under the balance card, the vendor's **mobile** ("+91 98765 01234", tap to call, `#vd-mob`, `vMobShow`) and **private note** (`#vd-note`, 🔒) when present (`.vd-info`).
+- **Vendor page:** the vendor's **mobile** inside the balance card, under the balance ("+91 98765 01234", tap to call, `#vd-mob`, `vMobShow`; moved there from its own line at Mayank's request), and the **private note** (`#vd-note`, 🔒) on a line under the card when present (`.vd-info`).
 - **Vendor add / edit:** a **Private note** box (`#vf-note`, up to 300) with "Only people in your shop see this. It never goes on the vendor's link or statement." Saved in the existing `Vendors.note` column; `vPub_` (the vendor's link) and the statement PDF never include it. v56: `vSaveVendor_` keeps the note when an edit doesn't send one (an older app copy), so it isn't wiped. Tests: `tests/vendors.app.test.js`, `tests/vendornote.test.js`.
 - **Rollout:** merge; update each shop's script to v56 (optional but stops older app copies wiping the note).
 
 ## Every date box is the app's date chip (15 Oct 2026, `app.js` / `app.css` / `strings.js`)
 
 Asked for after the PO date: the vendor form's "As on", vendor bill / payment / return date, the statement's From / To and Reports' custom From / To showed the phone's plain date box. `addDateChip()` (next to `addSearchX`, same MutationObserver idea) wraps every `input[type=date]` in a `.dchip`: the app's calendar icon and the date as dd/mm/yyyy ("Pick a date" when empty, `pickDate`), with the phone's own picker invisible on top (`showPicker` on a tap). The input keeps its id, value and events; an instance `value` setter keeps the text right when code sets the date (e.g. the bill reading). Hand-made chips (`.bl-chip`, `.po-dc`) are left alone. New date fields need nothing extra. Test: `tests/vendors.app.test.js` (chip, text follows a value set by code).
+
+## Typing in a list's search keeps the keyboard (15 Oct 2026, `vendors.js` / `customers.js`)
+
+Reported: on Vendors, each letter typed in the search closed the keyboard. `vRenderList` redrew the whole list, search box included, on every letter (then re-focused the new box, which phones answer by closing and reopening the keyboard). Now typing redraws only the cards (`vCardsDraw`, `vCardsHTML`, `vListFilter`), and a background refresh while the search has focus does the same. The Credit screen's background refresh (`duesShow`) had the same problem and now redraws only its cards and total (`duesDraw`). **Rule for new lists:** never redraw a search box while it has focus; redraw only the results. Test: `tests/searchkeep.app.test.js` (the box stays the same element and focused through typing and background refreshes; fails on the version before).
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

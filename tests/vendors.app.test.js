@@ -79,10 +79,16 @@ let entries = [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', amo
 
   await p.evaluate(() => T.openVendors()); await p.waitForTimeout(400);
   await p.click('#vl-new'); await p.waitForTimeout(300);
-  await p.fill('#vf-name', 'Gupta Plastics'); await p.fill('#vf-mob', '98765 01234');
+  ok(/Private note/.test(await txt('label[for=vf-note]')) && /never goes on the vendor/.test(await txt('#vf')), 'the vendor form has a private note, saying it never goes to the vendor');
+  await p.fill('#vf-name', 'Gupta Plastics'); await p.fill('#vf-mob', '98765 01234'); await p.fill('#vf-note', 'Call before 11 am');
   await p.click('#vf-save'); await p.waitForTimeout(1200);
   const nv = sent.find(x => x.action === 'vSaveVendor');
-  ok(nv && nv.vendor.name === 'Gupta Plastics' && nv.vendor.mobile === '9876501234', 'new vendor saved (mobile as 10 digits)');
+  ok(nv && nv.vendor.name === 'Gupta Plastics' && nv.vendor.mobile === '9876501234' && nv.vendor.note === 'Call before 11 am', 'new vendor saved (mobile as 10 digits, private note)');
+  ok(/\+91 98765 01234/.test(await txt('#vd-mob')) && /^tel:\+919876501234$/.test(await p.getAttribute('#vd-mob', 'href')) && /Call before 11 am/.test(await txt('#vd-note')), 'the vendor page shows the mobile (tap to call) and the private note');
+  await shot('vendor-info');
+  await p.click('#vd-edit'); await p.waitForTimeout(300); await shot('vendor-form');
+  ok(await p.inputValue('#vf-note') === 'Call before 11 am', 'editing the vendor shows the note to change');
+  await p.click('#vf-cancel'); await p.waitForTimeout(300);
   await p.evaluate(() => T.openVendors()); await p.waitForTimeout(600);
   ok((await p.$$('.vcard')).length === 3, 'the new vendor is in the list');
   ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));

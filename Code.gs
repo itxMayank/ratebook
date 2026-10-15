@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 55;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 56;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -2176,7 +2176,7 @@ function vSaveVendor_(x, by) { const A = vAll_(), V = A.V, now = Date.now();
   if (!r) { if (V.rows.some(o => String(o.removed) !== '1' && String(o.name).toLowerCase() === name.toLowerCase())) throw new Error('dup_vendor');
     r = { id: str_(x.id, 40) || ('v' + Utilities.getUuid().replace(/-/g, '').slice(0, 12)), createdAt: now, token: vToken_(), linkOn: '1' }; A.vendors.push(r); }
   r.name = name; r.mobile = str_(x.mobile, 20); r.gstin = str_(x.gstin, 15).toUpperCase(); r.address = str_(x.address, 200); r.creditDays = Math.max(0, Math.min(365, Math.floor(num_(x.creditDays)) || 0));
-  r.opening = num_(x.opening) || 0; r.openingDate = vday_(x.openingDate) || r.openingDate || vday_(new Date()); r.note = str_(x.note, 300); r.updatedAt = now; r.by = by; if (x.removed !== undefined) r.removed = x.removed ? '1' : '';
+  r.opening = num_(x.opening) || 0; r.openingDate = vday_(x.openingDate) || r.openingDate || vday_(new Date()); if (x.note !== undefined) r.note = str_(x.note, 300); r.updatedAt = now;   // (v56) an older app copy that doesn't send the private note leaves it as it was r.by = by; if (x.removed !== undefined) r.removed = x.removed ? '1' : '';
   const isNew = !r._r; vwrite_(V.s, VEND_COLS, r);
   if (isNew) notice_('vendor', { vendorId: r.id, vname: name, amount: r.opening || '', extra: { mobile: r.mobile, days: r.creditDays }, by: by });
   vbump_(); return vOne_(A, r.id); }

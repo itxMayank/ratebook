@@ -9,8 +9,10 @@ const duesKey=()=>"dues:"+S.cfg.mode;
 /** The Credit list as last loaded on this phone (IndexedDB), so the screen opens at once; null if none for this mode. */
 async function duesLocal(){ if(duesCache && duesCache.env===S.cfg.mode) return duesCache; try{ const c=await idb.get("images",duesKey()); return c && c.env===S.cfg.mode && Array.isArray(c.customers) ? c : null; }catch{ return null; } }
 /** Redraw the Credit list in place (only while it's the screen showing), keeping the search box's focus and cursor. */
-function duesShow(){ if(!$("#du-body")) return; const q=$("#du-q"), had=q && document.activeElement===q, pos=had?q.selectionStart:0; renderDues();
-  const n=$("#du-q"); if(had && n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } }
+function duesShow(){ if(!$("#du-body")) return; const q=$("#du-q");
+  if(q && document.activeElement===q && duesDraw && (duesCache.customers||[]).length){ duesDraw(); return; }   // typing in the search: redraw only the cards, so the keyboard stays
+  renderDues(); }
+let duesDraw=null;
 async function loadDues(){
   const env=S.cfg.mode, j=await apiPost({action:"listDues"}); if(env!==S.cfg.mode) return j; j.env=env; duesCache=j; duesDirty=false; idb.set("images",duesKey(),j);
   ls.set(envKey("rb_dues_sum"),{total:j.total||0,n:(j.customers||[]).length}); duesSub(); return j;
@@ -132,19 +134,19 @@ const duesSorted=L=>{ const ts=c=>c.oldest?Date.parse(c.oldest)||0:Infinity;
   return L.slice().sort(duesSort==="amt" ? (a,b)=>(b.c.due||0)-(a.c.due||0) || ts(a.c)-ts(b.c) : (a,b)=>ts(a.c)-ts(b.c) || (b.c.due||0)-(a.c.due||0)); };
 function renderDues(){
   const box=$("#du-body"); if(!box||!duesCache) return;
-  const j=duesCache, list=j.customers||[];
+  const j=duesCache; let list=j.customers||[];
   if(!list.length){ box.innerHTML=`<div class="empty"><h2>${esc(t("duesNone"))}</h2><p>${esc(t("duesTabHint"))}</p></div>`; return; }
   box.innerHTML=`<div style="display:grid;gap:10px">
     <div class="dues-sum"><b class="num">${rs(j.total)}</b><span>${esc(t("duesFrom",list.length,j.bills))}</span></div>
     <input id="du-q" type="search" placeholder="${esc(t("duesSearch"))}" autocomplete="off" value="${esc(duesQ)}">
     <div class="bl-chips" id="du-sort" role="group" aria-label="${esc(t("duSortL"))}">${["date","amt"].map(k=>`<button type="button" class="chip" data-ds="${k}" aria-pressed="${duesSort===k}">${esc(t(k==="date"?"duSortDate":"duSortAmt"))}</button>`).join("")}</div>
     <div class="bills-list" id="du-list" style="margin-top:0"></div></div>`;
-  const draw=()=>{ const q=duesQ.trim().toLowerCase(), dq=q.replace(/\D/g,"");
+  const draw=()=>{ list=duesCache.customers||[]; const sm=document.querySelector("#du-body .dues-sum"); if(sm) sm.innerHTML=`<b class="num">${rs(duesCache.total)}</b><span>${esc(t("duesFrom",list.length,duesCache.bills))}</span>`; const q=duesQ.trim().toLowerCase(), dq=q.replace(/\D/g,"");
     const rows=duesSorted(list.map((c,i)=>({c,i})).filter(({c})=>!q || (c.name||"").toLowerCase().includes(q) || (dq.length>=3 && (c.mobile||"").includes(dq))));
     $("#du-list").innerHTML = rows.map(({c,i})=>{ const days=daysSince(c.oldest);
       return `<button type="button" class="duecard" data-dc="${i}"><span class="av">${esc((c.name||"?").trim().charAt(0).toUpperCase())}</span><b>${esc(c.name||c.mobile||"?")}</b><span class="amt num">${rs(c.due)}</span>
         <span class="m">${esc(c.mobile||"")}${c.mobile?" · ":""}${esc(t("billsN",c.bills.length))}</span><span class="age${days>30?" old":""}">${esc(t("since",fmtShort(c.oldest),days))}</span></button>`; }).join("") || `<p class="note">${esc(t("billsNone"))}</p>`; };
-  draw();
+  draw(); duesDraw=draw;
   $("#du-q").addEventListener("input",e=>{ duesQ=e.target.value; draw(); });
   $("#du-sort").addEventListener("click",e=>{ const b=e.target.closest("[data-ds]"); if(!b) return; duesSort=b.dataset.ds; $("#du-sort").querySelectorAll("[data-ds]").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
   $("#du-list").addEventListener("click",e=>{ const c=e.target.closest("[data-dc]"); if(c) openDueCustomer(list[+c.dataset.dc]); });

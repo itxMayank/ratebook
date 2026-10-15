@@ -248,21 +248,27 @@ function openVendors(){
   vdbInit().then(()=>{ if(vSynced() || vqGet().length) vRenderList();
     vSync().then(()=>{ const b=$("#vl-list"); if(!b) return; if(vSynced() || vqGet().length) vRenderList(); else b.innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; }); });
 }
+/* Typing in the vendor search redraws only the cards: redrawing the box itself (as before) made phones close the keyboard on every letter. */
+function vListFilter(all){ const q=VD.q.trim().toLowerCase(); return all.filter(v=>(VD.chip==="all"||(VD.chip==="owe"&&v.balance>0)||(VD.chip==="overdue"&&v.overdue>0)||(VD.chip==="settled"&&v.balance<=0)) && (!q||v.name.toLowerCase().includes(q)||String(v.mobile).includes(q))); }
+function vCardsHTML(all,list){ return list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}${v.flagged?` <span class="pill chk bad">${IC.warn} ${v.flagged}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
+      || `<div class="empty" style="padding:24px 8px"><h2>${esc(t(all.length?"vNoMatch":"vEmptyT"))}</h2>${all.length?"":`<p>${esc(t("vEmptyD"))}</p>`}</div>`; }
+function vCardsDraw(){ const box=$("#vl-list"), el=box&&box.querySelector(".vl-cards"); if(!el || !VD.list) return; const all=VD.list.vendors.slice().sort((a,b)=>(b.lastAt||0)-(a.lastAt||0));
+  el.innerHTML=vCardsHTML(all,vListFilter(all)); el.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>openVendor(b.dataset.vid)); }
 function vRenderList(){
   const box=$("#vl-list"); if(!box || !VD.list) return; const all=VD.list.vendors.slice().sort((a,b)=>(b.lastAt||0)-(a.lastAt||0));
   const cnt={all:all.length, owe:all.filter(v=>v.balance>0).length, overdue:all.filter(v=>v.overdue>0).length, settled:all.filter(v=>v.balance<=0).length};
-  const q=VD.q.trim().toLowerCase(), list=all.filter(v=>(VD.chip==="all"||(VD.chip==="owe"&&v.balance>0)||(VD.chip==="overdue"&&v.overdue>0)||(VD.chip==="settled"&&v.balance<=0)) && (!q||v.name.toLowerCase().includes(q)||String(v.mobile).includes(q)));
+  const q=VD.q.trim().toLowerCase(), list=vListFilter(all);
+  const qf=$("#vl-q"); if(qf && document.activeElement===qf && box.querySelector(".vl-cards")){ vCardsDraw(); vNoteUpd(); return; }   // someone is typing in the search: keep the box (and the keyboard)
   box.innerHTML=`<div class="vl-top"><div><small>${esc(t("vTotalOwe"))}</small><b class="num">${vMoney(VD.list.owe)}</b><span>${esc(t("vVendorsN",all.length))}${cnt.overdue?` · <em>${esc(t("vOverdueN",cnt.overdue))}</em>`:""}</span></div></div>
     <div class="vl-acts"><button type="button" class="btn primary" id="vl-bill">+ ${esc(t("vBill"))}</button><button type="button" class="btn ghost" id="vl-pay">+ ${esc(t("vPayment"))}</button><button type="button" class="btn ghost" id="vl-new">+ ${esc(t("vVendor"))}</button></div>
     <div class="vq-note" id="vq-note" hidden></div>
     ${all.length>4||q?`<input type="search" id="vl-q" placeholder="${esc(t("vSearchPh"))}" value="${esc(VD.q)}" autocomplete="off">`:""}
     ${all.length?`<div class="fchips vl-chips">${["all","owe","overdue","settled"].filter(k=>k==="all"||cnt[k]).map(k=>`<button type="button" class="fchip" data-vchip="${k}" aria-pressed="${VD.chip===k}">${esc(t("vc_"+k))}${k!=="all"?`<span class="n">${cnt[k]}</span>`:""}</button>`).join("")}</div>`:""}
-    <div class="vl-cards">${list.map(v=>{ const b=vBalLabel(v); return `<button type="button" class="vcard" data-vid="${esc(v.id)}"><span class="vc-av">${esc((v.name||"?").charAt(0).toUpperCase())}</span><span class="vc-mid"><b>${esc(v.name)}</b><small>${v.openBills?esc(t("vOpenBillsN",v.openBills))+(v.oldest?` · ${esc(t("vOldestD",vDays(v.oldest)))}`:""):esc(t("vNoOpen"))}${v.overdue?` <span class="pill due">${esc(t("vOverdueN",v.overdue))}</span>`:""}${v.flagged?` <span class="pill chk bad">${IC.warn} ${v.flagged}</span>`:""}</small></span><span class="vc-amt ${vAmtCls(v)}"><small>${esc(b.lab)}</small><b class="num">${b.amt}</b></span></button>`; }).join("")
-      || `<div class="empty" style="padding:24px 8px"><h2>${esc(t(all.length?"vNoMatch":"vEmptyT"))}</h2>${all.length?"":`<p>${esc(t("vEmptyD"))}</p>`}</div>`}</div>
+    <div class="vl-cards">${vCardsHTML(all,list)}</div>
     ${S.cfg.mode==="test" && can("owner") && all.length ? `<button type="button" class="vmove-link" id="vl-move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>${esc(t("vmLink"))}</button>`:""}`;
   { const mv=$("#vl-move"); if(mv) mv.onclick=vMoveUI; }
   $("#vl-bill").onclick=()=>vForm("bill",null); $("#vl-pay").onclick=()=>vForm("pay",null); $("#vl-new").onclick=()=>vVendorForm(null);
-  const qi=$("#vl-q"); if(qi) qi.oninput=e=>{ VD.q=e.target.value; const pos=e.target.selectionStart; vRenderList(); const n=$("#vl-q"); if(n){ n.focus(); try{ n.setSelectionRange(pos,pos); }catch{} } };
+  const qi=$("#vl-q"); if(qi) qi.oninput=e=>{ VD.q=e.target.value; vCardsDraw(); };
   box.querySelectorAll("[data-vchip]").forEach(b=>b.onclick=()=>{ VD.chip=b.dataset.vchip; vRenderList(); });
   box.querySelectorAll("[data-vid]").forEach(b=>b.onclick=()=>openVendor(b.dataset.vid)); vNoteUpd();
 }

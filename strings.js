@@ -361,5 +361,8 @@ Object.assign(STR.en,{ phT:"Price history", phNone:"No price changes yet.", phSe
   phSrc_edit:"Edit item", phSrc_bulk:"Bulk edit", phSrc_bulkAdd:"Bulk add", phSrc_wand:"Typed or spoken change", phSrc_vendor:"Vendor bill", phSrc_sheet:"Changed in the sheet", phSrc_bills:"Worked out from past bills", phSrc_new:"New item", phSrc_app:"" });
 Object.assign(STR.hi,{ phT:"रेट का इतिहास", phNone:"अभी तक कोई रेट नहीं बदला।", phSet:p=>`${p} रखा गया`, phMore:n=>`${n} और देखें`,
   phSrc_edit:"सामान बदला", phSrc_bulk:"एक साथ बदला", phSrc_bulkAdd:"एक साथ जोड़ा", phSrc_wand:"लिखकर या बोलकर", phSrc_vendor:"वेंडर बिल", phSrc_sheet:"शीट में बदला", phSrc_bills:"पुराने बिलों से अंदाज़ा", phSrc_new:"नया सामान", phSrc_app:"" });
+/* Recent items in the search (15 Oct 2026) */
+Object.assign(STR.en,{ rcTitle:"Recently billed", rcRecent:"Recent", rcAll:"All items", rcClear:"Clear all", rcRm:n=>`Remove ${n} from recent` });
+Object.assign(STR.hi,{ rcTitle:"हाल में बिल किए", rcRecent:"हाल के", rcAll:"सभी सामान", rcClear:"सब हटाएँ", rcRm:n=>`${n} को हाल की सूची से हटाएँ` });
 return STR;
 })();

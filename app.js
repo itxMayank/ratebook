@@ -266,28 +266,48 @@ function showRenumbered(r){
   openSheet(t("renumT"), `<p style="margin:0">${esc(t("renumD",r.from,r.to))}</p>`, `<button class="btn ghost" id="rn-ok">OK</button>${S.canWrite?`<button class="btn primary" id="rn-open">${esc(t("renumOpen"))}</button>`:""}`);
   $("#rn-ok").onclick=closeSheet; if($("#rn-open")) $("#rn-open").onclick=()=>openBills();
 }
+/* One search result row (Bill-tab search, and the recent items on both tabs). rc: 1 = a recent item (clock instead of the
+   letter tile), 2 = in the "Recently billed" panel (also a ✕ to forget it). */
+const RC_CLOCK='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+function miniHTML(it,q,rc){ const inB=billQty(it.id), img=!!thumbOf(it);
+  return `<div class="mini${inB?" inb":""}${img||rc?"":" noimg"}${rc?" rcrow":""}" role="button" tabindex="0" data-add="${esc(it.id)}">${img?thumbHTML(it,40):rc?`<span class="rcic">${RC_CLOCK}</span>`:""}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="msub" lang="hi">${highlight(it.nameHi,q)}</span>`:""}${hideBuy()?"":`<span class="msub mrates num">${esc(t("buy"))} <b>${rs(it.buy)}</b>${marginPct(it)?` · ${esc(t("margin"))} <b>${marginPct(it)}</b>`:""}</span>`}</span>
+    <span class="mright"><span class="mprice"><b class="num">${rs(it.sell)}</b> /${esc(unitL(it.unit))}</span>${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
+         :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</span>${rc===2?`<button type="button" class="rcx" data-rcx="${esc(it.id)}" aria-label="${esc(t("rcRm",it.name))}">✕</button>`:""}</div>`; }
+/* Recent items panel: open while the search box has focus and nothing is typed (phones). With the search at the bottom the
+   results run upwards from the bar, so a section's heading goes after its rows in the page (it then shows above them). */
+function recMode(){ return !DESK() && document.body.classList.contains("qtyp") && !S.q.trim() && recentIds().length>0; }
+function recRev(){ return !DESK() && root.classList.contains("sbot") && !root.classList.contains("sres-top") && document.body.classList.contains("qtyp"); }
+function rcHead(label,clr){ return `<div class="rchead"><b>${esc(label)}</b>${clr?`<button type="button" class="rcclr" data-rcclr>${esc(t("rcClear"))}</button>`:""}</div>`; }
+function rcGroup(head,rows){ return recRev()? rows+head : head+rows; }
+function recPanel(){ return rcGroup(rcHead(t("rcTitle"),true), recentIds().map(id=>miniHTML(S.byId.get(id),"",2)).join("")); }
 function renderBillSearch(){
-  const box=$("#bill-search-results"); const q=S.q.trim();
-  if(q!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
-  renderBillSearch.lastQ=q;
+  const box=$("#bill-search-results"); const q=S.q.trim(), rec=S.tab==="bill" && !q && recMode(), key=q||(rec?"\u0001":"");
+  if(key!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
+  renderBillSearch.lastQ=key; renderBillSearch.rec=rec;
   const riseOn=on=>{ const r=$("#rise"); if(r) r.classList.toggle("on",on); };   // (a class, not :has(), so older iPhones show it too)
+  if(rec){ riseOn(true); box.innerHTML=recPanel(); return; }
   if(S.tab!=="bill"||!q){ box.innerHTML=""; riseOn(false); return; }
   riseOn(true);
-  const {res}=runSearch(q);
+  const {res,exact}=runSearch(q), {rec:rr,rest}=recentSplit(res,exact);
   /* Tap the row = add and close the search (as before). The small − qty + (or +) changes the quantity and keeps the search open,
-     and shows what's already in the bill when the same item is searched again. */
-  box.innerHTML=res.slice(0,6).map(r=>{const it=r.e.it, inB=billQty(it.id), img=!!thumbOf(it); return `<div class="mini${inB?" inb":""}${img?"":" noimg"}" role="button" tabindex="0" data-add="${esc(it.id)}">${img?thumbHTML(it,40):""}<span class="name">${highlight(it.name,q)}${it.nameHi?`<span class="msub" lang="hi">${highlight(it.nameHi,q)}</span>`:""}${hideBuy()?"":`<span class="msub mrates num">${esc(t("buy"))} <b>${rs(it.buy)}</b>${marginPct(it)?` · ${esc(t("margin"))} <b>${marginPct(it)}</b>`:""}</span>`}</span>
-    <span class="mright"><span class="mprice"><b class="num">${rs(it.sell)}</b> /${esc(unitL(it.unit))}</span>${inB?`<span class="sstep"><button type="button" data-sstep="-1" data-sid="${esc(it.id)}" aria-label="${esc(t("dec"))}">−</button><b class="num">${esc(qtyShort(inB,it.unit))}</b><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`
-         :`<span class="sstep one"><button type="button" data-sstep="1" data-sid="${esc(it.id)}" aria-label="${esc(t("addToBill"))}">+</button></span>`}</span></div>`}).join("") || `<p class="note">${esc(t("noMatch",q))}</p>`;
+     and shows what's already in the bill when the same item is searched again. Recent items that match come first. */
+  const top=rr.slice(0,6), others=rest.slice(0,Math.max(0,6-top.length)), row=(r,rc)=>miniHTML(r.e.it,q,rc);
+  box.innerHTML=(top.length ? rcGroup(rcHead(t("rcRecent")), top.map(r=>row(r,1)).join("")) + (others.length?rcGroup(rcHead(t("rcAll")), others.map(r=>row(r)).join("")):"")
+    : res.slice(0,6).map(r=>row(r)).join("")) || `<p class="note">${esc(t("noMatch",q))}</p>`;
 }
 /** − / + inside a bill-search result: change the quantity, keep the search and keyboard open. */
 function searchStep(id,up){ const it=S.byId.get(id); if(!it) return; const i=S.bill.findIndex(x=>x.id===id);
   if(i<0){ if(!up) return; S.bill.push({id,name:it.name,nameHi:it.nameHi||toHindi(it.name),unit:it.unit,rate:+it.sell||0,qty:1,hsn:itemHsn(it),gst:itemGst(it),buy:itemBuyFor(it,false),lp:+it.sell||0}); }
   else { const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,up); if(l.qty<=0) S.bill.splice(i,1); }
-  saveBill(); renderBadge(); renderBill(); try{navigator.vibrate&&navigator.vibrate(8);}catch{} }
+  if(up) recentAdd(id);
+  saveBill(); renderBadge(); renderBill(); if(S.tab!=="bill") renderList(); try{navigator.vibrate&&navigator.vibrate(8);}catch{} }
 { const bsr=document.getElementById("bill-search-results");
   bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-sstep]") || (!DESK() && e.pointerType!=="mouse")) e.preventDefault(); });   // keep the keyboard up
   bsr.addEventListener("click",e=>{ const b=e.target.closest("[data-sstep]"); if(!b) return; e.stopPropagation(); e.preventDefault(); searchStep(b.dataset.sid, b.dataset.sstep==="1"); },true);
+  const ls_=document.getElementById("list");   // the recent panel on Prices uses the same rows
+  ls_.addEventListener("pointerdown",e=>{ if(e.target.closest(".rcrow,[data-rcclr]") && (e.target.closest("[data-sstep],[data-rcx],[data-rcclr]") || (!DESK() && e.pointerType!=="mouse"))) e.preventDefault(); });
+  ls_.addEventListener("click",e=>{ const b=e.target.closest("#list [data-sstep]"); if(!b) return; e.stopPropagation(); e.preventDefault(); searchStep(b.dataset.sid, b.dataset.sstep==="1"); },true);
+  bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-rcclr]")) e.preventDefault(); });
   bsr.addEventListener("keydown",e=>{ const m=e.target.closest(".mini[data-add]"); if(m && (e.key==="Enter"||e.key===" ") && e.target===m){ e.preventDefault(); m.click(); } }); }
 function renderAll(){
   renderEnv(); applyDesk();
@@ -408,7 +428,14 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
 });
 let blurT;
-function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="q"; document.body.classList.toggle("qe", qf && !a.value.trim()); document.body.classList.toggle("qtyp",qf); try{ dockPos(); }catch{} }
+function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="q"; document.body.classList.toggle("qe", qf && !a.value.trim()); document.body.classList.toggle("qtyp",qf);
+  /* recent items: open on focus with nothing typed, frozen order while open; redrawn when it opens or closes */
+  const rm=qf && !a.value.trim(); if(rm!==!!recSnap){ recSnap=rm?recentAll():null; if(rm || !a || a.id!=="q"){ if(S.tab==="bill") renderBillSearch(); else renderList(); } }
+  try{ dockPos(); }catch{} }
+/* ✕ on a recent item and "Clear all": the search keeps its focus, the panel redraws */
+document.addEventListener("click",e=>{ const x=e.target.closest&&e.target.closest("[data-rcx],[data-rcclr]"); if(!x) return; e.stopPropagation(); e.preventDefault();
+  if(x.dataset.rcx) recentDel(x.dataset.rcx); else recentClear();
+  if(S.tab==="bill") renderBillSearch(); else renderList(); try{ dockPos(); }catch{} },true);
 document.addEventListener("focusin",e=>{
   syncQe();
   if(DESK()) return;   // phone-keyboard helpers are not needed on a laptop

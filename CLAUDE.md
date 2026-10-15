@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 15 October 2026 (add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 15 October 2026 (recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1086,6 +1086,15 @@ Asked for after the PO date: the vendor form's "As on", vendor bill / payment / 
 ## Typing in a list's search keeps the keyboard (15 Oct 2026, `vendors.js` / `customers.js`)
 
 Reported: on Vendors, each letter typed in the search closed the keyboard. `vRenderList` redrew the whole list, search box included, on every letter (then re-focused the new box, which phones answer by closing and reopening the keyboard). Now typing redraws only the cards (`vCardsDraw`, `vCardsHTML`, `vListFilter`), and a background refresh while the search has focus does the same. The Credit screen's background refresh (`duesShow`) had the same problem and now redraws only its cards and total (`duesDraw`). **Rule for new lists:** never redraw a search box while it has focus; redraw only the results. Test: `tests/searchkeep.app.test.js` (the box stays the same element and focused through typing and background refreshes; fails on the version before).
+
+## Recent items in the search (15 Oct 2026, `search.js` / `app.js` / `prices.js` / `billing.js` / `app.css` / `strings.js`, no script change)
+
+Asked for after Samsung's "Recent searches"; four mock-ups were shown and Mayank picked B + D.
+- **Tap the search with nothing typed (phones, Prices and Bill tabs, search at the bottom or top):** a "Recently billed" panel (`recPanel`, `recMode`) with the items this phone last added to a bill, newest first, up to 8 (`RECENT_MAX`). Rows are the Bill search's rows (`miniHTML`, shared now): name, Buy · Margin, price, + (or − qty +), a clock where there's no photo, and ✕ to forget one (`data-rcx`); "Clear all" (`data-rcclr`). Tapping a row adds it (on the Bill tab it also closes the search, as a typed search does); + / − / ✕ keep the keyboard up. The order is frozen while the panel is open (`recSnap`, set in `syncQe` when the empty search gets focus), so rows don't jump. Nothing billed yet = no panel (the list as before). Laptop: no panel.
+- **While typing:** results that are recent items come first under "Recent", then "All items" (`recentSplit`: only real matches in the top 30 results; Prices only with the "All" filter). With the search at the bottom (results running up from the bar), a heading goes after its rows in the page, so it shows above them (`rcGroup`, `recRev`).
+- **Remembered** by `addToBill` and the + in search rows (`recentAdd`), in `rb_recent` (per phone, per shop through `ls`), item ids only; deleted items drop out (`recentIds` keeps only items still in the list).
+- On the Prices tab the panel is drawn into `#list` (class `rclist`, `qhas` set so the chips step aside and it anchors above the bar). Narrow rows (container under 300 px: small phone, large text) hide the clock and put price + under the name.
+- Test: `tests/recent.app.test.js` (27: panel, order, + / tap / ✕ / Clear all with the keyboard kept, frozen order, Recent / All items while typing and their position by the bar, Bill tab, deleted items, storage, top search + Hindi + 320 px largest text).
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

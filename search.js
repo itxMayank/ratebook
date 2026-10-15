@@ -313,3 +313,19 @@ function hiToken(tok,orig,toks,ti){
   if(low.endsWith("s") && HI_WORDS[low.slice(0,-1)]) return HI_WORDS[low.slice(0,-1)]+"्स";
   return hiWordRules(low);
 }
+
+/* ---------------- Recent items (15 Oct 2026) ----------------
+   The items this phone last added to a bill, newest first (Samsung-style "recent searches", but the item itself so it's one tap).
+   Shown when the search is tapped with nothing typed; while typing, the ones that match come first under "Recent".
+   Per phone (and per shop, through ls). While the panel is open its order is frozen (recSnap), so adding doesn't make rows jump. */
+const RECENT_MAX=8;
+let recSnap=null;
+function recentAll(){ const a=ls.get("rb_recent",[]); return Array.isArray(a)?a.filter(x=>typeof x==="string"):[]; }
+function recentIds(){ return (recSnap||recentAll()).filter(id=>S.byId.has(id)).slice(0,RECENT_MAX); }
+function recentAdd(id){ if(!id) return; const a=recentAll().filter(x=>x!==id); a.unshift(id); ls.set("rb_recent",a.slice(0,RECENT_MAX*3)); }   // a few spare, for items deleted meanwhile
+function recentDel(id){ ls.set("rb_recent",recentAll().filter(x=>x!==id)); if(recSnap) recSnap=recSnap.filter(x=>x!==id); }
+function recentClear(){ ls.set("rb_recent",[]); if(recSnap) recSnap=[]; }
+/** Search results with recent items that match moved to the front (only real matches near the top, so a weak fuzzy hit never jumps a good one). */
+function recentSplit(res,exact){ const ids=exact?recentAll():[]; if(!ids.length) return {rec:[],rest:res};
+  const has=new Set(ids), rec=res.slice(0,30).filter(r=>has.has(r.e.it.id)); if(!rec.length) return {rec,rest:res};
+  const got=new Set(rec.map(r=>r.e.it.id)); return {rec,rest:res.filter(r=>!got.has(r.e.it.id))}; }

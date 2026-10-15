@@ -79,6 +79,11 @@ let entries = [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', amo
 
   await p.evaluate(() => T.openVendors()); await p.waitForTimeout(400);
   await p.click('#vl-new'); await p.waitForTimeout(300);
+  { const d = new Date(), today = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+    const dc = await p.evaluate(() => { const i = document.querySelector('#vf-opd'), w = i.closest('.dchip'); return w ? { t: w.textContent.trim(), svg: !!w.querySelector('svg'), op: getComputedStyle(i).opacity } : null; });
+    ok(dc && dc.t === today && dc.svg && dc.op === '0', 'the "As on" date is the app\'s date chip: calendar icon and ' + today + ' (the phone\'s date box invisible under it) ' + JSON.stringify(dc));
+    await p.evaluate(() => { document.querySelector('#vf-opd').value = '2026-04-01'; });
+    ok(await p.evaluate(() => document.querySelector('#vf-opd').closest('.dchip').textContent.trim()) === '01/04/2026' && await p.inputValue('#vf-opd') === '2026-04-01', 'a date set by the app shows on the chip too; the value is unchanged for saving'); }
   ok(/Private note/.test(await txt('label[for=vf-note]')) && /never goes on the vendor/.test(await txt('#vf')), 'the vendor form has a private note, saying it never goes to the vendor');
   await p.fill('#vf-name', 'Gupta Plastics'); await p.fill('#vf-mob', '98765 01234'); await p.fill('#vf-note', 'Call before 11 am');
   await p.click('#vf-save'); await p.waitForTimeout(1200);

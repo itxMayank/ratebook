@@ -198,6 +198,24 @@ function addSearchX(inp){
 }
 new MutationObserver(()=>document.querySelectorAll('input[type="search"]:not([data-sx])').forEach(addSearchX)).observe(document.body,{childList:true,subtree:true});
 document.querySelectorAll('input[type="search"]').forEach(addSearchX);
+/* Every date box looks like the app's date chip (15 Oct 2026, after the PO date): the app's calendar icon and the date as
+   dd/mm/yyyy, with the phone's own date picker invisible on top (tapping anywhere opens it), like Past bills and the PO date.
+   The input keeps its id, value and events, so code that reads or sets .value works as before; the text follows a value set
+   by code too. Chips drawn by hand (.bl-chip, .po-dc) are left alone. */
+const dchipTxt=v=>/^\d{4}-\d\d-\d\d$/.test(v||"") ? v.slice(8,10)+"/"+v.slice(5,7)+"/"+v.slice(0,4) : t("pickDate");
+const VALDESC=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+function addDateChip(inp){
+  if(inp.dataset.dc || inp.closest(".bl-chip,.po-dc")) return; inp.dataset.dc="1";
+  const w=document.createElement("span"); w.className="dchip"; inp.parentNode.insertBefore(w,inp);
+  w.innerHTML=`<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="dchip-t"></span>`;
+  w.appendChild(inp); const tx=w.querySelector(".dchip-t");
+  const sync=()=>{ const v=VALDESC.get.call(inp); tx.textContent=dchipTxt(v); w.classList.toggle("on",!!v); }; sync();
+  Object.defineProperty(inp,"value",{configurable:true, get(){ return VALDESC.get.call(this); }, set(v){ VALDESC.set.call(this,v); sync(); }});
+  inp.addEventListener("input",sync); inp.addEventListener("change",sync);
+  w.addEventListener("click",e=>{ if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } });
+}
+new MutationObserver(()=>document.querySelectorAll('input[type="date"]:not([data-dc])').forEach(addDateChip)).observe(document.body,{childList:true,subtree:true});
+document.querySelectorAll('input[type="date"]').forEach(addDateChip);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.pendShare) setTimeout(askSent,400); });
 window.addEventListener("focus",()=>{ if(S.pendShare) setTimeout(askSent,600); });
 function downloadBlob(blob,name){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.rel="noopener"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },8000); }

@@ -1079,6 +1079,10 @@ Reported: the app went blank for a few minutes, then showed prices 10–15 min o
 - **Vendor add / edit:** a **Private note** box (`#vf-note`, up to 300) with "Only people in your shop see this. It never goes on the vendor's link or statement." Saved in the existing `Vendors.note` column; `vPub_` (the vendor's link) and the statement PDF never include it. v56: `vSaveVendor_` keeps the note when an edit doesn't send one (an older app copy), so it isn't wiped. Tests: `tests/vendors.app.test.js`, `tests/vendornote.test.js`.
 - **Rollout:** merge; update each shop's script to v56 (optional but stops older app copies wiping the note).
 
+## Every date box is the app's date chip (15 Oct 2026, `app.js` / `app.css` / `strings.js`)
+
+Asked for after the PO date: the vendor form's "As on", vendor bill / payment / return date, the statement's From / To and Reports' custom From / To showed the phone's plain date box. `addDateChip()` (next to `addSearchX`, same MutationObserver idea) wraps every `input[type=date]` in a `.dchip`: the app's calendar icon and the date as dd/mm/yyyy ("Pick a date" when empty, `pickDate`), with the phone's own picker invisible on top (`showPicker` on a tap). The input keeps its id, value and events; an instance `value` setter keeps the text right when code sets the date (e.g. the bill reading). Hand-made chips (`.bl-chip`, `.po-dc`) are left alone. New date fields need nothing extra. Test: `tests/vendors.app.test.js` (chip, text follows a value set by code).
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).

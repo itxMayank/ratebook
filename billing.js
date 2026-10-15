@@ -658,15 +658,15 @@ function custIndex(){
   const local=custCache(), key=(CUSTD&&CUSTD.brev||"")+"|"+S.cfg.mode+"|"+custLV+"|"+Object.keys(local).length+"|"+((CUSTD&&CUSTD.list.length)||0);
   if(custIdx && custIdxKey===key) return custIdx;
   const m=new Map();
-  for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])) m.set(r[0],{mob:r[0],name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6],addr:r[7]||"",note:r[8]||"",lastNo:r[9]||""});
-  for(const k of Object.keys(local)){ const o=local[k], e=m.get(k); if(!e) m.set(k,{mob:k,name:o.name||"",gstin:o.gstin||"",count:o.count||0,total:o.total||0,last:o.last||"",due:+o.due||0});
+  for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])){ const key=r[0]||r[12]; if(key) m.set(key,{key,mob:r[0]||"",id:r[12]||"",name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6],addr:r[7]||"",note:r[8]||"",lastNo:r[9]||"",contact:r[10]||"",email:r[11]||""}); }   // key: the mobile, or the id of a customer saved without one (v55)
+  for(const k of Object.keys(local)){ const o=local[k], e=m.get(k); if(!e) m.set(k,{key:k,mob:k,name:o.name||"",gstin:o.gstin||"",count:o.count||0,total:o.total||0,last:o.last||"",due:+o.due||0});
     else { if(!e.name && o.name) e.name=o.name; if(!e.gstin && o.gstin) e.gstin=o.gstin; } }
   custIdx=[...m.values()].map(c=>({...c, ln:String(c.name||"").toLowerCase(), lg:String(c.gstin||"").toUpperCase()})); custIdxKey=key; return custIdx;
 }
 function custMatches(field,raw){
   const L=custIndex(); let q, out=[];
   if(field==="mob"){ q=String(raw||"").replace(/\D/g,""); if(q.length>10) q=q.slice(-10); if(q.length<3) return [];
-    for(const c of L){ const i=c.mob.indexOf(q); if(i>=0) out.push({c,s:i===0?3:1}); } }
+    for(const c of L){ if(!c.mob) continue; const i=c.mob.indexOf(q); if(i>=0) out.push({c,s:i===0?3:1}); } }
   else if(field==="gstin"){ q=String(raw||"").toUpperCase().replace(/\s/g,""); if(q.length<2) return [];
     for(const c of L){ if(!c.lg) continue; const i=c.lg.indexOf(q); if(i>=0) out.push({c,s:i===0?3:1}); } }
   else { q=String(raw||"").trim().toLowerCase(); if(!q) return [];
@@ -699,9 +699,9 @@ function sugShow(field){
 function sugPick(i){
   const c=SUG.list[i]; if(!c) return; const field=SUG.field; sugClose();
   S.cust=c.name||S.cust; S.custAuto=""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);
-  S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); $("#mob-err").textContent=""; $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
+  if(c.mob){ S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); } $("#mob-err").textContent="";   // a company saved without a mobile keeps what was typed $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
   if(c.gstin){ S.custGstin=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; }
-  { const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once
+  if(c.mob){ const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once
   S.custQ=""; custLookup(); updateBillTotals();
   const el=field==="gstin"?$("#cust-gstin"):field==="mob"?$("#cust-mob"):$("#cust"); el.blur();
   try{ navigator.vibrate && navigator.vibrate(8); }catch{}

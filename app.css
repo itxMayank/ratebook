@@ -1855,3 +1855,7 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 .po-f>.field:first-child{grid-column:1/-1}   /* PO numbers are long (1100-4500253480): a full row, so the number is never cut */
 .po-f .po-x{align-self:end;min-height:44px}
 .po-f input[type=date]{min-height:44px}
+/* Customers: "+ Add customer", and the company part of the customer form (v55) */
+.cu-addbtn{display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;margin:2px 0 6px;min-height:44px}
+.cu-co{border:1.5px solid var(--line);border-radius:var(--r-md);padding:10px 12px 12px;margin:0;display:grid;gap:10px;min-width:0}
+.cu-co legend{padding:0 6px;font-weight:700;font-size:14px}

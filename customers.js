@@ -18,8 +18,8 @@ async function loadDues(){
 
 /** Put a customer on the bill (Customers page → "Start a bill"). A bill already in progress for someone else is kept as an open bill. */
 function custFill(c){ if(S.editing && !S.editing.fresh){ toast(t("cuFinishEdit")); return false; }
-  if(S.bill.length && (S.cust.trim()||S.mob.trim()) && custKey(S.mob)!==c.mob) newHeldBill();
-  S.cust=c.name||""; S.custAuto=""; S.mob=c.mob; S.custGstin=c.gstin||""; $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
+  if(S.bill.length && (S.cust.trim()||S.mob.trim()) && (c.mob ? custKey(S.mob)!==c.mob : S.cust.trim().toLowerCase()!==String(c.name||"").trim().toLowerCase())) newHeldBill();
+  S.cust=c.name||""; S.custAuto=""; S.mob=c.mob||""; S.custGstin=c.gstin||""; $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
   ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_cgstin",S.custGstin); S.custQ=""; custLookup(); updateBillTotals(); custXSync(); return true; }
 /* ---------------- Customers page: list → customer → their bills (same bill view as Past bills) ---------------- */
 const CU={q:"",sort:"recent",lim:150};
@@ -27,32 +27,34 @@ async function openCustomers(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
   sheetKey("customers"), openSheet(t("cuT"), `<div id="cu-page"><div class="bl-bar"><input id="cu-q" type="search" placeholder="${esc(t("cuSearch"))}" autocomplete="off" value="${esc(CU.q)}">
       <div class="bl-chips" id="cu-sort">${["recent","top","due","az"].map(k=>`<button type="button" class="chip" data-cs="${k}" aria-pressed="${CU.sort===k}">${esc(t("cuSort_"+k))}</button>`).join("")}</div></div>
+    ${can("manager")?`<button type="button" class="btn ghost cu-addbtn" id="cu-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>${esc(t("cuAdd"))}</button>`:""}
     <p class="note" id="cu-sum" style="margin:2px 2px 8px"></p><div id="cu-list">${skelCards(5,true)}</div></div>`, "", {full:true});
   $("#cu-q").oninput=e=>{ CU.q=e.target.value; CU.lim=150; cuRender(); };
+  if($("#cu-add")) $("#cu-add").onclick=()=>cuEdit(null);
   $("#cu-sort").onclick=e=>{ const b=e.target.closest("[data-cs]"); if(!b) return; CU.sort=b.dataset.cs; $("#cu-sort").querySelectorAll("[data-cs]").forEach(x=>x.setAttribute("aria-pressed",x===b)); cuRender(); };
   await custdGet(); if(CUSTD) cuRender(); custIdx=null;
   custdRefresh(true).then(()=>{ custIdx=null; if($("#cu-list")) cuRender(); }).catch(()=>{});
 }
 function cuAll(){ const q=CU.q.trim().toLowerCase(), qd=q.replace(/\D/g,"");
-  let L=custIndex().filter(c=>!q || c.ln.includes(q) || (qd.length>=3 && c.mob.includes(qd)) || c.lg.toLowerCase().includes(q));
+  let L=custIndex().filter(c=>!q || c.ln.includes(q) || (qd.length>=3 && c.mob && c.mob.includes(qd)) || c.lg.toLowerCase().includes(q));
   const ts=c=>c.last?Date.parse(c.last)||0:0;
-  L=L.slice().sort(CU.sort==="top"?(a,b)=>(b.total||0)-(a.total||0):CU.sort==="due"?(a,b)=>(b.due||0)-(a.due||0)||ts(b)-ts(a):CU.sort==="az"?(a,b)=>(a.name||a.mob).localeCompare(b.name||b.mob,"en",{sensitivity:"base"}):(a,b)=>ts(b)-ts(a));
+  L=L.slice().sort(CU.sort==="top"?(a,b)=>(b.total||0)-(a.total||0):CU.sort==="due"?(a,b)=>(b.due||0)-(a.due||0)||ts(b)-ts(a):CU.sort==="az"?(a,b)=>(a.name||a.mob||"").localeCompare(b.name||b.mob||"","en",{sensitivity:"base"}):(a,b)=>ts(b)-ts(a));
   if(CU.sort==="due") L=L.filter(c=>c.due>0); return L; }
 function cuRender(){ const el=$("#cu-list"); if(!el) return; const L=cuAll(), due=r2(L.reduce((a,c)=>a+(+c.due||0),0));
   $("#cu-sum").textContent=t("cuSummary",L.length,due>0?rs(due):"");
   if(!L.length){ el.innerHTML=`<div class="empty"><p>${esc(CU.q?t("cuNone",CU.q):t("cuEmpty"))}</p></div>`; return; }
-  el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,CU.lim).map(c=>`<button type="button" class="billcard cucard" data-cm="${esc(c.mob)}"><b>${esc(c.name||("+91 "+c.mob))}</b><span class="amt num"${c.due>0?' style="color:var(--danger)"':""}>${c.due>0?esc(t("cuDue",rs(c.due))):rs(c.total||0)}</span>
-      <span class="meta2">${c.name?esc(c.mob)+" · ":""}${esc(t("billsN",c.count||0))}${c.last?` · ${esc(t("cuLast",fmtShort(c.last)))}`:""}${c.gstin?` <span class="pill gst">GSTIN</span>`:""}</span></button>`).join("")}</div>
+  el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,CU.lim).map(c=>`<button type="button" class="billcard cucard" data-cm="${esc(c.key||c.mob)}"><b>${esc(c.name||("+91 "+c.mob))}</b><span class="amt num"${c.due>0?' style="color:var(--danger)"':""}>${c.due>0?esc(t("cuDue",rs(c.due))):rs(c.total||0)}</span>
+      <span class="meta2">${c.name&&c.mob?esc(c.mob)+" · ":""}${esc(t("billsN",c.count||0))}${c.last?` · ${esc(t("cuLast",fmtShort(c.last)))}`:""}${c.gstin?` <span class="pill gst">GSTIN</span>`:""}</span></button>`).join("")}</div>
     ${L.length>CU.lim?`<button type="button" class="btn ghost" id="cu-more" style="width:100%;margin-top:8px">${esc(t("cuMore",L.length-CU.lim))}</button>`:""}`;
   el.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>openCustomer(b.dataset.cm));
   const mo=$("#cu-more"); if(mo) mo.onclick=()=>{ CU.lim+=300; cuRender(); }; }
-async function openCustomer(mob){ const c=custIndex().find(x=>x.mob===mob)||{mob,name:"",gstin:"",count:0,total:0,due:0,addr:"",note:""};
-  const m=normMobile(mob), title=c.name||("+91 "+mob);
+async function openCustomer(key){ const c=custIndex().find(x=>(x.key||x.mob)===key)||{key,mob:/^\d{10}$/.test(key)?key:"",name:"",gstin:"",count:0,total:0,due:0,addr:"",note:""};
+  const mob=c.mob||"", m=mob?normMobile(mob):"", title=c.name||("+91 "+mob);
   const stat=(k,v,cls)=>`<div class="cu-stat"><span>${esc(k)}</span><b class="num${cls?" "+cls:""}">${v}</b></div>`;
-  sheetKey("cust:"+mob), openSheet(title, `<div class="cu-page" style="display:grid;gap:12px"><div><button type="button" class="btn ghost" id="cu-back">← ${esc(t("cuT"))}</button></div>
-    <div class="cu-card"><div class="cu-top"><div class="cu-av">${esc((c.name||"#").trim().charAt(0).toUpperCase())}</div><div style="min-width:0"><b class="cu-name">${esc(c.name||t("cuNoName"))}</b><span class="cu-mob num">+91 ${esc(mob.slice(0,5)+" "+mob.slice(5))}</span></div>
+  sheetKey("cust:"+key), openSheet(title, `<div class="cu-page" style="display:grid;gap:12px"><div><button type="button" class="btn ghost" id="cu-back">← ${esc(t("cuT"))}</button></div>
+    <div class="cu-card"><div class="cu-top"><div class="cu-av">${esc((c.name||"#").trim().charAt(0).toUpperCase())}</div><div style="min-width:0"><b class="cu-name">${esc(c.name||t("cuNoName"))}</b><span class="cu-mob num">${mob?"+91 "+esc(mob.slice(0,5)+" "+mob.slice(5)):esc(t("cuNoMob"))}</span></div>
       <span class="cu-acts">${can("manager")?`<button type="button" class="iconbtn" id="cu-edit" aria-label="${esc(t("edit"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg></button>`:""}${m?`<a class="iconbtn" href="${esc(telHref(mob))}" aria-label="${esc(t("call"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a><a class="iconbtn" target="_blank" rel="noopener" href="https://wa.me/${esc(m)}" aria-label="WhatsApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.5A8.4 8.4 0 1 1 21 11.5z"/></svg></a>`:""}</span></div>
-      ${c.gstin||c.addr||c.note?`<div class="cu-info">${c.gstin?`<div class="vkv"><span>GSTIN</span><b class="num">${esc(c.gstin)}</b></div>`:""}${c.addr?`<div class="vkv"><span>${esc(t("cuAddr"))}</span><span class="cu-txt">${esc(c.addr)}</span></div>`:""}${c.note?`<div class="vkv"><span>${IC.lock} ${esc(t("cuNote"))}</span><span class="cu-txt">${esc(c.note)}</span></div>`:""}</div>`:""}
+      ${c.gstin||c.addr||c.note||c.contact||c.email?`<div class="cu-info">${c.gstin?`<div class="vkv"><span>GSTIN</span><b class="num">${esc(c.gstin)}</b></div>`:""}${c.contact?`<div class="vkv"><span>${esc(t("cuContact"))}</span><span class="cu-txt">${esc(c.contact)}</span></div>`:""}${c.email?`<div class="vkv"><span>${esc(t("cuEmail"))}</span><a class="cu-txt" href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`:""}${c.addr?`<div class="vkv"><span>${esc(t("cuAddr"))}</span><span class="cu-txt">${esc(c.addr)}</span></div>`:""}${c.note?`<div class="vkv"><span>${IC.lock} ${esc(t("cuNote"))}</span><span class="cu-txt">${esc(c.note)}</span></div>`:""}</div>`:""}
     </div>
     <div class="cu-stats">${stat(t("cuBills"),fmtN(c.count||0))}${stat(t("cuTotal"),rs(c.total||0))}${stat(t("cuDueL"),rs(c.due||0),c.due>0?"bad":"")}${stat(t("cuLastL"),c.last?esc(fmtShort(c.last)):"—")}</div>
     <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cu-bill">${esc(t("cuStartBill"))}</button>${c.due>0?`<button type="button" class="btn ghost" id="cu-credit">${esc(t("cuSeeCredit"))}</button>`:""}</div>
@@ -60,41 +62,62 @@ async function openCustomer(mob){ const c=custIndex().find(x=>x.mob===mob)||{mob
   $("#cu-back").onclick=()=>openCustomers();
   $("#cu-bill").onclick=()=>{ if(custFill(c)){ closeSheet(); setTab("bill"); toast(t("cuOnBill",c.name||mob)); } };
   if($("#cu-edit")) $("#cu-edit").onclick=()=>cuEdit(c);
-  if($("#cu-credit")) $("#cu-credit").onclick=async()=>{ sheetKey("duec:"+mob), openSheet(t("duesT"), ldBlock(), "", {full:true}); try{ await loadDues(); }catch{} const d=(duesCache&&duesCache.customers||[]).find(x=>custKey(x.mobile)===mob); if(d) openDueCustomer(d); else openDues(); };
-  cuBills(mob);
+  if($("#cu-credit") && mob) $("#cu-credit").onclick=async()=>{ sheetKey("duec:"+mob), openSheet(t("duesT"), ldBlock(), "", {full:true}); try{ await loadDues(); }catch{} const d=(duesCache&&duesCache.customers||[]).find(x=>custKey(x.mobile)===mob); if(d) openDueCustomer(d); else openDues(); };
+  cuBills(c);
 }
 /** This customer's bills: from the phone's copy of Past bills (refreshed first if it's old), newest first. */
-async function cuBills(mob){ const draw=C=>{ const el=$("#cu-bills"); if(!el||!C) return;
-    const L=C.bills.filter(b=>custKey(b.mobile)===mob).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+async function cuBills(c){ const mob=c.mob||"", g=String(c.gstin||"").toUpperCase(), nm=String(c.name||"").trim().toLowerCase(), key=c.key||mob;
+  const mine=b=>mob ? custKey(b.mobile)===mob : !custKey(b.mobile) && (g ? String(b.custGstin||"").toUpperCase()===g : !!nm && String(b.customer||"").trim().toLowerCase()===nm);   // no mobile: by GSTIN, else by name
+  const draw=C=>{ const el=$("#cu-bills"); if(!el||!C) return;
+    const L=C.bills.filter(mine).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     if(!L.length){ el.innerHTML=`<p class="note">${esc(t("cuNoBills"))}</p>`; return; }
     el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,200).map((b,i)=>{ const d=b.date?new Date(b.date):null; return `<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-ci="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}</b><span class="amt num">${rs(b.total)}</span>
       <span class="meta2">${d?esc(fmtShort(b.date)+" · "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}</span></button>`; }).join("")}</div>
       ${L.length>200?`<p class="note">${esc(t("cuOlder"))}</p>`:""}`;
-    el.querySelectorAll("[data-ci]").forEach(x=>x.onclick=()=>{ billBackFn=()=>openCustomer(mob); showBill(L[+x.dataset.ci]); }); };
+    el.querySelectorAll("[data-ci]").forEach(x=>x.onclick=()=>{ billBackFn=()=>openCustomer(key); showBill(L[+x.dataset.ci]); }); };
   const C=await blcGet(); if(C) draw(C);
   try{ if(!C || Date.now()-(C.at||0)>20000){ const C2=await blcRefresh(); if(C2) draw(C2); else if(!C){ const el=$("#cu-bills"); if(el) el.innerHTML=`<p class="note">${esc(t("cuBillsOld"))}</p>`; } } }
   catch{ if(!C){ const el=$("#cu-bills"); if(el) el.innerHTML=`<p class="err">${esc(t("billsFail"))}</p>`; } } }
-/** Edit: name, mobile, GSTIN, address, private note. Past bills keep what was sent; a new mobile moves this customer's bills to it. */
+/** Add (c = null) or edit a customer: name (needed), mobile, address, private note, and for a company its GSTIN, contact person
+    and email. Past bills keep what was sent; a new mobile moves this customer's bills to it. */
 function cuEdit(c){
-  openSheet(t("cuEditT"), `<div class="form"><div><button type="button" class="btn ghost" id="ce-back">← ${esc(c.name||c.mob)}</button></div>
-    <div class="field"><label for="ce-name">${esc(t("cuNameL"))}</label><input id="ce-name" value="${esc(c.name||"")}" maxlength="80" autocomplete="off"></div>
-    <div class="field"><label for="ce-mob">${esc(t("mobL"))}</label><input id="ce-mob" inputmode="tel" value="${esc(c.mob)}" maxlength="20" autocomplete="off"><small class="note" id="ce-mobnote" hidden>${esc(t("cuMobMove"))}</small></div>
-    <div class="field"><label for="ce-gst">GSTIN</label><input id="ce-gst" value="${esc(c.gstin||"")}" maxlength="15" autocomplete="off" style="text-transform:uppercase" placeholder="${esc(t("optional"))}"></div>
-    <div class="field"><label for="ce-addr">${esc(t("cuAddr"))}</label><textarea id="ce-addr" rows="2" maxlength="200" placeholder="${esc(t("optional"))}">${esc(c.addr||"")}</textarea></div>
+  const isNew=!c; c=c||{key:"",mob:"",name:"",gstin:"",addr:"",note:"",contact:"",email:""};
+  const back=()=>isNew?openCustomers():openCustomer(c.key||c.mob);
+  openSheet(t(isNew?"cuNewT":"cuEditT"), `<div class="form cu-form"><div><button type="button" class="btn ghost" id="ce-back">← ${esc(isNew?t("cuT"):(c.name||c.mob))}</button></div>
+    <div class="field"><label for="ce-name">${esc(t("cuNameReq"))}</label><input id="ce-name" value="${esc(c.name||"")}" maxlength="80" autocomplete="off" enterkeyhint="next"></div>
+    <div class="field"><label for="ce-mob">${esc(t("cuMobOpt"))}</label><input id="ce-mob" type="text" inputmode="tel" value="${esc(c.mob||"")}" maxlength="20" autocomplete="off"><small class="note" id="ce-mobnote" hidden>${esc(t("cuMobMove"))}</small></div>
+    <div class="field"><label for="ce-addr">${esc(t("cuAddr"))}</label><textarea id="ce-addr" rows="3" maxlength="300" placeholder="${esc(t("cuAddrPh"))}">${esc(c.addr||"")}</textarea></div>
+    <fieldset class="cu-co"><legend>${esc(t("cuCompanyH"))}</legend><p class="note" style="margin:0 0 4px">${esc(t("cuCompanyD"))}</p>
+      <div class="field"><label for="ce-gst">GSTIN</label><input id="ce-gst" value="${esc(c.gstin||"")}" maxlength="15" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase" placeholder="${esc(t("optional"))}"><small class="note" id="ce-gststate"></small></div>
+      <div class="field"><label for="ce-contact">${esc(t("cuContact"))}</label><input id="ce-contact" value="${esc(c.contact||"")}" maxlength="80" autocomplete="off" placeholder="${esc(t("optional"))}"></div>
+      <div class="field"><label for="ce-email">${esc(t("cuEmail"))}</label><input id="ce-email" type="email" inputmode="email" value="${esc(c.email||"")}" maxlength="100" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(t("optional"))}"></div></fieldset>
     <div class="field"><label for="ce-note">${IC.lock} ${esc(t("cuNote"))}</label><textarea id="ce-note" rows="2" maxlength="300" placeholder="${esc(t("cuNotePh"))}">${esc(c.note||"")}</textarea></div>
-    <p class="note" style="margin:0">${esc(t("cuEditInfo"))}</p><p class="err" id="ce-err"></p></div>`,
+    ${isNew?"":`<p class="note" style="margin:0">${esc(t("cuEditInfo"))}</p>`}<p class="err" id="ce-err" role="alert"></p></div>`,
     `<button class="btn ghost" id="ce-cancel">${esc(t("cancel"))}</button><button class="btn primary" id="ce-save">${esc(t("save"))}</button>`);
-  $("#ce-back").onclick=$("#ce-cancel").onclick=()=>openCustomer(c.mob);
-  $("#ce-mob").oninput=()=>{ $("#ce-mobnote").hidden=custKey($("#ce-mob").value)===c.mob; };
-  $("#ce-save").onclick=async()=>{ const err=$("#ce-err"); err.textContent=""; const nm=custKey($("#ce-mob").value), g=$("#ce-gst").value.trim().toUpperCase();
-    if(!nm){ err.textContent=t("mobBad"); return; } if(g && !gstinOk(g)){ err.textContent=t("gstinBad"); return; }
+  $("#ce-back").onclick=$("#ce-cancel").onclick=back;
+  const gstState=()=>{ const g=$("#ce-gst").value.trim().toUpperCase(), el=$("#ce-gststate"); el.textContent = g.length===15 && gstinOk(g) && stateName(g.slice(0,2)) ? stateName(g.slice(0,2))+" ("+g.slice(0,2)+")" : ""; };
+  $("#ce-gst").oninput=gstState; gstState();
+  $("#ce-mob").oninput=()=>{ $("#ce-mobnote").hidden=isNew || !c.mob || custKey($("#ce-mob").value)===c.mob; };
+  if(isNew) setTimeout(()=>$("#ce-name").focus(),50);
+  $("#ce-save").onclick=async()=>{ const err=$("#ce-err"); err.innerHTML=""; const name=$("#ce-name").value.trim(), mobRaw=$("#ce-mob").value.trim(), nm=custKey(mobRaw), g=$("#ce-gst").value.trim().toUpperCase(), em=$("#ce-email").value.trim();
+    const bad=(id,msg)=>{ err.textContent=msg; const el=$(id); if(el) el.focus(); };
+    if(!name) return bad("#ce-name",t("cuNameNeed"));
+    if(mobRaw && !nm) return bad("#ce-mob",t("mobBad"));
+    if(!isNew && c.mob && !nm) return bad("#ce-mob",t("mobBad"));
+    if(g && !gstinOk(g)) return bad("#ce-gst",t("gstinBad"));
+    if(em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return bad("#ce-email",t("emailBad"));
     if(navigator.onLine===false){ err.textContent=t("vNeedNet"); return; }
     const b=$("#ce-save"); btnBusy(b,true);
-    try{ const r=await apiPost({action:"saveCustomer",customer:{mobile:c.mob,newMobile:nm,name:$("#ce-name").value.trim(),gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim()}});
-      const cc=custCache(); delete cc[c.mob]; if(nm!==c.mob) delete cc[nm]; ls.set(envKey("rb_customers"),cc); custLV++;
+    const cust={name,gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim(),contact:$("#ce-contact").value.trim(),email:em};
+    if(isNew) cust.mobile=nm; else { cust.key=c.key||c.mob; cust.mobile=c.mob||""; cust.newMobile=nm; }   // mobile too: an older script (v54 or less) edits by it
+    if(!nm && (isNew || !c.mob) && S.sv>0 && S.sv<55){ btnBusy(b,false); err.textContent=t("oldScript"); return; }   // a customer without a mobile needs script v55
+    try{ const r=await apiPost({action:"saveCustomer",customer:cust});
+      const cc=custCache(); if(c.mob) delete cc[c.mob]; if(nm) delete cc[nm]; ls.set(envKey("rb_customers"),cc); custLV++;
       await custdRefresh(true); custIdx=null; if(r.moved){ try{ await blcRefresh(); }catch{} }   /* bills now carry the new number */
-      toast(r.moved?t("cuMoved",r.moved):t("saved")); openCustomer(nm); }
-    catch(e){ btnBusy(b,false); err.textContent=e&&e.code==="bad_gstin"?t("gstinBad"):e&&e.code==="bad_mobile"?t("mobBad"):e&&e.code==="not_allowed"?t("notAllowed"):errMsg(e); } };
+      toast(r.moved?t("cuMoved",r.moved):isNew?t("cuAdded",name):t("saved")); openCustomer(r.key||nm||c.key); }
+    catch(e){ btnBusy(b,false);
+      if(e&&e.code==="cust_exists" && e.existing){ err.innerHTML=`${esc(t("cuExists",e.existing.name||e.existing.key))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=async()=>{ await custdRefresh(true).catch(()=>{}); custIdx=null; openCustomer(e.existing.key); }; return; }
+      err.textContent=e&&e.code==="bad_gstin"?t("gstinBad"):e&&e.code==="bad_mobile"?t("mobBad"):e&&e.code==="bad_name"?t("cuNameNeed"):e&&e.code==="bad_email"?t("emailBad"):e&&e.code==="not_allowed"?t("notAllowed"):errMsg(e); } };
 }
 async function openDues(){
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }

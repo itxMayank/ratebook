@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 54;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 55;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -29,7 +29,7 @@ function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
 function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
 const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos', 'paidBy', 'po'];
 
-const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due', 'address', 'note', 'updatedAt', 'updatedBy'];
+const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due', 'address', 'note', 'updatedAt', 'updatedBy', 'contact', 'email'];   // mobile = the 10 digits, or 'c-…' for a customer saved without one (v55)
 const CPAD_ = r => { while (r.length < CUST_COLS.length) r.push(''); return r.slice(0, CUST_COLS.length); };   // rows always as wide as the header
 const HISTORY_COLS = ['billId', 'billNo', 'changedAt', 'by', 'oldText'];
 const COLS = ['id', 'name', 'nameHi', 'unit', 'buy', 'sell', 'thumb', 'imgV', 'updatedAt', 'updatedBy', 'hsn', 'gst', 'altUnit', 'altQty', 'altSell', 'imgs', 'aliases', 'cat'];
@@ -481,7 +481,7 @@ function recountCustomers_() {
   const n = bs.getLastRow() - 1;
   const stat = {};
   if (n > 0) bs.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
-    const k = mob10_(r[B.mobile]); if (!k) return;
+    const g = String(r[B.customerGstin] || '').trim().toUpperCase(), k = mob10_(r[B.mobile]) || (g ? 'g:' + g : ''); if (!k) return;   // no mobile: counted by GSTIN (v55)
     if (r[B.status] === 'Cancelled') return;
     const x = stat[k] || (stat[k] = { bills: 0, total: 0, last: '', lastNo: '', due: 0 });
     x.bills++; x.total = r2_(x.total + num_(r[B.total])); x.last = r[B.date]; x.lastNo = r[B.billNo];
@@ -489,8 +489,10 @@ function recountCustomers_() {
   });
   const m = cs.getLastRow() - 1;
   if (m < 1) return;
+  const gUsed = {};
   const rows = cs.getRange(2, 1, m, CUST_COLS.length).getValues().map(r => {
-    const x = stat[mob10_(r[0])] || { bills: 0, total: 0, last: '', lastNo: '', due: 0 };
+    const m0 = mob10_(r[0]), g0 = String(r[2] || '').trim().toUpperCase(), gk = g0 && !gUsed[g0] ? (gUsed[g0] = 1, 'g:' + g0) : '';   // a company's bills made without a mobile count by its GSTIN (once)
+    const xs = [stat[m0], stat[gk]].filter(Boolean), x = xs.length ? xs.reduce((a, b) => ({ bills: a.bills + b.bills, total: r2_(a.total + b.total), last: !a.last || (b.last && new Date(b.last) > new Date(a.last)) ? b.last : a.last, lastNo: !a.last || (b.last && new Date(b.last) > new Date(a.last)) ? b.lastNo : a.lastNo, due: r2_(a.due + b.due) }), { bills: 0, total: 0, last: '', lastNo: '', due: 0 }) : { bills: 0, total: 0, last: '', lastNo: '', due: 0 };
     return CPAD_([mob10_(r[0]) ? "'" + mob10_(r[0]) : r[0], r[1], r[2], x.bills, x.total, x.last, x.lastNo, x.due].concat(r.slice(8)));   // keeps address/note
   });
   cs.getRange(2, 1, m, CUST_COLS.length).setValues(rows);
@@ -1483,35 +1485,66 @@ function listCustomers_(brev) {
   if (brev && brev === v) return { same: true, brev: v };
   const s = customersSheet_(), n = s.getLastRow() - 1, out = [];
   if (n > 0) s.getRange(2, 1, n, CUST_COLS.length).getValues().forEach(r => {
-    const m = mob10_(r[0]); if (!m) return;
+    const m = mob10_(r[0]), id = m ? '' : custId_(r[0]); if (!m && !id) return;
     const d = r[5] instanceof Date ? r[5] : new Date(r[5]);
-    out.push([m, String(r[1] || ''), String(r[2] || ''), num_(r[3]), num_(r[4]), isNaN(d) ? '' : d.toISOString(), num_(r[7]), String(r[8] || ''), String(r[9] || ''), num_(r[6])]);   // + address, note, last bill no.
+    out.push([m, String(r[1] || ''), String(r[2] || ''), num_(r[3]), num_(r[4]), isNaN(d) ? '' : d.toISOString(), num_(r[7]), String(r[8] || ''), String(r[9] || ''), num_(r[6]), String(r[12] || ''), String(r[13] || ''), id]);   // + address, note, last bill no.; v55: contact, email, id (customers without a mobile)
   });
   return { customers: out, brev: v };
 }
 
-/** Edit a customer (Customers page). Name/GSTIN/address/note change only the customer, never past bills (they keep what was sent).
- *  A new mobile moves this mode's bills to it (their mobile column) and joins the two customers if the new number already exists. */
-function saveCustomer_(x, by) { const k = mob10_(x.mobile); if (!k) throw new Error('bad_mobile');
-  const k2 = x.newMobile ? mob10_(x.newMobile) : k; if (!k2) throw new Error('bad_mobile');
+/** Add or edit a customer (Customers page). Name is needed; mobile, GSTIN, address, contact person, email and note are optional.
+ *  x.key = the customer being edited (their mobile, or 'c-…' for one saved without a mobile); no key = a new customer.
+ *  Name/GSTIN/address/… change only the customer, never past bills (they keep what was sent). A new mobile moves this mode's
+ *  bills to it (their mobile column) and joins the two customers if the new number already exists. */
+function saveCustomer_(x, by) {
+  const isNew = !x.key && x.newMobile === undefined;   // older apps edit with {mobile, newMobile}
+  const key = String(x.key || x.mobile || '').trim(), k = isNew ? '' : (mob10_(key) || custId_(key));
+  if (!isNew && !k) throw new Error('bad_mobile');
+  const nmIn = x.newMobile !== undefined ? String(x.newMobile || '').trim() : (isNew ? String(x.mobile || '').trim() : (mob10_(key) ? key : ''));
+  const k2 = nmIn ? mob10_(nmIn) : '';
+  if (nmIn && !k2) throw new Error('bad_mobile');
+  const name = String(x.name || '').trim(); if (!name && (isNew || x.key)) throw new Error('bad_name');
+  const g = String(x.gstin || '').trim().toUpperCase();
+  if (g && !/^\d{2}[A-Z0-9]{13}$/.test(g)) throw new Error('bad_gstin');
+  const email = String(x.email || '').trim(); if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('bad_email');
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
-  try { const s = customersSheet_(); let i = custRow_(s, k);
-    if (i < 0) { s.appendRow(CPAD_(["'" + k, '', '', 0, 0, '', '', 0])); i = custRow_(s, k); }
+  try { const s = customersSheet_();
+    let i;
+    if (isNew) {
+      const dup = k2 ? custRow_(s, k2) : (g ? custRowBy_(s, r => !mob10_(r[0]) && String(r[2] || '').trim().toUpperCase() === g) : -1);
+      if (dup > 0) { const o = s.getRange(dup, 1, 1, CUST_COLS.length).getValues()[0]; const e = new Error('cust_exists'); e.extra = { name: String(o[1] || ''), key: mob10_(o[0]) || custId_(o[0]) }; throw e; }
+      s.appendRow(CPAD_([k2 ? "'" + k2 : custNewId_(), '', '', 0, 0, '', '', 0])); i = s.getLastRow();
+    } else {
+      i = mob10_(k) ? custRow_(s, k) : custRowBy_(s, r => String(r[0]) === k);
+      if (i < 0) { if (!mob10_(k)) throw new Error('cust_not_found'); s.appendRow(CPAD_(["'" + k, '', '', 0, 0, '', '', 0])); i = custRow_(s, k); }
+    }
     const r = CPAD_(s.getRange(i, 1, 1, CUST_COLS.length).getValues()[0]);
-    const g = String(x.gstin || '').trim().toUpperCase();
-    if (g && !/^\d{2}[A-Z0-9]{13}$/.test(g)) throw new Error('bad_gstin');
-    r[1] = str_(String(x.name || '').trim(), 80); r[2] = g; r[8] = str_(String(x.address || '').trim(), 200); r[9] = str_(String(x.note || '').trim(), 300); r[10] = new Date(); r[11] = by;
-    let moved = 0;
-    if (k2 !== k) {
-      const bs = sheet_(tab_('Bills'), BILL_COLS), B = BILL_COLS.reduce((m, c, j) => (m[c] = j, m), {}), n = bs.getLastRow() - 1;
-      if (n > 0) { const col = bs.getRange(2, B.mobile + 1, n, 1).getValues(); col.forEach(c => { if (mob10_(c[0]) === k) { c[0] = "'" + k2; moved++; } }); if (moved) bs.getRange(2, B.mobile + 1, n, 1).setValues(col); }
+    r[1] = str_(name, 80); r[2] = g; r[8] = str_(String(x.address || '').trim(), 300); r[9] = str_(String(x.note || '').trim(), 300); r[10] = new Date(); r[11] = by;
+    if (x.contact !== undefined) r[12] = str_(String(x.contact || '').trim(), 80);
+    if (x.email !== undefined) r[13] = str_(email, 100);
+    const was = mob10_(r[0]);
+    let moved = 0, keyOut;
+    if (!isNew && k2 && k2 !== was) {   // a new (or first) mobile for this customer
+      if (was) { const bs = sheet_(tab_('Bills'), BILL_COLS), B = BILL_COLS.reduce((m, c, j) => (m[c] = j, m), {}), n = bs.getLastRow() - 1;
+        if (n > 0) { const col = bs.getRange(2, B.mobile + 1, n, 1).getValues(); col.forEach(c => { if (mob10_(c[0]) === was) { c[0] = "'" + k2; moved++; } }); if (moved) bs.getRange(2, B.mobile + 1, n, 1).setValues(col); } }
       const j = custRow_(s, k2);
-      if (j > 0) { const o = CPAD_(s.getRange(j, 1, 1, CUST_COLS.length).getValues()[0]); [1, 2, 8, 9].forEach(c => { if (!r[c]) r[c] = o[c]; }); r[0] = "'" + k2; s.getRange(j, 1, 1, CUST_COLS.length).setValues([r]); s.deleteRow(i); }
+      if (j > 0 && j !== i) { const o = CPAD_(s.getRange(j, 1, 1, CUST_COLS.length).getValues()[0]); [1, 2, 8, 9, 12, 13].forEach(c => { if (!r[c]) r[c] = o[c]; }); r[0] = "'" + k2; s.getRange(j, 1, 1, CUST_COLS.length).setValues([r]); s.deleteRow(i); }
       else { r[0] = "'" + k2; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]); }
-      recountCustomers_(); bumpB_(true);
-    } else { r[0] = "'" + k; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]); bumpB_(false, 'cust:' + k); }   // customers list refreshes; no bills to resend
-    return Object.assign(findCustomer_(k2), { mobile: k2, moved: moved }); }
+      recountCustomers_(); bumpB_(true); keyOut = k2;
+    } else {
+      if (!isNew && !nmIn && was && x.newMobile !== undefined) throw new Error('bad_mobile');   // a mobile can be changed, not removed
+      if (was) r[0] = "'" + was; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]);
+      keyOut = was || String(r[0]);
+      if (isNew) recountCustomers_();   // a company saved after billing it: its earlier bills (by GSTIN) count
+      bumpB_(false, 'cust:' + keyOut);    // customers list refreshes; no bills to resend
+    }
+    const out = mob10_(keyOut) ? findCustomer_(keyOut) : { customer: null };
+    return Object.assign(out, { mobile: mob10_(keyOut), key: keyOut, moved: moved }); }
+  catch (e) { if (e.extra) return { ok: false, error: e.message, existing: e.extra }; throw e; }
   finally { lock.releaseLock(); } }
+function custId_(v) { const t = String(v || '').trim(); return /^c-[a-z]{6,20}$/.test(t) ? t : ''; }
+function custNewId_() { let t = 'c-'; const L = 'abcdefghijkmnpqrstuvwxyz'; for (let n = 0; n < 10; n++) t += L.charAt(Math.floor(Math.random() * L.length)); return t; }   // letters only: never mistaken for a mobile
+function custRowBy_(s, f) { const n = s.getLastRow() - 1; if (n < 1) return -1; const v = s.getRange(2, 1, n, CUST_COLS.length).getValues(); for (let i = 0; i < n; i++) if (f(v[i])) return i + 2; return -1; }
 function mob10_(m) { const d = String(m || '').replace(/\D/g, '').slice(-10); return d.length === 10 ? d : ''; }
 
 /** The Customers tab: one row per mobile. Built once from existing bills the first time it's needed. */
@@ -1549,7 +1582,9 @@ function custRow_(s, k) {
 }
 /** Keep the Customers tab current. newBill: count it; otherwise just refresh name/GSTIN (an edited bill). */
 function touchCustomer_(mobile, name, gstin, total, billNo, newBill) {
-  const k = mob10_(mobile); if (!k) return;
+  const k = mob10_(mobile);
+  if (!k) { const g = String(gstin || '').trim().toUpperCase(); if (!g) return; const s0 = customersSheet_(), j = custRowBy_(s0, r => String(r[2] || '').trim().toUpperCase() === g); if (j < 0) return;   // a saved company without a mobile (v55)
+    const r = s0.getRange(j, 1, 1, CUST_COLS.length).getValues()[0]; if (newBill) { r[3] = num_(r[3]) + 1; r[4] = r2_(num_(r[4]) + num_(total)); r[5] = new Date(); r[6] = billNo; s0.getRange(j, 1, 1, CUST_COLS.length).setValues([r]); } return; }
   const s = customersSheet_();
   const i = custRow_(s, k);
   name = String(name || '').trim(); gstin = String(gstin || '').trim();

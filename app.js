@@ -158,7 +158,7 @@ function renderEnv(){
   duesSub();
 }
 function draftState(){ return { bill:S.bill, cust:S.cust, mob:S.mob, gst:S.gst, igst:S.igst, custGstin:S.custGstin, custAddr:S.custAddr||"", po:poOut(S.po), billNoOvr:S.billNoOvr, pay:S.pay, recv:S.recv, pm:S.pm||"" }; }
-function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; caddrSet(d.custAddr||""); S.po=poNorm(d.po); S.poOpen=false; ls.set("rb_po",S.po); if(poHas(S.po)) setOpen("#bh-more","#bh-extra","rb_bh_open",true); S.billNoOvr=d.billNoOvr||null; S.pay=d.pay||"paid"; S.recv=d.recv||""; S.pm=d.pm||""; ls.set("rb_pm",S.pm);
+function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.mob||""; S.gst=!!d.gst; S.igst=!!d.igst; S.custGstin=d.custGstin||""; caddrSet(d.custAddr||""); S.po=poNorm(d.po); ls.set("rb_po",S.po); if(poHas(S.po)) setOpen("#bh-more","#bh-extra","rb_bh_open",true); S.billNoOvr=d.billNoOvr||null; S.pay=d.pay||"paid"; S.recv=d.recv||""; S.pm=d.pm||""; ls.set("rb_pm",S.pm);
   ls.set("rb_pay",S.pay); ls.set("rb_recv",S.recv); $("#pay-recv").value=S.recv; renderPay();
   ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",S.billNoOvr);
   $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin; saveBill(); }
@@ -583,16 +583,17 @@ $("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=
   updateBillTotals(); });
 $("#pos-sel").innerHTML=`<option value="">—</option>`+STATES.map(([c,n])=>`<option value="${c}">${n} (${c})</option>`).join(""); $("#pos-sel").value=S.posSel;
 $("#pos-sel").onchange=e=>{ S.posSel=e.target.value; ls.set("rb_pos",S.posSel); updateBillTotals(); };
-$("#cust-addr").value=S.custAddr||""; $("#cust-addr").addEventListener("input",e=>{ S.custAddr=e.target.value; S.custAddrAuto=""; ls.set("rb_caddr",S.custAddr); updateBillTotals(); });
-$("#po-add").onclick=()=>{ S.poOpen=true; poRender(); $("#po-no").focus(); };
-$("#po-x").onclick=()=>{ S.poOpen=false; poSet(null); updateBillTotals(); };
+/* The customer's address isn't shown on the bill page: it comes from the saved customer (S.custAddr) and goes on the bill text, PDF and printouts. */
+$("#po-dc").onclick=e=>{ const inp=$("#po-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
+$("#po-x").onclick=()=>{ poSet(null); updateBillTotals(); };
 $("#po-no").addEventListener("input",e=>{ poSet({...S.po, no:e.target.value}); updateBillTotals(); });
+$("#po-date").addEventListener("change",e=>{ poSet({...S.po, date:e.target.value}); updateBillTotals(); });
 $("#po-date").addEventListener("input",e=>{ poSet({...S.po, date:e.target.value}); updateBillTotals(); });
 $("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
-$("#bill-clear-yes").onclick=()=>{ poSet(null); caddrSet(""); S.poOpen=false; S.cash=""; S.pm=""; ls.set("rb_pm",""); renderPay(); S.custAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
+$("#bill-clear-yes").onclick=()=>{ poSet(null); caddrSet(""); S.cash=""; S.pm=""; ls.set("rb_pm",""); renderPay(); S.custAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
 
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;

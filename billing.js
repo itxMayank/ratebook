@@ -105,8 +105,11 @@ function poOut(p){ return poHas(p) ? { no:String(p.no||"").trim(), date:p.date||
 function poDate(d){ return d ? d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4) : ""; }
 function poTextLine(p){ if(!poHas(p)) return ""; const no=String(p.no||"").trim(); return [no?`${t("poLine")}: ${no}`:"", p.date?`${t("poDateLine")}: ${poDate(p.date)}`:""].filter(Boolean).join(" · ")+"\n"; }
 function poSet(p){ S.po=poNorm(p); ls.set("rb_po",S.po); }
-function poRender(){ const f=$("#po-f"); if(!f) return; const open=!!S.poOpen || poHas(S.po); f.hidden=!open; $("#po-add").hidden=open;
-  const a=$("#po-no"), b=$("#po-date"); if(document.activeElement!==a) a.value=S.po.no; if(document.activeElement!==b) b.value=S.po.date; }
+/* One row in the bill's extra details: PO number · date chip (the app's calendar icon over the phone's date picker) · ✕ when filled. */
+function poRender(){ const a=$("#po-no"), b=$("#po-date"); if(!a) return;
+  if(document.activeElement!==a) a.value=S.po.no; if(b.value!==S.po.date) b.value=S.po.date;
+  $("#po-dl").textContent=S.po.date?poDate(S.po.date):t("poDateShort"); $("#po-dc").classList.toggle("on",!!S.po.date);
+  b.setAttribute("aria-label",t("poDateL")); const x=$("#po-x"); x.hidden=!poHas(S.po); x.setAttribute("aria-label",t("poRemove")); }
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 /* "NA" in the sheet = this item has no HSN (an empty cell means "use the shop's default HSN"). */
@@ -427,7 +430,7 @@ function finishBill(opts){
     return;
   }
   ls.set(envKey("rb_draftat"),Date.now());
-  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); poSet(null); S.poOpen=false; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
+  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); poSet(null); S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);

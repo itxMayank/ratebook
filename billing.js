@@ -400,7 +400,7 @@ function finishBill(opts){
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
   const lastInv=invFromCurrent(); ls.set("rb_lastinv",lastInv);
   blcAdd(rec);
-  rec.shared=!!opts.keep; tookNo(rec.n, !!S.gst);
+  rec.shared=!!opts.keep && !opts.wait; tookNo(rec.n, !!S.gst);   // wait: Share waits for the sheet before WhatsApp opens (shareConfirmed)
   const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
   if(opts.keep){
     rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
@@ -408,7 +408,7 @@ function finishBill(opts){
     S.editing={ id:rec.id, row:0, n:rec.n, date:new Date().toISOString(), edits:0, fy:curFY(), fresh:true }; S.editing.sig=draftSig();
     ls.set("rb_editing",S.editing); ls.set("rb_stash",null);
     S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
-    renderBill(); renderList(); toast(t("billSavedKeep",dispNo(n,wasGst,curFY())));
+    renderBill(); renderList(); if(!opts.wait) toast(t("billSavedKeep",dispNo(n,wasGst,curFY())));
     return;
   }
   ls.set(envKey("rb_draftat"),Date.now());
@@ -420,7 +420,7 @@ function finishBill(opts){
   S.pay="paid"; S.recv=""; S.pm=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); ls.set("rb_pm",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
   S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
-  if(prGet().auto) setTimeout(()=>printInv(lastInv),250);   // "Print automatically after Done" (this phone / laptop)
+  if(prGet().auto) billConfirmed(rec.id, NO_WAIT_MS).then(()=>{ const li=ls.get("rb_lastinv",null); printInv(li && li.date===lastInv.date ? li : lastInv); });   // "Print automatically after Done": with the number the sheet confirmed
 }
 /* Cash given -> how much to give back. Only on this phone; never saved with the bill. */
 function cashDue(){ if(S.pm && S.pm!=="cash") return 0;   // UPI / cheque: no change to give
@@ -459,7 +459,9 @@ async function flushBills(){
       if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } if(j.error==="paused") shopPausedNote(); throw 0; }
       S.needCode=false;
       if(j.renumbered){ { const li=ls.get("rb_lastinv",null); if(li && String(li.no)===String(j.renumbered.from) && S.lastBill && S.lastBill.n===rec.n){ li.no=String(j.renumbered.to); ls.set("rb_lastinv",li); } }
-        if(S.lastBill && S.lastBill.n===rec.n){ S.lastBill.n=j.renumbered.to; ls.set("rb_lastbill",S.lastBill); }
+        if(S.lastBill && S.lastBill.n===rec.n){ S.lastBill.n=j.renumbered.to;
+          if(S.lastBill.link && rec.noLine){ const tk=String(rec.noToken||j.renumbered.from), nl=String(rec.noLine).replace(tk, tk.replace(new RegExp(j.renumbered.from+"$"), String(j.renumbered.to))); S.lastBill.link=S.lastBill.link.replace(encodeURIComponent(rec.noLine), encodeURIComponent(nl)); }   // "Share again" with the new number
+          ls.set("rb_lastbill",S.lastBill); renderLastBill(); }
         tookNo(j.renumbered.to, !!rec.gst);
         if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); }
         if(rec.shared) showRenumbered(j.renumbered); else toast(t("renumToast",j.renumbered.from,j.renumbered.to)); }
@@ -469,6 +471,40 @@ async function flushBills(){
     saveCache(); updateBillTotals(); blcBump(); blcSoon();
   }catch{ /* try again on next sync */ }
   finally{ flushing=false; renderQueue(); }
+}
+/* Two phones can show the same next number (both read it before either bill reached the sheet). The sheet never saves a
+   number twice (takeBill gives the second one the next free number), so what matters is what the customer sees: Share of a
+   new bill saves it first and opens WhatsApp only once the sheet has confirmed its number (usually 1-2 s; the Share button
+   spins meanwhile). Offline, or no answer within NO_WAIT_MS: WhatsApp opens with this phone's number as before, and if the
+   sheet renumbers it later the "Bill number changed" note says to send it again. */
+const NO_WAIT_MS=4000;
+/** Resolves true once bill `id` has left the send queue (the sheet has it, renumbered if needed), false if sending
+    stopped (offline, refused) or took longer than ms. */
+function billConfirmed(id, ms){
+  const t0=Date.now();
+  return new Promise(res=>{ const tick=()=>{
+    if(!S.billQ.some(x=>x.id===id)) return res(true);
+    if(!flushing || Date.now()-t0>ms) return res(false);
+    setTimeout(tick,80); }; tick(); });
+}
+async function shareConfirmed(){
+  const btn=$("#bill-wa");
+  finishBill({keep:true, wait:true});
+  const ed=S.editing; if(!ed || !ed.fresh) return;
+  const al=btn.getAttribute("aria-label"); btn.classList.add("busy"); btn.setAttribute("aria-busy","true"); btn.setAttribute("aria-label",t("saving"));   // a centred spinner, same width (app.css)
+  btn.insertAdjacentHTML("beforeend",`<span class="wa-wait" aria-hidden="true">${LD("sm on-dark")}</span>`);
+  const okNo=await billConfirmed(ed.id, NO_WAIT_MS);
+  btn.classList.remove("busy"); btn.removeAttribute("aria-busy"); if(al) btn.setAttribute("aria-label",al); else btn.removeAttribute("aria-label"); const ww=btn.querySelector(".wa-wait"); if(ww) ww.remove();
+  if(S.editing!==ed) return;   // the bill was closed meanwhile
+  if(!okNo){ const q=S.billQ.find(x=>x.id===ed.id); if(q){ q.shared=true; ls.set("rb_billq",S.billQ); } }   // still waiting: a later renumber must say "send it again"
+  const url=waLink(), no=dispNo(ed.n,S.gst,ed.fy); btn.href=url;
+  S.pendShare=true; ls.set("rb_pshare",1);
+  const w=window.open(url,"_blank");
+  if(w){ try{ w.opener=null; }catch{} toast(t("billSavedKeep",no)); return; }
+  // the phone blocked opening WhatsApp after the wait (some iPhones): one more tap
+  S.pendShare=false; ls.set("rb_pshare",0);
+  openSheet(t("billSavedKeep",no), `<p class="note" style="margin:0">${esc(t("shareTapD"))}</p>`, `<a class="btn wa" id="sc-wa" target="_blank" rel="noopener" href="${esc(url)}">${esc(t("shareWa"))}</a>`);
+  $("#sc-wa").onclick=()=>{ S.pendShare=true; ls.set("rb_pshare",1); setTimeout(closeSheet,300); };
 }
 /* After Share opens WhatsApp, ask on return whether it really went, instead of saving the bill blindly. */
 let askingSent=false;

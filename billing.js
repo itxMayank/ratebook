@@ -65,6 +65,7 @@ function gstBillText(){
   s+=`\n*${t("taxInvoice")}*\n${t("invNoLine",curBillDisp())} · ${d}\n`+editedLine();
   if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`;
   if(S.custGstin.trim()) s+=`${t("gstinL")}: ${S.custGstin.trim().toUpperCase()}\n`;
+  s+=poTextLine(S.po);
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
   if(posLabel()) s+=`${t("posL")}: ${posLabel()}\n`;
   s+="\n";
@@ -92,7 +93,16 @@ const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"sh
 const fmtDT=d=>{ const x=new Date(d); return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+", "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
 function billDateStr(){ return S.editing && S.editing.date ? fmtDate(S.editing.date) : fmtDate(Date.now()); }
 function editedLine(){ return S.editing && !S.editing.fresh ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
-const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""]);
+const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""].concat(poHas(S.po)?[S.po]:[]));   // (PO only when set, so older saved signatures still match)
+/* The customer's purchase order (PO) a bill is made against: optional, mostly for company GST bills. S.po = {no, date (yyyy-mm-dd)}. */
+function poNorm(p){ p=p||{}; return { no:String(p.no||"").slice(0,40), date:/^\d{4}-\d\d-\d\d$/.test(p.date||"")?p.date:"" }; }
+function poHas(p){ return !!(p && (String(p.no||"").trim() || p.date)); }
+function poOut(p){ return poHas(p) ? { no:String(p.no||"").trim(), date:p.date||"" } : null; }   // what's saved with the bill
+function poDate(d){ return d ? d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4) : ""; }
+function poTextLine(p){ if(!poHas(p)) return ""; const no=String(p.no||"").trim(); return [no?`${t("poLine")}: ${no}`:"", p.date?`${t("poDateLine")}: ${poDate(p.date)}`:""].filter(Boolean).join(" · ")+"\n"; }
+function poSet(p){ S.po=poNorm(p); ls.set("rb_po",S.po); }
+function poRender(){ const f=$("#po-f"); if(!f) return; const open=!!S.poOpen || poHas(S.po); f.hidden=!open; $("#po-add").hidden=open;
+  const a=$("#po-no"), b=$("#po-date"); if(document.activeElement!==a) a.value=S.po.no; if(document.activeElement!==b) b.value=S.po.date; }
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
 /* "NA" in the sheet = this item has no HSN (an empty cell means "use the shop's default HSN"). */
@@ -221,6 +231,7 @@ function updateBillTotals(){ try{ custXSync(); }catch{}
   { const pw=$("#pos-wrap"); if(pw){ pw.hidden=!(S.gst && S.igst && !(/^\d\d/.test(S.custGstin||"") && gstinOk(S.custGstin))); } }
   $("#gst-chip").setAttribute("aria-pressed",S.gst); const ic=$("#igst-chip"); ic.hidden=!S.gst; ic.setAttribute("aria-pressed",S.igst); ic.textContent=S.igst?t("igstShort"):t("local");
   $("#igst-row").hidden=!S.gst; $("#igst-on").checked=S.igst; $("#cgstin-wrap").hidden=!S.gst;
+  poRender();
   $("#gstin-err").textContent = gstinOk(S.custGstin)?"":t("gstinBad");
   const bad=normMobile(S.mob)===null; $("#mob-err").textContent=bad?t("mobBad"):"";
   renderLastBill();
@@ -330,7 +341,7 @@ function startEdit(b){
   blankDraft();
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, ...billPayMode(b) });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, po:b.po, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 /** Editing finished (saved or cancelled): the bill that was on screen when it started comes back if it's still open; otherwise a
@@ -357,7 +368,7 @@ async function saveEdit(opts){
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
@@ -375,7 +386,7 @@ function draftRec(extra){
   const g=S.gst?gstCalc():null;
   const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
@@ -391,7 +402,7 @@ function finishBill(opts){
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
@@ -412,7 +423,7 @@ function finishBill(opts){
     return;
   }
   ls.set(envKey("rb_draftat"),Date.now());
-  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
+  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; poSet(null); S.poOpen=false; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);

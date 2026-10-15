@@ -103,7 +103,7 @@ function blcAdd(rec){ try{ const env=rec.env||S.cfg.mode, now=new Date(), due=+r
   const at=prev?new Date(prev.date):now;
   L.unshift({ n:rec.n, date:at.toISOString(), day:dayKey(at), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
     taxable:rec.gst?rec.taxable:null, tax:rec.gst?rec.tax:null, custGstin:rec.custGstin, igst:rec.igst, id:rec.id, row:0, editedAt:"", editedBy:"", edits:0, cost:rec.cost, profit:rec.profit,
-    paidBy:rec.paidBy||"", pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", text:rec.text, lines:rec.lines, _t:Date.now() });
+    paidBy:rec.paidBy||"", pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", po:rec.po||null, text:rec.text, lines:rec.lines, _t:Date.now() });
   ls.set(blocKey(env), L.slice(0,60)); blcBump(); }catch{} }
 /* Keep Past bills fresh in the background: after this phone sends bills or changes one, and when the 25-second check says
  * bills changed on another phone. Several quick bills are batched into one small "what changed" request. Only for phones
@@ -152,7 +152,7 @@ function blcRefresh(){
 function blcQuery(C){
   const ids=new Set(C.bills.map(b=>b.id)), pend=(S.billQ||[]).filter(q=>(q.env||"test")===C.env && !ids.has(q.id)).map(q=>{ const d=q.at?new Date(q.at):new Date(), due=+q.due||0;
     return { n:q.n, date:d.toISOString(), day:dayKey(d), customer:q.customer, mobile:q.mobile, total:q.total, items:q.items, gst:q.gst, custGstin:q.custGstin, igst:q.igst, id:q.id, row:0, edits:0,
-      cost:q.cost, profit:q.profit, paidBy:q.paidBy||"", pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", text:q.text, lines:q.lines, pending:true }; });
+      cost:q.cost, profit:q.profit, paidBy:q.paidBy||"", pay:q.pay==="credit"?"Credit":q.pay==="part"?"Part paid":"Paid", paid:r2((+q.total||0)-due), due, payments:[], fy:curFY(), cancelled:false, pos:q.pos||"", po:q.po||null, text:q.text, lines:q.lines, pending:true }; });
   const pids=new Set(pend.map(x=>x.id)), L0=blocGet(C.env), keep=L0.filter(x=>!ids.has(x.id) && Date.now()-(x._t||0)<30*60000);
   if(keep.length!==L0.length) ls.set(blocKey(C.env),keep);                 // the copy has them now (or they're old): drop
   const loc=keep.filter(x=>!pids.has(x.id)).map(x=>({...x, pending:(S.billQ||[]).some(q=>q.id===x.id)}));
@@ -261,7 +261,7 @@ async function showBill(b){
   if(b.row && (b.text===undefined || Date.now()-(b._at||0)>30000)){   // read the sheet's latest copy (other phones may have changed it)
     sheetKey("bill:"+(b.id||b.n)), openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
     try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
-      ["edits","fy","igst","custGstin","pos","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // always the sheet's latest: payments, cancel and edits made on other phones   // the saved values, so an edit keeps GST details and knows the edit count
+      ["edits","fy","igst","custGstin","pos","po","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // always the sheet's latest: payments, cancel and edits made on other phones   // the saved values, so an edit keeps GST details and knows the edit count
       if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile; }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
@@ -308,7 +308,7 @@ async function showBill(b){
     catch(e){ btnBusy(btn,false); toast(errMsg(e)); } };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
   const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy}));
-    S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null;
+    S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; S.billNoOvr=null; poSet(null); S.poOpen=false;   // a repeat is a new order: no PO carried over
     ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
     saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };

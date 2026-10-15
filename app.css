@@ -1848,3 +1848,10 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 #bill-wa.busy{pointer-events:none}
 #bill-wa.busy>:not(.wa-wait){visibility:hidden}
 #bill-wa .wa-wait{position:absolute;inset:0;display:grid;place-items:center}
+/* Customer's purchase order (PO) on the bill (#bh-extra): a "+ PO" link opens the boxes: number on its own row, then date + Remove (stacked when narrow) */
+.po-add,.po-x{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 2px;background:none;border:0;color:var(--accent);font:600 14px/1.25 var(--f-body);cursor:pointer;text-align:left;justify-self:start}
+.po-x{color:var(--muted);min-height:40px}
+.po-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px 10px;align-items:end}
+.po-f>.field:first-child{grid-column:1/-1}   /* PO numbers are long (1100-4500253480): a full row, so the number is never cut */
+.po-f .po-x{align-self:end;min-height:44px}
+.po-f input[type=date]{min-height:44px}

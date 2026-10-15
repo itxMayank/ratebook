@@ -9,14 +9,14 @@ function loadPdf(){ if(window.jspdf) return Promise.resolve(window.jspdf); if(pd
   pdfLib=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="pdf.js"; sc.onload=()=>res(window.jspdf); sc.onerror=()=>{ pdfLib=null; rej(new Error("pdf")); }; document.head.appendChild(sc); }); return pdfLib; }
 function invFromCurrent(){
   const p=payInfo(billTotal());
-  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:mob10(S.mob)||S.mob.trim(),gstin:S.custGstin.trim().toUpperCase()}, pos:S.gst?posLabel():"",
+  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:mob10(S.mob)||S.mob.trim(),gstin:S.custGstin.trim().toUpperCase()}, po:poOut(S.po), pos:S.gst?posLabel():"",
     lines:S.bill.map(l=>({name:l.name,hsn:lineInfo(l).hsn,qty:+l.qty||0,unit:l.unit,rate:+l.rate||0,gst:lineInfo(l).gst})), pay:p, cancelled:false };
 }
 function invFromBill(b){
   const lines=(b.lines&&b.lines.length?b.lines:linesFromItems(b)).map(l=>({name:l.name,hsn:l.hsn||"",qty:+l.qty||0,unit:l.unit||"",rate:+l.rate||0,gst:+l.gst||0}));
   const pay = !b.pay||b.pay==="Paid"||b.pay==="Cleared" ? {mode:"paid",recv:b.total,due:0} : {mode:b.paid>0?"part":"credit",recv:+b.paid||0,due:+b.due||0};
   pay.pm = PM_KEYS[String(b.paidBy||"").toLowerCase()] ? String(b.paidBy).toLowerCase() : "";
-  return { gst:!!b.gst, igst:!!b.igst, no:dispNo(b.n,b.gst,b.fy), date:b.date, cust:{name:b.customer||"",mobile:b.mobile||"",gstin:b.custGstin||""}, pos:b.pos||"", lines, pay, cancelled:!!b.cancelled };
+  return { gst:!!b.gst, igst:!!b.igst, no:dispNo(b.n,b.gst,b.fy), date:b.date, cust:{name:b.customer||"",mobile:b.mobile||"",gstin:b.custGstin||""}, po:poHas(b.po)?b.po:null, pos:b.pos||"", lines, pay, cancelled:!!b.cancelled };
 }
 async function makeInvoicePdf(inv){
   const lib=await loadPdf(); const doc=new lib.jsPDF({unit:"pt",format:"a4"}); const W=doc.internal.pageSize.getWidth(), M=40;
@@ -27,7 +27,7 @@ async function makeInvoicePdf(inv){
   doc.setFontSize(12); doc.text(inv.gst?"TAX INVOICE":"BILL", W-M, y, {align:"right"});
   doc.setFont("helvetica","normal"); doc.setFontSize(9.5); y+=15;
   const left=[]; if(S.cfg.shopAddress) left.push(asc(S.cfg.shopAddress)); if(inv.gst&&S.cfg.shopGstin) left.push("GSTIN: "+S.cfg.shopGstin); if(inv.gst&&shopStateCode()) left.push("State: "+stateName(shopStateCode())+" ("+shopStateCode()+")");
-  const right=[(inv.gst?"Invoice No: ":"Bill No: ")+inv.no, "Date: "+fmtDate(inv.date)]; if(inv.gst&&inv.pos) right.push("Place of supply: "+asc(inv.pos));
+  const right=[(inv.gst?"Invoice No: ":"Bill No: ")+inv.no, "Date: "+fmtDate(inv.date)]; if(inv.gst&&inv.pos) right.push("Place of supply: "+asc(inv.pos)); prPoLines(inv).forEach(x=>right.push(asc(x)));
   const rows=Math.max(left.length,right.length); for(let i=0;i<rows;i++){ if(left[i]) doc.text(left[i],M,y+i*13); if(right[i]) doc.text(right[i],W-M,y+i*13,{align:"right"}); }
   y+=rows*13+6;
   if(S.cfg.mode==="test"){ doc.setTextColor(184,122,11); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text("TEST BILL - practice only, not a valid invoice",W/2,y+2,{align:"center"}); doc.setTextColor(0); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); y+=14; }
@@ -101,7 +101,7 @@ function receiptLines(inv,w){
   push(inv.gst?"TAX INVOICE":"BILL",{c:1,b:1});
   if(S.cfg.mode==="test") push("TEST BILL - not a real invoice",{c:1});
   if(inv.cancelled) push("*** CANCELLED ***",{c:1,b:1});
-  push((inv.gst?"Invoice":"Bill")+" No: "+inv.no,{b:1}); push("Date: "+prDate(inv.date));
+  push((inv.gst?"Invoice":"Bill")+" No: "+inv.no,{b:1}); push("Date: "+prDate(inv.date)); prPoLines(inv).forEach(x=>prWrap(prAsc(x),w).forEach(y=>push(y)));
   if(inv.cust.name) prWrap("To: "+prAsc(inv.cust.name),w).forEach(x=>push(x)); if(inv.cust.mobile) push("Mobile: "+inv.cust.mobile);   // wrapped: a 58 mm roll fits only 32 characters
   if(inv.gst && inv.cust.gstin) push("GSTIN: "+inv.cust.gstin); if(inv.gst && inv.pos) prWrap("Place of supply: "+prAsc(inv.pos),w).forEach(x=>push(x));
   L.push(hr); push(prLR("Item","Amount",w),{b:1}); L.push(hr);
@@ -143,11 +143,13 @@ function receiptPng(inv,paper){
   return new Promise(res=>cv.toBlob(res,"image/png"));
 }
 
+/** The customer's purchase order on printouts and PDFs (English, like the rest of the invoice). */
+function prPoLines(inv){ const p=inv.po; if(!poHas(p)) return []; const o=[]; if(String(p.no||"").trim()) o.push("PO No: "+String(p.no).trim()); if(p.date) o.push("PO date: "+poDate(p.date)); return o; }
 /* ---- HTML printouts for the print screen ---- */
 function prHtmlInvoice(inv){
   const c=prCalc(inv), R=n=>"₹"+prMoney(n), e=esc;
   const head=`<div class="pi-top"><div><h1>${e(S.cfg.shopName||"Rate Book")}</h1>${S.cfg.shopAddress?`<div>${e(S.cfg.shopAddress)}</div>`:""}${inv.gst&&S.cfg.shopGstin?`<div>GSTIN: ${e(S.cfg.shopGstin)}</div>`:""}${inv.gst&&shopStateCode()?`<div>State: ${e(stateName(shopStateCode()))} (${e(shopStateCode())})</div>`:""}</div>
-    <div class="r"><h2>${inv.gst?"TAX INVOICE":"BILL"}</h2><div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>${inv.gst&&inv.pos?`<div>Place of supply: ${e(inv.pos)}</div>`:""}</div></div>`;
+    <div class="r"><h2>${inv.gst?"TAX INVOICE":"BILL"}</h2><div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>${inv.gst&&inv.pos?`<div>Place of supply: ${e(inv.pos)}</div>`:""}${prPoLines(inv).map(x=>`<div>${e(x)}</div>`).join("")}</div></div>`;
   const flags=(S.cfg.mode==="test"?`<div class="pi-flag test">TEST BILL - practice only, not a valid invoice</div>`:"")+(inv.cancelled?`<div class="pi-flag cx">CANCELLED</div>`:"");
   const to=`<div class="pi-to"><b>Bill to</b><div>${e(inv.cust.name||"Cash customer")}</div>${inv.cust.mobile?`<div>Mobile: ${e(inv.cust.mobile)}</div>`:""}${inv.gst&&inv.cust.gstin?`<div>GSTIN: ${e(inv.cust.gstin)}</div>`:""}</div>`;
   const rows=inv.lines.map((l,i)=>{ const a=r2(l.qty*l.rate), rate=R(l.rate)+(isPart(l.qty,l.unit)?"/"+e(l.unit):"");
@@ -169,7 +171,7 @@ function prHtmlReceipt(inv){
   if(S.cfg.shopAddress) h+=`<div class="pr-c">${e(S.cfg.shopAddress)}</div>`; if(inv.gst&&S.cfg.shopGstin) h+=`<div class="pr-c">GSTIN: ${e(S.cfg.shopGstin)}</div>`;
   h+=`<hr><div class="pr-c pr-b">${inv.gst?"TAX INVOICE":"BILL"}</div>`;
   if(S.cfg.mode==="test") h+=`<div class="pr-c">TEST BILL - not a real invoice</div>`; if(inv.cancelled) h+=`<div class="pr-c pr-b">*** CANCELLED ***</div>`;
-  h+=`<div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>`;
+  h+=`<div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>`+prPoLines(inv).map(x=>`<div>${e(x)}</div>`).join("");
   if(inv.cust.name) h+=`<div>To: ${e(inv.cust.name)}</div>`; if(inv.cust.mobile) h+=`<div>Mobile: ${e(inv.cust.mobile)}</div>`;
   if(inv.gst&&inv.cust.gstin) h+=`<div>GSTIN: ${e(inv.cust.gstin)}</div>`; if(inv.gst&&inv.pos) h+=`<div>Place of supply: ${e(inv.pos)}</div>`;
   h+=`<hr>`+row("<b>Item</b>","<b>Amount</b>")+`<hr>`;

@@ -35,6 +35,10 @@ const items = [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 90, sell: 120, hsn: 
   f = await file('#bill-pdf'); const g = f && f.buf.toString('latin1');
   ok(f && f.name === 'Invoice-7.pdf' && /TAX INVOICE/i.test(g) && /3923/.test(g) && /4823/.test(g) && /CGST/.test(g) && /09AAACG1234K1Z2/.test(g), 'GST invoice PDF: "Invoice-7.pdf", tax invoice with HSN, CGST and the shop GSTIN');
   ok(f && /401/.test(g), 'GST invoice PDF total ₹401 (340 + 18% = 401.20, rounded)');
+  // the customer's purchase order (PO), added 15 Oct 2026
+  await p.evaluate(() => { T.S.po = { no: '1100-4500253480', date: '2026-10-15' }; }); f = await file('#bill-pdf'); const gp = f && f.buf.toString('latin1');
+  ok(f && /PO No: 1100-4500253480/.test(gp) && /PO date: 15\/10\/2026/.test(gp), 'GST invoice PDF with a purchase order: "PO No: 1100-4500253480" and "PO date: 15/10/2026" beside the invoice number');
+  await p.evaluate(() => { T.S.po = { no: '', date: '' }; });
 
   await setPr({ paper: 'a4', via: 'system', auto: false }); await click('#bill-print'); let r = await printed();
   ok(r.n === 1 && r.on && r.cls === 'pp-a4' && /PP Bag/.test(r.txt) && /Paper Cup/.test(r.txt) && /3923/.test(r.txt) && /401/.test(r.txt), 'A4: the print screen opens with the full invoice (items, HSN, total)');

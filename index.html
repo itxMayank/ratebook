@@ -24,7 +24,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
 <script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
-<link rel="stylesheet" href="app.css?v=6838f6c511">
+<link rel="stylesheet" href="app.css?v=c068b69adf">
 </head>
 <body>
 <header class="top">
@@ -113,6 +113,14 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
         <div class="bh-field" id="igst-row" hidden><label for="igst-on" data-t="outState">Out of state (IGST)</label><label class="switch" style="flex:none"><input type="checkbox" id="igst-on"></label></div>
         <div class="field" id="pos-wrap" hidden><label for="pos-sel" data-t="posPick">Customer's state (place of supply)</label><select id="pos-sel"></select></div>
         <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" name="rb-gstin-x" autocomplete="rb-cust-gstin" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-gstin" aria-expanded="false" maxlength="15" style="text-transform:uppercase"><div class="sugbox" id="sug-gstin" role="listbox" hidden></div><span class="err" id="gstin-err"></span></div>
+        <div class="po-wrap" id="po-wrap">
+          <button type="button" class="po-add" id="po-add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-t="poAdd">Customer's purchase order (PO)</span></button>
+          <div class="po-f" id="po-f" hidden>
+            <div class="field"><label for="po-no" data-t="poNoL">PO number</label><input id="po-no" name="rb-po-x" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="40" enterkeyhint="next"></div>
+            <div class="field"><label for="po-date" data-t="poDateL">PO date</label><input id="po-date" type="date"></div>
+            <button type="button" class="po-x" id="po-x"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span data-t="poRemove">Remove PO</span></button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="envnote" id="bill-envnote" hidden></div>
@@ -212,18 +220,18 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="strings.js?v=25b872f210"></script>
+<script src="strings.js?v=11706541f3"></script>
 <script src="shops.js?v=f905f8fb9e"></script>
 <script src="search.js?v=7cb50ca8ce"></script>
-<script src="print.js?v=e1bb10ee84"></script>
+<script src="print.js?v=0213294ffb"></script>
 <script src="reports.js?v=f7e21e3996"></script>
 <script src="settings.js?v=5969d57cf7"></script>
-<script src="bills.js?v=6bedd4aae7"></script>
+<script src="bills.js?v=63f6c167a4"></script>
 <script src="customers.js?v=4ee3976ed2"></script>
 <script src="lock.js?v=8642f09004"></script>
 <script src="vendors.js?v=00e40d0f46"></script>
 <script src="prices.js?v=f9faa02c6a"></script>
-<script src="billing.js?v=cd5a6a8ebd"></script>
-<script src="app.js?v=5f841d3229"></script>
+<script src="billing.js?v=4e702af8f0"></script>
+<script src="app.js?v=c4f643c6af"></script>
 </body>
 </html>

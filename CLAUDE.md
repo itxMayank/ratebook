@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 15 October 2026 (Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 15 October 2026 (customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1043,6 +1043,17 @@ Two phones can show the same next number (both read it before either bill reache
 - After a renumber, the Last bill row's **Share again** link carries the new number too (it kept the old one).
 - Still possible: two bills made **offline** on different phones can get the same number on screen; the sheet renumbers one and the note asks to send it again. Avoiding that would need numbers set aside per phone, which leaves gaps in the GST invoice series.
 - Test: `tests/billno.app.test.js` (fails 4 checks on the version before).
+
+## Customer's purchase order (PO) on bills (15 Oct 2026, `SCRIPT_VERSION` 54 / `NEED_SV` unchanged, `billing.js` / `app.js` / `bills.js` / `print.js` / `index.html` / `app.css` / `strings.js`)
+
+Asked for by a company customer (Balkrishna Industries) who needs the GST bill to quote their purchase order. Optional: most bills never use it.
+- **Bill page:** in the bill's extra details (⌄, under Customer GSTIN), a link **+ Customer's purchase order (PO)** (`#po-add`) opens **PO number** (`#po-no`, full row, up to 40 characters) and **PO date** (`#po-date`, the phone's date picker) with **Remove PO** (`#po-x`). Folded again after each bill. Works on GST and normal bills. State `S.po = {no, date (yyyy-mm-dd)}` (`rb_po`), helpers `poNorm`, `poHas`, `poOut`, `poDate`, `poTextLine`, `poSet`, `poRender` in `billing.js`.
+- **Shown:** WhatsApp text "PO No: 1100-4500253480 · PO date: 15/10/2026" under the customer's GSTIN (normal bills: under the customer); PDF, A4/A5 and roll printouts next to the invoice number (`prPoLines`, English; wrapped to 32 columns on 58 mm).
+- **Kept with:** drafts (`draftState`), open bills, Share's "saved" state (`draftSig` adds the PO only when set, so older saved signatures still match), editing a past bill (`startEdit` → `po:b.po`). **Repeat as new bill doesn't carry it** (a new order has its own PO); Clear removes it.
+- **Sheet:** new last Bills column **`po`** ("number|yyyy-mm-dd", written as text; `poCell_` / `poOut_` / `poClean_`). `takeBill` writes it, `updateBill` changes or clears it (an older app that sends no `po` leaves it as it was), `listBills` / `getBill` / `listDues` return it. An older script ignores it: the PO is still in the bill's saved text, but not in its own column.
+- Tests: `tests/po.app.test.js` (21), `tests/po.test.js` (server, 13), `tests/print.app.test.js` (the PDF has "PO No" and "PO date").
+- **Rollout:** merge; update each shop's script to v54 (your shop first).
+- Not done (ask if needed): the customer's item code per line (the PO's "Item Code" column), and the PO in the invoice-register CSV.
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 10 October 2026 (vendor notifications in the app; earlier: more shops from one app + admin dashboard; speed; error log).
+Last updated: 15 October 2026 (Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1033,6 +1033,17 @@ Reported: after the PVC buy price was raised, "Do this today" said PVC was being
 - Tests: `tests/pricehist.test.js` (new: start from bills incl. the ignored one-off discount, runs once, every save, hand edit, staff, live rows not doubled), `tests/insights.test.js` B7–B11, `tests/adminbiz.test.js` A6b–A6c, `tests/summary.app.test.js` B2b, `tests/prices.app.test.js` I1–I6.
 - **Rollout:** merge; update each shop's script to v53 (your shop first). The history fills itself from past bills the first time someone opens an item or the business page.
 
+## Share waits for the sheet to confirm the bill number (15 Oct 2026, `billing.js` / `app.js` / `app.css` / `strings.js`, no script change)
+
+Two phones can show the same next number (both read it before either bill reached the sheet). The sheet never saves a number twice (`takeBill` gives the second bill the next free one and returns `renumbered`), but the second customer's WhatsApp still carried the old number.
+- **Share of a new bill** (`shareConfirmed`): the bill is saved first (`finishBill({keep, wait})`), the Share button shows only a centred spinner (same size, `.wa-wait`; a second tap does nothing), and WhatsApp opens once the sheet has the bill (`billConfirmed(id, NO_WAIT_MS)`), with the number it's saved under. Usually 1–2 s.
+- **Offline, refused, or no answer within 4 s** (`NO_WAIT_MS`): WhatsApp opens with this phone's number, as before; the bill is marked shared, so a later renumber shows "Bill number changed … send it again".
+- **The phone blocks opening WhatsApp after the wait** (possible on iPhone): a sheet "Bill 22 saved." with a **Share on WhatsApp** button (`#sc-wa`, string `shareTapD`).
+- Share of a bill that's already saved (the green "saved" bar) and Done are unchanged (Done never sends anything to the customer). **Print automatically after Done** now waits for the confirmed number (same 4 s limit) before printing.
+- After a renumber, the Last bill row's **Share again** link carries the new number too (it kept the old one).
+- Still possible: two bills made **offline** on different phones can get the same number on screen; the sheet renumbers one and the note asks to send it again. Avoiding that would need numbers set aside per phone, which leaves gaps in the GST invoice series.
+- Test: `tests/billno.app.test.js` (fails 4 checks on the version before).
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).
@@ -1233,7 +1244,7 @@ Every cache layer was reviewed (app page in `sw.js`, the script's reply cache, a
 ## Known limitations and open items
 
 - Not yet tested on real phones: install prompt, voice input, WhatsApp hand-off and keyboard behaviour. Tested only against a simulated backend and a simulated mic.
-- Bill-number collisions are possible if two phones finish bills within seconds of each other, or while offline.
+- Bill numbers: two phones can still pick the same number while **offline** (the sheet renumbers one and says so). Online, Share waits for the confirmed number (15 Oct 2026).
 - The on-phone command reader is rule-based. It handles common English, Hindi and Hinglish patterns but can misread unusual phrasing, which is why there's a preview step. Hindi-only product names match English items only through rough sound-alike matching.
 - `Code.gs` updates are always manual (paste and New version).
 - Automatic GitHub uploads aren't set up. Planned route: run Claude Code on this repository through the Claude GitHub app, so changes can be committed and pushed directly.

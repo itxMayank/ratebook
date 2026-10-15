@@ -1848,13 +1848,18 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 #bill-wa.busy{pointer-events:none}
 #bill-wa.busy>:not(.wa-wait){visibility:hidden}
 #bill-wa .wa-wait{position:absolute;inset:0;display:grid;place-items:center}
-/* Customer's purchase order (PO) on the bill (#bh-extra): a "+ PO" link opens the boxes: number on its own row, then date + Remove (stacked when narrow) */
-.po-add,.po-x{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 2px;background:none;border:0;color:var(--accent);font:600 14px/1.25 var(--f-body);cursor:pointer;text-align:left;justify-self:start}
-.po-x{color:var(--muted);min-height:40px}
-.po-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px 10px;align-items:end}
-.po-f>.field:first-child{grid-column:1/-1}   /* PO numbers are long (1100-4500253480): a full row, so the number is never cut */
-.po-f .po-x{align-self:end;min-height:44px}
-.po-f input[type=date]{min-height:44px}
+/* Customer's purchase order (PO): label, then one line [PO number][📅 date][✕]; the date wraps under the number only on very narrow screens / large text */
+.po-row{display:grid;gap:4px;justify-content:stretch}
+.po-row .po-ins{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
+.po-row .po-nw{position:relative;flex:1 1 calc(13ch + 20px);min-width:0;display:flex}
+.po-row #po-no{flex:1;width:100%;min-width:0;height:44px;padding:0 10px;font-size:16px;border:1px solid var(--fieldline,var(--line));border-radius:var(--r-md);background:var(--surface-2);color:var(--fg)}
+.po-row #po-no:focus{outline:0;border-color:var(--ink)}
+.po-dc{position:relative;flex:none;display:inline-flex;align-items:center;gap:5px;height:44px;padding:0 10px;border:1px solid var(--fieldline,var(--line));border-radius:var(--r-md);background:var(--surface-2);color:var(--muted);font:600 14px var(--f-body);white-space:nowrap;cursor:pointer}
+.po-dc.on{color:var(--fg)}
+.po-dc:focus-within{border-color:var(--ink)}
+.po-dc input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;margin:0;cursor:pointer;font-size:16px}
+.po-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px}
+.po-x{display:inline-flex;align-items:center;gap:4px;min-height:32px;margin:-6px -4px -6px 0;padding:0 6px;border:0;border-radius:var(--r-full);background:none;color:var(--muted);font:600 13px var(--f-body);cursor:pointer}
 /* Customers: "+ Add customer", and the company part of the customer form (v55) */
 .cu-addbtn{display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;margin:2px 0 6px;min-height:44px}
 .cu-co{border:1.5px solid var(--line);border-radius:var(--r-md);padding:10px 12px 12px;margin:0;display:grid;gap:10px;min-width:0}

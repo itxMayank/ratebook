@@ -24,7 +24,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
 <script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
-<link rel="stylesheet" href="app.css?v=91fe22a89d">
+<link rel="stylesheet" href="app.css?v=85aadbe27f">
 </head>
 <body>
 <header class="top">
@@ -113,13 +113,10 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
         <div class="bh-field" id="igst-row" hidden><label for="igst-on" data-t="outState">Out of state (IGST)</label><label class="switch" style="flex:none"><input type="checkbox" id="igst-on"></label></div>
         <div class="field" id="pos-wrap" hidden><label for="pos-sel" data-t="posPick">Customer's state (place of supply)</label><select id="pos-sel"></select></div>
         <div class="field" id="cgstin-wrap" hidden><label for="cust-gstin" data-t="custGstin">Customer GSTIN (optional)</label><input id="cust-gstin" name="rb-gstin-x" autocomplete="rb-cust-gstin" autocorrect="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-controls="sug-gstin" aria-expanded="false" maxlength="15" style="text-transform:uppercase"><div class="sugbox" id="sug-gstin" role="listbox" hidden></div><span class="err" id="gstin-err"></span></div>
-        <div class="field" id="caddr-wrap"><label for="cust-addr" data-t="custAddrL">Customer address (optional)</label><textarea id="cust-addr" name="rb-addr-x" rows="2" maxlength="300" autocomplete="off"></textarea></div>
-        <div class="po-wrap" id="po-wrap">
-          <button type="button" class="po-add" id="po-add"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-t="poAdd">Customer's purchase order (PO)</span></button>
-          <div class="po-f" id="po-f" hidden>
-            <div class="field"><label for="po-no" data-t="poNoL">PO number</label><input id="po-no" name="rb-po-x" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="40" enterkeyhint="next"></div>
-            <div class="field"><label for="po-date" data-t="poDateL">PO date</label><input id="po-date" type="date"></div>
-            <button type="button" class="po-x" id="po-x"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span data-t="poRemove">Remove PO</span></button>
+        <div class="bh-field po-row" id="po-wrap"><div class="po-head"><label for="po-no" data-t="poRowL">Customer PO</label><button type="button" class="po-x" id="po-x" hidden aria-label="Remove PO"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span data-t="poRemoveS">Remove</span></button></div>
+          <div class="po-ins">
+            <span class="po-nw"><input id="po-no" name="rb-po-x" autocomplete="off" autocorrect="off" spellcheck="false" maxlength="40" enterkeyhint="done" data-tp="poNoL" placeholder="PO number" aria-label="PO number"></span>
+            <span class="po-dc" id="po-dc"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="po-dl" data-t="poDateShort">Date</span><input type="date" id="po-date" aria-label="PO date"></span>
           </div>
         </div>
       </div>
@@ -221,18 +218,18 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="strings.js?v=c67413088b"></script>
+<script src="strings.js?v=b9520cc57f"></script>
 <script src="shops.js?v=f905f8fb9e"></script>
 <script src="search.js?v=7cb50ca8ce"></script>
 <script src="print.js?v=dd5e02c6fc"></script>
 <script src="reports.js?v=f7e21e3996"></script>
 <script src="settings.js?v=5969d57cf7"></script>
-<script src="bills.js?v=839568db55"></script>
+<script src="bills.js?v=bcc702de2a"></script>
 <script src="customers.js?v=a3dfaa4f76"></script>
 <script src="lock.js?v=8642f09004"></script>
 <script src="vendors.js?v=00e40d0f46"></script>
 <script src="prices.js?v=f9faa02c6a"></script>
-<script src="billing.js?v=b8910bc925"></script>
-<script src="app.js?v=4b1aaea34d"></script>
+<script src="billing.js?v=c701dd7a90"></script>
+<script src="app.js?v=01faceca7d"></script>
 </body>
 </html>

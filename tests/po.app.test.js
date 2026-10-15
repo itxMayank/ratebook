@@ -28,16 +28,19 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
   const fresh = async () => { await p.evaluate(() => { T.addToBill('i1', 2100); T.setTab('bill'); }); await p.waitForTimeout(300); };
   const takes = () => sent.filter(x => x.action === 'takeBill').map(x => x.bill);
 
-  // A. hidden until asked for
+  // A. one row in the bill's extra details: label · PO number · date chip
   await fresh();
-  ok(await vis('#po-add') && !(await vis('#po-f')), 'A1 bill details show "+ Customer\'s purchase order (PO)", the boxes stay folded until tapped');
-  ok(!/PO/.test(await p.evaluate(() => T.billText())), 'A2 no PO: nothing about it in the WhatsApp text');
-  await p.click('#po-add'); await p.waitForTimeout(150);
-  ok(await vis('#po-no') && await vis('#po-date') && await p.evaluate(() => document.activeElement.id) === 'po-no' && !(await vis('#po-add')), 'A3 tap: PO number and PO date boxes open, cursor in PO number');
+  const row = await p.evaluate(() => { const r = s => document.querySelector(s).getBoundingClientRect(), l = r('#po-wrap label'), n = r('#po-no'), d = r('#po-dc');
+    return { same: Math.abs(n.top - d.top) < 3 && n.right <= d.left + 1, lab: l.bottom <= n.top + 1, txt: document.querySelector('#po-wrap label').textContent, dl: document.querySelector('#po-dl').textContent,
+      icon: !!document.querySelector('#po-dc svg'), nat: getComputedStyle(document.querySelector('#po-date')).opacity, x: document.querySelector('#po-x').hidden }; });
+  ok(row.txt === 'Customer PO' && row.same && row.lab, 'A1 "Customer PO" label, then the PO number and the date on one line under it ' + JSON.stringify(row));
+  ok(row.dl === 'Date' && row.icon && row.nat === '0' && row.x, 'A2 the date is a chip with the app\'s calendar icon (the phone\'s own date box is invisible under it); no ✕ while empty');
+  ok(!/PO/.test(await p.evaluate(() => T.billText())), 'A3 no PO: nothing about it in the WhatsApp text');
 
   // B. typed in: on the GST tax invoice, under the customer's GSTIN
   await p.click('#gst-chip'); await p.fill('#cust', 'Balkrishna Industries'); await p.fill('#cust-gstin', '27AAACB3333J1ZW');
   await p.fill('#po-no', '1100-4500253480'); await p.fill('#po-date', '2026-10-15'); await p.waitForTimeout(200);
+  ok(await p.textContent('#po-dl') === '15/10/2026' && await vis('#po-x'), 'A4 the chip shows the date picked (15/10/2026); ✕ appears');
   let tx = await p.evaluate(() => T.billText());
   ok(/GSTIN: 27AAACB3333J1ZW\nPO No: 1100-4500253480 · PO date: 15\/10\/2026\n/.test(tx), 'B1 GST bill text: "PO No: 1100-4500253480 · PO date: 15/10/2026" right under the customer\'s GSTIN');
   ok(decodeURIComponent(await p.getAttribute('#bill-wa', 'href')).includes('PO No: 1100-4500253480'), 'B2 the Share link carries it');
@@ -55,11 +58,11 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
 
   // D. kept as a draft (app closed and opened again)
   await p.reload(); await p.waitForTimeout(1500); await p.evaluate(() => { T.appUnlock(); T.setTab('bill'); }); await p.waitForTimeout(300);
-  ok(await p.inputValue('#po-no') === '1100-4500253480' && await p.inputValue('#po-date') === '2026-10-15' && await vis('#po-f'), 'D1 after reopening the app the PO is still on the bill');
+  ok(await p.inputValue('#po-no') === '1100-4500253480' && await p.inputValue('#po-date') === '2026-10-15' && await p.textContent('#po-dl') === '15/10/2026', 'D1 after reopening the app the PO is still on the bill');
 
   // E. open bills: New bill holds it, switching back brings it back; the new bill starts without one
   await p.click('#bill-new'); await p.waitForTimeout(300);
-  ok(await p.inputValue('#po-no') === '' && !(await vis('#po-f')) && await vis('#po-add'), 'E1 New bill: no PO on the new one');
+  ok(await p.inputValue('#po-no') === '' && await p.textContent('#po-dl') === 'Date' && !(await vis('#po-x')), 'E1 New bill: no PO on the new one');
   await p.evaluate(() => { const h = T.heldGet()[0]; T.resumeHeld(h.hid); }); await p.waitForTimeout(300);
   ok(await p.inputValue('#po-no') === '1100-4500253480', 'E2 back to the held bill: its PO is there');
 
@@ -67,13 +70,13 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
   sent = []; await p.click('#bill-done'); await p.waitForTimeout(1200);
   const b1 = takes()[0] || {};
   ok(b1.po && b1.po.no === '1100-4500253480' && b1.po.date === '2026-10-15' && /PO No: 1100-4500253480/.test(b1.text), 'F1 Done sends the PO with the bill (and in its text)');
-  ok(await p.inputValue('#po-no') === '' && !(await vis('#po-f')), 'F2 next bill starts without a PO');
+  ok(await p.inputValue('#po-no') === '' && await p.textContent('#po-dl') === 'Date', 'F2 next bill starts without a PO');
   await fresh(); sent = []; await p.click('#bill-done'); await p.waitForTimeout(1200);
   ok((takes()[0] || {}).po === null, 'F3 a bill without a PO sends none');
 
   // G. Remove PO
-  await fresh(); await p.click('#po-add'); await p.fill('#po-no', 'X-1'); await p.click('#po-x'); await p.waitForTimeout(150);
-  ok(await p.evaluate(() => !T.S.po.no && !T.S.po.date) && !(await vis('#po-f')) && !/PO/.test(await p.evaluate(() => T.billText())), 'G1 "Remove PO" clears it and folds the boxes');
+  await fresh(); await p.fill('#po-no', 'X-1'); await p.click('#po-x'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => !T.S.po.no && !T.S.po.date) && await p.inputValue('#po-no') === '' && !(await vis('#po-x')) && !/PO/.test(await p.evaluate(() => T.billText())), 'G1 "Remove PO" clears it and folds the boxes');
 
   // H. past bill: Edit brings the PO back; Repeat as new bill doesn't carry it
   await p.evaluate(() => document.querySelector('#bill-clear-yes').click()); await p.waitForTimeout(200);
@@ -82,7 +85,7 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
   const edit = await p.$('#bd-edit');
   if (edit) { await edit.click(); await p.waitForTimeout(600); }
   ok(await p.inputValue('#po-no') === '1100-4500253480' && await p.inputValue('#po-date') === '2026-10-15', 'H1 Edit bill (No. 41): its PO comes back on the bill');
-  ok(await p.inputValue('#cust-addr') === 'Plot F-20, Waluj MIDC', 'H1b …and the customer\'s address');
+  ok(await p.evaluate(() => T.S.custAddr) === 'Plot F-20, Waluj MIDC' && !(await p.$('#cust-addr')), 'H1b …and the customer\'s address (kept with the bill, not shown as a box)');
   ok(/PO No: 1100-4500253480/.test(await p.evaluate(() => T.billText())), 'H2 the edited bill\'s text keeps the PO');
   await p.click('#edit-cancel'); await p.waitForTimeout(400);
   await p.evaluate(() => T.openBills()); await p.waitForTimeout(1200); await p.click('[data-bid="bkt1"]').catch(() => {}); await p.waitForTimeout(1200);

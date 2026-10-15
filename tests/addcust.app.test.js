@@ -77,7 +77,7 @@ let custs = [['9876543210', 'Sunil Traders', '', 4, 3250, '2026-10-02T10:00:00.0
   await p.click('#sug-cust [data-sug="0"]'); await p.waitForTimeout(300);
   ok(await p.inputValue('#cust') === 'Balkrishna Industries Ltd' && await p.inputValue('#cust-gstin') === '27AAACB3333J1ZW' && await p.inputValue('#cust-mob') === '', 'G2 picking it fills the name and GSTIN (no mobile to fill)');
 
-  ok(await p.inputValue('#cust-addr') === 'Plot No. F-20, Waluj MIDC, Chhatrapati Sambhajinagar 431136', 'G3 …and its address (in the bill\'s extra details)');
+  ok(await p.evaluate(() => T.S.custAddr) === 'Plot No. F-20, Waluj MIDC, Chhatrapati Sambhajinagar 431136' && !(await p.$('#cust-addr')), 'G3 …and its address goes with the bill (no address box on the bill page)');
   // H. the address on the bill text, sent with the bill; a typed address isn't replaced by a lookup; ✕ clears it
   await p.evaluate(() => { const S = T.S; S.bill = [{ id: 'x', name: 'Carry Bag', unit: 'pc', rate: 7.75, qty: 10, hsn: '3923', gst: 18 }]; });
   await p.click('#gst-chip'); await p.waitForTimeout(200);
@@ -87,12 +87,11 @@ let custs = [['9876543210', 'Sunil Traders', '', 4, 3250, '2026-10-02T10:00:00.0
   sent = []; await p.evaluate(() => document.querySelector('#bill-done').click()); await p.waitForTimeout(1200);
   const tb = (sent.find(x => x.action === 'takeBill') || {}).bill || {};
   ok(tb.custAddr === 'Plot No. F-20, Waluj MIDC, Chhatrapati Sambhajinagar 431136' && tb.custGstin === '27AAACB3333J1ZW', 'H3 Done sends the address with the bill');
-  ok(await p.inputValue('#cust-addr') === '', 'H4 the next bill starts without an address');
-  if (!(await p.isVisible('#cust-addr'))) await p.click('#bh-more');
-  await p.fill('#cust-addr', 'Shop 4, Station Road'); await p.fill('#cust', 'Sunil'); await p.waitForTimeout(300); await p.click('#sug-cust [data-sug="0"]').catch(() => {}); await p.waitForTimeout(300);
-  ok(await p.inputValue('#cust-addr') === 'Main Road, Kanpur', 'H5 picking a saved customer puts their saved address on the bill');
+  ok(await p.evaluate(() => T.S.custAddr) === '', 'H4 the next bill starts without an address');
+  await p.fill('#cust', 'Sunil'); await p.waitForTimeout(300); await p.click('#sug-cust [data-sug="0"]').catch(() => {}); await p.waitForTimeout(300);
+  ok(await p.evaluate(() => T.S.custAddr) === 'Main Road, Kanpur', 'H5 picking a saved customer puts their saved address on the bill');
   await p.click('#cust-x'); await p.waitForTimeout(200);
-  ok(await p.inputValue('#cust-addr') === '' && await p.inputValue('#cust') === '', 'H6 the customer ✕ clears the address too');
+  ok(await p.evaluate(() => T.S.custAddr) === '' && await p.inputValue('#cust') === '', 'H6 the customer ✕ clears the address too');
   ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();
 })();

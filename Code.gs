@@ -27,7 +27,7 @@ const IMAGES = 'Images';
 let ENV_ = 'live';
 function tab_(name) { return ENV_ === 'test' ? 'Test ' + name : name; }
 function setEnv_(env) { ENV_ = env === 'test' ? 'test' : env === 'live' ? 'live' : (readConfig_().mode === 'live' ? 'live' : 'test'); }
-const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos', 'paidBy', 'po'];
+const BILL_COLS = ['billNo', 'date', 'customer', 'mobile', 'total', 'items', 'by', 'gstBill', 'taxable', 'tax', 'customerGstin', 'igst', 'text', 'lines', 'billId', 'editedAt', 'editedBy', 'edits', 'cost', 'profit', 'payment', 'paid', 'due', 'payments', 'clearedAt', 'fy', 'status', 'cancelledAt', 'cancelledBy', 'cancelReason', 'pos', 'paidBy', 'po', 'custAddr'];
 
 const CUST_COLS = ['mobile', 'name', 'gstin', 'bills', 'total', 'lastDate', 'lastBillNo', 'due', 'address', 'note', 'updatedAt', 'updatedBy', 'contact', 'email'];   // mobile = the 10 digits, or 'c-…' for a customer saved without one (v55)
 const CPAD_ = r => { while (r.length < CUST_COLS.length) r.push(''); return r.slice(0, CUST_COLS.length); };   // rows always as wide as the header
@@ -1161,7 +1161,7 @@ function takeBill_(body) {
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
-        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po)]));
+        str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       try { refreshDue_(b.mobile); } catch (err) {}
     }
@@ -1236,7 +1236,7 @@ function listBills_(q, limit, opt) {
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B),
-      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]) });
+      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), custAddr: String(r[B.custAddr] || '') });
   }
   const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day] || { count: 0, total: 0 }; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)] || { count: 0, total: 0 }; });
   if (dIds) return { bills: out, delta: true, full: true, brev: brev_(), years: Object.keys(years).sort().reverse() };
@@ -1255,7 +1255,7 @@ function getBill_(row, id, billNo) {
   let lines = [];
   try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   return { bill: { text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), gst: r[B.gstBill] === 'Yes',
-    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
+    igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), custAddr: String(r[B.custAddr] || ''), customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
     total: num_(r[B.total]), items: String(r[B.items] || ''), cancelled: r[B.status] === 'Cancelled', cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''),
     cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''),
     editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), editedBy: String(r[B.editedBy] || ''), ...payOut_(r, B) } };
@@ -1298,6 +1298,7 @@ function updateBill_(b, by, who) {
   if (b.pos !== undefined) r[B.pos] = str_(b.pos || '', 40);
   if (b.paidBy !== undefined) r[B.paidBy] = b.pay === 'credit' ? '' : paidBy_(b.paidBy);
   if (b.po !== undefined) r[B.po] = poCell_(b.po);
+  if (b.custAddr !== undefined) r[B.custAddr] = str_(String(b.custAddr || '').trim(), 300);
   r[B.text] = safe(String(b.text || '').slice(0, 45000));
   r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
@@ -1376,7 +1377,7 @@ function listDues_() {
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     c.due = r2_(c.due + due); total = r2_(total + due); count++;
     c.bills.push({ row: i + 2, id: String(r[B.billId] || ''), n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), total: num_(r[B.total]), paid: num_(r[B.paid]), due: due, pay: st, payments: payList_(r[B.payments]), items: String(r[B.items] || ''), gst: r[B.gstBill] === 'Yes',
-      edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]) });
+      edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), igst: r[B.igst] === 'IGST', custGstin: String(r[B.customerGstin] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), custAddr: String(r[B.custAddr] || '') });
   }
   list.forEach(c => { c.oldest = c.bills.length ? c.bills[0].date : ''; });
   list.sort((x, y) => y.due - x.due);

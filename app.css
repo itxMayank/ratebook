@@ -1859,3 +1859,8 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 .cu-addbtn{display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;margin:2px 0 6px;min-height:44px}
 .cu-co{border:1.5px solid var(--line);border-radius:var(--r-md);padding:10px 12px 12px;margin:0;display:grid;gap:10px;min-width:0}
 .cu-co legend{padding:0 6px;font-weight:700;font-size:14px}
+/* A4/A5 invoice: "Original for recipient" and the signature block (GST rules 46 and 48) */
+#printroot .pi-orig{font-size:.8em;letter-spacing:.06em;color:#444;margin-bottom:2px}
+#printroot .pi-sign{display:flex;flex-direction:column;align-items:flex-end;gap:34px;margin-top:18px;break-inside:avoid}
+#printroot .pi-sign span{border-top:1px solid #000;padding-top:3px;min-width:150px;text-align:right}
+#ce-gst::placeholder,#cust-gstin::placeholder{text-transform:none}   /* the box upper-cases what's typed, not its hint */

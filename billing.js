@@ -64,6 +64,7 @@ function gstBillText(){
   if(S.cfg.shopGstin) s+=`${t("gstinL")}: ${S.cfg.shopGstin}\n`;
   s+=`\n*${t("taxInvoice")}*\n${t("invNoLine",curBillDisp())} · ${d}\n`+editedLine();
   if(S.cust.trim()) s+=`${t("custL")}: ${S.cust.trim()}\n`;
+  if(String(S.custAddr||"").trim()) s+=`${t("addrL")}: ${addrOneLine(S.custAddr)}\n`;
   if(S.custGstin.trim()) s+=`${t("gstinL")}: ${S.custGstin.trim().toUpperCase()}\n`;
   s+=poTextLine(S.po);
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
@@ -93,8 +94,11 @@ const fmtDate=d=>new Date(d).toLocaleDateString("en-IN",{day:"2-digit",month:"sh
 const fmtDT=d=>{ const x=new Date(d); return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+", "+x.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
 function billDateStr(){ return S.editing && S.editing.date ? fmtDate(S.editing.date) : fmtDate(Date.now()); }
 function editedLine(){ return S.editing && !S.editing.fresh ? `_${t("editedLine",fmtDT(Date.now()))}_\n` : ""; }
-const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""].concat(poHas(S.po)?[S.po]:[]));   // (PO only when set, so older saved signatures still match)
+const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""].concat(poHas(S.po)?[S.po]:[]).concat(String(S.custAddr||"").trim()?[String(S.custAddr).trim()]:[]));   // (PO only when set, so older saved signatures still match)
 /* The customer's purchase order (PO) a bill is made against: optional, mostly for company GST bills. S.po = {no, date (yyyy-mm-dd)}. */
+/* The customer's address on the bill (filled from a saved customer, or typed; v55). One line in texts, as typed on printouts. */
+function caddrSet(v){ S.custAddr=String(v||""); S.custAddrAuto=""; ls.set("rb_caddr",S.custAddr); const el=$("#cust-addr"); if(el && el.value!==S.custAddr) el.value=S.custAddr; }
+function addrOneLine(v){ return String(v||"").split(/\s*\n\s*/).map(x=>x.trim()).filter(Boolean).join(", "); }
 function poNorm(p){ p=p||{}; return { no:String(p.no||"").slice(0,40), date:/^\d{4}-\d\d-\d\d$/.test(p.date||"")?p.date:"" }; }
 function poHas(p){ return !!(p && (String(p.no||"").trim() || p.date)); }
 function poOut(p){ return poHas(p) ? { no:String(p.no||"").trim(), date:p.date||"" } : null; }   // what's saved with the bill
@@ -341,7 +345,7 @@ function startEdit(b){
   blankDraft();
   S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
-  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, po:b.po, ...billPayMode(b) });
+  applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, custAddr:b.custAddr||"", po:b.po, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
 }
 /** Editing finished (saved or cancelled): the bill that was on screen when it started comes back if it's still open; otherwise a
@@ -368,7 +372,7 @@ async function saveEdit(opts){
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
@@ -386,7 +390,7 @@ function draftRec(extra){
   const g=S.gst?gstCalc():null;
   const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
@@ -402,7 +406,7 @@ function finishBill(opts){
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
-    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po),
+    gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
@@ -423,7 +427,7 @@ function finishBill(opts){
     return;
   }
   ls.set(envKey("rb_draftat"),Date.now());
-  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; poSet(null); S.poOpen=false; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
+  S.bill=[]; S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); poSet(null); S.poOpen=false; S.gst=false; S.igst=false; ls.set("rb_gst",false); ls.set("rb_igst",false); ls.set("rb_cust",""); ls.set("rb_mob",""); ls.set("rb_cgstin",""); $("#cust").value=""; $("#cust-mob").value=""; $("#cust-gstin").value="";
   saveBill(); renderBill(); renderList();
   toast(t("billSent",n,seriesNext(wasGst)));
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
@@ -615,6 +619,7 @@ function applyCustomer(info){
   const nameEl=$("#cust"), gEl=$("#cust-gstin");
   if(info.name && (!S.cust.trim() || S.cust===S.custAuto)){ S.cust=info.name; S.custAuto=info.name; nameEl.value=info.name; ls.set("rb_cust",S.cust); }
   if(info.gstin && !S.custGstin.trim()){ S.custGstin=info.gstin; gEl.value=info.gstin; ls.set("rb_cgstin",S.custGstin); }
+  const ad=info.addr||info.address||""; if(ad && (!String(S.custAddr||"").trim() || S.custAddr===S.custAddrAuto)){ caddrSet(ad); S.custAddrAuto=ad; }
   showCustHint(info); updateBillTotals();
 }
 let custT=null;
@@ -629,7 +634,7 @@ function custLookup(){
   if(!local){ h.hidden=false; h.classList.add("looking"); h.innerHTML=`${LD("sm")}<span>${esc(t("custLooking"))}</span>`; }
   custT=setTimeout(async()=>{ try{ const j=await apiPost({action:"findCustomer",mobile:k}); if(S.custQ!==k) return;
       h.classList.remove("looking");
-      if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",count:j.customer.count,total:j.customer.total,last:j.customer.last,due:+j.customer.due||0}; ls.set(envKey("rb_customers"),c); applyCustomer(c[k]); }
+      if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",addr:j.customer.address||(c[k]||{}).addr||"",count:j.customer.count,total:j.customer.total,last:j.customer.last,due:+j.customer.due||0}; ls.set(envKey("rb_customers"),c); applyCustomer(c[k]); }
       else if(!local){ h.hidden=false; h.innerHTML=`<span>${esc(t("custNew"))}</span>`; }
     }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
@@ -701,6 +706,7 @@ function sugPick(i){
   S.cust=c.name||S.cust; S.custAuto=""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);
   if(c.mob){ S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); } $("#mob-err").textContent="";   // a company saved without a mobile keeps what was typed $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
   if(c.gstin){ S.custGstin=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; }
+  if(c.addr){ caddrSet(c.addr); S.custAddrAuto=c.addr; }   // a saved customer's address goes on the bill
   if(c.mob){ const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once
   S.custQ=""; custLookup(); updateBillTotals();
   const el=field==="gstin"?$("#cust-gstin"):field==="mob"?$("#cust-mob"):$("#cust"); el.blur();
@@ -708,8 +714,8 @@ function sugPick(i){
 }
 function setOpen(btnSel,panelSel,key,open){ $(panelSel).hidden=!open; $(btnSel).setAttribute("aria-expanded",open); ls.set(key,open); }
 /* ---------------- Bill page: one ✕ clears customer name, mobile and GSTIN ---------------- */
-function custXSync(){ const b=$("#cust-x"); if(!b) return; const on=!!(S.cust.trim()||S.mob.trim()||String(S.custGstin||"").trim()); b.hidden=!on; $(".bh-cust").classList.toggle("has-x",on); }
-function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; S.custAuto=""; S.custQ="";
+function custXSync(){ const b=$("#cust-x"); if(!b) return; const on=!!(S.cust.trim()||S.mob.trim()||String(S.custGstin||"").trim()||String(S.custAddr||"").trim()); b.hidden=!on; $(".bh-cust").classList.toggle("has-x",on); }
+function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); S.custAuto=""; S.custQ="";
   ["#cust","#cust-mob","#cust-gstin"].forEach(k=>{ const el=$(k); if(el){ el.value=""; el.classList.remove("need"); } }); ["rb_cust","rb_mob","rb_cgstin"].forEach(k=>ls.set(k,""));
   const me=$("#mob-err"); if(me) me.textContent=""; const ge=$("#gstin-err"); if(ge) ge.textContent=""; sugClose(); showCustHint(null); updateBillTotals(); custXSync(); }
 /* Sign-in and app lock: lock.js. LOCK stays here because it reads phone storage while loading. */

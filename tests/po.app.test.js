@@ -7,7 +7,7 @@ const html = appHtml('S,addToBill,billText,setTab,appUnlock,heldGet,resumeHeld,r
 const items = [{ id: 'i1', name: 'Sima Plastic Carry Bag 27x30 120 micron', unit: 'pc', buy: 6.5, sell: 7.75, hsn: '39231090', gst: 18 }];
 let sent = [];
 const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', customer: 'Balkrishna Industries', mobile: '7385327108', total: 19205, items: 'Sima Plastic Carry Bag 2100 pc x 7.75', gst: true,
-  custGstin: '27AAACB3333J1ZW', igst: false, id: 'bkt1', row: 2, edits: 0, pay: 'Paid', paid: 19205, due: 0, payments: [], fy: '2026-27', cancelled: false, pos: 'Maharashtra (27)', po: { no: '1100-4500253480', date: '2026-10-15' } };
+  custGstin: '27AAACB3333J1ZW', igst: false, id: 'bkt1', row: 2, edits: 0, pay: 'Paid', paid: 19205, due: 0, payments: [], fy: '2026-27', cancelled: false, pos: 'Maharashtra (27)', po: { no: '1100-4500253480', date: '2026-10-15' }, custAddr: 'Plot F-20, Waluj MIDC' };
 (async () => {
   const b = await launch(); const errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
@@ -78,13 +78,14 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
   // H. past bill: Edit brings the PO back; Repeat as new bill doesn't carry it
   await p.evaluate(() => document.querySelector('#bill-clear-yes').click()); await p.waitForTimeout(200);
   await p.evaluate(() => T.openBills()); await p.waitForTimeout(1200);
-  await p.click('.billcard:has-text("Balkrishna")').catch(() => {}); await p.waitForTimeout(1200);
+  await p.click('[data-bid="bkt1"]').catch(() => {}); await p.waitForTimeout(1200);
   const edit = await p.$('#bd-edit');
   if (edit) { await edit.click(); await p.waitForTimeout(600); }
   ok(await p.inputValue('#po-no') === '1100-4500253480' && await p.inputValue('#po-date') === '2026-10-15', 'H1 Edit bill (No. 41): its PO comes back on the bill');
+  ok(await p.inputValue('#cust-addr') === 'Plot F-20, Waluj MIDC', 'H1b …and the customer\'s address');
   ok(/PO No: 1100-4500253480/.test(await p.evaluate(() => T.billText())), 'H2 the edited bill\'s text keeps the PO');
   await p.click('#edit-cancel'); await p.waitForTimeout(400);
-  await p.evaluate(() => T.openBills()); await p.waitForTimeout(1200); await p.click('.billcard:has-text("Balkrishna")').catch(() => {}); await p.waitForTimeout(1200);
+  await p.evaluate(() => T.openBills()); await p.waitForTimeout(1200); await p.click('[data-bid="bkt1"]').catch(() => {}); await p.waitForTimeout(1200);
   const rep = await p.$('#bd-repeat'); if (rep) { await rep.click(); await p.waitForTimeout(300); const y = await p.$('#bd-ry'); if (y && await y.isVisible()) await y.click(); await p.waitForTimeout(500); }
   ok(await p.evaluate(() => T.S.bill.length) === 1 && await p.inputValue('#po-no') === '', 'H3 Repeat as new bill: same items, but no PO (a new order has its own)');
 

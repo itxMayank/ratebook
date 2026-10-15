@@ -9,39 +9,42 @@ function loadPdf(){ if(window.jspdf) return Promise.resolve(window.jspdf); if(pd
   pdfLib=new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="pdf.js"; sc.onload=()=>res(window.jspdf); sc.onerror=()=>{ pdfLib=null; rej(new Error("pdf")); }; document.head.appendChild(sc); }); return pdfLib; }
 function invFromCurrent(){
   const p=payInfo(billTotal());
-  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:mob10(S.mob)||S.mob.trim(),gstin:S.custGstin.trim().toUpperCase()}, po:poOut(S.po), pos:S.gst?posLabel():"",
+  return { gst:!!S.gst, igst:!!S.igst, no:curBillDisp(), date:S.editing&&S.editing.date?S.editing.date:new Date().toISOString(), cust:{name:S.cust.trim(),mobile:mob10(S.mob)||S.mob.trim(),gstin:S.custGstin.trim().toUpperCase(),addr:String(S.custAddr||"").trim()}, po:poOut(S.po), pos:S.gst?posLabel():"",
     lines:S.bill.map(l=>({name:l.name,hsn:lineInfo(l).hsn,qty:+l.qty||0,unit:l.unit,rate:+l.rate||0,gst:lineInfo(l).gst})), pay:p, cancelled:false };
 }
 function invFromBill(b){
   const lines=(b.lines&&b.lines.length?b.lines:linesFromItems(b)).map(l=>({name:l.name,hsn:l.hsn||"",qty:+l.qty||0,unit:l.unit||"",rate:+l.rate||0,gst:+l.gst||0}));
   const pay = !b.pay||b.pay==="Paid"||b.pay==="Cleared" ? {mode:"paid",recv:b.total,due:0} : {mode:b.paid>0?"part":"credit",recv:+b.paid||0,due:+b.due||0};
   pay.pm = PM_KEYS[String(b.paidBy||"").toLowerCase()] ? String(b.paidBy).toLowerCase() : "";
-  return { gst:!!b.gst, igst:!!b.igst, no:dispNo(b.n,b.gst,b.fy), date:b.date, cust:{name:b.customer||"",mobile:b.mobile||"",gstin:b.custGstin||""}, po:poHas(b.po)?b.po:null, pos:b.pos||"", lines, pay, cancelled:!!b.cancelled };
+  return { gst:!!b.gst, igst:!!b.igst, no:dispNo(b.n,b.gst,b.fy), date:b.date, cust:{name:b.customer||"",mobile:b.mobile||"",gstin:b.custGstin||"",addr:b.custAddr||""}, po:poHas(b.po)?b.po:null, pos:b.pos||"", lines, pay, cancelled:!!b.cancelled };
 }
 async function makeInvoicePdf(inv){
   const lib=await loadPdf(); const doc=new lib.jsPDF({unit:"pt",format:"a4"}); const W=doc.internal.pageSize.getWidth(), M=40;
   const R=n=>"Rs. "+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const N=n=>Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});   // table cells: the heading says (Rs.)
   const asc=v=>String(v||"").replace(/₹/g,"Rs.").replace(/[^\x20-\x7E]/g,"");
   let y=48;
   doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.text(asc(S.cfg.shopName)||"Rate Book", M, y);
   doc.setFontSize(12); doc.text(inv.gst?"TAX INVOICE":"BILL", W-M, y, {align:"right"});
+  if(inv.gst){ doc.setFont("helvetica","normal"); doc.setFontSize(7.5); doc.setTextColor(90); doc.text("ORIGINAL FOR RECIPIENT", W-M, y-14, {align:"right"}); doc.setTextColor(0); doc.setFont("helvetica","bold"); }   // Rule 48: the copy the buyer keeps
   doc.setFont("helvetica","normal"); doc.setFontSize(9.5); y+=15;
   const left=[]; if(S.cfg.shopAddress) left.push(asc(S.cfg.shopAddress)); if(inv.gst&&S.cfg.shopGstin) left.push("GSTIN: "+S.cfg.shopGstin); if(inv.gst&&shopStateCode()) left.push("State: "+stateName(shopStateCode())+" ("+shopStateCode()+")");
-  const right=[(inv.gst?"Invoice No: ":"Bill No: ")+inv.no, "Date: "+fmtDate(inv.date)]; if(inv.gst&&inv.pos) right.push("Place of supply: "+asc(inv.pos)); prPoLines(inv).forEach(x=>right.push(asc(x)));
+  const right=[(inv.gst?"Invoice No: ":"Bill No: ")+inv.no, "Date: "+fmtDate(inv.date)]; if(inv.gst&&inv.pos) right.push("Place of supply: "+asc(inv.pos)); if(inv.gst) right.push("Reverse charge: No"); prPoLines(inv).forEach(x=>right.push(asc(x)));
   const rows=Math.max(left.length,right.length); for(let i=0;i<rows;i++){ if(left[i]) doc.text(left[i],M,y+i*13); if(right[i]) doc.text(right[i],W-M,y+i*13,{align:"right"}); }
   y+=rows*13+6;
   if(S.cfg.mode==="test"){ doc.setTextColor(184,122,11); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text("TEST BILL - practice only, not a valid invoice",W/2,y+2,{align:"center"}); doc.setTextColor(0); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); y+=14; }
   if(inv.cancelled){ doc.setTextColor(200,30,30); doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.text("CANCELLED",W/2,y+4,{align:"center"}); doc.setTextColor(0); doc.setFont("helvetica","normal"); doc.setFontSize(9.5); y+=18; }
   doc.setDrawColor(220); doc.line(M,y,W-M,y); y+=14;
   doc.setFont("helvetica","bold"); doc.text("Bill to",M,y); doc.setFont("helvetica","normal"); y+=13;
-  const to=[asc(inv.cust.name)||"Cash customer"]; if(inv.cust.mobile) to.push("Mobile: "+inv.cust.mobile); if(inv.gst&&inv.cust.gstin) to.push("GSTIN: "+inv.cust.gstin);
-  to.forEach((l,i)=>doc.text(l,M,y+i*13)); y+=to.length*13+8;
+  const to=prBuyerLines(inv).map(asc).reduce((a,l,i)=>a.concat(i===0?[l]:doc.splitTextToSize(l,W-2*M)),[]);
+  doc.setFont("helvetica","bold"); doc.text(to[0],M,y); doc.setFont("helvetica","normal"); to.slice(1).forEach((l,i)=>doc.text(l,M,y+(i+1)*13)); y+=to.length*13+8;
   const g=inv.gst ? gstCalcFor(inv.lines, inv.igst) : null;
   const body=inv.lines.map((l,i)=>{ const amt=r2(l.qty*l.rate);
-    return inv.gst ? [i+1, asc(l.name), l.hsn, asc(qtyText(l.qty,l.unit,true)), R(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), R(amt), fmtN(l.gst)+"%", R(r2(amt*l.gst/100)), R(r2(amt*(1+l.gst/100)))]
-                   : [i+1, asc(l.name), asc(qtyText(l.qty,l.unit,true)), R(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), R(amt)]; });
-  doc.autoTable({ startY:y, margin:{left:M,right:M}, head:[inv.gst?["#","Item","HSN","Qty","Rate","Taxable","GST","Tax","Amount"]:["#","Item","Qty","Rate","Amount"]], body,
-    styles:{fontSize:8.8,cellPadding:4}, headStyles:{fillColor:[22,23,26],textColor:255}, didParseCell:d=>{ if(d.section==="head" && (inv.gst?[4,5,6,7,8]:[3,4]).includes(d.column.index)) d.cell.styles.halign="right"; }, columnStyles: inv.gst?{0:{cellWidth:20},4:{halign:"right"},5:{halign:"right"},6:{halign:"right"},7:{halign:"right"},8:{halign:"right"}}:{0:{cellWidth:20},3:{halign:"right"},4:{halign:"right"}} });
+    return inv.gst ? [i+1, asc(l.name), l.hsn, asc(qtyText(l.qty,l.unit,true)), N(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), N(amt), fmtN(l.gst)+"%", N(r2(amt*l.gst/100)), N(r2(amt*(1+l.gst/100)))]
+                   : [i+1, asc(l.name), asc(qtyText(l.qty,l.unit,true)), N(l.rate)+(isPart(l.qty,l.unit)?"/"+asc(l.unit):""), N(amt)]; });
+  const nw={cellWidth:"wrap"}, rt={halign:"right",cellWidth:"wrap"};   // numbers never break across lines; the item name takes what's left
+  doc.autoTable({ startY:y, margin:{left:M,right:M}, head:[inv.gst?["#","Item","HSN","Qty","Rate (Rs.)","Taxable (Rs.)","GST","Tax (Rs.)","Amount (Rs.)"]:["#","Item","Qty","Rate (Rs.)","Amount (Rs.)"]], body,
+    styles:{fontSize:8.8,cellPadding:4}, headStyles:{fillColor:[22,23,26],textColor:255,fontSize:8.2}, didParseCell:d=>{ if(d.section==="head" && (inv.gst?[4,5,6,7,8]:[3,4]).includes(d.column.index)) d.cell.styles.halign="right"; }, columnStyles: inv.gst?{0:{cellWidth:20},2:nw,3:nw,4:rt,5:rt,6:rt,7:rt,8:rt}:{0:{cellWidth:20},2:nw,3:rt,4:rt} });
   y=doc.lastAutoTable.finalY+12;
   const sum=[]; let total;
   if(g){ sum.push(["Taxable value",R(g.taxable)]); g.rows.forEach(r=>sum.push([r.kind==="I"?`IGST ${fmtN(r.rate)}%`:`${r.kind==="C"?"CGST":"SGST"} ${fmtN(r.rate/2)}%`,R(r.v)])); if(g.roundOff) sum.push(["Round off",(g.roundOff>0?"+":"-")+R(Math.abs(g.roundOff)).slice(4)]); total=g.total; }
@@ -59,9 +62,12 @@ async function makeInvoicePdf(inv){
       didParseCell:d=>{ if(d.section==="head" && [1,3,4,5,6].includes(d.column.index)) d.cell.styles.halign="right"; },
       columnStyles:{1:{halign:"right"},3:{halign:"right"},4:{halign:"right"},5:{halign:"right"},6:{halign:"right"}} });
     y=doc.lastAutoTable.finalY+14; }
+  const H=doc.internal.pageSize.getHeight(); if(y>H-110){ doc.addPage(); y=60; }
+  { const sy=y+4; doc.setFontSize(9.5); doc.setFont("helvetica","bold"); doc.text("For "+(asc(S.cfg.shopName)||"Rate Book"),W-M,sy,{align:"right"}); doc.setFont("helvetica","normal");   // Rule 46: signature of the supplier
+    doc.setDrawColor(150); doc.line(W-M-150,sy+38,W-M,sy+38); doc.setFontSize(8.5); doc.text("Authorised Signatory",W-M,sy+50,{align:"right"}); }
   doc.setFontSize(8.5); doc.setTextColor(110);
-  if(S.cfg.billFooter) { doc.text(asc(S.cfg.billFooter),M,y); y+=12; }
-  doc.text("This is a computer-generated "+(inv.gst?"invoice":"bill")+".",M,y);
+  if(S.cfg.billFooter) { doc.splitTextToSize(asc(S.cfg.billFooter),W/2).forEach(l=>{ doc.text(l,M,y+8); y+=12; }); }
+  doc.text("This is a computer-generated "+(inv.gst?"invoice":"bill")+".",M,y+8);
   return doc.output("blob");
 }
 
@@ -103,6 +109,7 @@ function receiptLines(inv,w){
   if(inv.cancelled) push("*** CANCELLED ***",{c:1,b:1});
   push((inv.gst?"Invoice":"Bill")+" No: "+inv.no,{b:1}); push("Date: "+prDate(inv.date)); prPoLines(inv).forEach(x=>prWrap(prAsc(x),w).forEach(y=>push(y)));
   if(inv.cust.name) prWrap("To: "+prAsc(inv.cust.name),w).forEach(x=>push(x)); if(inv.cust.mobile) push("Mobile: "+inv.cust.mobile);   // wrapped: a 58 mm roll fits only 32 characters
+  if(inv.cust.addr) prWrap(prAsc(addrOneLine(inv.cust.addr)),w).forEach(x=>push(x));
   if(inv.gst && inv.cust.gstin) push("GSTIN: "+inv.cust.gstin); if(inv.gst && inv.pos) prWrap("Place of supply: "+prAsc(inv.pos),w).forEach(x=>push(x));
   L.push(hr); push(prLR("Item","Amount",w),{b:1}); L.push(hr);
   inv.lines.forEach((l,i)=>{ prWrap(`${i+1}. ${prAsc(l.name)}`,w).forEach(x=>push(x));
@@ -144,14 +151,19 @@ function receiptPng(inv,paper){
 }
 
 /** The customer's purchase order on printouts and PDFs (English, like the rest of the invoice). */
+/** "Bill to" on the PDF and A4/A5: name, address (as typed, one line per line), GSTIN, its state, mobile. */
+function prBuyerLines(inv){ const c=inv.cust||{}, o=[c.name||"Cash customer"];
+  String(c.addr||"").split(/\n+/).map(x=>x.trim()).filter(Boolean).forEach(x=>o.push(x));
+  if(inv.gst && c.gstin){ o.push("GSTIN: "+c.gstin); const sc=/^\d\d/.test(c.gstin)?c.gstin.slice(0,2):""; if(sc && stateName(sc)) o.push("State: "+stateName(sc)+" ("+sc+")"); }
+  if(c.mobile) o.push("Mobile: "+c.mobile); return o; }
 function prPoLines(inv){ const p=inv.po; if(!poHas(p)) return []; const o=[]; if(String(p.no||"").trim()) o.push("PO No: "+String(p.no).trim()); if(p.date) o.push("PO date: "+poDate(p.date)); return o; }
 /* ---- HTML printouts for the print screen ---- */
 function prHtmlInvoice(inv){
   const c=prCalc(inv), R=n=>"₹"+prMoney(n), e=esc;
   const head=`<div class="pi-top"><div><h1>${e(S.cfg.shopName||"Rate Book")}</h1>${S.cfg.shopAddress?`<div>${e(S.cfg.shopAddress)}</div>`:""}${inv.gst&&S.cfg.shopGstin?`<div>GSTIN: ${e(S.cfg.shopGstin)}</div>`:""}${inv.gst&&shopStateCode()?`<div>State: ${e(stateName(shopStateCode()))} (${e(shopStateCode())})</div>`:""}</div>
-    <div class="r"><h2>${inv.gst?"TAX INVOICE":"BILL"}</h2><div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>${inv.gst&&inv.pos?`<div>Place of supply: ${e(inv.pos)}</div>`:""}${prPoLines(inv).map(x=>`<div>${e(x)}</div>`).join("")}</div></div>`;
+    <div class="r">${inv.gst?`<div class="pi-orig">ORIGINAL FOR RECIPIENT</div>`:""}<h2>${inv.gst?"TAX INVOICE":"BILL"}</h2><div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>${inv.gst&&inv.pos?`<div>Place of supply: ${e(inv.pos)}</div>`:""}${inv.gst?`<div>Reverse charge: No</div>`:""}${prPoLines(inv).map(x=>`<div>${e(x)}</div>`).join("")}</div></div>`;
   const flags=(S.cfg.mode==="test"?`<div class="pi-flag test">TEST BILL - practice only, not a valid invoice</div>`:"")+(inv.cancelled?`<div class="pi-flag cx">CANCELLED</div>`:"");
-  const to=`<div class="pi-to"><b>Bill to</b><div>${e(inv.cust.name||"Cash customer")}</div>${inv.cust.mobile?`<div>Mobile: ${e(inv.cust.mobile)}</div>`:""}${inv.gst&&inv.cust.gstin?`<div>GSTIN: ${e(inv.cust.gstin)}</div>`:""}</div>`;
+  const bl=prBuyerLines(inv), to=`<div class="pi-to"><b>Bill to</b><div><b>${e(bl[0])}</b></div>${bl.slice(1).map(x=>`<div>${e(x)}</div>`).join("")}</div>`;
   const rows=inv.lines.map((l,i)=>{ const a=r2(l.qty*l.rate), rate=R(l.rate)+(isPart(l.qty,l.unit)?"/"+e(l.unit):"");
     return inv.gst ? `<tr><td>${i+1}</td><td>${e(l.name)}</td><td>${e(l.hsn||"")}</td><td class="r">${e(qtyText(l.qty,l.unit,true))}</td><td class="r">${rate}</td><td class="r">${R(a)}</td><td class="r">${fmtN(l.gst)}%</td><td class="r">${R(r2(a*l.gst/100))}</td><td class="r">${R(r2(a*(1+l.gst/100)))}</td></tr>`
                    : `<tr><td>${i+1}</td><td>${e(l.name)}</td><td class="r">${e(qtyText(l.qty,l.unit,true))}</td><td class="r">${rate}</td><td class="r">${R(a)}</td></tr>`; }).join("");
@@ -163,6 +175,7 @@ function prHtmlInvoice(inv){
   let hsn=""; if(c.g){ const hs={}; inv.lines.forEach(l=>{ const k=(l.hsn||"-")+"|"+l.gst; hs[k]=hs[k]||{hsn:l.hsn||"-",rate:l.gst,tx:0}; hs[k].tx=r2(hs[k].tx+r2(l.qty*l.rate)); });
     hsn=`<table class="pi-hsn"><tr><th>HSN</th><th class="r">Taxable</th><th class="r">Rate</th>${inv.igst?`<th class="r">IGST</th>`:`<th class="r">CGST</th><th class="r">SGST</th>`}<th class="r">Total tax</th></tr>${Object.values(hs).map(h=>{ const tax=r2(h.tx*h.rate/100); return `<tr><td>${e(h.hsn)}</td><td class="r">${R(h.tx)}</td><td class="r">${fmtN(h.rate)}%</td>${inv.igst?`<td class="r">${R(tax)}</td>`:`<td class="r">${R(r2(tax/2))}</td><td class="r">${R(r2(tax/2))}</td>`}<td class="r">${R(tax)}</td></tr>`; }).join("")}</table>`; }
   return `<div class="pi">${head}${flags}${to}<table class="pi-items">${th}${rows}</table><table class="pi-sum">${sum}</table><div class="pi-words">Amount in words: ${e(inWords(c.total))}</div>${hsn}
+    <div class="pi-sign"><b>For ${e(S.cfg.shopName||"Rate Book")}</b><span>Authorised Signatory</span></div>
     <div class="pi-foot">${S.cfg.billFooter?`<div>${e(S.cfg.billFooter)}</div>`:""}<div>This is a computer-generated ${inv.gst?"invoice":"bill"}.</div></div></div>`;
 }
 function prHtmlReceipt(inv){
@@ -173,6 +186,7 @@ function prHtmlReceipt(inv){
   if(S.cfg.mode==="test") h+=`<div class="pr-c">TEST BILL - not a real invoice</div>`; if(inv.cancelled) h+=`<div class="pr-c pr-b">*** CANCELLED ***</div>`;
   h+=`<div>${inv.gst?"Invoice":"Bill"} No: <b>${e(inv.no)}</b></div><div>Date: ${e(prDate(inv.date))}</div>`+prPoLines(inv).map(x=>`<div>${e(x)}</div>`).join("");
   if(inv.cust.name) h+=`<div>To: ${e(inv.cust.name)}</div>`; if(inv.cust.mobile) h+=`<div>Mobile: ${e(inv.cust.mobile)}</div>`;
+  if(inv.cust.addr) h+=`<div>${e(addrOneLine(inv.cust.addr))}</div>`;
   if(inv.gst&&inv.cust.gstin) h+=`<div>GSTIN: ${e(inv.cust.gstin)}</div>`; if(inv.gst&&inv.pos) h+=`<div>Place of supply: ${e(inv.pos)}</div>`;
   h+=`<hr>`+row("<b>Item</b>","<b>Amount</b>")+`<hr>`;
   inv.lines.forEach((l,i)=>{ h+=`<div class="pr-it">${i+1}. ${e(l.name)}</div>`+row(`&nbsp;&nbsp;${e(qtyText(l.qty,l.unit,true))} × ${m(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+e(l.unit):""}`, m(r2(l.qty*l.rate)));

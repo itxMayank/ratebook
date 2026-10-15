@@ -15,7 +15,7 @@ const g = gas([path.join(__dirname, '..', 'Code.gs')]); const R = g.R; g.SS = SS
 R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; shopPaused_=()=>false; readConfig_=()=>({roundTo:1, nextBill:1, nextGstBill:1}); setConfig_=()=>{}; bump_=()=>{}; bumpB_=()=>{}; popReset_=()=>{};
   customersSheet_=()=>{}; touchCustomer_=()=>{}; refreshDue_=()=>{}; ENV_='live';`);
 const COLS = R('BILL_COLS'), PO = COLS.indexOf('po');
-ok(PO === COLS.length - 1 && R('SCRIPT_VERSION') === 54, 'A1 Bills gets a new last column "po"; script v54');
+ok(PO === COLS.length - 2 && COLS[COLS.length - 1] === 'custAddr' && R('SCRIPT_VERSION') >= 54, 'A1 Bills gets a column "po" (v54), then "custAddr" (v55)');
 const take = (n, po, extra) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', bill: { id: 'b' + n, gst: true, total: 100, text: 'Invoice No: ' + n, lines: [], pay: 'paid', ...(po === undefined ? {} : { po }), ...(extra || {}) } })})`);
 take(1, { no: '1100-4500253480', date: '2026-10-15' });
 const row = () => sheets.Bills.rows[sheets.Bills.rows.length - 1];
@@ -41,3 +41,12 @@ R(`updateBill_(${JSON.stringify({ id: 'b1', total: 100, text: 'x', lines: [], gs
 ok(sheets.Bills.rows[1][PO] === '', 'C2 …or remove it');
 R(`updateBill_(${JSON.stringify({ id: 'b2', total: 100, text: 'x', lines: [], gst: true })}, 'Mayank', {role:'owner'})`);
 ok(sheets.Bills.rows[2][PO] === 'NEW-1|2026-10-14', 'C3 an older app that sends no PO when editing leaves it as it was');
+
+// D. the customer's address (v55): saved with the bill, given back, changed by an edit
+const CA = COLS.indexOf('custAddr');
+take(7, null, { custAddr: 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 431136' });
+ok(row()[CA] === 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 431136', 'D1 the customer\'s address is saved with the bill');
+const g7 = R(`getBill_(${sheets.Bills.rows.length}, 'b7')`).bill;
+ok(g7.custAddr === 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 431136' && R(`listBills_('', 60, {full:true})`).bills.find(x => x.id === 'b7').custAddr.startsWith('Plot F-20'), 'D2 getBill and listBills give it back');
+R(`updateBill_(${JSON.stringify({ id: 'b7', total: 100, text: 'x', lines: [], gst: true, custAddr: '=cmd()' })}, 'Mayank', {role:'owner'})`);
+ok(row()[CA] === "=cmd()" || row()[CA] === "'=cmd()", 'D3 an edit changes it; text starting with = is kept as text');

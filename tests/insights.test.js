@@ -58,6 +58,8 @@ R(`const P=vtab_('Purchases',PUR_COLS);
   const V=vtab_('Vendors',VEND_COLS); vwrite_(V.s,VEND_COLS,{id:'vA',name:'Mahaveer',creditDays:15,createdAt:1}); vwrite_(V.s,VEND_COLS,{id:'vB',name:'Sharma',createdAt:2});
   const LL=vtab_('VendorLedger',VLED_COLS); vwrite_(LL.s,VLED_COLS,{id:'e1',vendorId:'vA',type:'bill',date:'${dayAgo(40)}',amount:1000,billNo:'M-1',at:3,check:JSON.stringify({st:'issues'})});`);
 
+// price history (v53): PVC's buy price was raised from ₹180 to ₹200 three days ago (the start from bills is marked done)
+g.props.PH_BF = '1'; R(`phWrite_([[${at(3).getTime()}, "'${dayAgo(3)}", 'i7', 'PVC 500 ml', 'pc', 'buy', 180, 200, 'Dad', 'edit']])`);
 const t0 = Date.now(); const I = R('insights_({tz:-330})'); const ms = Date.now() - t0;
 if (process.env.DUMP) require('fs').writeFileSync(process.env.DUMP, JSON.stringify(Object.assign({}, I, { shopName: 'Sharma Traders' }), null, 1));   // tests/fixtures/insights.json for the dashboard test
 ok(I.ok && I.today === today && I.env === 'live', 'A1 builds for today, in the mode asked (' + ms + ' ms)');
@@ -74,6 +76,9 @@ ok(!I.margins.soldBelow.some(x => x.id === 'i7'), 'B7 PVC sold at ₹195 when it
 const cs = I.margins.checkSell.find(x => x.id === 'i7');
 ok(cs && cs.buy === 200 && cs.sell === 195 && cs.was === 180 && cs.pctWas === 8.3 && cs.suggest === 217, 'B8 PVC: buy ₹200 now above sell ₹195; earlier buy ₹180, margin 8.3% → suggest ₹217: ' + JSON.stringify(cs));
 ok(I.todo.some(x => x.k === 'checkSell' && x.id === 'i7') && !I.todo.some(x => x.k === 'below' && x.id === 'i3') && I.margins.checkSell.some(x => x.id === 'i3'), 'B9 "Do this today": check PVC\'s sell price; Foil (priced below cost) appears once, as "check the sell price", not twice');
+const pc = (I.margins.priceChanges || []).find(x => x.id === 'i7');
+ok(pc && pc.buy.o === 180 && pc.buy.n === 200 && pc.sell === null && pc.on === dayAgo(3) && pc.est === false && pc.mWas === 8.3 && pc.mNow === -2.5, 'B10 price changes (30 days): PVC buy ₹180 → ₹200 on its day, sell unchanged, margin 8.3% → −2.5%: ' + JSON.stringify(pc));
+ok(cs.on === dayAgo(3), 'B11 "check the sell price" dates the earlier buy price from the price history');
 ok(sp && sp.leak === 195 && sp.est === 190, 'B5 below list: compared with the list price saved on the line (₹0 on the ₹100 day, ₹5 on the ₹115 day); older lines with today\'s, counted as an estimate (₹190): ' + JSON.stringify(sp && [sp.leak, sp.est]));
 ok(sp && JSON.stringify(sp.brk) === JSON.stringify([{ r: 120, q: 9, n: 8, lk: 0 }, { r: 110, q: 8, n: 8, lk: 75 }, { r: 100, q: 8, n: 7, lk: 120 }]), 'B6 each rate: qty, bills and ₹ below list, most sold first: ' + JSON.stringify(sp && sp.brk));
 ok(I.margins.noBuy.amt === 230 && I.margins.noBuy.items[0].id === 'i4', 'B5 sales with no buy price: Sugar');

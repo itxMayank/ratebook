@@ -1970,6 +1970,14 @@ function insightsBuild_(dayOf, today) {
     return { ...ref(it), buy: it.buy, sell: it.sell, was: pb || null, on: pbOn, pctWas: m > 0 ? Math.round(m * 1000) / 10 : null, suggest: suggest > it.sell ? suggest : 0,
       q30: a.q30 || 0, a30: a.a30 || 0, lost: a.belowAmt || 0 }; }).sort((a, b) => b.a30 - a.a30 || b.buy - b.sell - (a.buy - a.sell));
   const chk = {}; checkSell.forEach(x => chk[x.id] = 1);
+  /* price changes in the last 30 days (price history): per item, buy and sell from → to, and the margin then and now */
+  const pch = {}; PHR.filter(x => x.day >= d30 && (x.f === 'buy' || x.f === 'sell') && byId[x.id]).sort((a, b) => a.at - b.at).forEach(x => {
+    const c = pch[x.id] || (pch[x.id] = { ...ref(byId[x.id]), buy: null, sell: null, on: '', est: true });
+    if (!c[x.f]) c[x.f] = { o: x.o, n: x.n }; else c[x.f].n = x.n; c.on = x.day; if (x.src !== 'bills') c.est = false; });
+  const mOf = (b, s) => b > 0 && s > 0 ? Math.round((s - b) / b * 1000) / 10 : null;
+  const priceChanges = Object.keys(pch).map(id => { const c = pch[id], it = byId[id], b0 = c.buy && c.buy.o != null ? c.buy.o : it.buy, s0 = c.sell && c.sell.o != null ? c.sell.o : it.sell;
+    return Object.assign(c, { buyNow: it.buy, sellNow: it.sell, mWas: mOf(b0, s0), mNow: mOf(it.buy, it.sell) }); })
+    .sort((a, b) => a.on < b.on ? 1 : a.on > b.on ? -1 : 0).slice(0, 30);
   /* restock (estimate, no stock counting): what came in on the last vendor bill, minus what was sold since; habit = usual gap between purchases */
   const vNames = {}; let VA = null; if (has('Vendors') && has('VendorLedger')) try { VA = vAll_(); VA.vendors.forEach(v => vNames[String(v.id)] = String(v.name)); } catch (e) {}
   const restock = [];
@@ -2023,7 +2031,7 @@ function insightsBuild_(dayOf, today) {
   cand.forEach(c => { if (todo.length >= 5 || (kinds[c.k] || 0) >= 2) return; kinds[c.k] = (kinds[c.k] || 0) + 1; c.score = Math.round(c.score); todo.push(c); });
   const staff = Object.keys(STAFF).map(k => STAFF[k]).filter(x => x.bills || x.cancelled).sort((a, b) => b.bills - a.bills);
   return { ok: true, at: Date.now(), env: ENV_, today, shopName: String(cfg.shopName || ''), pulse, todo,
-    margins: { groups, below: belowList, soldBelow, checkSell: checkSell.slice(0, 10), thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
+    margins: { groups, below: belowList, soldBelow, checkSell: checkSell.slice(0, 10), priceChanges, thin, buyUp: buyUp.slice(0, 10), spread, noBuy: { amt: P.d30.noBuy, items: noBuyItems } },
     items: { abc: abc, top, rising, falling, stopped, unsold, noBuy: ITEMS_.filter(it => !(it.buy > 0)).length, noCat: ITEMS_.filter(it => !it.cat).length, total: ITEMS_.length },
     restock: { items: restock.slice(0, 40), byVendor: Object.keys(byVendor).map(k => byVendor[k]), unknown: unknownStock, purchases: Object.keys(pur).length },
     credit, vendors: vend, money: { modes30: modes, modesToday: modesT }, staff, series: insSeries_(SR, sFrom, dueBase) };

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-49htMH+PX57N8y3Wq1ZUwm8pum1AQ6ceD+HSfCyMKFA='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-zhtrGoIjN9vKiFHamY/3W81nRvlullOSvmTHcvFBvQE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -851,6 +851,8 @@ const BZ = {
     marT: "Margins", marSub: "Profit is worked out only where a buy price is known (% is over cost, like on the price cards).", grp: "By group", noGroup: "No group", share: s => `${s}% of sales`,
     buyUpT: "Costs went up, prices didn't", buyUpL: (w, nw, s, p) => `cost ${w} → ${nw} · selling ${s} · suggest ${p}`,
     belowT: "Priced below cost", belowL: (b, s) => `buy ${b} · sell ${s}`, thinT: "Very thin margin (under 5%)", thinL: (b, s, p) => `buy ${b} · sell ${s} · ${p}%`,
+    pchT: "Price changes (30 days)", pchBuy: p => `Buy ${p}`, pchSell: p => `Sell ${p}`, pchBuySame: p => `Buy ${p} (not changed)`, pchSellSame: p => `Sell ${p} (not changed)`,
+    pchOn: d => `last change ${d}`, pchEst: "worked out from past bills", pchM: (a, b) => `Margin ${a} → ${b}`, pchM1: a => `Margin ${a}`,
     spreadT: "Sold at many different rates", spreadL: (k, a, b, l) => `${k} rates (${a}–${b}) · ${l} below your list price`, spreadSee: "See each rate", spreadHd: ["Rate", "Sold", "Bills", "Below list"], spreadNow: l => `List price now: ${l}.`,
     spreadEst: a => `${a} of this is from bills made before 14 Oct 2026, compared with today's list price (the price on those days wasn't saved).`, noBuyT: "Sold without a buy price",
     itT: "Items", topT: "Best sellers (30 days)", keep: "never run out", risT: "Selling more", falT: "Selling less", chg: (c, a) => `${c > 0 ? "+" : ""}${c}% · ${a}`,
@@ -887,6 +889,8 @@ const BZ = {
     marT: "मुनाफ़ा", marSub: "मुनाफ़ा सिर्फ़ वहाँ निकाला गया है जहाँ ख़रीद रेट पता है (% ख़रीद पर, जैसे रेट कार्ड पर)।", grp: "ग्रुप के हिसाब से", noGroup: "बिना ग्रुप", share: s => `बिक्री का ${s}%`,
     buyUpT: "ख़रीद बढ़ी, रेट नहीं", buyUpL: (w, nw, s, p) => `ख़रीद ${w} → ${nw} · बिक्री ${s} · सुझाव ${p}`,
     belowT: "ख़रीद से कम रेट", belowL: (b, s) => `ख़रीद ${b} · बिक्री ${s}`, thinT: "बहुत कम मुनाफ़ा (5% से कम)", thinL: (b, s, p) => `ख़रीद ${b} · बिक्री ${s} · ${p}%`,
+    pchT: "रेट में बदलाव (30 दिन)", pchBuy: p => `ख़रीद ${p}`, pchSell: p => `बिक्री ${p}`, pchBuySame: p => `ख़रीद ${p} (नहीं बदला)`, pchSellSame: p => `बिक्री ${p} (नहीं बदला)`,
+    pchOn: d => `आख़िरी बदलाव ${d}`, pchEst: "पुराने बिलों से अंदाज़ा", pchM: (a, b) => `मार्जिन ${a} → ${b}`, pchM1: a => `मार्जिन ${a}`,
     spreadT: "कई अलग रेट पर बिका", spreadL: (k, a, b, l) => `${k} रेट (${a}–${b}) · लिस्ट रेट से ${l} कम`, spreadSee: "हर रेट देखें", spreadHd: ["रेट", "बिका", "बिल", "लिस्ट से कम"], spreadNow: l => `अभी लिस्ट रेट: ${l}।`,
     spreadEst: a => `इसमें ${a} उन बिलों का है जो 14 अक्टूबर 2026 से पहले बने; उन्हें आज के लिस्ट रेट से मिलाया गया (उस दिन का रेट सेव नहीं था)।`, noBuyT: "बिना ख़रीद रेट के बिका",
     itT: "सामान", topT: "सबसे ज़्यादा बिकने वाले (30 दिन)", keep: "कभी ख़त्म न हो", risT: "ज़्यादा बिक रहे", falT: "कम बिक रहे", chg: (c, a) => `${c > 0 ? "+" : ""}${c}% · ${a}`,
@@ -944,6 +948,11 @@ function bzSpread(x) { const line = esc(bt("spreadL", x.rates, bzRs(x.min), bzRs
   return `<details class="arow bz-sp"><summary><span class="an">${esc(x.name)}<small>${line}</small></span><span class="bz-see">${esc(bt("spreadSee"))}</span></summary>
     <div class="bz-spb"><table><thead><tr>${hd.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
     <p>${esc(bt("spreadNow", bzRs(x.sell) + (u ? " /" + x.unit : "")))}${x.est > 0 ? " " + esc(bt("spreadEst", bzRs(x.est))) : ""}</p></div></details>`; }
+/** "Price changes (30 days)": what each item's buy and sell price went from → to, and its margin then → now (price history, v53). */
+function bzPch(x) { const u = x.unit ? " /" + x.unit : "", P = (o, n) => bzRs(o) + " → " + bzRs(n) + u;
+  const b = x.buy ? bt("pchBuy", P(x.buy.o, x.buy.n)) : bt("pchBuySame", bzRs(x.buyNow) + u), s = x.sell ? bt("pchSell", P(x.sell.o, x.sell.n)) : bt("pchSellSame", bzRs(x.sellNow) + u);
+  const parts = [b, s, bt("pchOn", bzDay(x.on))].concat(x.est ? [bt("pchEst")] : []), m = x.mWas != null && x.mNow != null && x.mWas !== x.mNow ? bt("pchM", x.mWas + "%", x.mNow + "%") : x.mNow != null ? bt("pchM1", x.mNow + "%") : "";
+  return bzRow(esc(x.name), esc(parts.join(" · ")), m ? `<b>${esc(m)}</b>` : ""); }
 function bzTodo(x, shopName) {
   const n = esc(x.name || ""), act = [];
   let t = "", w = "", sev = "medium";
@@ -981,6 +990,7 @@ function bzHTML(I, opts) {
   if (M.groups.length) h += `<div class="arows">${M.groups.slice(0, 8).map(g => `<div class="arow bz-g"><span class="an">${esc(g.cat || bt("noGroup"))}<small>${esc(bt("share", g.share))} · ${bzRs(g.sales)}</small></span><span class="av2"><b>${g.pct != null ? g.pct + "%" : bt("none")}</b></span><i class="bz-bar" style="--w:${Math.round(g.sales / gmax * 100)}%"></i></div>`).join("")}</div>`;
   const sub = (title, rows) => rows.length ? `<h5 class="bz-h5">${esc(title)}</h5>${bzList(rows)}` : "";
   h += sub(bt("buyUpT"), M.buyUp.map(x => bzRow(esc(x.name), esc(bt("buyUpL", bzRs(x.was), bzRs(x.now), bzRs(x.sell), bzRs(x.suggest))), "")))
+    + sub(bt("pchT"), (M.priceChanges || []).map(bzPch))
     + sub(bt("belowT"), M.below.map(x => bzRow(esc(x.name), esc(bt("belowL", bzRs(x.buy), bzRs(x.sell))), "")))
     + sub(bt("thinT"), M.thin.map(x => bzRow(esc(x.name), esc(bt("thinL", bzRs(x.buy), bzRs(x.sell), x.pct)), "")))
     + sub(bt("spreadT"), M.spread.map(bzSpread))

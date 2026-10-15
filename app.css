@@ -1836,3 +1836,10 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 
 /* Lock screen: hidden for at most 0.4 s while the fonts load (lockFontsIn), so it never jumps from the phone's font to the app's */
 #applock.al-hold>*{opacity:0}
+
+/* Price history on the item screen (15 Oct 2026): same rows as "Bought"; the amount never breaks, the row wraps instead */
+.d-ph{margin-top:10px}.d-ph:empty{display:none}.d-ph h4{margin:0 0 4px}.d-ph .ld{margin:6px 0}
+.ph-row{flex-wrap:wrap;row-gap:2px}.ph-row>span{flex:1 1 140px;min-width:0}.ph-row .ph-f{color:var(--fg);font-weight:600}
+.ph-row small{display:block;color:var(--muted);font-size:12px;font-weight:400}.ph-row>b{white-space:nowrap;text-align:right;margin-left:auto}
+.ph-more summary{cursor:pointer;padding:10px 2px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--accent);list-style:none}
+.ph-more summary::-webkit-details-marker{display:none}.ph-more[open] summary{display:none}

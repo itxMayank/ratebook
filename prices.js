@@ -238,7 +238,7 @@ async function openDetail(id){
       <div class="s"><span>${esc(t("sell"))}</span><b>${rs(it.sell)}</b></div>
       ${hideBuy()?"":`<div><span>${esc(t("buy"))}</span><b>${rs(it.buy)}</b></div>`}
       <div><span>${esc(t("unit"))}</span><b>${esc(unitL(it.unit))}</b></div>
-      <div><span>${esc(t("hsnShort"))}</span><b>${esc(itemHsn(it))}</b></div>
+      <div><span>${esc(t("hsnShort"))}</span><b>${esc(itemHsn(it)||t("hsnNone"))}</b></div>
       <div><span>GST</span><b>${fmtN(itemGst(it))}%</b></div>
       ${hasAlt(it)?`<div class="s"><span>${esc(unitL(it.altUnit))}</span><b>${rs(altPrice(it))}</b></div>`:""}
     </div>
@@ -307,7 +307,7 @@ function openEdit(id,prefill=""){
     </div>
     <div class="field"><label>${esc(t("unit"))}</label>${unitBtnHTML("ef-unit",it?.unit||S.cfg.defaultUnit)}</div>
     <div class="two">
-      <div class="field"><label for="ef-hsn">${esc(t("hsnL"))}</label><input id="ef-hsn" class="num" inputmode="numeric" maxlength="10" value="${esc(it?itemHsn(it):(S.cfg.defaultHsn||"3923"))}"></div>
+      <div class="field"><label for="ef-hsn">${esc(t("hsnL"))}</label><input id="ef-hsn" class="num" inputmode="numeric" maxlength="10" placeholder="${esc(t("hsnNone"))}" value="${esc(it?itemHsn(it):(S.cfg.defaultHsn||"3923"))}"></div>
       <div class="field"><label for="ef-gst">${esc(t("gstPctL"))}</label><input id="ef-gst" class="num" inputmode="decimal" value="${esc(it?itemGst(it):S.cfg.defaultGst)}"></div>
     </div>
     <details class="alt" id="ef-alt" ${hasAlt(it)?"open":""}><summary>${esc(t("altSec"))}</summary>
@@ -403,7 +403,7 @@ function openEdit(id,prefill=""){
     if(findDup(name,id)){ err.textContent=t("dup"); return; }
     if(navigator.onLine===false){ err.textContent=t("offlineWrite"); return; }
     const key=id||tmpId();
-    const hsn=$("#ef-hsn").value.replace(/\s/g,""), gstV=toNum($("#ef-gst").value);
+    const hsn=hsnSave($("#ef-hsn").value), gstV=toNum($("#ef-gst").value);
     if(isNaN(gstV)||gstV<0||gstV>100){ err.textContent=t("gstPctL")+": 0–100"; return; }
     const aqS=$("#ef-aqty").value.trim(), aq=toNum(aqS), asS=$("#ef-asell").value.trim(), aSell=toNum(asS);
     if(aqS!=="" && !(aq>0)){ err.textContent=t("packBad"); $("#ef-alt").open=true; return; }
@@ -490,7 +490,7 @@ function openBulkAdd(){
 /* ---------------- Bulk edit ---------------- */
 function openBulkEdit(){
   const changes=new Map(); const sel=new Set(); let filter="", which="both";
-  const val=(it,f)=> changes.get(it.id)?.[f] ?? (f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]);
+  const val=(it,f)=>{ const v=changes.get(it.id)?.[f]; if(v!==undefined) return f==="hsn"&&v===HSN_NONE?"":v; return f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]; };
   const visible=()=>{ if(!filter.trim()) return [...S.items]; return runSearch(filter).res.filter(r=>!r.fuzzy).map(r=>r.e.it); };
   const body=`<input id="be-f" type="search" placeholder="${esc(t("filter"))}">
     <div class="toolbar"><div class="seg" id="be-which"><button type="button" data-w="both" aria-pressed="true">${esc(t("both"))}</button><button type="button" data-w="sell" aria-pressed="false">${esc(t("onlySell"))}</button><button type="button" data-w="buy" aria-pressed="false">${esc(t("onlyBuy"))}</button></div>
@@ -503,8 +503,8 @@ function openBulkEdit(){
   const cell=(it,f)=>{ const ch=changes.get(it.id)?.[f]!==undefined; return `<input id="be-${f}-${esc(it.id)}" data-id="${esc(it.id)}" data-f="${f}" inputmode="decimal" class="${ch?"changed":""}${f==="buy"||f==="sell"?" money\" data-dp=\"3":""}" value="${esc(f==="buy"||f==="sell"?moneyVal(val(it,f),3):val(it,f))}">`; };
   const draw=()=>{ const v=visible(); tb.innerHTML=v.slice(0,300).map(it=>`<tr><td><input type="checkbox" data-sel="${esc(it.id)}" ${sel.has(it.id)?"checked":""} aria-label="Select"></td><td class="c-name">${esc(it.name)}</td><td class="c-unit">${unitBtnHTML("be-unit-"+it.id,val(it,"unit"),`data-uid="${esc(it.id)}"`).replace('class="unitbtn"',`class="unitbtn${changes.get(it.id)?.unit!==undefined?" changed":""}"`)}</td><td class="c-num">${cell(it,"buy")}</td><td class="c-num">${cell(it,"sell")}</td><td class="c-unit">${cell(it,"hsn")}</td><td class="c-num">${cell(it,"gst")}</td></tr>`).join(""); info(); };
   const info=()=>{ $("#be-sel").textContent = sel.size? t("selected",sel.size) : t("allShown"); const n=changes.size; const b=$("#be-save"); b.textContent=n?t("saveN",n):t("unchanged"); b.disabled=!n; };
-  const setChange=(id,f,v)=>{ const it=S.byId.get(id); if(!it) return; const o=changes.get(id)||{}; const cur=f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]; if(String(v)===String(cur)) delete o[f]; else o[f]=v; if(Object.keys(o).length) changes.set(id,o); else changes.delete(id); };
-  tb.addEventListener("input",e=>{ const el=e.target; if(el.dataset.f){ let n; if(el.dataset.f==="hsn"){ n=el.value.replace(/\s/g,""); if(!n) return; } else { n=toNum(el.value); if(isNaN(n)) return; if(el.dataset.f==="gst"&&(n<0||n>100)) return; } setChange(el.dataset.id,el.dataset.f,n); el.classList.toggle("changed", changes.get(el.dataset.id)?.[el.dataset.f]!==undefined); info(); } });
+  const setChange=(id,f,v)=>{ const it=S.byId.get(id); if(!it) return; const o=changes.get(id)||{}; const cur=f==="hsn"?itemHsn(it):f==="gst"?itemGst(it):it[f]; if(String(f==="hsn"&&v===HSN_NONE?"":v)===String(cur)) delete o[f]; else o[f]=v; if(Object.keys(o).length) changes.set(id,o); else changes.delete(id); };
+  tb.addEventListener("input",e=>{ const el=e.target; if(el.dataset.f){ let n; if(el.dataset.f==="hsn"){ n=hsnSave(el.value); } else { n=toNum(el.value); if(isNaN(n)) return; if(el.dataset.f==="gst"&&(n<0||n>100)) return; } setChange(el.dataset.id,el.dataset.f,n); el.classList.toggle("changed", changes.get(el.dataset.id)?.[el.dataset.f]!==undefined); info(); } });
   tb.addEventListener("change",e=>{ const id=e.target.dataset.sel; if(id){ e.target.checked?sel.add(id):sel.delete(id); info(); } });
   tb.addEventListener("click",e=>{ const b=e.target.closest("[data-uid]"); if(b) onUnitBtn(b,v=>{ setChange(b.dataset.uid,"unit",v); b.classList.toggle("changed",changes.get(b.dataset.uid)?.unit!==undefined); info(); }); });
   $("#be-which").addEventListener("click",e=>{ const b=e.target.closest("[data-w]"); if(!b) return; which=b.dataset.w; $("#be-which").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); });

@@ -4,7 +4,7 @@
    wand's screen (preview, then apply) and Convert names to Hindi. Checks what each sends to the sheet. Any page error fails.
    Run: node tests/prices.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
-const html = appHtml('S,sync,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
+const html = appHtml('S,sync,addToBill,billText,saveBill,openEdit,openBulkAdd,openBulkEdit,openCmd,openDetail,openToHindi,setTab,appUnlock');
 const now = Date.now() - 864e5;
 const items0 = () => [
   { id: 'i1', name: 'PP Bag 12x18', nameHi: 'पीपी बैग 12x18', unit: 'kg', buy: 150, sell: 180, cat: 'Bags', updatedAt: now },
@@ -102,6 +102,35 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved and,
   await p.click('#th-save'); await p.waitForTimeout(1000);
   const th = ups(); const pc = th.find(x => x.id === 'i4') || {};
   ok(th.length >= 1 && pc.nameHi === 'पेपर कप 150 एमएल', 'G1 names without Hindi get one (Paper Cup 150ml → पेपर कप 150 एमएल)');
+
+  // H. an item's HSN can be "none"; a bill being made follows changes to its items (15 Oct 2026)
+  await p.evaluate(() => { T.S.bill.length = 0; T.addToBill('i2'); T.addToBill('i3'); T.S.bill[1].rate = 2.5; T.saveBill(); }); await p.waitForTimeout(200);
+  const sug0 = await p.evaluate(() => T.S.byId.get('i2').sell);
+  sent = []; await p.evaluate(() => T.openEdit('i2')); await p.waitForTimeout(400);
+  await p.fill('#ef-sell', String(sug0 + 4)); await p.fill('#ef-hsn', ''); await p.click('#ef-save'); await p.waitForTimeout(800);
+  const su2 = ups().find(x => x.id === 'i2') || {};
+  ok(su2.hsn === 'NA' && su2.sell === sug0 + 4, 'H1 HSN box emptied: saved as "no HSN" (NA), with the new price: ' + JSON.stringify([su2.hsn, su2.sell]));
+  const L = () => p.evaluate(() => T.S.bill.map(l => ({ name: l.name, rate: l.rate, hsn: l.hsn, lp: l.lp })));
+  let bl = await L();
+  ok(bl[0].rate === sug0 + 4 && bl[0].hsn === '' && bl[0].lp === sug0 + 4, 'H2 the bill being made follows: Sugar now ₹' + bl[0].rate + ', no HSN');
+  const gtx = await p.evaluate(() => { T.S.gst = true; const x = T.billText(); T.S.gst = false; return x; });
+  ok(/Sugar \(GST 18%\)/.test(gtx) && !/Sugar[^\n]*HSN/.test(gtx) && /Garbage[^\n]*HSN 3923/.test(gtx), 'H3 GST bill text: Sugar without an HSN, the other item keeps its own');
+  await p.evaluate(() => T.openEdit('i2')); await p.waitForTimeout(400);
+  ok(await p.inputValue('#ef-hsn') === '' && await p.getAttribute('#ef-hsn', 'placeholder') === 'No HSN', 'H4 opened again: the HSN box stays empty and says "No HSN" (the default doesn\'t come back)');
+  await p.click('#ef-cancel'); await p.waitForTimeout(300);
+  await p.evaluate(() => T.openEdit('i3')); await p.waitForTimeout(400);
+  await p.fill('#ef-name', 'Garbage Bag S'); await p.fill('#ef-sell', '4'); await p.click('#ef-save'); await p.waitForTimeout(800);
+  bl = await L();
+  ok(bl[1].name === 'Garbage Bag S' && bl[1].rate === 2.5, 'H5 a rate typed for this bill stays (₹2.5); the new name comes through');
+  db.find(x => x.id === 'i2').sell = sug0 + 10; await p.evaluate(() => T.sync()); await p.waitForTimeout(600);
+  bl = await L();
+  ok(bl[0].rate === sug0 + 10 && /Bill updated with the new item details/.test(await p.textContent('#toast')), 'H6 price changed on another phone: the open bill follows, with a short message');
+  await p.evaluate(() => { T.S.editing = { n: 5 }; }); db.find(x => x.id === 'i2').sell = sug0 + 20; await p.evaluate(() => T.sync()); await p.waitForTimeout(600);
+  ok((await L())[0].rate === sug0 + 10, 'H7 a past bill being edited keeps the prices it was billed at');
+  await p.evaluate(() => { T.S.editing = null; T.S.bill.length = 0; T.saveBill(); });
+  sent = []; await p.evaluate(() => T.openBulkEdit()); await p.waitForTimeout(400);
+  await p.fill('#be-hsn-i3', ''); await p.click('#be-save'); await p.waitForTimeout(800);
+  ok((ups().find(x => x.id === 'i3') || {}).hsn === 'NA', 'H8 Bulk edit: an emptied HSN cell saves "no HSN" too');
 
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();

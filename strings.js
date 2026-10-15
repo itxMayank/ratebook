@@ -353,5 +353,7 @@ Object.assign(STR.hi, { smT:"आज का हिसाब", smD:"आज की 
   smRaise:(n,p,u)=>`${n} का रेट ${p}${u?" /"+u:""} करें (लागत बढ़ी है)`, smBelow:n=>`${n} खरीद रेट से कम में बिक रहा है`, smRemind:(n,a,d)=>`${n} को याद दिलाएं: ${a} बाकी, ${d} दिन से`,
   smReorder:n=>`${n} फिर मंगाएं (कम बचा है)`, smPayV:(n,a)=>`${n} को पैसे दें: ${a} समय निकल गया`, smNoBuy:p=>`खरीद रेट डालें: ${p}% बिक्री पर नहीं है`, smFoot:"_Rate Book_",
   smSub:"देख लें, फिर WhatsApp पर भेजें: खुद को (\"Message yourself\"), परिवार के ग्रुप में या किसी को भी।", smSend:"भेजें", smSendL:"WhatsApp पर भेजें", smOld:"इसके लिए शीट की नई स्क्रिप्ट चाहिए।", smOld_s:"आपकी दुकान के लिए अभी तैयार नहीं। Rate Book सपोर्ट इसे चालू करेगा।" });
+Object.assign(STR.en,{ hsnNone:"No HSN", billFollowed:"Bill updated with the new item details" });
+Object.assign(STR.hi,{ hsnNone:"HSN नहीं", billFollowed:"सामान की नई जानकारी बिल में आ गई" });
 return STR;
 })();

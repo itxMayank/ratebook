@@ -108,7 +108,7 @@ function receiptLines(inv,w){
   inv.lines.forEach((l,i)=>{ prWrap(`${i+1}. ${prAsc(l.name)}`,w).forEach(x=>push(x));
     const q=prAsc(`${qtyText(l.qty,l.unit,true)} x ${prMoney(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+l.unit:""}`);
     push(prLR("   "+q, prMoney(r2(l.qty*l.rate)), w));
-    if(inv.gst) push(`   HSN ${l.hsn||"-"}  GST ${fmtN(l.gst)}%`); });
+    if(inv.gst) push(`   ${l.hsn?"HSN "+l.hsn+"  ":""}GST ${fmtN(l.gst)}%`); });
   L.push(hr);
   if(c.g){ push(prLR("Taxable value",prMoney(c.g.taxable),w)); c.taxes.forEach(x=>push(prLR(x.label,prMoney(x.v),w))); if(c.g.roundOff) push(prLR("Round off",(c.g.roundOff>0?"+":"-")+prMoney(Math.abs(c.g.roundOff)),w)); }
   if(w>=40) push(prLR("TOTAL","Rs."+prMoney(c.total),Math.floor(w/2)),{b:1,big:1}); else push(prLR("TOTAL","Rs. "+prMoney(c.total),w),{b:1});
@@ -174,7 +174,7 @@ function prHtmlReceipt(inv){
   if(inv.gst&&inv.cust.gstin) h+=`<div>GSTIN: ${e(inv.cust.gstin)}</div>`; if(inv.gst&&inv.pos) h+=`<div>Place of supply: ${e(inv.pos)}</div>`;
   h+=`<hr>`+row("<b>Item</b>","<b>Amount</b>")+`<hr>`;
   inv.lines.forEach((l,i)=>{ h+=`<div class="pr-it">${i+1}. ${e(l.name)}</div>`+row(`&nbsp;&nbsp;${e(qtyText(l.qty,l.unit,true))} × ${m(l.rate).replace(/\.00$/,"")}${isPart(l.qty,l.unit)?"/"+e(l.unit):""}`, m(r2(l.qty*l.rate)));
-    if(inv.gst) h+=`<div class="pr-sm">&nbsp;&nbsp;HSN ${e(l.hsn||"-")} · GST ${fmtN(l.gst)}%</div>`; });
+    if(inv.gst) h+=`<div class="pr-sm">&nbsp;&nbsp;${l.hsn?"HSN "+e(l.hsn)+" · ":""}GST ${fmtN(l.gst)}%</div>`; });
   h+=`<hr>`;
   if(c.g){ h+=row("Taxable value",m(c.g.taxable)); c.taxes.forEach(x=>h+=row(e(x.label),m(x.v))); if(c.g.roundOff) h+=row("Round off",(c.g.roundOff>0?"+":"−")+m(Math.abs(c.g.roundOff))); }
   h+=row("TOTAL","₹"+m(c.total),"pr-tot");

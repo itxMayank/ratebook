@@ -1015,6 +1015,13 @@ Mayank asked how "₹2,082.5 below your list price" is worked out. It's the last
 - Tests: `tests/insights.test.js` B5–B6, `tests/adminbiz.test.js` S1–S4 (incl. 360 px dark Hindi), `tests/billing.app.test.js` C1 (`lp` sent). `tests/fixtures/insights.json` regenerated.
 - **Rollout:** merge; update each shop's script to v52 (your shop first). Bills made from then on carry the price of the day; older ones stay marked as compared with today's price.
 
+## No HSN for an item; bills being made follow item changes (15 Oct 2026, `billing.js` / `app.js` / `prices.js` / `print.js` / `strings.js`, no script change)
+
+Reported: an item's HSN couldn't be left empty (an empty cell means "use the shop's default", so the default came back), and changing an item while a bill was being made didn't change the bill.
+- **No HSN:** an emptied HSN box (Edit item, Bulk edit) saves `NA` (`HSN_NONE`, `hsnSave()`); `itemHsn()` gives "" for it. The box shows empty with the placeholder "No HSN"; the item screen says "No HSN". GST bill text, the items summary (`hsnTag`), roll receipts and printouts leave the HSN out for that line (PDF/A4 tables show an empty cell; HSN summary rows "-"). An empty sheet cell still means the shop default. Bulk add is unchanged (empty = default for new items). Works with any script version (`hsn_` keeps letters).
+- **Bills follow items** (`billFollow(old, tell)` from `applyItems` (sync, other phones, tell = toast "Bill updated with the new item details") and `afterLocal` (this phone's own edits, no toast)): for the bill on screen and every open (held) bill that isn't a past-bill edit, `billFollowLines` takes name, Hindi name, unit, HSN, GST, buy rate and `lp` from the item; the rate follows only if it was the item's old price (a rate typed for this bill stays); a removed pack size switches the line back to the main unit. Bills being edited or already shared (`S.editing`) keep what they were billed at.
+- Test: `tests/prices.app.test.js` H1–H8 (6 fail on the version before).
+
 ## Tests that depended on the date (fixed 12 Oct 2026)
 
 - `tests/reports.test.js` failed on Mondays: this week equals today, so the app (rightly) asks for one period fewer, and the week view showed today's figures. The page's `Date` now starts at Thursday 8 Oct 2026, 11 am, and keeps running (an init script shifts only `Date`; Playwright's clock also takes over animation timing, which left the rolling numbers a few rupees short).

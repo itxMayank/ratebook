@@ -68,7 +68,7 @@ function gstBillText(){
   if(normMobile(S.mob)) s+=`${t("mobL")}: ${S.mob.trim()}\n`;
   if(posLabel()) s+=`${t("posL")}: ${posLabel()}\n`;
   s+="\n";
-  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineLabel(l)} (${t("hsnShort")} ${li.hsn}, ${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${qtyText(l.qty,l.unit)} × ${rateText(l)} = ${rs(l.qty*l.rate)}\n`; });
+  S.bill.forEach((l,i)=>{ const li=lineInfo(l); s+=`${i+1}. ${lineLabel(l)} (${li.hsn?t("hsnShort")+" "+li.hsn+", ":""}${t("gstPctL").replace(" %","")} ${fmtN(li.gst)}%)\n    ${qtyText(l.qty,l.unit)} × ${rateText(l)} = ${rs(l.qty*l.rate)}\n`; });
   s+=`\n${t("taxable")}: ${rs2(g.taxable)}\n`;
   g.rows.forEach(r=>{ s+=`${r.label}: ${rs2(r.v)}\n`; });
   if(g.roundOff) s+=`${t("roundOff")}: ${g.roundOff>0?"+":"−"}${rs2(Math.abs(g.roundOff))}\n`;
@@ -95,7 +95,13 @@ function editedLine(){ return S.editing && !S.editing.fresh ? `_${t("editedLine"
 const draftSig=()=>JSON.stringify([S.bill,S.cust,S.mob,S.gst,S.igst,S.custGstin,S.pay,S.recv,S.posSel,S.pm||""]);
 function hasAlt(it){ return !!(it && it.altUnit && +it.altQty>0); }
 function altPrice(it){ return (it.altSell!=null && it.altSell!=="" && !isNaN(+it.altSell)) ? +it.altSell : r2((+it.sell||0)/(+it.altQty||1)); }
-function itemHsn(x){ return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
+/* "NA" in the sheet = this item has no HSN (an empty cell means "use the shop's default HSN"). */
+const HSN_NONE="NA";
+function itemHsn(x){ if(x && String(x.hsn||"").toUpperCase()===HSN_NONE) return ""; return (x && x.hsn) || S.cfg.defaultHsn || "3923"; }
+/** What to save from an item's HSN box: an emptied box = no HSN. */
+function hsnSave(v){ v=String(v||"").replace(/\s/g,""); return v||HSN_NONE; }
+/** " [HSN 3923, 18%]" on the bill's items summary; no HSN = " [18%]". */
+function hsnTag(l){ const li=lineInfo(l); return ` [${li.hsn?"HSN "+li.hsn+", ":""}${li.gst}%]`; }
 function itemGst(x){ return (x && x.gst!=null && x.gst!=="" && !isNaN(+x.gst)) ? +x.gst : (+S.cfg.defaultGst||0); }
 /** Buy rate for one unit of this bill line (pack lines use buy ÷ packs). Saved on the line when it's added. */
 function itemBuyFor(it,alt){ if(!it) return null; const b=+it.buy||0; return alt && hasAlt(it) ? r2(b/(+it.altQty||1)) : b; }
@@ -140,6 +146,26 @@ const mob10=v=>{ const m=normMobile(v); return m?m.slice(2):""; };   /* the plai
 const telHref=v=>{ const m=normMobile(v); return m?"tel:+"+m:"tel:"+String(v||"").replace(/[^\d+]/g,""); };
 function waLink(){ const m=normMobile(S.mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(billText()); }
 function billSum(){ return Math.round(S.bill.reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0)*100)/100; }
+/** The price list changed (another phone, this phone's edit, a reload): every bill still being made follows its items. Name,
+    unit, HSN, GST and buy rate come from the item; the rate follows only if it was the item's price (a rate typed for this
+    bill stays). Bills being edited or already shared are left as they were billed. Returns how many lines changed visibly. */
+function billFollowLines(lines, old){ let n=0;
+  (lines||[]).forEach(l=>{ const o=old.get(l.id), it=S.byId.get(l.id); if(!o||!it||o===it) return; let vis=false;
+    const set=(k,v,quiet)=>{ if(v!==undefined && l[k]!==v){ l[k]=v; if(!quiet) vis=true; } };
+    set("name",it.name); if(it.nameHi) set("nameHi",it.nameHi); set("unit",it.unit);
+    const wasP = l.alt&&hasAlt(o) ? altPrice(o) : +o.sell||0;
+    if(l.alt && !hasAlt(it)){ l.alt=false; l.rate=+it.sell||0; vis=true; }   // the pack size was removed from the item
+    else { const nowP = l.alt ? altPrice(it) : +it.sell||0; if(Math.abs((+l.rate||0)-wasP)<0.005) set("rate",nowP); }
+    if(String(l.hsn==null?"":l.hsn)===itemHsn(o)) set("hsn",itemHsn(it));
+    if(l.gst!=null && +l.gst===itemGst(o)) set("gst",itemGst(it));
+    if(l.buy!=null && +l.buy===itemBuyFor(o,!!l.alt)) set("buy",itemBuyFor(it,!!l.alt),true);
+    if(+it.sell>0) set("lp",+it.sell,true);
+    if(vis) n++; });
+  return n; }
+function billFollow(old, tell){ if(!old || !old.size || !S.byId) return;
+  let n=0; if(!S.editing){ n=billFollowLines(S.bill, old); if(n){ saveBill(); if(document.getElementById("bill-lines")) renderBill(); } }
+  const h=heldGet(); let hc=0; h.forEach(x=>{ if(!x.editing && x.d) hc+=billFollowLines(x.d.bill, old); }); if(hc){ heldSet(h); try{ renderHeld(); }catch{} }
+  if(n && tell && !LOCK.on) toast(t("billFollowed")); }
 function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
 function renderBill(){
   const wrap=$("#bill-lines");
@@ -330,7 +356,7 @@ async function saveEdit(opts){
   if(navigator.onLine===false){ toast(t("editOffline")); return; }
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
-    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
@@ -348,7 +374,7 @@ async function saveEdit(opts){
 function draftRec(extra){
   const g=S.gst?gstCalc():null;
   const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
-    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
@@ -364,7 +390,7 @@ function finishBill(opts){
   const n=curBillNo(), auto=autoBillNo();
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
-    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?` [HSN ${lineInfo(l).hsn}, ${lineInfo(l).gst}%]`:"")).join("; "),
+    items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst),
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,

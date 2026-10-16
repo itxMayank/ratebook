@@ -1920,3 +1920,9 @@ html.hdr-min header.top .bar{flex-wrap:nowrap}
 /* search at the bottom: the first row of pills sits by the bar and rows build upwards, so the newest is nearest the thumb */
 html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 12px 12px}
 @media (prefers-reduced-motion:reduce){.rcpill{transition:none}.rcpill:active{transform:none}}
+
+/* Change my PIN (Settings → Just for you, v57) */
+.mypin{display:grid;gap:8px}
+.mypin .mpform{display:grid;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:var(--r-md)}
+.mypin .mpform[hidden]{display:none}
+.mypin .mpwarn{margin:0;color:var(--fg);font-weight:600}

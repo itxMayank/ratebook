@@ -35,6 +35,36 @@ const myTestOk=()=>!(S.auth && S.auth.testOk===false);
 /** Re-work the mode, profit and hide-buy after this person's settings change (or someone else unlocks / the phone locks). */
 function applyPrefs(){ const P=myPrefs(); S.hideBuy=typeof P.hideBuy==="boolean"?P.hideBuy:ls.get("rb_hidebuy",false); switchEnv(S.cfg); }
 async function setMyPrefs(p){ const j=await apiPost({action:"setMyPrefs",prefs:p}); S.auth={...S.auth,prefs:j.prefs||{},testOk:j.testOk!==false}; ls.set("rb_auth",S.auth); applyPrefs(); return j; }
+/* ---- Display choices that follow the person (v57) ----
+   Language, theme, appearance, search bar, best match, recent items style, sort and the cash row are still saved on this
+   device (ls) as before; while someone is signed in, each change also goes to the sheet with that person (prefs.ui), so their
+   other phones and laptop pick it up at sign-in and on every unlock. Text size and printer stay per device. A change made
+   offline waits in rb_upq and goes later. Choices from the sheet are applied without being sent back (upApplying). */
+const UP_KEYS={rb_lang:"lang",rb_palette:"palette",rb_appear:"appear",rb_spos:"spos",rb_sres:"sres",rb_rcstyle:"rcstyle",rb_sort:"sort",rb_cashopen:"cashopen"};
+let upReady=false, upApplying=false, upT=0;
+const lsSet0=ls.set;
+ls.set=(k,v)=>{ lsSet0(k,v); const f=UP_KEYS[k];
+  if(f && upReady && !upApplying && S.auth && S.auth.tok){ const q=ls.get("rb_upq",{}); q[f]=v; lsSet0("rb_upq",q); upSoon(); } };
+function upSoon(){ clearTimeout(upT); upT=setTimeout(upFlush,1200); }
+window.addEventListener("online",()=>{ if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); });
+async function upFlush(){ if(!(S.auth&&S.auth.tok) || !(S.sv>=57) || navigator.onLine===false) return;
+  const q=ls.get("rb_upq",{}); if(!q || !Object.keys(q).length) return; lsSet0("rb_upq",{});
+  try{ const j=await apiPost0({action:"setMyPrefs",prefs:{ui:q}}); if(S.auth && j.prefs){ S.auth={...S.auth,prefs:j.prefs}; lsSet0("rb_auth",S.auth); } }
+  catch(e){ const now=ls.get("rb_upq",{}); lsSet0("rb_upq",{...q,...now}); } }
+/** The person's choices from the sheet (sign-in, start, unlock): use them here; send up the ones this device has and they don't. */
+function upApply(){ if(!(S.auth&&S.auth.tok)) return; const ui=(myPrefs().ui)||{}, q=ls.get("rb_upq",{})||{}, ch={};
+  upApplying=true;
+  try{ for(const k in UP_KEYS){ const f=UP_KEYS[k]; if(f in q || ui[f]===undefined) continue; if(JSON.stringify(ls.get(k,null))!==JSON.stringify(ui[f])){ ls.set(k,ui[f]); ch[f]=1; } } }
+  finally{ upApplying=false; }
+  if(S.sv>=57){ const add={}; for(const k in UP_KEYS){ const f=UP_KEYS[k], v=ls.get(k,null); if(ui[f]===undefined && v!==null && !(f in q)) add[f]=v; }
+    if(Object.keys(add).length) lsSet0("rb_upq",{...q,...add}); }
+  upReady=true; if(Object.keys(ls.get("rb_upq",{})).length) upSoon();
+  try{ if(ch.lang){ S.lang=ls.get("rb_lang","en"); applyLang(); }
+    if(ch.palette||ch.appear) applyTheme();
+    if(ch.spos||ch.sres) placeSearch();
+    if(ch.cashopen) renderCash();
+    if(ch.sort){ S.sortBy=ls.get("rb_sort","pop"); sortItems(S.items); buildIndex(); }
+    if(ch.sort||ch.rcstyle) renderList(); }catch{} }
 function noTestNow(){ if(!S.auth) return; const was=S.cfg.mode; S.auth={...S.auth,testOk:false,prefs:{...myPrefs(),mode:"live"}}; ls.set("rb_auth",S.auth); applyPrefs(); if(was==="test") toast(t("noTestNow")); }
 
 const $ = s => document.querySelector(s);

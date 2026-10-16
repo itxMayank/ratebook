@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 56;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 57;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -550,7 +550,7 @@ function doPost(e) {
   if (who.error) return out_({ ok: false, error: who.error });
   if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
   if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
-  if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs') return out_({ ok: false, error: 'no_test' });
+  if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs' && body.action !== 'setMyPin') return out_({ ok: false, error: 'no_test' });
   if (who.viaPin && approveOn_() && body.action !== 'verify') return out_({ ok: false, error: 'need_signin' });   // new-phone approval: only signed-in phones
   if (shopPaused_() && !PAUSE_OK_[body.action]) return out_({ ok: false, error: 'paused' });
   if (body.action === 'list' || body.action === 'thumbs' || body.action === 'image' || body.action === 'images') {   // reads (v44), no lock
@@ -582,6 +582,7 @@ function doPost(e) {
       case 'listSessions': res = listSessions_(who); break;
       case 'endSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEnd_(k => k.indexOf(id) === 0); res = listSessions_(who); break; }
       case 'setMyPrefs': res = setMyPrefs_(who, body.prefs || {}); break;
+      case 'setMyPin': res = setMyPin_(who, body.oldPin, body.newPin); break;
       case 'perfIn': res = perfIn_(body); break;
       case 'upsert': res = upsert_(body.items || [], by, str_(body.src || 'app', 12)); break;
       case 'delete': res = delete_(body.ids || []); break;
@@ -632,7 +633,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'setMyPin', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -652,7 +653,7 @@ const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', priceHist: 'staff', aiSetKey: 'owner',
-  setMyPrefs: 'staff', signOut: 'staff', boot: 'staff', perfIn: 'staff', insights: 'owner', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
+  setMyPrefs: 'staff', setMyPin: 'staff', signOut: 'staff', boot: 'staff', perfIn: 'staff', insights: 'owner', listSessions: 'owner', endSession: 'owner', approveSession: 'owner', listUsers: 'owner', saveUser: 'owner', removeUser: 'owner', getAccess: 'owner', setAccess: 'owner' };
 function users_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('USERS') || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
 function saveUsers_(list) { PropertiesService.getScriptProperties().setProperty('USERS', JSON.stringify(list)); }
 function salt_() { const p = PropertiesService.getScriptProperties(); let v = p.getProperty('SALT'); if (!v) { v = Utilities.getUuid(); p.setProperty('SALT', v); } return v; }
@@ -727,7 +728,7 @@ function listSessions_(who) { const all = sessAll_();
 
 /* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
-const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
+const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, setMyPin: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
   vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, priceHist: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
@@ -836,12 +837,25 @@ function prefsClean_(p) { const o = {}; p = p || {};
   if (typeof p.showProfit === 'boolean') o.showProfit = p.showProfit;
   if (typeof p.hideBuy === 'boolean') o.hideBuy = p.hideBuy;
   if (Array.isArray(p.noff)) o.noff = p.noff.map(k => String(k).slice(0, 12)).filter(k => NOTE_KINDS_[k]).slice(0, 12);
+  if (p.ui && typeof p.ui === 'object') { const u = uiClean_(p.ui); if (Object.keys(u).length) o.ui = u; }
+  return o; }
+/* v57: display choices that follow the person to every phone and laptop (language, theme, appearance, search bar, best match,
+   recent items style, sort, cash row). Text size and printer stay per device. Only known values are kept. */
+const UI_OK_ = { lang: ['en', 'hi'], palette: ['ink', 'maroon', 'forest', 'indigo', 'saffron'], appear: ['auto', 'light', 'dark'], spos: ['bottom', 'top'],
+  sres: ['near', 'top'], rcstyle: ['list', 'pills'], sort: ['pop', 'az'] };
+function uiClean_(u) { const o = {}; u = u || {};
+  Object.keys(UI_OK_).forEach(k => { if (UI_OK_[k].indexOf(u[k]) >= 0) o[k] = u[k]; });
+  if (typeof u.cashopen === 'boolean') o.cashopen = u.cashopen;
   return o; }
 function mprefs_() { try { const o = JSON.parse(PropertiesService.getScriptProperties().getProperty('MPREFS') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
 function mkey_(name) { return String(name || '').trim().toLowerCase().slice(0, 60) || '-'; }
-function prefsOf_(who) { if (who.master) return prefsClean_(mprefs_()[mkey_(who.name)]); const u = users_().filter(x => x.id === who.id)[0]; return prefsClean_(u && u.prefs); }
+function prefsOf_(who) { if (who.master) return prefsClean_(mprefs_()[mkey_(who.name)]); const u = users_().filter(x => x.id === who.id)[0]; const o = prefsClean_(u && u.prefs);
+  /* someone who once signed in with the shop PIN under this name keeps those display choices on their own account (v57) */
+  if (u && !o.ui) { const m = prefsClean_(mprefs_()[mkey_(u.name)]); if (m.ui) o.ui = m.ui; }
+  return o; }
 function setMyPrefs_(who, p) {
-  const next = Object.assign(prefsOf_(who), prefsClean_(p));
+  const cur = prefsOf_(who), oldUi = cur.ui || {}, add = prefsClean_(p), next = Object.assign(cur, add);
+  if (add.ui) next.ui = uiClean_(Object.assign({}, oldUi, add.ui));   // one choice changed: the others stay
   if (next.mode === 'test' && who.testOk === false) next.mode = 'live';
   if (ROLE_RANK[who.role] < ROLE_RANK.manager) delete next.showProfit;     // profit is for managers and the owner
   if (who.master) { const m = mprefs_(); m[mkey_(who.name)] = next; PropertiesService.getScriptProperties().setProperty('MPREFS', JSON.stringify(m)); }
@@ -882,6 +896,20 @@ function pinEasy_(p) { if (/^(\d)\1+$/.test(p) || EASY_PINS_[p]) return true;
 function pinRule_(p, role) { p = String(p || ''); if (!/^\d{4,8}$/.test(p)) throw new Error('bad_new_pin');
   if ((role === 'owner' || role === 'manager') && p.length < 6) throw new Error('pin_short');
   if (pinEasy_(p)) throw new Error('pin_easy'); }
+/** v57: the signed-in person changes their own PIN (Settings → Just for you). Needs their current PIN; the new one follows the
+ *  PIN rules and can't be anyone else's or the shop PIN. Their other phones and laptops are signed out (they sign in again with
+ *  the new PIN), this one stays signed in. People signed in with the shop PIN have no own PIN to change. */
+function setMyPin_(who, oldPin, newPin) {
+  if (who.master || !who.id) throw new Error('not_personal');
+  const list = users_(), x = list.filter(y => y.id === who.id)[0]; if (!x) throw new Error('bad_session');
+  if (hashPin_(String(oldPin || '')) !== x.h) throw new Error('bad_old_pin');
+  newPin = String(newPin || ''); pinRule_(newPin, x.role);
+  const h = hashPin_(newPin); if (h === x.h) throw new Error('pin_same');
+  if (shopPinIs_(newPin) || list.some(y => y.h === h && y.id !== x.id)) throw new Error('pin_taken');
+  x.h = h; saveUsers_(list);
+  sessEnd_((k, y) => y.u === x.id && k !== who.sess);
+  return { pinLen: newPin.length };
+}
 function removeUser_(id) { saveUsers_(users_().filter(u => u.id !== id)); return listUsers_(); }
 
 /* ---------- shop code: hides buy rates and blocks bill saving for anyone who only has the link ---------- */

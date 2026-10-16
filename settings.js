@@ -24,6 +24,9 @@ function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg
 /* ---------------- Owner settings: people & PINs, shop code ---------------- */
 let pplCache=null, pplShopOff=false;
 /** The same PIN rules as the sheet (owner and manager 6–8 digits; no repeats, runs, common picks or 4-digit years), said at once. */
+/** Owners and managers need 6–8 digits since 12 Oct 2026; a PIN from before can still be 4. */
+function pinNeed6(){ return myRole()==="owner" || myRole()==="manager"; }
+function pinShortMe(){ const a=S.auth||{}; return !!a.personal && pinNeed6() && a.pinLen>0 && a.pinLen<6; }
 function pinProblem(p, role){ if(!/^\d{4,8}$/.test(p)) return t("pplPin"); if((role==="owner"||role==="manager") && p.length<6) return t("pinShort");
   if(/^(\d)\1+$/.test(p) || "01234567890".indexOf(p)>=0 || "09876543210".indexOf(p)>=0 || (p.length===4 && /^(19|20)\d\d$/.test(p)) || ["1212","1122","1313","2580","0852","1379","6969","1004","121212","112233","123123","696969","159753","147258","258369","102030","101010","123321","789456","456789"].includes(p)) return t("pinEasy"); return ""; }
 async function loadOwnerCards(){
@@ -119,6 +122,12 @@ ${cg("me","user",t("meT"),cgSumMe(),`
       ${nSetHTML()}
       <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>
       <div id="cf-bio"></div>
+      ${S.auth.personal && S.sv>=57?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
+        ${pinShortMe()?`<p class="note mpwarn">${IC.warn} ${esc(t("myPinShort"))}</p>`:""}
+        <div id="cf-mpform" class="mpform" hidden><div class="field"><label for="cf-mp0">${esc(t("myPinOld"))}</label><input id="cf-mp0" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8"></div>
+          <div class="two"><div class="field"><label for="cf-mp1">${esc(t("newPin"))}</label><input id="cf-mp1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-mp2">${esc(t("newPin2"))}</label><input id="cf-mp2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div></div>
+          <p class="note" style="margin:0">${esc(t(pinNeed6()?"myPinD6":"myPinD4"))}</p>
+          <div><button type="button" class="btn primary" id="cf-mpsave">${esc(t("myPinSave"))}</button></div><div class="err" id="cf-mperr" role="alert"></div></div></div>`:""}
       <div><button type="button" class="btn ghost" id="cf-signout">${esc(t("signOutBtn"))}</button></div>
       <div class="err" id="cf-meerr" role="alert"></div></div>`:""}
     ${me?"":`<div class="cfg-sec" style="border:0"><h3>${esc(t("thisPhone"))}</h3>
@@ -192,6 +201,16 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     try{ await setMyPrefs(p); }catch(er){ undo(); $("#cf-meerr").textContent=errMsg(er); } finally{ el.disabled=false; } };
   $("#cf-hide").onchange=e=>{ const v=e.target.checked; if(!me){ S.hideBuy=v; ls.set("rb_hidebuy",v); renderList(); return; }
     S.hideBuy=v; renderList(); mySet(e.target,{hideBuy:v},()=>{ e.target.checked=!v; S.hideBuy=!v; renderList(); }); };
+  if($("#cf-mpopen")){ $("#cf-mpopen").onclick=()=>{ const f=$("#cf-mpform"); f.hidden=!f.hidden; $("#cf-mpopen").setAttribute("aria-expanded",String(!f.hidden)); if(!f.hidden) $("#cf-mp0").focus(); };
+    $("#cf-mpsave").onclick=async()=>{ const o=$("#cf-mp0").value.trim(), p1=$("#cf-mp1").value.trim(), p2=$("#cf-mp2").value.trim(), er=$("#cf-mperr"); er.textContent="";
+      if(!/^\d{4,8}$/.test(o)){ er.textContent=t("myPinOldReq"); $("#cf-mp0").focus(); return; }
+      const pp=pinProblem(p1,myRole()); if(pp){ er.textContent=pp; $("#cf-mp1").focus(); return; } if(p1!==p2){ er.textContent=t("pinMismatch"); $("#cf-mp2").focus(); return; }
+      const b=$("#cf-mpsave"); btnBusy(b,true);
+      try{ await apiPost0({action:"setMyPin",oldPin:o,newPin:p1}); S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; ls.set("rb_auth",S.auth);
+        ["#cf-mp0","#cf-mp1","#cf-mp2"].forEach(s=>{ const x=$(s); if(x) x.value=""; }); $("#cf-mpform").hidden=true; $("#cf-mpopen").setAttribute("aria-expanded","false");
+        const w=document.querySelector("#cf-mypin .mpwarn"); if(w) w.remove(); toast(t("myPinDone")); }
+      catch(e){ const c=e&&e.code; er.textContent=c==="bad_old_pin"?t("myPinBadOld"):c==="pin_same"?t("myPinSame"):c==="not_personal"?t("myPinNoOwn"):errMsg(e); }
+      finally{ const bb=$("#cf-mpsave"); if(bb) btnBusy(bb,false); } }; }
   if($("#cf-signout")) $("#cf-signout").onclick=()=>{ if(confirm(t("signOutQ"))){ closeSheet(); lockPhone(); } };
   if($("#cf-bio")) bioAvail().then(ok=>{ const box=$("#cf-bio"); if(!ok||!box) return;
     box.innerHTML=`<label class="switch"><span><b>${esc(t("bioSet"))}</b><br><span class="note">${esc(t("bioSetD"))}</span></span><input type="checkbox" id="cf-bioon" ${S.auth.bio?"checked":""}></label>`;

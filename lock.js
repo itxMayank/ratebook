@@ -3,10 +3,12 @@
    app.js (11 Oct 2026). Loads before app.js; only declares things while loading. LOCK / LOCK_MS live in app.js.
    After editing, run: node tools/stamp.js */
 "use strict";
-let meChecked=false;
-/** Once per app start: refresh this phone's role (the owner may have changed it) and pick up the shop code if needed. */
+let meChecked=false, meAt=0;
+/** Once per app start, and again after each unlock (meRecheck): refresh this phone's role (the owner may have changed it), the
+    person's own settings, and pick up the shop code if needed. A phone whose sign-in was ended meanwhile (its PIN changed on
+    another device, or signed out from Settings) is signed out here, so an old PIN stops working within seconds. */
 async function refreshMe(j){
-  if(meChecked || !S.canWrite) return; meChecked=true;
+  if(meChecked || !S.canWrite) return; meChecked=true; meAt=Date.now();
   try{ const old=S.auth.pin && !S.auth.tok, r=await apiPost({action:"verify",by:(S.auth&&S.auth.by)||"",...(old?{wantTok:true,dl:devLabel()}:{})}); const me=r.me||{};
     /* A phone from before sign-in tokens kept its PIN: the PIN must still be this person's own, else it's signed out (it never
        becomes whoever that PIN now belongs to). */
@@ -15,6 +17,12 @@ async function refreshMe(j){
     applyMe(r,j);
   }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); else if(e&&e.code==="shop_pin_off") signedOut("shopPinOff"); }
 }
+/** An owner or manager still on a PIN from before the 6–8 digit rule: say so once a day after unlocking. */
+function pinOldHint(){ const a=S.auth; if(!a || !a.personal || !(a.pinLen>0 && a.pinLen<6) || !["owner","manager"].includes(a.role) || !(S.sv>=57)) return;
+  const d=new Date().toDateString(); if(ls.get("rb_pinhint","")===d) return; ls.set("rb_pinhint",d); setTimeout(()=>toast(t("myPinShortT")),1200); }
+/** After every unlock with the PIN saved on this device (or fingerprint), ask the sheet once more (online only; skipped only
+    when it was just asked, e.g. at start), so a sign-in ended elsewhere is noticed within a second or two. */
+function meRecheck(){ if(!S.canWrite || !(S.auth&&S.auth.tok) || navigator.onLine===false || Date.now()-meAt<5000) return; meChecked=false; refreshMe(); }
 /** Use who-am-I from the sheet (verify, or the boot reply): role, name, own settings, shop code. */
 function applyMe(r,j){ const me=r.me||{}; if(!S.auth) return;
     const role=me.role||"owner", name=me.personal?me.name:S.auth.by; const changed=role!==S.auth.role || name!==S.auth.by;
@@ -23,6 +31,7 @@ function applyMe(r,j){ const me=r.me||{}; if(!S.auth) return;
     const prefsChanged=JSON.stringify(myPrefs())+(S.auth.testOk!==false)!==P0;
     const hadCode=ls.get("rb_view",""); if(r.view && r.view!==hadCode){ ls.set("rb_view",r.view); if(j&&j.limited){ S.rev=null; sync(); return; } }
     if(prefsChanged) applyPrefs(); else if(changed) renderAll();
+    upApply();
 }
 /* ---------------- Unlock / lock ---------------- */
 function openUnlock(){ appLock(); }
@@ -74,9 +83,10 @@ function pendingUI(msg){ LOCK.re=null; const el=lockEl(); let tm=0;
   tm=setTimeout(()=>check(true),15000); }
 function appUnlock(){ if(S.canWrite) shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
   document.documentElement.classList.remove("locked"); renderAll(); if(S.pendShare) setTimeout(askSent,400);
+  if(S.auth && S.auth.tok){ upReady=true; meRecheck(); pinOldHint(); if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); }
   { const u=ls.get("rb_updated",0); if(u){ ls.set("rb_updated",0); if(Date.now()-u<6*3600e3) setTimeout(()=>toast(t("appUpdated")),500); } } }   // the app loaded a newer version by itself (updGo): say so once
 /** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
-function signedOut(msgKey){ S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }
+function signedOut(msgKey){ upReady=false; lsSet0("rb_upq",{}); S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }
 let SHOP_ASK_FAIL="";
 /* App mark (white ₹ tag on Iris), the same in light and dark: the brand colour doesn't change with the theme. */
 const APP_MARK=`<svg class="al-mark" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="14" fill="#4F46E5"/><g transform="translate(24 24) scale(1) translate(-24 -24)"><path d="M7 24 19.5 11.5H41v25H19.5z" fill="#fff"/><circle cx="17" cy="24" r="2.6" fill="#4F46E5"/><g fill="#4F46E5"><path transform="translate(24.627 31) scale(0.009396 -0.009396)" d="M1118 1115H910C901 1174 883 1227 855 1273L1063 1274L1119 1490H142L78 1207H347C450 1207 513 1172 545 1115H132L78 903H556C526 828 458 774 347 774H106L105 575L592 0H966V14L536 542L550 548C761 612 873 722 906 903H1063Z"/></g></g></svg>`;
@@ -125,7 +135,7 @@ function lockPinUI(msg){ LOCK.re=()=>lockPinUI(); const el=lockEl(), a=S.auth, p
      (another person's PIN may be longer) until OK. */
   const quick=async()=>{ if(wait()) return; const A=S.auth||{}, p0=pin; let good=false; try{ good = A.pinH ? (await pinHash(p0,A.pinS))===A.pinH : p0===A.pin; }catch{}
     if(good && pin===p0){ check(); } };
-  const check=async()=>{ if(pin.length<4 || wait()) return; const try_=pin; pin=""; dots();
+  const check=async()=>{ if(pin.length<4 || wait()) return; const try_=pin; pin=""; dots(); let offPin=false;
     const A=S.auth||{}; let good=false; try{ good = A.pinH ? (await pinHash(try_,A.pinS))===A.pinH : try_===A.pin; }catch{}   /* S.auth may have switched to a token meanwhile */
     if(good){ if(A.pin && !A.pinH){ Object.assign(S.auth, await pinCheckSet(try_)); S.auth.pinLen=try_.length; ls.set("rb_auth",S.auth); } afterPinUnlock(); return; }
     /* Not the PIN saved on this phone. The lock screen only ever opens for the person shown on it: online, ask the sheet whose
@@ -135,11 +145,11 @@ function lockPinUI(msg){ LOCK.re=()=>lockPinUI(); const el=lockEl(), a=S.auth, p
       try{ const j=await apiPost0({action:"verify",tok:"",pin:try_,by:A.by}); const me=j.me||{};
         if(me.personal && samePerson(me.name,A.by)){ const k=await apiPost0({action:"verify",tok:"",pin:try_,by:A.by,wantTok:true,dl:devLabel()}); await adoptSignIn(k,try_,A.by); afterPinUnlock(); return; }
         $("#al-err").textContent=""; }
-      catch(e){ $("#al-err").textContent=""; if(e&&e.code==="locked"){ $("#al-err").textContent=t("lockedOut"); return; } } }
+      catch(e){ $("#al-err").textContent=""; if(e&&e.code==="locked"){ $("#al-err").textContent=t("lockedOut"); return; } if(e&&e.code==="shop_pin_off") offPin=true; } }
     LOCK.fails.n++; if(LOCK.fails.n>=5) LOCK.fails.until=Date.now()+30000*Math.pow(2,LOCK.fails.n-5); ls.set("rb_lockfail",LOCK.fails);
     if(LOCK.fails.n>=10){ LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockPhone(); $("#al-err") && ($("#al-err").textContent=t("alOut")); return; }
     const box=$(".al-box"); box.classList.remove("al-shake"); void box.offsetWidth; box.classList.add("al-shake"); try{ navigator.vibrate&&navigator.vibrate(60); }catch{}
-    if(!wait()) $("#al-err").textContent=t("alWrong",10-LOCK.fails.n); };
+    if(!wait()) $("#al-err").textContent=offPin?t("shopPinOff")+" "+t("alWrong",10-LOCK.fails.n):t("alWrong",10-LOCK.fails.n); };
   $("#al-pad").onclick=e=>{ const b=e.target.closest("[data-k]"); if(!b) return; const k=b.dataset.k;
     if(k==="del") pin=pin.slice(0,-1); else if(k==="ok"){ check(); return; } else if(pin.length<8){ pin+=k; if(pinLen() && pin.length===pinLen()){ dots(); quick(); return; } } dots(); };
   el.onkeydown=e=>{ if(/^\d$/.test(e.key)){ $(`#al-pad [data-k="${e.key}"]`).click(); } else if(e.key==="Backspace") $('#al-pad [data-k="del"]').click(); else if(e.key==="Enter") $('#al-pad [data-k="ok"]').click(); };
@@ -178,9 +188,10 @@ function signInUI(msg){ LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=
   setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }
 /** A PIN sign-in worked (sign-in screen, or a different person's PIN typed on the lock screen): this phone is now theirs. */
 async function adoptSignIn(j,pin,by){ const me=j.me||{}, old=S.auth&&S.auth.tok;
+  if(!S.auth || !samePerson(S.auth.by||"", me.personal?me.name:by)) lsSet0("rb_upq",{});   // another person: their own choices, not the last person's
   S.auth={by:me.personal?me.name:by, role:me.role||"owner", personal:!!me.personal, prefs:me.prefs||{}, testOk:me.testOk!==false, pinLen:pin.length, ...(j.tok?{tok:j.tok}:{pin}), ...await pinCheckSet(pin), ...(j.pending?{pending:true}:{})};
   const bio=ls.get("rb_bio_"+S.auth.by,null); if(bio) S.auth.bio=bio;
-  if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; applyPrefs();
+  if(j.view) ls.set("rb_view",j.view); ls.set("rb_auth",S.auth); ls.set("rb_name",S.auth.by); S.canWrite=true; meChecked=true; meAt=Date.now(); applyPrefs(); upApply();
   if(old && old!==S.auth.tok) apiPost0({action:"signOut",tok:old}).catch(()=>{});   // end the previous sign-in on the sheet
 }
 /* Away for LOCK_MS → lock. While away, cover the screen so the phone's app switcher shows nothing. */

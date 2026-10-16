@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 57;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 58;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -571,7 +571,14 @@ function doPost(e) {
     catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   const lock = LockService.getScriptLock();
   try {
-    lock.waitLock(20000); LOCKED_ = true;
+    /* v58: pure reads don't wait for the script lock. Before, opening Settings fired ~6 requests that all queued behind the lock
+       (backupInfo lists Drive files, seconds), and right after a script update every saved reply is rebuilt inside it, so the
+       queue passed the wait and everything failed with "Lock timeout" (16 Oct 2026, shown on phones as "check your connection").
+       Writes, and the lists phones keep copies of (bills, customers, credit, vendors), stay inside the lock. A sign-in that makes
+       a token takes the lock itself (sessEdit_). */
+    if (!NOLOCK_[body.action]) {
+      try { lock.waitLock(25000); } catch (e) { return out_({ ok: false, error: 'busy' }); }   // nothing was done: the phone may simply try again
+      LOCKED_ = true; }
     const by = who.name || str_(body.by, 60);
     let res = {};
     switch (body.action) {
@@ -607,7 +614,7 @@ function doPost(e) {
       case 'restoreBill': res = cancelBill_(body, by, false); bumpB_(false, body.id); break;
       case 'report': res = report_(body); break;
       case 'listUsers': res = listUsers_(); break;
-      case 'saveUser': res = saveUser_(body.user || {}); break;
+      case 'saveUser': res = saveUser_(body.user || {}, who); break;
       case 'removeUser': { const rid = String(body.id || ''); res = removeUser_(rid); sessEnd_((k, x) => x.u === rid); break; }
       case 'getAccess': res = getAccess_(); break;
       case 'setAccess': res = setAccess_(!!body.on, !!body.regen); break;
@@ -728,6 +735,7 @@ function listSessions_(who) { const all = sessAll_();
 
 /* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
+const NOLOCK_ = { verify: 1, listSessions: 1, listUsers: 1, getAccess: 1, backupInfo: 1, report: 1, getBill: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1 };
 const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, setMyPin: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
   vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, priceHist: 1, getAccess: 1, notices: 1, noticeRead: 1 };
@@ -861,7 +869,7 @@ function setMyPrefs_(who, p) {
   if (who.master) { const m = mprefs_(); m[mkey_(who.name)] = next; PropertiesService.getScriptProperties().setProperty('MPREFS', JSON.stringify(m)); }
   else { const list = users_(), u = list.filter(x => x.id === who.id)[0]; if (u) { u.prefs = next; saveUsers_(list); } }
   return { prefs: next, testOk: who.testOk !== false }; }
-function saveUser_(u) {
+function saveUser_(u, by) {   // by = who is saving (v58: changing your own PIN keeps the device you're on signed in)
   const list = users_();
   const name = str_(u.name || '', 40).trim(); if (!name) throw new Error('need_name');
   const role = ROLE_RANK[u.role] ? u.role : 'staff';
@@ -872,7 +880,7 @@ function saveUser_(u) {
     pinRule_(pin, role);
     const h = hashPin_(pin);
     if (shopPinIs_(pin) || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
-    if (x && x.h !== h) { x.h = h; sessEnd_((k, y) => y.u === x.id); }   // new PIN: that person signs in again everywhere
+    if (x && x.h !== h) { x.h = h; const keep = by && by.id === x.id ? by.sess : ''; sessEnd_((k, y) => y.u === x.id && k !== keep); }   // new PIN: that person signs in again everywhere (except the device they changed it on)
   }
   if (x) { if (u.active === false && x.active !== false) sessEnd_((k, y) => y.u === x.id); x.name = name; x.role = role; x.active = u.active !== false; x.testOk = u.testOk !== false; if (x.testOk === false && x.prefs && x.prefs.mode === 'test') x.prefs.mode = 'live'; }
   else { list.push({ id: Utilities.getUuid().slice(0, 8), name: name, h: hashPin_(pin), role: role, active: true, testOk: u.testOk !== false }); }
@@ -2514,10 +2522,12 @@ function phRows_() { const s = ss_().getSheetByName(PH_TAB); if (!s) return []; 
     discount isn't taken for a price change. Finally, a price that differs from the last one seen on bills changed when the item
     was last edited. Only bills from before the history began are read; rows are marked src 'bills'. */
 function phEnsure_() { const P = PropertiesService.getScriptProperties(); if (P.getProperty('PH_BF')) return;
-  const l = LockService.getScriptLock(), mine = !LOCKED_; if (mine && !l.tryLock(30000)) return;
-  try { if (P.getProperty('PH_BF')) return; phBackfill_(); P.setProperty('PH_BF', String(Date.now())); }
-  catch (e) { try { const c = CacheService.getScriptCache(); let a = []; try { a = JSON.parse(c.get('ERRS') || '[]'); } catch (x) {} a.push(['phBackfill', String(e && e.message || e).slice(0, 200), Date.now()]); c.put('ERRS', JSON.stringify(a.slice(-50)), 21600); } catch (x) {} }
-  finally { if (mine) l.releaseLock(); } }
+  /* v58: the start from past bills reads every bill; it no longer holds the script lock meanwhile (that made every other
+     request wait and fail with "Lock timeout"); only writing its rows takes the lock, briefly. One run at a time (cache
+     marker), and after a failure not again for an hour. */
+  const c = CacheService.getScriptCache(); if (c.get('PH_RUN')) return; c.put('PH_RUN', '1', 3600);
+  try { phBackfill_(); P.setProperty('PH_BF', String(Date.now())); c.remove('PH_RUN'); }
+  catch (e) { try { let a = []; try { a = JSON.parse(c.get('ERRS') || '[]'); } catch (x) {} a.push(['phBackfill', String(e && e.message || e).slice(0, 200), Date.now()]); c.put('ERRS', JSON.stringify(a.slice(-50)), 21600); } catch (x) {} } }
 function phBackfill_() {
   const live = phRows_(), start = live.length ? Math.min.apply(null, live.map(x => x.at)) : Date.now(), liveIds = {}; live.forEach(x => liveIds[x.id + '|' + x.f] = 1);
   const { values } = rows_(); const items = {}, byName = {}; values.forEach(r => { if (!r[C.id]) return; items[String(r[C.id])] = r; byName[String(r[C.name]).trim().toLowerCase()] = r; });
@@ -2548,7 +2558,10 @@ function phBackfill_() {
         if (holds) { push(d.at, 'sell', cs, d.v); cs = d.v; } }
       if (Math.abs(d.v - cs) < 0.005) lastSellAt = d.at; });
     if (cs !== null && curSell > 0 && Math.abs(curSell - cs) >= 0.005 && !liveIds[id + '|sell']) push(Math.max(upd, lastSellAt + 1), 'sell', cs, curSell); });
-  out.sort((a, b) => a[0] - b[0]); phWrite_(out); return out.length; }
+  out.sort((a, b) => a[0] - b[0]);
+  if (LOCKED_) phWrite_(out);
+  else { const l = LockService.getScriptLock(); if (!l.tryLock(20000)) throw new Error('busy'); try { if (!PropertiesService.getScriptProperties().getProperty('PH_BF')) phWrite_(out); } finally { l.releaseLock(); } }
+  return out.length; }
 /** One item's price history, newest first. Staff see sell and pack prices only. */
 function priceHist_(id, role) { phEnsure_(); const buyOk = ROLE_RANK[role] >= ROLE_RANK.manager;
   const L = phRows_().filter(x => x.id === String(id) && (buyOk || x.f !== 'buy')).sort((a, b) => b.at - a.at);

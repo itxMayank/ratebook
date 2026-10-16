@@ -174,7 +174,7 @@ function renderHeader(){
 function renderList(){
   renderHeader();
   const list=$("#list"), more=$("#list-more"), sug=$("#suggest"), hint=$("#cmdhint-wrap");
-  const q=S.q.trim();
+  const q=DESK() ? qSplit(S.q).q : S.q.trim();   // laptop: "kirana *5" searches "kirana"
   hint.innerHTML = (apiUrl() && can("manager") && looksLikeCommand(q)) ? `<button class="cmdhint" data-act="cmdq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 10-10M15 4v3M13.5 5.5h3M19 9v2M18 10h2M8 4v2M7 5h2"/></svg><span>${esc(t("cmdHintL"))} <b>${esc(t("cmdHintA"))} →</b></span></button>` : "";
   $("#setup-wrap").innerHTML = apiUrl() ? "" : setupHTML();
   if(!apiUrl()){ list.innerHTML=""; more.innerHTML=""; sug.innerHTML=""; $("#meta-l").textContent=""; return; }
@@ -201,9 +201,9 @@ function renderList(){
   if(!q && S.lastSync && S.online) $("#meta-l").insertAdjacentHTML("beforeend",`<button type="button" class="netsync" id="meta-sync" aria-label="${esc(t("refresh"))}">· ${esc(t("syncedAt",new Date(S.lastSync).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})))} ↻</button>`);
   document.body.classList.toggle("qhas",!!q);
   { const mr=$("#meta-r"); const hasPop=!!S.pop && Object.keys(S.pop).length>0;
-    mr.innerHTML = (hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : "")
-      + `<button type="button" class="layoutbtn" data-layout aria-label="${esc(t(gridOn()?"layList":"layGrid"))}" title="${esc(t(gridOn()?"layList":"layGrid"))}">${gridOn()?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`}</button>`; }
-  list.classList.toggle("gridv", gridOn());
+    mr.innerHTML = (DESK() && q ? `<span class="kbhint">${t("kbHint")}</span>` : "") + (hasPop && !q ? `<span class="sortseg" role="group" aria-label="${esc(t("sortL"))}"><button type="button" data-sort="pop" aria-pressed="${S.sortBy!=="az"}">${esc(t("sortPop"))}</button><button type="button" data-sort="az" aria-pressed="${S.sortBy==="az"}">${esc(t("sortAz"))}</button></span>` : "")
+      + (DESK() && q ? "" : `<button type="button" class="layoutbtn" data-layout aria-label="${esc(t(gridOn()?"layList":"layGrid"))}" title="${esc(t(gridOn()?"layList":"layGrid"))}">${gridOn()?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`}</button>`); }
+  list.classList.toggle("gridv", gridOn() && !(DESK() && q));   // laptop: results are a list while typing
   if(q && !exact && !hint.innerHTML){
     sug.innerHTML=`<div class="suggest"><p>${esc(t("noMatch",q))} ${suggest.length?esc(t("didYouMean")):""}</p>
       ${suggest.length?`<div class="chips">${suggest.map(it=>`<button class="chip" data-pick="${esc(it.name)}">${esc(itemTitle(it))}</button>`).join("")}</div>`:""}
@@ -211,10 +211,12 @@ function renderList(){
   } else sug.innerHTML="";
   const shown=(q && !exact && hint.innerHTML) ? [] : res.slice(0,S.limit);
   /* while typing, recent items that match come first under "Recent", then "All items" */
-  const sp=q && S.filter==="all" ? recentSplit(shown,exact) : {rec:[]};
+  const sp=q && S.filter==="all" ? recentSplit(shown,exact,q) : {rec:[]};
   list.innerHTML = sp.rec.length ? rcGroup(rcHead(t("rcRecent")), sp.rec.map(r=>cardHTML(r.e.it,q)).join("")) + (sp.rest.length?rcGroup(rcHead(t("rcAll")), sp.rest.map(r=>cardHTML(r.e.it,q)).join("")):"")
     : shown.map(r=>cardHTML(r.e.it,q)).join("");
   list.classList.toggle("rows", !gridOn() && shown.length>0);   /* phones: one grouped list with dividers */
+  list.classList.toggle("drows", DESK() && !!q && shown.length>0);   /* laptop while typing: the same list, ↑ ↓ to choose */
+  if(DESK()) kbMark(q);
   /* jump to the best match only when the search text changes, never on a redraw (photos arriving, a sync), so scrolling the results isn't pulled back */
   if(q && q!==renderList.lastQ && document.body.classList.contains("qtyp") && document.documentElement.classList.contains("sbot")) requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.classList.contains("sres-top")?0:document.documentElement.scrollHeight));
   renderList.lastQ=q;   // best match next to the search (or at the top, Settings)

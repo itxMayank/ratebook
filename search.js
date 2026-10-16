@@ -328,7 +328,14 @@ function recentAdd(id){ if(!id) return; const a=recentAll().filter(x=>x!==id); a
 function recentDel(id){ ls.set("rb_recent",recentAll().filter(x=>x!==id)); if(recSnap) recSnap=recSnap.filter(x=>x!==id); }
 function recentClear(){ ls.set("rb_recent",[]); if(recSnap) recSnap=[]; }
 /** Search results with recent items that match moved to the front (only real matches near the top, so a weak fuzzy hit never jumps a good one). */
-/* With Pills chosen, typing shows the plain results in match order (no "Recent" group on top). */
-function recentSplit(res,exact){ const ids=exact && !rcPills() ? recentAll() : []; if(!ids.length) return {rec:[],rest:res};
-  const has=new Set(ids), rec=res.slice(0,30).filter(r=>has.has(r.e.it.id)); if(!rec.length) return {rec,rest:res};
+/* Laptop (16 Oct 2026): "kirana *5" = search "kirana", Enter adds 5. */
+function qSplit(v){ v=String(v||""); const m=v.match(/^(.*?\S)\s*\*\s*(\d+(?:\.\d+)?)\s*$/); return m ? {q:m[1].trim(), n:+m[2]} : {q:v.trim(), n:0}; }
+/** A real match: every word typed starts a word of the item's name, Hindi name or other names (not a loose sounds-like hit). */
+function strongMatch(it,q){ const w=String(q||"").toLowerCase().split(/\s+/).filter(Boolean); if(!w.length) return false;
+  const toks=[it.name,it.nameHi,it.aliases].join(" ").toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
+  return w.every(x=>toks.some(t=>t.startsWith(x))); }
+/* With Pills chosen, typing shows the plain results in match order (no "Recent" group on top). On a laptop a recent item goes
+   under "Recent" only if it really matches what was typed (q): typing "k" showed "300 Ml Glass" there. */
+function recentSplit(res,exact,q){ const ids=exact && !rcPills() ? recentAll() : []; if(!ids.length) return {rec:[],rest:res};
+  const has=new Set(ids), rec=res.slice(0,30).filter(r=>has.has(r.e.it.id) && (!DESK() || strongMatch(r.e.it,q))); if(!rec.length) return {rec,rest:res};
   const got=new Set(rec.map(r=>r.e.it.id)); return {rec,rest:res.filter(r=>!got.has(r.e.it.id))}; }

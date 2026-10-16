@@ -464,7 +464,7 @@ const DESK=()=>deskMQ.matches;
 function applyDesk(){
   const d=DESK(); document.documentElement.classList.toggle("desk",d); placeSearch();
   const vb=$("#view-bill"); if(vb) vb.hidden = !(d || S.tab==="bill");
-  const f=$("#side-foot"); if(f) f.innerHTML = `<div><kbd>/</kbd><span>${esc(t("kSearch"))}</span></div><div><kbd>Enter</kbd><span>${esc(t("kAdd"))}</span></div><div><kbd>Esc</kbd><span>${esc(t("kClose"))}</span></div>`;
+  const f=$("#side-foot"); if(f) f.innerHTML = [["↑ ↓","kPick"],["Enter","kAdd"],["*5","kQty"],["+ −","kStep"],["Alt C","kCust"],["Ctrl Enter","kDone"],["Esc","kClose"]].map(([k,s])=>`<div><kbd>${esc(k)}</kbd><span>${esc(t(s))}</span></div>`).join("");
 }
 deskMQ.addEventListener ? deskMQ.addEventListener("change",()=>{ applyDesk(); setTab(S.tab==="bill"&&DESK()?"items":S.tab); }) : deskMQ.addListener(()=>{ applyDesk(); setTab(S.tab); });
 document.addEventListener("keydown",e=>{
@@ -474,6 +474,32 @@ document.addEventListener("keydown",e=>{
   if(!sheetOpen && ((e.key==="/" && !typing) || ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"))){ e.preventDefault(); if(S.tab!=="items") setTab("items"); const q=$("#q"); q.focus(); q.select(); return; }
   if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
 });
+/* ---- Laptop: billing from the keyboard (16 Oct 2026) ----
+   The search box has the cursor whenever nothing else needs it (deskFocusQ). While typing, the results are a list; ↑ ↓ move
+   the highlight, Enter adds the highlighted item (first one by default) and empties the box for the next item. "kirana *5"
+   adds 5. With the box empty, + / − change the item just added. Typing a letter anywhere on the page goes into the search.
+   Ctrl+Enter = Done, Ctrl+Shift+Enter = Share on WhatsApp, Alt+C = customer name (Enter → mobile → Enter → back to search). */
+const KB={i:0,q:null,last:""};
+function kbCards(){ return [...document.querySelectorAll("#list .card[data-id]")]; }
+function kbMark(q){ if(!DESK()) return; if(q!==KB.q){ KB.q=q; KB.i=0; } const c=kbCards();
+  if(!q){ c.forEach(x=>{ x.classList.remove("kbsel"); x.removeAttribute("aria-selected"); }); return; }
+  KB.i=Math.max(0,Math.min(KB.i,c.length-1)); c.forEach((x,i)=>{ x.classList.toggle("kbsel",i===KB.i); x.setAttribute("aria-selected",String(i===KB.i)); }); }
+function kbMove(d){ const c=kbCards(); if(!c.length) return; KB.i=(KB.i+d+c.length)%c.length; kbMark(KB.q); c[KB.i].scrollIntoView({block:"nearest"}); }
+function kbAdd(id,n){ const before=billQty(id); addToBill(id); KB.last=id;
+  if(n>1){ const l=S.bill.find(x=>x.id===id); if(l){ l.qty=Math.round((before+n)*1000)/1000; saveBill(); renderBill(); renderBadge(); renderList(); } }
+  kbFlash(id); }
+function kbFlash(id){ const i=S.bill.findIndex(x=>x.id===id); const el=i>=0 && document.querySelectorAll("#bill-lines .bill-line")[i]; if(!el) return;
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); el.scrollIntoView({block:"nearest"}); }
+function deskFocusQ(){ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden) return; const a=document.activeElement;
+  if(a && a!==document.body && a.matches && a.matches("input,textarea,select,[contenteditable=true]")) return;
+  const q=$("#q"); if(q && q.offsetParent) q.focus({preventScroll:true}); }
+document.addEventListener("keydown",e=>{ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden) return;
+  const a=document.activeElement, typing=a && a.matches && a.matches("input,textarea,select,[contenteditable=true]");
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); if(!S.bill.length) return; if(e.shiftKey){ const w=$("#bill-wa"); if(w && !w.hidden) w.click(); } else $("#bill-done").click(); setTimeout(deskFocusQ,400); return; }
+  if(e.altKey && !e.ctrlKey && e.key.toLowerCase()==="c"){ e.preventDefault(); const c=$("#cust"); if(c){ c.focus(); c.select(); } return; }
+  if(!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length===1 && e.key!=="/" && e.key!==" "){ const q=$("#q"); if(q && q.offsetParent){ if(S.tab!=="items") setTab("items"); q.focus(); } }   // the letter then lands in the search
+});
+$("#cust-mob").addEventListener("keydown",e=>{ if(DESK() && e.key==="Enter" && !e.defaultPrevented){ e.preventDefault(); e.target.blur(); deskFocusQ(); } });
 let blurT;
 function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="q"; document.body.classList.toggle("qe", qf && !a.value.trim()); document.body.classList.toggle("qtyp",qf);
   /* recent items: open on focus with nothing typed, frozen order while open; redrawn when it opens or closes */
@@ -515,8 +541,14 @@ const BUSY_MSGS=()=>[t("saving"),t("photoWorking")];
 let toastT; function toast(msg){ const el=$("#toast"); /* shown at the top of the screen (see .toast CSS), clear of the bill and the keyboard */ const busy=BUSY_MSGS().includes(msg); el.innerHTML=(busy?LD("sm"):"")+esc(msg); el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),2800); }
 let raf=0; function onQuery(v){ S.q=v; S.qTabs[S.tab==="bill"?"bill":"items"]=v; S.limit=40; $("#q-clear").hidden=!v; cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{ if(S.tab==="bill") renderBillSearch(); else renderList(); }); }
 $("#q").addEventListener("input",e=>{ onQuery(e.target.value); syncQe(); if(e.target.value) $("#mictip").hidden=true; });
-$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);
-  else if(DESK() && S.q.trim()){ const top=runSearch(S.q.trim()).res[0]; if(top){ addToBill(top.e.it.id); e.target.value=""; onQuery(""); } }
+$("#q").addEventListener("keydown",e=>{
+  if(DESK() && !e.altKey && !e.ctrlKey && !e.metaKey){
+    if((e.key==="ArrowDown"||e.key==="ArrowUp") && S.q.trim()){ e.preventDefault(); kbMove(e.key==="ArrowDown"?1:-1); return; }
+    if((e.key==="+"||e.key==="-"||e.key==="=") && !e.target.value && KB.last && S.byId.has(KB.last)){ e.preventDefault(); searchStep(KB.last, e.key!=="-"); kbFlash(KB.last); return; }
+  }
+  if(e.key==="Enter"){ const {q,n}=qSplit(S.q); if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);
+  else if(DESK() && q){ const c=kbCards()[KB.i], id=c ? c.dataset.id : (runSearch(q).res[0]||{e:{it:{}}}).e.it.id;   // the highlighted result (the first one shown unless ↑ ↓ moved it)
+    if(id){ kbAdd(id, n||1); e.target.value=""; onQuery(""); } }
   else e.target.blur(); } });
 /* Bill tab on phones: tap the round search button = the bar opens with the keyboard; ✕ empties it but keeps it open;
    leaving it (keyboard closed, tapped elsewhere, an item added) = back to the button. */
@@ -596,7 +628,7 @@ document.addEventListener("click",e=>{
   { const so=e.target.closest("[data-sort]"); if(so){ if(so.dataset.sort!==S.sortBy) setSort(so.dataset.sort); return; } }
   const fc=e.target.closest("[data-filter]"); if(fc){ S.filter=fc.dataset.filter; S.limit=40; renderList(); return; }
   const dd=e.target.closest("[data-decid]"); if(dd){ e.stopPropagation(); decFromBill(dd.dataset.decid); return; }
-  const a=e.target.closest("[data-add]"); if(a){ e.stopPropagation(); addToBill(a.dataset.add); return; }
+  const a=e.target.closest("[data-add]"); if(a){ e.stopPropagation(); const inList=!!a.closest("#list"); addToBill(a.dataset.add); if(DESK()){ KB.last=a.dataset.add; if(inList) setTimeout(deskFocusQ,0); } return; }   // checked before the list is redrawn
   if(e.target.closest(".mstep")) return;
   const card=e.target.closest(".card[data-id]"); if(card){ openDetail(card.dataset.id); return; }
   const pick=e.target.closest("[data-pick]"); if(pick){ $("#q").value=pick.dataset.pick; onQuery(pick.dataset.pick); return; }
@@ -681,7 +713,7 @@ $("#po-x").onclick=()=>{ poSet(null); updateBillTotals(); };
 $("#po-no").addEventListener("input",e=>{ poSet({...S.po, no:e.target.value}); updateBillTotals(); });
 $("#po-date").addEventListener("change",e=>{ poSet({...S.po, date:e.target.value}); updateBillTotals(); });
 $("#po-date").addEventListener("input",e=>{ poSet({...S.po, date:e.target.value}); updateBillTotals(); });
-$("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); };
+$("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.custGstin)){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); $("#cust-gstin").focus(); toast(t("gstinBad")); return; } if(normMobile(S.mob)===null){ $("#cust-mob").focus(); toast(t("mobBad")); return; } finishBill(); if(DESK()) setTimeout(deskFocusQ,300); };
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
@@ -727,7 +759,7 @@ function openSheet(title,body,foot,{full=false,onClose=null,key=""}={}){
   $("#sheet-body").scrollTop=0; sheetOnClose=onClose; if(keep) sheetKeepScroll(keep);
   sheetNavSync();
 }
-function closeSheet(){ SHEET_STK=[]; sheetCurKey=""; if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
+function closeSheet(){ SHEET_STK=[]; sheetCurKey=""; if(typeof vSnackHide==="function") vSnackHide(); const sh=$("#sheet"), sc=$("#scrim"); if(document.activeElement && sh.contains(document.activeElement)) document.activeElement.blur(); sh.classList.remove("on"); sc.classList.remove("on"); setTimeout(()=>{ if(!sh.classList.contains("on")){ sh.hidden=true; sc.hidden=true; $("#sheet-body").innerHTML=""; deskFocusQ(); } },220); if(sheetOnClose){ const f=sheetOnClose; sheetOnClose=null; f(); } }
 /* Sheet navigation. A sheet showing an inner screen (a bill opened from All bills, a customer from Credit, a vendor's bill …)
    has a "*-back" button in its body. The header ← (left, next to the title), a tap outside and the phone's Back go up ONE
    level through it. ✕ (right) always closes the whole sheet in one tap, from any depth. On inner screens ✕ shows a small
@@ -815,6 +847,8 @@ async function apiPost0(body){
   const j=await r.json(); perfAdd(body&&body.action,t0,j);
   if(j.shop && j.shop!==SHOP.code){ shopMismatch(); throw {code:"wrong_shop"}; }
   if(!j.ok){ const c=j.error;
+    /* the sheet was busy (its lock taken by another request) and did nothing: try again by itself, twice (16 Oct 2026) */
+    if((c==="busy" || /lock timeout/i.test(String(c||""))) && (body.__try||0)<2){ await new Promise(r=>setTimeout(r,body.__try?3000:1200)); return apiPost0({...body,__try:(body.__try||0)+1}); }
     if(c==="no_test") setTimeout(noTestNow,0);
     if(c==="bad_session" && a.tok && S.auth && S.auth.tok===a.tok) setTimeout(()=>signedOut("siGone"),0);
     if(c==="shop_pin_off" && a.tok && S.auth && S.auth.tok===a.tok) setTimeout(()=>signedOut("shopPinOff"),0);   // signed in with the shop PIN, which the owner has now switched off
@@ -824,7 +858,9 @@ async function apiPost0(body){
     throw {code:c||"server", existing:j.existing}; }
   return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail"); return t("writeFail"); }
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="bad_old_pin") return t("myPinBadOld"); if(c==="pin_same") return t("myPinSame"); if(c==="not_personal") return t("myPinNoOwn"); if(c==="bad_new_pin") return t("pplPin"); if(c==="need_name") return t("needYourName"); if(c==="bad_session") return t("siGone"); if(c==="busy" || /lock timeout/i.test(String(c||""))) return t("busyNow"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail");
+  /* anything else: the sheet refused for a reason the app has no words for; the shop owner of the original shop sees the code, so it can be looked up (it is also in the dashboard's error log) */
+  return t("writeFail") + (c && c!=="http" && c!=="offline" && TECH() ? " ("+String(c).slice(0,80)+")" : ""); }
 let chain=Promise.resolve();
 function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
 let resyncT; function resyncSoon(){ clearTimeout(resyncT); resyncT=setTimeout(sync,1500); }

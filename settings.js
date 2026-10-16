@@ -72,6 +72,7 @@ function openPerson(u){
     const b=$("#pp-save"); btnBusy(b,true);
     try{ const j=await apiPost({action:"saveUser",user:{id:u?u.id:undefined,name,pin,role,active:u?$("#pp-active").checked:true,testOk:$("#pp-test").checked}}); pplCache=j.users; const was=pplShopOff; pplShopOff=!!j.shopPinOff;
       if(pplShopOff && !was && S.auth && S.auth.personal===false){ toast(t("pplSaved")); setTimeout(()=>signedOut("shopPinOff"),300); return; }   // this phone used the shop PIN: sign in with the new personal PIN
+      if(pin && u && S.auth && S.auth.personal && samePerson(u.name,S.auth.by)){ S.auth={...S.auth,...await pinCheckSet(pin),pinLen:pin.length}; ls.set("rb_auth",S.auth); toast(t("myPinDone")); openSettings(); return; }   // your own PIN: this device stays signed in and opens with the new PIN
       toast(t("pplSaved")); openSettings(); }
     catch(e){ btnBusy(b,false); err.textContent = e&&e.code==="pin_taken"?t("pplTaken"):errMsg(e); } };
   if($("#pp-remove")) $("#pp-remove").onclick=async()=>{ const b=$("#pp-remove"); btnBusy(b,true); try{ const j=await apiPost({action:"removeUser",id:u.id}); pplCache=j.users; pplShopOff=!!j.shopPinOff; openSettings(); }catch(e){ btnBusy(b,false); toast(errMsg(e)); } };
@@ -122,7 +123,7 @@ ${cg("me","user",t("meT"),cgSumMe(),`
       ${nSetHTML()}
       <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>
       <div id="cf-bio"></div>
-      ${S.auth.personal && S.sv>=57?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
+      ${S.auth.personal && !(S.sv>0 && S.sv<57)?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
         ${pinShortMe()?`<p class="note mpwarn">${IC.warn} ${esc(t("myPinShort"))}</p>`:""}
         <div id="cf-mpform" class="mpform" hidden><div class="field"><label for="cf-mp0">${esc(t("myPinOld"))}</label><input id="cf-mp0" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8"></div>
           <div class="two"><div class="field"><label for="cf-mp1">${esc(t("newPin"))}</label><input id="cf-mp1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-mp2">${esc(t("newPin2"))}</label><input id="cf-mp2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div></div>

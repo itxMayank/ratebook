@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 57;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 58;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -607,7 +607,7 @@ function doPost(e) {
       case 'restoreBill': res = cancelBill_(body, by, false); bumpB_(false, body.id); break;
       case 'report': res = report_(body); break;
       case 'listUsers': res = listUsers_(); break;
-      case 'saveUser': res = saveUser_(body.user || {}); break;
+      case 'saveUser': res = saveUser_(body.user || {}, who); break;
       case 'removeUser': { const rid = String(body.id || ''); res = removeUser_(rid); sessEnd_((k, x) => x.u === rid); break; }
       case 'getAccess': res = getAccess_(); break;
       case 'setAccess': res = setAccess_(!!body.on, !!body.regen); break;
@@ -861,7 +861,7 @@ function setMyPrefs_(who, p) {
   if (who.master) { const m = mprefs_(); m[mkey_(who.name)] = next; PropertiesService.getScriptProperties().setProperty('MPREFS', JSON.stringify(m)); }
   else { const list = users_(), u = list.filter(x => x.id === who.id)[0]; if (u) { u.prefs = next; saveUsers_(list); } }
   return { prefs: next, testOk: who.testOk !== false }; }
-function saveUser_(u) {
+function saveUser_(u, by) {   // by = who is saving (v58: changing your own PIN keeps the device you're on signed in)
   const list = users_();
   const name = str_(u.name || '', 40).trim(); if (!name) throw new Error('need_name');
   const role = ROLE_RANK[u.role] ? u.role : 'staff';
@@ -872,7 +872,7 @@ function saveUser_(u) {
     pinRule_(pin, role);
     const h = hashPin_(pin);
     if (shopPinIs_(pin) || list.some(y => y.h === h && (!x || y.id !== x.id))) throw new Error('pin_taken');
-    if (x && x.h !== h) { x.h = h; sessEnd_((k, y) => y.u === x.id); }   // new PIN: that person signs in again everywhere
+    if (x && x.h !== h) { x.h = h; const keep = by && by.id === x.id ? by.sess : ''; sessEnd_((k, y) => y.u === x.id && k !== keep); }   // new PIN: that person signs in again everywhere (except the device they changed it on)
   }
   if (x) { if (u.active === false && x.active !== false) sessEnd_((k, y) => y.u === x.id); x.name = name; x.role = role; x.active = u.active !== false; x.testOk = u.testOk !== false; if (x.testOk === false && x.prefs && x.prefs.mode === 'test') x.prefs.mode = 'live'; }
   else { list.push({ id: Utilities.getUuid().slice(0, 8), name: name, h: hashPin_(pin), role: role, active: true, testOk: u.testOk !== false }); }

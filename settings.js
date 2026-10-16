@@ -132,7 +132,10 @@ ${cg("look","phone",t("cgLook"),cgSumLook(),`
       <p class="note" style="margin:0">${esc(t("sposD"))}</p>
       <div id="cf-sres-w" class="cf-sres-w" ${sposNow()==="bottom"?"":"hidden"}><h3 style="margin:6px 0 0;font-size:14px">${esc(t("sresT"))}</h3>
       <div class="appear" id="cf-sres" role="group" style="grid-template-columns:1fr 1fr">${["near","top"].map(k=>`<button type="button" data-sres="${k}" aria-pressed="${ls.get("rb_sres","near")===k}">${esc(t(k==="near"?"sresNear":"sresTop"))}</button>`).join("")}</div>
-      <p class="note" style="margin:0">${esc(t("sresD"))}</p></div></div>
+      <p class="note" style="margin:0">${esc(t("sresD"))}</p></div>
+      <h3 style="margin:6px 0 0;font-size:14px">${esc(t("rcStyleT"))}</h3>
+      <div class="appear" id="cf-rcs" role="group" style="grid-template-columns:1fr 1fr">${["list","pills"].map(k=>`<button type="button" data-rcs="${k}" aria-pressed="${ls.get("rb_rcstyle","list")===k}">${esc(t(k==="list"?"rcStyleL":"rcStyleP"))}</button>`).join("")}</div>
+      <p class="note" style="margin:0">${esc(t("rcStyleD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
@@ -181,6 +184,7 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
   $("#cf-appear").onclick=e=>{ const b=e.target.closest("[data-ap]"); if(!b) return; ls.set("rb_appear",b.dataset.ap); applyTheme(); $("#cf-appear").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   renderPrCfg(); renderAiCfg(); if($("#cf-groups")) $("#cf-groups").onclick=()=>openGroups();
   $("#cf-spos").onclick=e=>{ const b=e.target.closest("[data-spos]"); if(!b) return; ls.set("rb_spos",b.dataset.spos); $("#cf-spos").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); $("#cf-sres-w").hidden=b.dataset.spos!=="bottom"; placeSearch(); };
+  $("#cf-rcs").onclick=e=>{ const b=e.target.closest("[data-rcs]"); if(!b) return; ls.set("rb_rcstyle",b.dataset.rcs); $("#cf-rcs").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   $("#cf-sres").onclick=e=>{ const b=e.target.closest("[data-sres]"); if(!b) return; ls.set("rb_sres",b.dataset.sres); $("#cf-sres").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); placeSearch(); };
   $("#cf-tsize").onclick=e=>{ const b=e.target.closest("[data-fz]"); if(!b) return; setFz(+b.dataset.fz); $("#cf-tsize").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); };
   /* Just for you: saved with the person on the sheet (follows them to any phone); without signing in, hide-buy stays per phone */

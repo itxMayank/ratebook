@@ -112,6 +112,45 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   }
   await k.context().close();
 
+  /* P. pills (like Samsung's "Recent searches"): switch in the heading and in Settings, tap adds, ✕ forgets, newest by the bar */
+  const r12 = ['i11', 'i10', 'i9', 'i8', 'i7', 'i6', 'i5', 'i4', 'i3', 'i2', 'i1', 'i0'];
+  const m = await phone(390, 844, { rec: r12 });
+  await m.focus('#q'); await m.waitForTimeout(300);
+  ok((await m.$$('#list .rcrow')).length === 8 && await m.isVisible('#list [data-rcview="pills"]'), 'P1 list by default (8 rows), with a switch to pills in the heading');
+  await m.tap('#list [data-rcview="pills"]'); await m.waitForTimeout(300);
+  const pills = await m.$$eval('#list .rcpill', els => els.map(e => e.dataset.add));
+  ok(pills.length === 12 && !(await m.$('#list .rcrow')) && await focused(m) && await m.evaluate(() => JSON.parse(localStorage.rb_rcstyle)) === 'pills', 'P2 one tap: pills (all 12, more than the list), the keyboard stays, kept on this phone');
+  const pr = await m.$$eval('#list .rcpill', els => els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.add, b: r.bottom, l: r.left, h: r.height }; })), d3 = await rect(m, '#dock');
+  const lowest = pr.reduce((a, x) => x.b > a.b ? x : a);
+  ok(lowest.id === 'i11' && d3.top - lowest.b >= 0 && d3.top - lowest.b < 40 && pr.every(x => x.h >= 40), 'P3 search at the bottom: the newest pill sits right above the bar, rows build upwards; pills ≥ 40 px ' + JSON.stringify(lowest));
+  await m.tap('#list .rcpill[data-add="i7"] .pn'); await m.waitForTimeout(300);
+  ok(await m.evaluate(() => (T.S.bill.find(l => l.id === 'i7') || {}).qty) === 1 && await focused(m) && /1/.test(await m.textContent('#list .rcpill[data-add="i7"] .pq')) && await m.$eval('#list .rcpill[data-add="i7"]', e => e.classList.contains('inb')), 'P4 tap a pill: added to the bill, the pill shows 1, the keyboard stays');
+  ok(JSON.stringify(await m.$$eval('#list .rcpill', els => els.map(e => e.dataset.add))) === JSON.stringify(pills), 'P5 pills keep their places while the panel is open');
+  await m.tap('#list .rcpill[data-add="i9"] .rcx'); await m.waitForTimeout(300);
+  ok(!(await m.$('#list .rcpill[data-add="i9"]')) && (await m.$$('#list .rcpill')).length === 11 && await focused(m), 'P6 ✕ on a pill forgets it, the keyboard stays');
+  await m.tap('#list [data-rcview="list"]'); await m.waitForTimeout(300);
+  ok((await m.$$('#list .rcrow')).length === 8 && await focused(m), 'P7 the list icon switches back');
+  await blurQ(m);
+  await m.evaluate(() => T.setTab('bill')); await m.waitForTimeout(300);
+  await m.evaluate(() => localStorage.setItem('rb_rcstyle', '"pills"'));
+  await m.tap('#tot-find'); await m.waitForTimeout(400);
+  ok((await m.$$('#bill-search-results .rcpill')).length >= 10, 'P8 Bill tab shows pills too');
+  await m.tap('#bill-search-results .rcpill[data-add="i5"] .pn'); await m.waitForTimeout(500);
+  ok(await m.evaluate(() => (T.S.bill.find(l => l.id === 'i5') || {}).qty) === 1 && !(await focused(m)), 'P9 Bill tab: tapping a pill adds it and closes the search, like a row');
+  await m.context().close();
+  /* Settings switch; Hindi, dark, 320 px, largest text: nothing spills, long names wrap inside their pill */
+  const n = await phone(320, 700, { rec: r12, lang: 'hi', fz: 1.38 });
+  await n.evaluate(() => { localStorage.setItem('rb_appear', '"dark"'); });
+  await n.evaluate(() => openSettings()); await n.waitForTimeout(300);
+  await n.tap('details[data-cg="look"] summary'); await n.waitForTimeout(200);
+  await n.tap('#cf-rcs [data-rcs="pills"]'); await n.waitForTimeout(100);
+  ok(await n.evaluate(() => JSON.parse(localStorage.rb_rcstyle)) === 'pills' && /पिल/.test(await n.textContent('#cf-rcs')), 'P10 Settings → Display & search: Recent items List / Pills (Hindi)');
+  await n.evaluate(() => closeSheet()); await n.waitForTimeout(300);
+  await n.focus('#q'); await n.waitForTimeout(400);
+  const ov = await n.evaluate(() => [...document.querySelectorAll('#list .rcpill, #list .rcpill *')].filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).length);
+  ok((await n.$$('#list .rcpill')).length === 12 && ov === 0, 'P11 320 px, largest text, Hindi: all pills fit the width ' + ov);
+  await n.context().close();
+
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();
 })();

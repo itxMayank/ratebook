@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 16 October 2026 (recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 16 October 2026 (recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1096,6 +1096,7 @@ Asked for after Samsung's "Recent searches"; four mock-ups were shown and Mayank
 - On the Prices tab the panel is drawn into `#list` (class `rclist`, `qhas` set so the chips step aside and it anchors above the bar). Narrow rows (container under 300 px: small phone, large text) hide the clock and put price + under the name.
 - **Compact and anchored (15 Oct 2026, after trying it):** recent rows show no Buy · Margin and put price and + on one line (≈ 49 px, was 85). When the keyboard opens after the panel (or results) are shown, Chrome shrinks the app and the newest item ended up hidden below the keyboard; `resAnchor()` (from `vvSet`, only on a height change over 100 px) puts the newest / best match back right above the search bar.
 - **Like the search cards (16 Oct 2026):** price and + side by side took ~220 px, so names wrapped onto 2–3 lines. Now price (top right, ✕ beside it in `.mtop`) and a small − qty + under it, so the name gets ~215 px at 390 px (rows ≈ 75 px). The − qty + in every Bill search / recent row (`.mini .sstep`) is now the Prices card's 30 px filled pill (`--inbg`), and + alone uses the "+ Bill" colours. Narrow rows (under 300 px): name on its own line, then price, − qty + and ✕. Test H1b, G3.
+- **Pills (16 Oct 2026, like Samsung's "Recent searches"):** per phone `rb_rcstyle` = `list` (default) / `pills`; switched by the icon in the heading (`data-rcview`, keeps the keyboard) or Settings → Display & search → Recent items (`#cf-rcs`). `pillHTML` (`.rcpill`: name, quantity badge `.pq` when in the bill, ✕ `data-rcx`, `data-add` so a tap adds exactly like a row); up to `RECENT_PILLS` (16), the list keeps 8. With the search at the bottom `.rcpills` uses `flex-wrap:wrap-reverse` so the newest is right above the bar. Test P1–P11.
 - Test: `tests/recent.app.test.js` (H1–H2 for the above; 27: panel, order, + / tap / ✕ / Clear all with the keyboard kept, frozen order, Recent / All items while typing and their position by the bar, Bill tab, deleted items, storage, top search + Hindi + 320 px largest text).
 
 ## Tests that depended on the date (fixed 12 Oct 2026)

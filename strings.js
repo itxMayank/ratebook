@@ -367,6 +367,8 @@ Object.assign(STR.en,{ myPinT:"Change my PIN", myPinOld:"Current PIN", myPinSave
   myPinOldReq:"Enter your current PIN.", myPinBadOld:"Current PIN is wrong.", myPinSame:"That's already your PIN.", myPinNoOwn:"You're signed in with the shop PIN. Ask the owner to add you with your own PIN.",
   myPinDone:"PIN changed. Your other devices will ask for the new PIN.", myPinShort:"Your PIN has only 4 digits. Owners and managers need 6 to 8: change it here.",
   myPinShortT:"Your PIN has 4 digits. Change it to 6–8: Settings → Just for you → Change my PIN." });
+Object.assign(STR.en,{ busyNow:"The sheet is busy right now. Nothing was saved: try again in a moment." });
+Object.assign(STR.hi,{ busyNow:"शीट अभी व्यस्त है। कुछ सेव नहीं हुआ: थोड़ी देर में फिर कोशिश करें।" });
 Object.assign(STR.en,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>Enter</kbd> add · <kbd>*5</kbd> adds 5 · <kbd>Esc</kbd> clear",
   lookFollow:"Language, theme, appearance and sort follow you to every phone and laptop you sign in on.", lookPhone:"Search bar, best match and recent items change only the phone app; on a laptop the search is always at the top." });
 Object.assign(STR.hi,{ rcTitle:"हाल में बिल किए", rcRecent:"हाल के", rcAll:"सभी सामान", rcClear:"सब हटाएँ", rcRm:n=>`${n} को हाल की सूची से हटाएँ`, rcAddP:n=>`${n} बिल में जोड़ें`, rcViewP:"पिल की तरह दिखाएँ", rcViewL:"सूची की तरह दिखाएँ", rcStyleT:"हाल के सामान (सिर्फ़ फ़ोन पर)", rcStyleL:"सूची", rcStyleP:"पिल", rcStyleD:"सर्च दबाने पर दिखते हैं। पिल में ज़्यादा सामान आते हैं; दबाकर जोड़ें।" });

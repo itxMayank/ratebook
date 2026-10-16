@@ -122,7 +122,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   ok(pills.length === 12 && !(await m.$('#list .rcrow')) && await focused(m) && await m.evaluate(() => JSON.parse(localStorage.rb_rcstyle)) === 'pills', 'P2 one tap: pills (all 12, more than the list), the keyboard stays, kept on this phone');
   const pr = await m.$$eval('#list .rcpill', els => els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.add, b: r.bottom, l: r.left, h: r.height }; })), d3 = await rect(m, '#dock');
   const lowest = pr.reduce((a, x) => x.b > a.b ? x : a);
-  ok(lowest.id === 'i11' && d3.top - lowest.b >= 0 && d3.top - lowest.b < 40 && pr.every(x => x.h >= 40), 'P3 search at the bottom: the newest pill sits right above the bar, rows build upwards; pills ≥ 40 px ' + JSON.stringify(lowest));
+  ok(lowest.id === 'i11' && d3.top - lowest.b >= 0 && d3.top - lowest.b < 40 && pr.every(x => x.h >= 32 && x.h <= 36), 'P3 search at the bottom: the newest pill sits right above the bar, rows build upwards; pills compact (32–36 px) ' + JSON.stringify(lowest));
   await m.tap('#list .rcpill[data-add="i7"] .pn'); await m.waitForTimeout(300);
   ok(await m.evaluate(() => (T.S.bill.find(l => l.id === 'i7') || {}).qty) === 1 && await focused(m) && /1/.test(await m.textContent('#list .rcpill[data-add="i7"] .pq')) && await m.$eval('#list .rcpill[data-add="i7"]', e => e.classList.contains('inb')), 'P4 tap a pill: added to the bill, the pill shows 1, the keyboard stays');
   ok(JSON.stringify(await m.$$eval('#list .rcpill', els => els.map(e => e.dataset.add))) === JSON.stringify(pills), 'P5 pills keep their places while the panel is open');

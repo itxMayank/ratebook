@@ -1123,6 +1123,8 @@ Fixed:
   - **Price-history start** (`phEnsure_`) no longer holds the lock while it reads every past bill: one run at a time (cache `PH_RUN`), its rows are written under a short lock, and after a failure it isn't tried again for an hour (before, a failure re-ran it, holding the lock, on every item or business-page open).
   - Test: `tests/lockbusy.test.js` (another request holds the lock: reads answer, writes say busy and change nothing, then work; 10 of 12 checks fail on v57).
 
+- **Main Save no longer loses a typed PIN** (16 Oct 2026, `settings.js` / `strings.js`, no script change). Reported: the new PIN was typed in Change my PIN, then the footer's main **Save** was tapped; it saved the shop settings and closed Settings, so the PIN was never sent. Now, if any Change my PIN or shop-PIN box has text, Save stops, keeps Settings open and says "You typed a new PIN but it isn't saved yet…" (`pinUnsaved`) by that form. A refused `pin_taken` in Change my PIN says "PIN not changed: this PIN is already used by someone in your shop (or was the shop PIN)…" (`myPinTaken`). Which person has it is never shown (that would tell the owner someone's PIN). Test: `tests/mypin.real.app.test.js` C1–C4.
+
 ## Laptop: billing from the keyboard (16 Oct 2026, `app.js` / `prices.js` / `search.js` / `lock.js` / `settings.js` / `strings.js` / `app.css`, no script change)
 
 Asked for by Mayank; laptop only (`DESK()`), phones unchanged (test E1–E2).

@@ -211,7 +211,7 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
       try{ await apiPost0({action:"setMyPin",oldPin:o,newPin:p1}); S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; ls.set("rb_auth",S.auth);
         ["#cf-mp0","#cf-mp1","#cf-mp2"].forEach(s=>{ const x=$(s); if(x) x.value=""; }); $("#cf-mpform").hidden=true; $("#cf-mpopen").setAttribute("aria-expanded","false");
         const w=document.querySelector("#cf-mypin .mpwarn"); if(w) w.remove(); toast(t("myPinDone")); }
-      catch(e){ const c=e&&e.code; er.textContent=c==="bad_old_pin"?t("myPinBadOld"):c==="pin_same"?t("myPinSame"):c==="not_personal"?t("myPinNoOwn"):errMsg(e); }
+      catch(e){ const c=e&&e.code; er.textContent=c==="bad_old_pin"?t("myPinBadOld"):c==="pin_same"?t("myPinSame"):c==="not_personal"?t("myPinNoOwn"):c==="pin_taken"?t("myPinTaken"):errMsg(e); }
       finally{ const bb=$("#cf-mpsave"); if(bb) btnBusy(bb,false); } }; }
   if($("#cf-signout")) $("#cf-signout").onclick=()=>{ if(confirm(t("signOutQ"))){ closeSheet(); lockPhone(); } };
   if($("#cf-bio")) bioAvail().then(ok=>{ const box=$("#cf-bio"); if(!ok||!box) return;
@@ -242,7 +242,11 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); if(S.auth.tok){ if(!S.auth.personal) S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; } else S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   if($("#cf-bk")) loadBackupCard();
   if($("#ppl-body")) loadOwnerCards();
-  $("#cf-save").onclick=async()=>{ const btn=$("#cf-save"); btn.disabled=true;
+  $("#cf-save").onclick=async()=>{ const btn=$("#cf-save");
+    /* a PIN typed but not saved with its own button: say so instead of closing Settings and losing it */
+    const pend=[["#cf-mp0","#cf-mp1","#cf-mp2","#cf-mperr","#cf-mpsave"],["#cf-p1","#cf-p2","#cf-perr","#cf-pin"]].find(g=>g.slice(0,-2).some(q=>{ const x=$(q); return x&&x.value.trim(); }));
+    if(pend){ const er=$(pend[pend.length-2]), b=$(pend[pend.length-1]); if(er) er.textContent=t("pinUnsaved"); $("#cf-err").textContent=t("pinUnsaved"); cgFocus(pend[0]); if(b) b.scrollIntoView({block:"center"}); return; }
+    btn.disabled=true;
     const nb=Math.floor(toNum($("#cf-bill").value)); if(!(nb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); cgFocus("#cf-bill"); return; }
     const ngb=Math.floor(toNum($("#cf-gbill").value)); if(!(ngb>=1)){ btn.disabled=false; $("#cf-err").textContent=t("billNoBad"); cgFocus("#cf-gbill"); return; }
     const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); cgFocus("#cf-gstin"); return; }

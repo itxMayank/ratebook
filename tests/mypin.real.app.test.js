@@ -15,7 +15,7 @@ const html = appHtml('S,openSettings');
   await ctx.route('https://script.google.com/**', r => { const q = r.request(); let txt;
     try { txt = q.method() === 'POST' ? R(`doPost({postData:{contents:${JSON.stringify(q.postData())}}}).text`) : R(`doGet({parameter:${JSON.stringify(Object.fromEntries(new URL(q.url()).searchParams))}}).text`); }
     catch (e) { txt = JSON.stringify({ ok: false, error: 'mock:' + e.message }); }
-    if (q.method() === 'POST') { const a = JSON.parse(q.postData()).action; if (a === 'setMyPin') replies.push(txt); if (process.env.DBG) console.log('POST', a, txt.slice(0,160)); } else if (process.env.DBG) console.log('GET', q.url().slice(-40), txt.slice(0,120));
+    if (q.method() === 'POST') { const a = JSON.parse(q.postData()).action; if (a === 'setMyPin') replies.push(txt); if (a === 'setConfig') g.cfgPosts = (g.cfgPosts || 0) + 1; if (process.env.DBG) console.log('POST', a, txt.slice(0,160)); } else if (process.env.DBG) console.log('GET', q.url().slice(-40), txt.slice(0,120));
     r.fulfill({ contentType: 'application/json', body: txt }); });
   await p.goto('https://rb.test/'); await p.waitForTimeout(1500);
   await p.fill('#al-name', 'Mayank Binayake'); await p.fill('#al-pin', '1994'); await p.click('#al-go'); await p.waitForTimeout(1500);
@@ -37,6 +37,18 @@ const html = appHtml('S,openSettings');
   ok(!(await p.evaluate(() => document.documentElement.classList.contains('locked'))) && !/connection/i.test(toastTxt) && !/connection/i.test(await p.evaluate(() => document.body.innerText)), 'B2 this phone stays signed in, no "check your connection" (' + toastTxt + ')');
   ok(R("auth_({tok:LAP}).error") === 'bad_session', 'B3 the laptop is signed out (it asks for the new PIN)');
   await p.evaluate(() => { T.closeSheet && T.closeSheet(); }); await p.evaluate(() => { const L = window.T; }); 
+  /* C. reported 16 Oct 2026: the new PIN was typed, then the main Save was tapped (it closed Settings and the PIN was lost),
+     and 814912 was refused as pin_taken with an unclear message */
+  R("saveUser_({name:'Dad',pin:'814912',role:'manager'})");
+  await p.evaluate(() => T.openSettings()); await p.waitForTimeout(800); await p.evaluate(() => { document.querySelector('details[data-cg="me"]').open = true; }); await p.waitForTimeout(300);
+  await p.click('#cf-mpopen'); await p.fill('#cf-mp0', '640297'); await p.fill('#cf-mp1', '814912'); await p.fill('#cf-mp2', '814912');
+  await p.click('#cf-save'); await p.waitForTimeout(600);
+  ok(await p.isVisible('#cf-mpsave') && !g.cfgPosts && /isn't saved yet/.test(await p.textContent('#cf-mperr')), 'C1 main Save with a typed PIN keeps Settings open and says the PIN is not saved yet');
+  ok(await p.inputValue('#cf-mp1') === '814912', 'C2 the typed PIN is still there');
+  await p.click('#cf-mpsave'); await p.waitForTimeout(1500);
+  ok(/already used by someone in your shop/.test(await p.textContent('#cf-mperr')) && R("auth_({pin:'640297',by:'Mayank Binayake'}).name") === 'Mayank Binayake', 'C3 a PIN someone else has: clear "PIN not changed" message, old PIN still works');
+  await p.fill('#cf-mp0', ''); await p.fill('#cf-mp1', ''); await p.fill('#cf-mp2', ''); await p.click('#cf-save'); await p.waitForTimeout(1200);
+  ok(g.cfgPosts === 1, 'C4 with the PIN boxes empty, main Save saves as before');
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();
 })();

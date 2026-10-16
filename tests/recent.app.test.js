@@ -20,6 +20,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   const names = (p, s) => p.$$eval(s, els => els.map(e => { const n = e.querySelector('.name').cloneNode(true); n.querySelectorAll('.msub').forEach(x => x.remove()); return n.textContent.trim(); }));
   const blurQ = p => p.evaluate(() => document.querySelector('#q').blur()).then(() => p.waitForTimeout(350));
   const typeQ = async (p, v) => { await p.evaluate(v => { const q = document.querySelector('#q'); q.value = v; q.dispatchEvent(new Event('input', { bubbles: true })); }, v); await p.waitForTimeout(250); };
+  const innerHeightOf = () => 844;
   const focused = p => p.evaluate(() => document.activeElement && document.activeElement.id === 'q');
 
   /* A. Prices, search at the bottom */
@@ -150,6 +151,43 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   const ov = await n.evaluate(() => [...document.querySelectorAll('#list .rcpill, #list .rcpill *')].filter(e => { const r = e.getBoundingClientRect(); return r.right > innerWidth + 1 || r.left < -1; }).length);
   ok((await n.$$('#list .rcpill')).length === 12 && ov === 0, 'P11 320 px, largest text, Hindi: all pills fit the width ' + ov);
   await n.context().close();
+
+  /* Q. Pills chosen: typing shows plain results in match order (no "Recent" group jumping the real match), bar at the bottom or top */
+  for (const spos of ['bottom', 'top']) {
+    const q = await phone(390, 844, { rec: ['i3', 'i11'], spos });   // Paper Cup 150ml and Clear PP Pouch billed recently
+    await q.evaluate(() => localStorage.setItem('rb_rcstyle', '"pills"'));
+    const order = async sel => q.$$eval(sel, (els, top) => els.map(e => ({ n: (e.querySelector('.name') || e).cloneNode(true), y: e.getBoundingClientRect().top }))
+      .map(o => { o.n.querySelectorAll('.msub,.aka').forEach(m => m.remove()); return { n: o.n.textContent.trim(), y: o.y }; })
+      .sort((a, b) => top ? a.y - b.y : b.y - a.y).map(o => o.n), spos === 'top');   // nearest the bar first
+    await q.focus('#q'); await q.waitForTimeout(300);
+    ok((await q.$$('#list .rcpill')).length === 2, `Q1 ${spos}: empty search shows the pills`);
+    await typeQ(q, 'paper cup 250');
+    const pr = await order('#list .card');
+    ok(!(await q.$('#list .rchead')) && pr[0] === 'Paper Cup 250ml', `Q2 ${spos}, Prices: typing shows no "Recent" group; the real match is nearest the bar ` + JSON.stringify(pr.slice(0, 3)));
+    await typeQ(q, 'pp'); const withRec = await order('#list .card');
+    await q.evaluate(() => localStorage.setItem('rb_recent', '[]')); await typeQ(q, 'p'); await typeQ(q, 'pp'); const plain = await order('#list .card');
+    ok(!(await q.$('#list .rchead')) && withRec.length > 3 && JSON.stringify(withRec) === JSON.stringify(plain) && withRec[0] !== 'Clear PP Pouch', `Q3 ${spos}, Prices: "pp" lists exactly as if nothing were recent (Clear PP Pouch not pulled first) ` + JSON.stringify(withRec.slice(0, 3)));
+    await q.evaluate(() => localStorage.setItem('rb_recent', JSON.stringify(['i3', 'i11'])));
+    await typeQ(q, ''); await q.waitForTimeout(200);
+    ok((await q.$$('#list .rcpill')).length === 2, `Q4 ${spos}: emptying the search brings the pills back`);
+    if (spos === 'top') { const pl = await q.$$eval('#list .rcpill', els => els.map(e => ({ id: e.dataset.add, y: e.getBoundingClientRect().top, x: e.getBoundingClientRect().left })));
+      const hd = await rect(q, '#list .rchead'), sb = await rect(q, '#searchbox');
+      ok(pl[0].id === 'i3' && pl[0].y <= pl[1].y && hd.top >= sb.bottom - 1 && hd.bottom <= pl[0].y + 1, 'Q5 top: heading under the search bar, then the newest pill first (top left) ' + JSON.stringify(pl)); }
+    await blurQ(q);
+    await q.evaluate(() => T.setTab('bill')); await q.waitForTimeout(300);
+    await q.tap('#tot-find, #bsfab:not([hidden]), #empty-find'); await q.waitForTimeout(400);
+    const bp = await q.$$eval('#bill-search-results .rcpill', els => els.map(e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; }));
+    ok(bp.length === 2 && bp.every(r => r.top >= 0 && r.bottom <= innerHeightOf(q)), `Q6 ${spos}, Bill: the pills show on screen`);
+    await typeQ(q, 'paper cup 250');
+    const br = await order('#bill-search-results .mini');
+    ok(!(await q.$('#bill-search-results .rchead')) && br[0] === 'Paper Cup 250ml', `Q7 ${spos}, Bill: plain results, the real match nearest the bar ` + JSON.stringify(br.slice(0, 3)));
+    await q.context().close();
+  }
+  /* list (default) still puts recent matches first, top search too */
+  const lq = await phone(390, 844, { rec: ['i3'], spos: 'top' });
+  await lq.focus('#q'); await lq.waitForTimeout(300); await typeQ(lq, 'paper cup');
+  ok(JSON.stringify(await lq.$$eval('#list .rchead', els => els.map(e => e.textContent.trim()))) === '["Recent","All items"]', 'Q8 List chosen, search at the top: "Recent" then "All items" as before');
+  await lq.context().close();
 
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();

@@ -328,6 +328,7 @@ function recentAdd(id){ if(!id) return; const a=recentAll().filter(x=>x!==id); a
 function recentDel(id){ ls.set("rb_recent",recentAll().filter(x=>x!==id)); if(recSnap) recSnap=recSnap.filter(x=>x!==id); }
 function recentClear(){ ls.set("rb_recent",[]); if(recSnap) recSnap=[]; }
 /** Search results with recent items that match moved to the front (only real matches near the top, so a weak fuzzy hit never jumps a good one). */
-function recentSplit(res,exact){ const ids=exact?recentAll():[]; if(!ids.length) return {rec:[],rest:res};
+/* With Pills chosen, typing shows the plain results in match order (no "Recent" group on top). */
+function recentSplit(res,exact){ const ids=exact && !rcPills() ? recentAll() : []; if(!ids.length) return {rec:[],rest:res};
   const has=new Set(ids), rec=res.slice(0,30).filter(r=>has.has(r.e.it.id)); if(!rec.length) return {rec,rest:res};
   const got=new Set(rec.map(r=>r.e.it.id)); return {rec,rest:res.filter(r=>!got.has(r.e.it.id))}; }

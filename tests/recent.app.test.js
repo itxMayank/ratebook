@@ -92,7 +92,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   ok(over.length === 0, 'G2 320 px, largest text: nothing spills sideways ' + JSON.stringify(over));
   const x = await rect(q2, '#list .rcrow .rcx'), nm = await rect(q2, '#list .rcrow .name'), pl = await rect(q2, '#list .rcrow .sstep');
   const nmLines = await q2.$eval('#list .rcrow .name', e => { const n = e.cloneNode(true); n.querySelectorAll('.msub').forEach(m => m.remove()); return n.textContent.trim(); });
-  ok(x.right <= 320 && x.left >= nm.right - 1 && x.h >= 30 && pl.top >= nm.bottom - 30 && nm.right - nm.left > 150, 'G3 narrow row: the name keeps the width (✕ beside it), price and + go under it ' + nmLines);
+  ok(x.right <= 320 && x.left >= pl.right - 1 && x.top >= nm.bottom - 2 && x.h >= 28 && pl.top >= nm.bottom - 2 && nm.right - nm.left > 200, 'G3 narrow row: the name takes the full width, price, − qty + and then ✕ go on the line under it ' + nmLines);
   if (process.env.SHOT) { await q2.screenshot({ path: process.env.SHOT + '/recent-320-hi.png' }); }
   await q2.context().close();
 
@@ -101,8 +101,10 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'PP Liner 24x30', 'Paper Cup 150m
   for (const tab of ['items', 'bill']) {
     if (tab === 'bill') { await k.evaluate(() => { T.addToBill('i9'); T.setTab('bill'); }); await k.waitForTimeout(300); await k.tap('#tot-find'); } else await k.focus('#q');
     await k.waitForTimeout(300);
-    if (tab === 'items') { const rr = await k.$$eval('#list .rcrow', els => els.map(e => ({ h: e.getBoundingClientRect().height, t: e.textContent })));
-      ok(rr.length === 8 && rr.every(r => r.h <= 56 && !/Buy|Margin/.test(r.t)), 'H1 recent rows are compact (≤ 56 px) with no Buy · Margin ' + JSON.stringify(rr.map(r => Math.round(r.h)))); }
+    if (tab === 'items') { const rr = await k.$$eval('#list .rcrow', els => els.map(e => { const r = x => e.querySelector(x).getBoundingClientRect(), nm = e.querySelector('.name').cloneNode(true); nm.querySelectorAll('.msub').forEach(m => m.remove());
+        const n = r('.name'), p = r('.mprice'), x = r('.rcx'), st = r('.sstep'); return { h: e.getBoundingClientRect().height, t: e.textContent, nw: n.width, top: p.top - e.getBoundingClientRect().top, xBy: Math.abs(x.top + x.height / 2 - (p.top + p.height / 2)) < 8 && x.left > p.right - 4, under: st.top >= p.bottom - 2, sh: st.height }; }));
+      ok(rr.length === 8 && rr.every(r => r.h <= 80 && !/Buy|Margin/.test(r.t)), 'H1 recent rows: no Buy · Margin, at most 80 px ' + JSON.stringify(rr.map(r => Math.round(r.h))));
+      ok(rr.every(r => r.nw >= 190 && r.top < 16 && r.xBy && r.under && r.sh <= 30), 'H1b like the search cards: the name gets the width, price top right with ✕ beside it, a 30 px − qty + under it ' + JSON.stringify(rr[0])); }
     await k.setViewportSize({ width: 390, height: 520 }); await k.waitForTimeout(600);   // keyboard opens: Chrome shrinks the app
     const at = await k.evaluate(() => { const d = document.querySelector('#dock').getBoundingClientRect().top, rows = [...document.querySelectorAll('.rcrow')], lo = rows.reduce((a, e) => e.getBoundingClientRect().bottom > a.b ? { b: e.getBoundingClientRect().bottom, id: e.dataset.add } : a, { b: 0 }); return { gap: d - lo.b, id: lo.id, vh: innerHeight }; });
     ok(at.gap >= 0 && at.gap < 24 && at.id === (tab === 'bill' ? 'i9' : 'i1'), `H2 ${tab === 'bill' ? 'Bill' : 'Prices'}: after the keyboard opens, the newest item sits right above the search bar ` + JSON.stringify(at));

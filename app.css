@@ -191,11 +191,12 @@ textarea{width:100%;min-height:140px;border:1.5px solid var(--line);background:v
 .mini{cursor:pointer}
 .mini.inb{border-color:var(--accent)!important}
 .mini .name .per{font-size:13px}
-.mini .sstep{flex:none;display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:var(--r-full);background:var(--surface)}
-.mini .sstep button{width:32px;height:32px;border:0;background:none;color:var(--fg);font:700 18px var(--f-display);border-radius:50%;display:grid;place-items:center}
-.mini .sstep b{min-width:34px;text-align:center;font-size:14px}
-.mini.inb .sstep{border-color:var(--accent);color:var(--accent)}
-.mini .sstep.one button{background:var(--ink);color:var(--ink-fg)}
+.mini .sstep{flex:none;display:inline-flex;align-items:center;height:30px;border-radius:var(--r-full);background:var(--inbg);color:var(--infg)}
+.mini .sstep button{width:30px;height:30px;padding:0;border:0;background:none;color:inherit;font:700 18px var(--f-display);line-height:1;border-radius:50%;display:grid;place-items:center;position:relative}
+.mini .sstep button::after{content:"";position:absolute;inset:-7px 0}
+.mini .sstep b{min-width:24px;text-align:center;font-size:14px}
+.mini .sstep.one{background:none}
+.mini .sstep.one button{background:var(--addbg);color:var(--addfg)}
 .section-title{font:700 18px var(--f-display);margin:14px 0 6px}
 
 .toast{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--fg);color:var(--bg);border-radius:var(--r-md);padding:12px 14px;font-weight:500;transform:translateY(20px);opacity:0;transition:.2s;pointer-events:none;max-width:520px;margin:0 auto}
@@ -1771,17 +1772,20 @@ html.sbot:not(.sres-top) #rise #bill-search-results .mini + .mini,html.sbot:not(
 html.sbot:not(.sres-top) body.qtyp :is(#list,#bill-search-results) :is(.mini,.card) + .rchead{border-top:0}
 .rcclr{border:0;background:none;color:var(--accent);font:700 14px var(--f-body,inherit);padding:0 4px;min-height:44px;margin:-6px -4px -6px 0;cursor:pointer}
 .mini .rcic{flex:none;width:24px;height:44px;color:var(--muted);display:grid;place-items:center}
-/* narrow rows (small phone, large text): no clock; name and ✕ on the first line, price and + under them on the right */
+/* Recent rows look like the Prices search cards (16 Oct 2026): the name gets the width, price top right with ✕ beside it,
+   the small − qty + (or +) under the price. No Buy · Margin. */
 #list.rclist,#bill-search-results{container-type:inline-size}
-@container (max-width:300px){ .mini.rcrow{flex-wrap:wrap;row-gap:4px} .mini.rcrow .rcic{display:none} .mini.rcrow .name{flex:1 1 calc(100% - 44px)} .mini.rcrow .rcx{order:2} .mini.rcrow .mright{order:3;margin-left:auto;display:flex!important;align-items:center;gap:10px} }
-.mini .rcx{flex:none;width:36px;height:36px;margin:0 -8px 0 -4px;border:0;background:none;color:var(--muted);font-size:15px;border-radius:50%;display:grid;place-items:center;cursor:pointer;position:relative}
-.mini .rcx::after{content:"";position:absolute;inset:-4px}
 #list.rclist{display:flex;flex-direction:column;gap:0}
-/* recent rows are compact (no Buy · Margin; price and + on one line), so more fit above the keyboard */
-:is(#bill-search-results,#list.rclist) .mini.rcrow{min-height:48px;padding-top:6px;padding-bottom:6px;gap:10px}
-:is(#bill-search-results,#list.rclist) .mini.rcrow .mright{display:flex;align-items:center;gap:10px}
+:is(#bill-search-results,#list.rclist) .mini.rcrow{min-height:56px;padding-top:8px;padding-bottom:8px;gap:10px;align-items:center}
 :is(#bill-search-results,#list.rclist) .mini.rcrow .msub{margin-top:0}
-.mini .rcic{height:36px}
+:is(#bill-search-results,#list.rclist) .mini.rcrow .mright{gap:4px;align-self:stretch;align-content:center}
+.mini .mtop{display:flex;align-items:center;gap:2px}
+.mini .rcic{flex:none;width:20px;height:36px;color:var(--muted);display:grid;place-items:center}
+.mini .rcic svg{width:18px;height:18px}
+.mini .rcx{flex:none;width:28px;height:28px;margin:-4px -8px -4px 0;border:0;background:none;color:var(--muted);font-size:14px;border-radius:50%;display:grid;place-items:center;cursor:pointer;position:relative}
+.mini .rcx::after{content:"";position:absolute;inset:-8px -6px}
+/* narrow rows (small phone, large text): no clock; price, ✕ and + go under the name on the right */
+@container (max-width:300px){ .mini.rcrow{flex-wrap:wrap;row-gap:4px} .mini.rcrow .rcic{display:none} .mini.rcrow .name{flex:1 1 100%} .mini.rcrow .mright{margin-left:auto;display:flex!important;align-items:center;gap:10px} .mini.rcrow .mtop{display:contents} .mini.rcrow .rcx{order:3;margin:0 -8px 0 0} }
 
 
 /* Screens inside sheets never get wider than the phone (12 Oct 2026, found by tests/screens.app.test.js at 320 px with the

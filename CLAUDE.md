@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 16 October 2026 (one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 16 October 2026 (laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1116,6 +1116,18 @@ Fixed:
 - Tests: `tests/mypin.test.js` (server: change PIN, other devices out, rules, display choices merged and cleaned, shop-PIN choices joined), `tests/mydevices.app.test.js` (phone + laptop: choices follow, text size doesn't, offline change sent later, Change my PIN, old PIN stops working on the other device, shop PIN message, 4-digit reminder).
 - **Rollout:** merge; update every shop's script to v57 (dashboard → Update all shops, your shop first). On an older script, settings stay per device as before and Change my PIN doesn't show.
 - **For Mayank's shop now:** Settings → Just for you → Change my PIN → 6–8 digits; the laptop then asks for it once.
+
+## Laptop: billing from the keyboard (16 Oct 2026, `app.js` / `prices.js` / `search.js` / `lock.js` / `settings.js` / `strings.js` / `app.css`, no script change)
+
+Asked for by Mayank; laptop only (`DESK()`), phones unchanged (test E1–E2).
+- **The cursor is in the search box** by default: after unlocking, after Done, after closing any screen (`closeSheet`), after clicking + Bill in the list, and on Enter in the customer's mobile box (`deskFocusQ`, skipped while a sheet / picker is open or another box has the cursor). Typing a letter anywhere on the page goes into the search.
+- **While typing, results are one list** like on phones (`#list.drows`, not cards; the photo-grid choice is ignored while typing), with a hint line by the count (`kbHint`).
+- **↑ ↓** move the highlight (`KB`, `kbMark` from `renderList`, `kbMove`), **Enter** adds the highlighted item (the first one shown by default) and empties the box for the next item. Before, Enter added the top *search* result even when "Recent" put another item first on screen.
+- **`kirana *5`** adds 5 (`qSplit` in `search.js`; the search uses "kirana"). **+ / −** with the box empty change the item just added (`KB.last`, `searchStep`).
+- **Ctrl+Enter** = Done, **Ctrl+Shift+Enter** = Share on WhatsApp (nothing on an empty bill). **Alt+C** = customer name; Enter → mobile; Enter → back to the search. **Esc** clears the search (as before). The menu's footer lists the keys (`#side-foot`).
+- **"Recent" while typing on a laptop** only takes recent items that really match (`strongMatch`: every word typed starts a word of the name, Hindi name or other names); typing "k" had shown "300 Ml Glass" there. Phones keep their rule.
+- **Settings labels:** Text size and Printer say "this device only"; Search bar, Best match and Recent items say "phones only" (and on a laptop a note says they change only the phone app; the card summary leaves out the search bar there); Theme has no "this phone" any more, and a line says language, theme, appearance and sort follow the person.
+- Test: `tests/deskkeys.app.test.js`.
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

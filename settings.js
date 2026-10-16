@@ -94,7 +94,7 @@ function cg(key,ic,title,sum,inner){ if(!String(inner).trim()) return "";
   return `<details class="cg" data-cg="${key}" ${CG_OPEN.has(key)?"open":""}><summary><span class="cg-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CG_IC[ic]||""}</svg></span><span class="cg-t"><b>${esc(title)}</b><small class="cg-s">${esc(sum||"")}</small></span><svg class="cg-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary><div class="cg-b">${inner}</div></details>`; }
 const cgJ=a=>a.filter(Boolean).join(" · "), cgCap=x=>x?x[0].toUpperCase()+x.slice(1):"";
 const cgSumMe=()=>cgJ([byName(), myRole()?t("role"+cgCap(myRole())):"", S.canWrite?t(S.cfg.mode==="test"?"cgTest":"cgReal"):""]);
-const cgSumLook=()=>cgJ([t("ts"+(TSIZES.indexOf(fzNow())+1)), t("th"+cgCap(palNow())), t("ap"+cgCap(appearNow())), t(sposNow()==="bottom"?"cgSBot":"cgSTop")]);
+const cgSumLook=()=>cgJ([t("ts"+(TSIZES.indexOf(fzNow())+1)), t("th"+cgCap(palNow())), t("ap"+cgCap(appearNow())), DESK()?"":t(sposNow()==="bottom"?"cgSBot":"cgSTop")]);   // the laptop has no search bar choice
 const cgSumPr=()=>{ const P=prGet(); return cgJ([t("prP"+P.paper), P.auto?t("cgAuto"):""]); };
 const cgSumShop=c=>cgJ([c.shopName, c.shopGstin?"GSTIN "+c.shopGstin:t("cgNoGst")]);
 const cgSumBills=c=>cgJ([t("cgNext",c.nextBill), t("cgNextG",c.nextGstBill), t(+c.roundTo===1?"r1":+c.roundTo===0.5?"r05":"r0")]);
@@ -144,8 +144,9 @@ ${cg("look","phone",t("cgLook"),cgSumLook(),`
       <p class="note" style="margin:0">${esc(t("sresD"))}</p></div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("rcStyleT"))}</h3>
       <div class="appear" id="cf-rcs" role="group" style="grid-template-columns:1fr 1fr">${["list","pills"].map(k=>`<button type="button" data-rcs="${k}" aria-pressed="${ls.get("rb_rcstyle","list")===k}">${esc(t(k==="list"?"rcStyleL":"rcStyleP"))}</button>`).join("")}</div>
-      <p class="note" style="margin:0">${esc(t("rcStyleD"))}</p></div>
-    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("themeT"))}</h3>
+      <p class="note" style="margin:0">${esc(t("rcStyleD"))}</p>
+      ${DESK()?`<p class="note lookphone" style="margin:4px 0 0;font-weight:600">${esc(t("lookPhone"))}</p>`:""}</div>
+    <div class="cfg-sec" style="display:grid;gap:8px"><p class="note lookfollow" style="margin:0">${esc(t("lookFollow"))}</p><h3 style="margin:0">${esc(t("themeT"))}</h3>
       <div class="swatches" id="cf-pal" role="group">${PALETTES.map(([k,a,b])=>`<button type="button" data-pal="${k}" aria-pressed="${palNow()===k}"><span class="sw" style="background:${a};--sw2:${b}"></span>${esc(t("th"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>
       <h3 style="margin:6px 0 0;font-size:14px">${esc(t("appearT"))}</h3>
       <div class="appear" id="cf-appear" role="group">${["auto","light","dark"].map(k=>`<button type="button" data-ap="${k}" aria-pressed="${appearNow()===k}">${esc(t("ap"+k[0].toUpperCase()+k.slice(1)))}</button>`).join("")}</div>

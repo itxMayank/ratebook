@@ -277,9 +277,17 @@ function miniHTML(it,q,rc){ const inB=billQty(it.id), img=!!thumbOf(it);
    results run upwards from the bar, so a section's heading goes after its rows in the page (it then shows above them). */
 function recMode(){ return !DESK() && document.body.classList.contains("qtyp") && !S.q.trim() && recentIds().length>0; }
 function recRev(){ return !DESK() && root.classList.contains("sbot") && !root.classList.contains("sres-top") && document.body.classList.contains("qtyp"); }
-function rcHead(label,clr){ return `<div class="rchead"><b>${esc(label)}</b>${clr?`<button type="button" class="rcclr" data-rcclr>${esc(t("rcClear"))}</button>`:""}</div>`; }
+const RC_ICL='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  RC_ICP='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="10" height="6" rx="3"/><rect x="15" y="5" width="6" height="6" rx="3"/><rect x="3" y="13" width="7" height="6" rx="3"/><rect x="12" y="13" width="9" height="6" rx="3"/></svg>';
+/* clr = the "Recently billed" heading: the List / Pills switch and Clear all */
+function rcHead(label,clr){ const pl=rcPills();
+  return `<div class="rchead"><b>${esc(label)}</b>${clr?`<span class="rcacts"><button type="button" class="rcview" data-rcview="${pl?"list":"pills"}" aria-label="${esc(t(pl?"rcViewL":"rcViewP"))}" title="${esc(t(pl?"rcViewL":"rcViewP"))}">${pl?RC_ICL:RC_ICP}</button><button type="button" class="rcclr" data-rcclr>${esc(t("rcClear"))}</button></span>`:""}</div>`; }
+/* a recent item as a pill (Samsung's "Recent searches" look): tap = add, ✕ = forget; the quantity shows once it's in the bill */
+function pillHTML(it){ const inB=billQty(it.id);
+  return `<div class="rcpill${inB?" inb":""}" role="button" tabindex="0" data-add="${esc(it.id)}" aria-label="${esc(t("rcAddP",it.name))}"><span class="pn">${esc(it.name)}</span>${inB?`<b class="pq num">${esc(qtyShort(inB,it.unit))}</b>`:""}<button type="button" class="rcx" data-rcx="${esc(it.id)}" aria-label="${esc(t("rcRm",it.name))}">✕</button></div>`; }
 function rcGroup(head,rows){ return recRev()? rows+head : head+rows; }
-function recPanel(){ return rcGroup(rcHead(t("rcTitle"),true), recentIds().map(id=>miniHTML(S.byId.get(id),"",2)).join("")); }
+function recPanel(){ const ids=recentIds();
+  return rcGroup(rcHead(t("rcTitle"),true), rcPills() ? `<div class="rcpills">${ids.map(id=>pillHTML(S.byId.get(id))).join("")}</div>` : ids.map(id=>miniHTML(S.byId.get(id),"",2)).join("")); }
 function renderBillSearch(){
   const box=$("#bill-search-results"); const q=S.q.trim(), rec=S.tab==="bill" && !q && recMode(), key=q||(rec?"\u0001":"");
   if(key!==renderBillSearch.lastQ) requestAnimationFrame(()=>{ const r=$("#rise"); if(r) r.scrollTop=root.classList.contains("sres-top")?0:r.scrollHeight; });   // start at the best match
@@ -305,10 +313,10 @@ function searchStep(id,up){ const it=S.byId.get(id); if(!it) return; const i=S.b
   bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-sstep]") || (!DESK() && e.pointerType!=="mouse")) e.preventDefault(); });   // keep the keyboard up
   bsr.addEventListener("click",e=>{ const b=e.target.closest("[data-sstep]"); if(!b) return; e.stopPropagation(); e.preventDefault(); searchStep(b.dataset.sid, b.dataset.sstep==="1"); },true);
   const ls_=document.getElementById("list");   // the recent panel on Prices uses the same rows
-  ls_.addEventListener("pointerdown",e=>{ if(e.target.closest(".rcrow,[data-rcclr]") && (e.target.closest("[data-sstep],[data-rcx],[data-rcclr]") || (!DESK() && e.pointerType!=="mouse"))) e.preventDefault(); });
+  ls_.addEventListener("pointerdown",e=>{ if(e.target.closest(".rcrow,.rcpill,[data-rcclr],[data-rcview]") && (e.target.closest("[data-sstep],[data-rcx],[data-rcclr],[data-rcview]") || (!DESK() && e.pointerType!=="mouse"))) e.preventDefault(); });
   ls_.addEventListener("click",e=>{ const b=e.target.closest("#list [data-sstep]"); if(!b) return; e.stopPropagation(); e.preventDefault(); searchStep(b.dataset.sid, b.dataset.sstep==="1"); },true);
-  bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-rcclr]")) e.preventDefault(); });
-  bsr.addEventListener("keydown",e=>{ const m=e.target.closest(".mini[data-add]"); if(m && (e.key==="Enter"||e.key===" ") && e.target===m){ e.preventDefault(); m.click(); } }); }
+  bsr.addEventListener("pointerdown",e=>{ if(e.target.closest("[data-rcclr],[data-rcview]")) e.preventDefault(); });
+  bsr.addEventListener("keydown",e=>{ const m=e.target.closest(".mini[data-add],.rcpill[data-add]"); if(m && (e.key==="Enter"||e.key===" ") && e.target===m){ e.preventDefault(); m.click(); } }); }
 function renderAll(){
   renderEnv(); applyDesk();
   renderList(); renderBill(); renderBadge();
@@ -409,7 +417,7 @@ window.addEventListener("resize",()=>dockPos());
 /* While searching from the bottom bar, tapping a result's buttons (or a Bill-tab result row) keeps the focus in the search box, so
    the keyboard and the results stay put and the tap lands where it was aimed; several items can be added in a row. */
 ["pointerdown","mousedown"].forEach(ev=>document.addEventListener(ev,e=>{ if(!root.classList.contains("sbot") || !document.body.classList.contains("qtyp")) return;
-  if(e.target.closest && e.target.closest("#rise .mini, #list [data-add], #list [data-decid], #list .mstep, #dock #q-clear")) e.preventDefault(); },true));
+  if(e.target.closest && e.target.closest("#rise .mini, #rise .rcpill, #list [data-add], #list [data-decid], #list .mstep, #dock #q-clear")) e.preventDefault(); },true));
 if(window.ResizeObserver){ const ro=new ResizeObserver(()=>dockPos()); ["#bill-total","nav.tabs","header.top","#dock"].forEach(s=>{ const e=document.querySelector(s); if(e) ro.observe(e); }); }
 /* Header on phones: greeting + full shop name at the top of a page; one compact line once scrolled (iOS large-title pattern).
    Hysteresis (shrink past 72 px, grow back at the very top) and a long-enough page, so it can't flicker. */
@@ -442,8 +450,8 @@ function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="
   const rm=qf && !a.value.trim(); if(rm!==!!recSnap){ recSnap=rm?recentAll():null; if(rm || !a || a.id!=="q"){ if(S.tab==="bill") renderBillSearch(); else renderList(); } }
   try{ dockPos(); }catch{} }
 /* ✕ on a recent item and "Clear all": the search keeps its focus, the panel redraws */
-document.addEventListener("click",e=>{ const x=e.target.closest&&e.target.closest("[data-rcx],[data-rcclr]"); if(!x) return; e.stopPropagation(); e.preventDefault();
-  if(x.dataset.rcx) recentDel(x.dataset.rcx); else recentClear();
+document.addEventListener("click",e=>{ const x=e.target.closest&&e.target.closest("[data-rcx],[data-rcclr],[data-rcview]"); if(!x) return; e.stopPropagation(); e.preventDefault();
+  if(x.dataset.rcview) ls.set("rb_rcstyle",x.dataset.rcview); else if(x.dataset.rcx) recentDel(x.dataset.rcx); else recentClear();
   if(S.tab==="bill") renderBillSearch(); else renderList(); try{ dockPos(); }catch{} },true);
 document.addEventListener("focusin",e=>{
   syncQe();

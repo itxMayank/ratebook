@@ -321,8 +321,10 @@ function hiToken(tok,orig,toks,ti){
 const RECENT_MAX=8;
 let recSnap=null;
 function recentAll(){ const a=ls.get("rb_recent",[]); return Array.isArray(a)?a.filter(x=>typeof x==="string"):[]; }
-function recentIds(){ return (recSnap||recentAll()).filter(id=>S.byId.has(id)).slice(0,RECENT_MAX); }
-function recentAdd(id){ if(!id) return; const a=recentAll().filter(x=>x!==id); a.unshift(id); ls.set("rb_recent",a.slice(0,RECENT_MAX*3)); }   // a few spare, for items deleted meanwhile
+const RECENT_PILLS=16;   // pills are small, so more fit
+function rcPills(){ return ls.get("rb_rcstyle","list")==="pills"; }
+function recentIds(n){ return (recSnap||recentAll()).filter(id=>S.byId.has(id)).slice(0,n||(rcPills()?RECENT_PILLS:RECENT_MAX)); }
+function recentAdd(id){ if(!id) return; const a=recentAll().filter(x=>x!==id); a.unshift(id); ls.set("rb_recent",a.slice(0,RECENT_PILLS+8)); }   // a few spare, for items deleted meanwhile
 function recentDel(id){ ls.set("rb_recent",recentAll().filter(x=>x!==id)); if(recSnap) recSnap=recSnap.filter(x=>x!==id); }
 function recentClear(){ ls.set("rb_recent",[]); if(recSnap) recSnap=[]; }
 /** Search results with recent items that match moved to the front (only real matches near the top, so a weak fuzzy hit never jumps a good one). */

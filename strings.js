@@ -362,7 +362,7 @@ Object.assign(STR.en,{ phT:"Price history", phNone:"No price changes yet.", phSe
 Object.assign(STR.hi,{ phT:"रेट का इतिहास", phNone:"अभी तक कोई रेट नहीं बदला।", phSet:p=>`${p} रखा गया`, phMore:n=>`${n} और देखें`,
   phSrc_edit:"सामान बदला", phSrc_bulk:"एक साथ बदला", phSrc_bulkAdd:"एक साथ जोड़ा", phSrc_wand:"लिखकर या बोलकर", phSrc_vendor:"वेंडर बिल", phSrc_sheet:"शीट में बदला", phSrc_bills:"पुराने बिलों से अंदाज़ा", phSrc_new:"नया सामान", phSrc_app:"" });
 /* Recent items in the search (15 Oct 2026) */
-Object.assign(STR.en,{ rcTitle:"Recently billed", rcRecent:"Recent", rcAll:"All items", rcClear:"Clear all", rcRm:n=>`Remove ${n} from recent` });
-Object.assign(STR.hi,{ rcTitle:"हाल में बिल किए", rcRecent:"हाल के", rcAll:"सभी सामान", rcClear:"सब हटाएँ", rcRm:n=>`${n} को हाल की सूची से हटाएँ` });
+Object.assign(STR.en,{ rcTitle:"Recently billed", rcRecent:"Recent", rcAll:"All items", rcClear:"Clear all", rcRm:n=>`Remove ${n} from recent`, rcAddP:n=>`Add ${n} to the bill`, rcViewP:"Show as pills", rcViewL:"Show as a list", rcStyleT:"Recent items (this phone)", rcStyleL:"List", rcStyleP:"Pills", rcStyleD:"Shown when you tap the search. Pills fit more items; tap one to add it." });
+Object.assign(STR.hi,{ rcTitle:"हाल में बिल किए", rcRecent:"हाल के", rcAll:"सभी सामान", rcClear:"सब हटाएँ", rcRm:n=>`${n} को हाल की सूची से हटाएँ`, rcAddP:n=>`${n} बिल में जोड़ें`, rcViewP:"पिल की तरह दिखाएँ", rcViewL:"सूची की तरह दिखाएँ", rcStyleT:"हाल के सामान (इस फ़ोन पर)", rcStyleL:"सूची", rcStyleP:"पिल", rcStyleD:"सर्च दबाने पर दिखते हैं। पिल में ज़्यादा सामान आते हैं; दबाकर जोड़ें।" });
 return STR;
 })();

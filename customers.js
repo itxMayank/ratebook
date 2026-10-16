@@ -69,7 +69,10 @@ async function openCustomer(key){ const c=custIndex().find(x=>(x.key||x.mob)===k
 }
 /** This customer's bills: from the phone's copy of Past bills (refreshed first if it's old), newest first. */
 async function cuBills(c){ const mob=c.mob||"", g=String(c.gstin||"").toUpperCase(), nm=String(c.name||"").trim().toLowerCase(), key=c.key||mob;
-  const mine=b=>mob ? custKey(b.mobile)===mob : !custKey(b.mobile) && (g ? String(b.custGstin||"").toUpperCase()===g : !!nm && String(b.customer||"").trim().toLowerCase()===nm);   // no mobile: by GSTIN, else by name
+  /* the same bills the sheet counts for them: their mobile; or, for a bill made without a mobile, their GSTIN (a company GST bill),
+     else (a customer with neither) the exact name */
+  const mine=b=>{ const bm=custKey(b.mobile); if(bm) return !!mob && bm===mob;
+    return g ? String(b.custGstin||"").trim().toUpperCase()===g : !mob && !!nm && String(b.customer||"").trim().toLowerCase()===nm; };
   const draw=C=>{ const el=$("#cu-bills"); if(!el||!C) return;
     const L=C.bills.filter(mine).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     if(!L.length){ el.innerHTML=`<p class="note">${esc(t(mob?"cuNoBills":"cuNoBillsC"))}</p>`; return; }

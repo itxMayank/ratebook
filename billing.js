@@ -371,7 +371,7 @@ async function saveEdit(opts){
       const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
       if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
-  if(navigator.onLine===false){ toast(t("editOffline")); return; }
+  if(navigator.onLine===false && !wqOn()){ toast(t("editOffline")); return; }
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
@@ -380,6 +380,12 @@ async function saveEdit(opts){
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
   if(ed.edits!==null && ed.edits!==undefined) rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
+  if(wqOn()){   // (v59) shown at once, saved in the background; the outbox keeps it until the sheet has it
+    wqAdd({k:"bill", key:"bill:"+(rec.id||(rec.row+"/"+rec.n)), body:{action:"updateBill",bill:rec}});
+    S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
+    if(opts.keep){ ed.edits=ed.edits==null?null:(+ed.edits||0)+1; ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); }
+    else { toast(ed.fresh?t("billDoneN",dispNo(ed.n,S.gst,ed.fy)):t("billUpdated",ed.n)); endEdit(); }
+    return; }
   const btn=$("#bill-done"); btn.disabled=true;
   try{ const j=await apiPost({action:"updateBill",bill:rec});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
@@ -663,12 +669,14 @@ function custdRefresh(force){
   return custdLoading;
 }
 function custIndex(){
-  const local=custCache(), key=(CUSTD&&CUSTD.brev||"")+"|"+S.cfg.mode+"|"+custLV+"|"+Object.keys(local).length+"|"+((CUSTD&&CUSTD.list.length)||0);
+  const local=custCache(), key=(CUSTD&&CUSTD.brev||"")+"|"+S.cfg.mode+"|"+custLV+"|"+Object.keys(local).length+"|"+((CUSTD&&CUSTD.list.length)||0)+"|"+wqV;
   if(custIdx && custIdxKey===key) return custIdx;
   const m=new Map();
   for(const r of (CUSTD && CUSTD.env===S.cfg.mode ? CUSTD.list : [])){ const key=r[0]||r[12]; if(key) m.set(key,{key,mob:r[0]||"",id:r[12]||"",name:r[1],gstin:r[2],count:r[3],total:r[4],last:r[5],due:r[6],addr:r[7]||"",note:r[8]||"",lastNo:r[9]||"",contact:r[10]||"",email:r[11]||""}); }   // key: the mobile, or the id of a customer saved without one (v55)
   for(const k of Object.keys(local)){ const o=local[k], e=m.get(k); if(!e) m.set(k,{key:k,mob:k,name:o.name||"",gstin:o.gstin||"",count:o.count||0,total:o.total||0,last:o.last||"",due:+o.due||0});
     else { if(!e.name && o.name) e.name=o.name; if(!e.gstin && o.gstin) e.gstin=o.gstin; } }
+  for(const e of wqPending("cust")){ const x=e.body.customer||{}, k=x.key||x.mobile||x.cid; if(!k) continue; const o=m.get(k)||{key:k,mob:/^\d{10}$/.test(k)?k:"",id:x.cid||"",count:0,total:0,last:"",due:0,lastNo:""};   // (v59) saved on this phone, still on its way to the sheet
+    m.set(k,{...o, name:x.name, gstin:x.gstin||"", addr:x.address||"", note:x.note||"", contact:x.contact||"", email:x.email||"", saving:true}); }
   custIdx=[...m.values()].map(c=>({...c, ln:String(c.name||"").toLowerCase(), lg:String(c.gstin||"").toUpperCase()})); custIdxKey=key; return custIdx;
 }
 function custMatches(field,raw){

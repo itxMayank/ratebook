@@ -273,6 +273,9 @@ function shareFile(blob,name,text){
 
 function renderQueue(){
   const el=$("#queuebar"); if(!el) return; const n=S.billQ.length;
+  const nf=(typeof wqFails==="function")?wqFails().length:0, nw=(typeof wqGet==="function")?wqGet().length:0;
+  if(!n && nf){ el.hidden=false; el.classList.add("bad"); el.innerHTML=`<span class="dot"></span><span>${esc(t("wqFailN",nf))}</span><button type="button" id="queue-see">${esc(t("wqSee"))}</button>`; $("#queue-see").onclick=openWqFails; return; }   // never left unseen
+  if(!n && nw){ el.hidden=false; el.classList.remove("bad"); el.innerHTML=`<span class="dot"></span><span>${esc(t(wqBusy?"wqSaving":"wqWaitN",nw))}</span>${wqBusy?"":`<button type="button" id="queue-send">${esc(t("queueSend"))}</button>`}`; const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); wqFlush(); }; return; }
   el.hidden=!n; if(!n) return;
   el.classList.toggle("bad",!!S.needCode);
   el.innerHTML=`<span class="dot"></span><span>${esc(S.needCode?t("queueCode"):t("queueN",n))}</span>${S.needCode?"":`<button type="button" id="queue-send">${esc(t("queueSend"))}</button>`}`;
@@ -863,6 +866,111 @@ function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); i
   return t("writeFail") + (c && c!=="http" && c!=="offline" && TECH() ? " ("+String(c).slice(0,80)+")" : ""); }
 let chain=Promise.resolve();
 function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
+/* ---------------- Background saves (17 Oct 2026, script v59) ----------------
+   Save customer, Edit bill, Settings and Record payment no longer make the person wait for the sheet (~3–5 s on 4G). The change
+   shows at once and goes into this outbox (rb_wq, per shop through ls), which is kept on the phone until the sheet confirms it:
+   it survives closing the app, no signal and a busy sheet (tried again by itself). A change the sheet refuses (someone else saved
+   the bill meanwhile, the customer already exists, nothing due…) is never thrown away: it moves to rb_wqfail and the red bar
+   "N changes couldn't be saved" opens a screen to try again or let it go. Resends are safe (v59): a payment carries its own id,
+   a bill edit already saved is recognised by its content, a new customer by the id the phone gave it. Older scripts: the old
+   waiting saves (wqOn() is false). */
+var WQ_KEY="rb_wq", WQ_FAIL="rb_wqfail", wqBusy=false, wqCur=null, wqV=0, wqT=0;   // var: read by renderQueue / custIndex, which may run before this line
+function wqGet(){ const q=ls.get(WQ_KEY,[]); return Array.isArray(q)?q:[]; }
+const wqSet=q=>{ ls.set(WQ_KEY,q); wqV++; };
+function wqFails(){ const q=ls.get(WQ_FAIL,[]); return Array.isArray(q)?q:[]; }
+const wqOn=()=>+S.sv>=59 && !!(S.auth&&S.auth.tok);
+const wqId=()=>"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
+const wqMine=e=>!e.by || !S.auth || String(e.by).trim().toLowerCase()===String(S.auth.by||"").trim().toLowerCase();
+function wqPending(k,env){ env=env||S.cfg.mode; return wqGet().filter(e=>e.k===k && e.env===env); }
+/** The sheet said no for a reason sending again won't change; anything else (no signal, busy, Google hiccup) is tried again. */
+const WQ_REFUSE=new Set(["bill_changed","bill_cancelled","bill_not_found","nothing_due","not_allowed","needs_manager","credit_needs_mobile","cust_exists","cust_not_found","bad_name","bad_mobile","bad_gstin","bad_email","bad_amount","bad_action","no_test","bad_json"]);
+function wqAdd(e){
+  e.oid=wqId(); e.env=e.env||S.cfg.mode; e.at=Date.now(); e.by=(S.auth&&S.auth.by)||""; e.body={...e.body, env:e.env};
+  if(e.body.bill) e.body.bill={...e.body.bill, oid:e.oid};
+  const q=wqGet(), i=e.key ? q.findIndex(x=>x.key===e.key && x.env===e.env && x.oid!==wqCur) : -1;
+  if(i>=0){ const m=WQ_K[e.k].merge; q[i]=m?m(q[i],e):e; } else q.push(e);
+  wqSet(q); wqUi(); setTimeout(wqFlush,0); return e;
+}
+function wqDrop(oid){ wqSet(wqGet().filter(x=>x.oid!==oid)); }
+async function wqFlush(){
+  if(wqBusy || navigator.onLine===false || !S.auth || !S.canWrite) return;
+  if((S.billQ||[]).length){ flushBills(); clearTimeout(wqT); wqT=setTimeout(wqFlush,3000); return; }   // new bills first: a payment or an edit may be for one of them
+  const first=wqGet().find(wqMine); if(!first) return;
+  wqBusy=true; wqUi();
+  try{ for(;;){ const e=wqGet().find(wqMine); if(!e) break; wqCur=e.oid; let j;
+      try{ j=await apiPost({...e.body, oid:e.oid}); }
+      catch(err){ const c=err&&err.code;
+        if(!WQ_REFUSE.has(c)){ const q=wqGet(), x=q.find(y=>y.oid===e.oid); if(x){ x.tries=(x.tries||0)+1; x.err=String(c||"net").slice(0,60); wqSet(q); }
+          clearTimeout(wqT); wqT=setTimeout(wqFlush,Math.min(60000,4000*Math.pow(2,Math.min(4,(x&&x.tries||1)-1)))); break; }
+        wqDrop(e.oid); const f=wqFails(); f.push({...e, err:c, existing:err.existing||null, failedAt:Date.now()}); ls.set(WQ_FAIL,f.slice(-30));
+        try{ (WQ_K[e.k].fail||(()=>{}))(e,err); }catch{}
+        toast(t("wqFailOne",wqLabel(e))); continue; }
+      wqDrop(e.oid); try{ WQ_K[e.k].done(e,j||{}); }catch{} } }
+  finally{ wqBusy=false; wqCur=null; wqUi(); }
+}
+function wqLabel(e){ const b=e.body||{};
+  if(e.k==="cust") return t("wqKCust",(b.customer||{}).name||"");
+  if(e.k==="bill") return t("wqKBill",(b.bill||{}).n,(b.bill||{}).customer||"");
+  if(e.k==="pay") return t("wqKPay",rs(b.amount||0),e.who||"");
+  return t("wqKCfg"); }
+function wqWhy(f){ const c=f.err;
+  if(c==="bill_changed") return t("billChanged"); if(c==="bill_cancelled") return t("wqCancelled"); if(c==="nothing_due") return t("wqNothingDue");
+  if(c==="cust_exists") return t("cuExists",(f.existing&&(f.existing.name||f.existing.key))||""); if(c==="bad_gstin") return t("gstinBad"); if(c==="bad_mobile") return t("mobBad");
+  if(c==="not_allowed"||c==="needs_manager") return t("notAllowed"); return errMsg({code:c}); }
+function wqUi(){ try{ renderQueue(); }catch{} }
+/** The failed changes: what each was, why the sheet said no, and try again / let it go. Nothing leaves this list by itself. */
+function openWqFails(){
+  const draw=()=>{ const F=wqFails();
+    if(!F.length){ closeSheet(); return; }
+    $("#sheet-body").innerHTML=`<div style="display:grid;gap:12px"><p class="note" style="margin:0">${esc(t("wqFailD"))}</p>${F.map((f,i)=>`<div class="wqf">
+      <b>${esc(wqLabel(f))}</b><span class="note">${esc(fmtDT(new Date(f.at).toISOString()))}</span><p class="err" style="margin:0">${esc(wqWhy(f))}</p>
+      ${f.k==="bill"&&(f.body.bill||{}).text?`<pre class="billtext" style="max-height:160px;overflow:auto">${esc(f.body.bill.text)}</pre>`:""}
+      <div class="row-btns" style="justify-content:flex-start">${f.err==="bill_changed"?`<button type="button" class="btn primary" data-wqo="${i}">${esc(t("wqMine"))}</button>`:`<button type="button" class="btn primary" data-wqr="${i}">${esc(t("wqRetry"))}</button>`}
+        ${f.k==="bill"&&(f.body.bill||{}).text?`<button type="button" class="btn ghost" data-wqc="${i}">${esc(t("copy"))}</button>`:""}<button type="button" class="btn ghost" data-wqd="${i}">${esc(t("wqDiscard"))}</button></div></div>`).join("")}</div>`; };
+  openSheet(t("wqFailT"), "", "", {full:true}); draw();
+  $("#sheet-body").onclick=e=>{ const b=e.target.closest("[data-wqr],[data-wqo],[data-wqd],[data-wqc]"); if(!b) return; const F=wqFails(), i=+(b.dataset.wqr??b.dataset.wqo??b.dataset.wqd??b.dataset.wqc), f=F[i]; if(!f) return;
+    if(b.dataset.wqc!==undefined){ try{ navigator.clipboard.writeText(f.body.bill.text); toast(t("copied")); }catch{} return; }
+    if(b.dataset.wqd!==undefined && !confirm(t("wqDiscardQ"))) return;
+    F.splice(i,1); ls.set(WQ_FAIL,F);
+    if(b.dataset.wqd===undefined){ const body={...f.body}; if(b.dataset.wqo!==undefined && body.bill){ body.bill={...body.bill}; delete body.bill.baseEdits; }   // "save mine": over the other change, on purpose
+      const q=wqGet(); q.push({...f, body, err:undefined, tries:0, existing:undefined, failedAt:undefined}); wqSet(q); setTimeout(wqFlush,0); }
+    wqUi(); draw(); };
+}
+/* ---- what each kind does once the sheet has it, or refused it ---- */
+const WQ_K={
+  cust:{ merge:(a,b)=>({...b, body:{...b.body, customer:{...b.body.customer, cid:a.body.customer.cid||b.body.customer.cid}}}),
+    done:()=>{ custdRefresh(true).then(()=>{ custIdx=null; }).catch(()=>{}); },
+    fail:()=>{ custIdx=null; custdRefresh(true).catch(()=>{}); } },
+  bill:{ merge:(a,b)=>{ const bill={...b.body.bill}; if(a.body.bill.baseEdits!==undefined) bill.baseEdits=a.body.bill.baseEdits; else delete bill.baseEdits; return {...b, body:{...b.body, bill}}; },
+    done:(e,j)=>{ const id=(e.body.bill||{}).id, ed=j.bill&&j.bill.edits;
+      if(ed!==undefined && ed!==null){ const q=wqGet(); let ch=false; q.forEach(x=>{ if(x.k==="bill" && x.body.bill && x.body.bill.id===id && x.body.bill.baseEdits!==undefined){ x.body.bill={...x.body.bill, baseEdits:+ed}; ch=true; } }); if(ch) wqSet(q);
+        if(S.editing && S.editing.id===id && !q.some(x=>x.k==="bill" && x.body.bill && x.body.bill.id===id)){ S.editing.edits=+ed; ls.set("rb_editing",S.editing); } }
+      blcSoon(300); },
+    fail:()=>{ blcSoon(300); } },
+  cfg:{ merge:(a,b)=>({...b, body:{...b.body, config:{...a.body.config, ...b.body.config}}}),
+    done:(e,j)=>{ if(j.config){ applyConfig(j.config); saveCache(); renderAll(); } },
+    fail:()=>{ S.rev=null; sync(); } },
+  pay:{ done:()=>{ duesDirty=true; blcSoon(300); if($("#du-body")) loadDues().then(()=>duesShow()).catch(()=>{}); },
+    fail:()=>{ duesDirty=true; blcSoon(300); if($("#du-body")) loadDues().then(()=>duesShow()).catch(()=>{}); } }
+};
+/* ---- pending changes shown on top of the lists the phone keeps, until the sheet has them ---- */
+/** Settings still being saved: laid over whatever config arrives meanwhile. */
+function wqCfgPending(){ const L=wqPending("cfg"); return L.length ? L.reduce((o,e)=>({...o, ...e.body.config}),{}) : null; }
+/** A past bill as it will be once the waiting edit or payment is saved (a copy; the phone's saved list isn't touched). */
+function wqBillView(b){ if(!b) return b; if(b._base) b=b._base; let o=b;
+  for(const e of wqGet()){ if(e.env!==S.cfg.mode) continue;
+    if(e.k==="bill" && e.body.bill && (e.body.bill.id ? e.body.bill.id===b.id : (+e.body.bill.row===+b.row && +e.body.bill.n===+b.n))){ const r=e.body.bill, due=r.pay==="credit"?+r.total||0:r.pay==="part"?Math.max(0,(+r.total||0)-(+r.received||0)):null;
+      o={...o, _base:b, customer:r.customer, mobile:r.mobile, total:r.total, items:r.items, gst:r.gst, custGstin:r.custGstin, igst:r.igst, text:r.text, lines:r.lines, po:r.po, custAddr:r.custAddr, pos:r.pos, editedAt:r.fresh?o.editedAt:new Date(e.at).toISOString(), editedBy:r.fresh?o.editedBy:e.by, saving:true};
+      if(due!==null && !(o.payments||[]).some(p=>!p.at)){ o.due=r2(due); o.paid=r2((+r.total||0)-due); o.pay=r.pay==="credit"?"Credit":"Part paid"; } else if(r.pay==="paid" && !(o.payments||[]).some(p=>!p.at)){ o.due=0; o.paid=+r.total||0; o.pay="Paid"; } }
+    if(e.k==="pay") for(const a of e.alloc||[]){ if(a.id ? a.id===b.id : (+a.row===+b.row && +a.n===+b.n)){ const paid=r2((+o.paid||0)+a.take), due=r2(Math.max(0,(+o.due||0)-a.take));
+      o={...o, _base:b, paid, due, pay:due>0?"Part paid":"Cleared", clearedAt:due>0?"":new Date(e.at).toISOString(), payments:(o.payments||[]).concat([{d:new Date(e.at).toISOString(),a:a.take,by:e.by,note:e.body.note||"",saving:true}]), saving:true}; } } }
+  return o; }
+/** The Credit list with waiting payments taken off (a copy). */
+function wqDuesView(d){ if(d && d._raw) d=d._raw; const P=wqPending("pay"); if(!d || !P.length) return d;
+  const out={...d, customers:(d.customers||[]).map(c=>({...c, bills:(c.bills||[]).map(b=>({...b}))}))};
+  for(const e of P) for(const a of e.alloc||[]) for(const c of out.customers) for(const b of c.bills) if(a.id ? a.id===b.id : (+a.row===+b.row && +a.n===+b.n)) b.due=r2(Math.max(0,(+b.due||0)-a.take));
+  out.customers=out.customers.map(c=>{ const bills=c.bills.filter(b=>(+b.due||0)>0); return {...c, bills, due:r2(bills.reduce((x,b)=>x+(+b.due||0),0)), oldest:bills.length?bills.reduce((m,b)=>!m||String(b.date)<String(m)?b.date:m,""):c.oldest}; }).filter(c=>c.bills.length);
+  out.total=r2(out.customers.reduce((x,c)=>x+c.due,0)); out.bills=out.customers.reduce((x,c)=>x+c.bills.length,0); out._raw=d; return out; }
 let resyncT; function resyncSoon(){ clearTimeout(resyncT); resyncT=setTimeout(sync,1500); }
 /** Send a change. `local` updates the screen right away; if the sheet refuses, we reload the truth. */
 async function write(body,local){
@@ -942,6 +1050,7 @@ function keepTaken(){ const o=ls.get(envKey("rb_took"),{}), fresh=x=>x && Date.n
   if(fresh(o.n) && S.cfg.nextBill<=o.n.n) S.cfg.nextBill=o.n.n+1; if(fresh(o.g) && S.cfg.nextGstBill<=o.g.n) S.cfg.nextGstBill=o.g.n+1; }
 function applyConfig(x){
   x=x||{}; if(x.raw) x={...x, ...x.raw};   // saved copy on this phone keeps both sets of bill numbers in raw
+  { const pc=typeof wqCfgPending==="function" ? wqCfgPending() : null; if(pc) x={...x, ...pc}; }   // (v59) settings still on their way to the sheet stay as typed
   const units=Array.isArray(x.units)&&x.units.length ? x.units.filter(u=>u&&u.code).map(u=>({code:String(u.code),hi:String(u.hi||"")})) : DEFAULT_UNITS;
   S.cfg={ shopName:String(x.shopName||""), units, defaultUnit:String(x.defaultUnit||units[0].code), roundTo: (x.roundTo===undefined||x.roundTo==="")?1:+x.roundTo, billFooter:String(x.billFooter||""), nextBill: Math.max(1, Math.floor(+x.nextBill)||1), nextGstBill: Math.max(1, Math.floor(+x.nextGstBill)||1), showProfit: x.showProfit===true || String(x.showProfit).toLowerCase()==="true",
     shopGstin:String(x.shopGstin||""), shopAddress:String(x.shopAddress||""), fyReset:!(x.fyReset===false||String(x.fyReset)==="false"), gstFy:String(x.gstFy||""), testGstFy:String(x.testGstFy||""), shopState:String(x.shopState||""), defaultGst:(x.defaultGst===undefined||x.defaultGst==="")?18:+x.defaultGst, defaultHsn:String(x.defaultHsn||"3923"), groups:Array.isArray(x.groups)?x.groups.map(String).filter(Boolean):[], bizType:String(x.bizType||""), aiOn:!!x.aiOn };
@@ -995,6 +1104,7 @@ async function checkRev(){
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
     if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
     if(vqGet().length && !vqBusy) vqFlush();
+    if(wqGet().length && !wqBusy) wqFlush();
     const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true);
     nCheck(j); perfSend(); }
   catch{ S.online=false; renderNet(); }
@@ -1016,7 +1126,7 @@ function renderNet(){
 }
 $("#meta-l").addEventListener("click",e=>{ if(e.target.closest("#meta-sync")){ e.target.closest("#meta-sync").textContent="· "+t("loading"); sync(); } });
 $("#net-refresh").onclick=()=>{ $("#net-txt").textContent=t("loading"); sync(); };
-window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); });
+window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); setTimeout(wqFlush,900); });
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkRev(); });
 setInterval(checkRev,25000);

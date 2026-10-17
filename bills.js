@@ -157,7 +157,7 @@ function blcQuery(C){
   if(keep.length!==L0.length) ls.set(blocKey(C.env),keep);                 // the copy has them now (or they're old): drop
   const loc=keep.filter(x=>!pids.has(x.id)).map(x=>({...x, pending:(S.billQ||[]).some(q=>q.id===x.id)}));
   const top=pend.reverse().concat(loc).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  const src=top.length ? top.concat(C.bills) : C.bills;
+  const src0=top.length ? top.concat(C.bills) : C.bills, src=wqGet().length ? src0.map(wqBillView) : src0;   // (v59) edits and payments still being saved show as they will be
   const needle=BL.q.trim().toLowerCase(), digits=needle.replace(/\D/g,""), f=billFilter();
   const days={}, months={}, all={count:0,total:0}, out=[];
   for(const b of src){ const k=b.day||"unknown";
@@ -257,7 +257,7 @@ function linesFromItems(b){
   return out;
 }
 async function showBill(b){
-  if(!b) return;
+  if(!b) return; if(b._base) b=b._base;   // a view with waiting changes laid on: work on the bill itself
   if(b.row && (b.text===undefined || Date.now()-(b._at||0)>30000)){   // read the sheet's latest copy (other phones may have changed it)
     sheetKey("bill:"+(b.id||b.n)), openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
     try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
@@ -266,15 +266,16 @@ async function showBill(b){
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
-  const text=(b.cancelled?t("cancelledText")+"\n":"")+(b.text||oldBillText(b))+payUpdateText(b);
+  const v=wqBillView(b);   // (v59) an edit or a payment still being saved shows as it will be
+  const text=(b.cancelled?t("cancelledText")+"\n":"")+(v.text||oldBillText(v))+payUpdateText(v);
   const body=`<div style="display:grid;gap:12px">
     <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
     ${b.cancelled?`<div class="cancelnote">${esc(t("cancelledInfo",b.cancelledAt?fmtDT(b.cancelledAt):"",b.cancelledBy,b.cancelReason))}</div>`:""}
     ${b.editedAt?`<div class="editnote">${esc(t("editedInfo",fmtDT(b.editedAt),b.editedBy,b.edits))}</div>`:""}
-    ${b.cancelled?"":payBoxHTML(b)}
+    ${v.saving?`<p class="note wq-saving" style="margin:0"><span class="ld"></span> ${esc(t("wqSavingBill"))}</p>`:""}${b.cancelled?"":payBoxHTML(v)}
     <pre class="billtext" id="bd-text">${esc(text)}</pre>
-    ${S.cfg.showProfit?profitBox(billProfit(b)):""}
-    <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(b.mobile||"")}" maxlength="20"></div>
+    ${S.cfg.showProfit?profitBox(billProfit(v)):""}
+    <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(v.mobile||"")}" maxlength="20"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
     <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button><button type="button" class="btn ghost" id="bd-print">${esc(t("printBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
@@ -290,8 +291,8 @@ async function showBill(b){
   $("#bd-mob").addEventListener("input",upd); upd();
   $("#bd-wa").addEventListener("click",e=>{ if(normMobile($("#bd-mob").value)===null){ e.preventDefault(); $("#bd-mob").focus(); } });
   $("#bd-back").onclick=()=>billBack();
-  $("#bd-pdf").onclick=()=>pdfFor(invFromBill(b), $("#bd-pdf"));
-  $("#bd-print").onclick=()=>printInv(invFromBill(b), $("#bd-print"));
+  $("#bd-pdf").onclick=()=>pdfFor(invFromBill(v), $("#bd-pdf"));
+  $("#bd-print").onclick=()=>printInv(invFromBill(v), $("#bd-print"));
   if(b.cancelled){ ["#bd-edit"].forEach(k=>{ const el=$(k); if(el) el.remove(); }); }
   if($("#bd-cancel")){ $("#bd-cancel").onclick=()=>{ $("#bd-cq").hidden=false; $("#bd-cancel").hidden=true; setTimeout(()=>$("#bd-cq").scrollIntoView({block:"center",behavior:"smooth"}),30); };
     $("#bd-cn").onclick=()=>{ $("#bd-cq").hidden=true; $("#bd-cancel").hidden=false; };
@@ -302,17 +303,17 @@ async function showBill(b){
   if($("#bd-restore")) $("#bd-restore").onclick=async()=>{ const btn=$("#bd-restore"); btnBusy(btn,true);
     try{ await apiPost({action:"restoreBill",id:b.id,row:b.row,n:b.n}); toast(t("restoreDone",dispNo(b.n,b.gst,b.fy))); Object.assign(b,{cancelled:false,cancelReason:"",cancelledBy:"",cancelledAt:""}); duesDirty=true; showBill(b); }
     catch(er){ btnBusy(btn,false); toast(errMsg(er)); } };
-  if($("#pb-rec")) $("#pb-rec").onclick=()=>openRecordPay({ name:b.customer, mobile:b.mobile, bill:b, due:+b.due||0, bills:[b] });
+  if($("#pb-rec")) $("#pb-rec").onclick=()=>openRecordPay({ name:v.customer, mobile:v.mobile, bill:v, due:+v.due||0, bills:[v] });
   if($("#pb-undo")) $("#pb-undo").onclick=async()=>{ const btn=$("#pb-undo"); btnBusy(btn,true);
     try{ const r=await apiPost({action:"undoPayment",billId:b.id,row:b.row,n:b.n}); toast(t("undoDone",rs(r.removed))); Object.assign(b,{pay:r.pay,paid:r.paid,due:r.due}); b.payments=(b.payments||[]).slice(); for(let x=b.payments.length-1;x>=0;x--) if(!b.payments[x].at){ b.payments.splice(x,1); break; } duesDirty=true; showBill(b); }
     catch(e){ btnBusy(btn,false); toast(errMsg(e)); } };
   $("#bd-copy").onclick=async()=>{ try{ await navigator.clipboard.writeText(text); toast(t("copied")); }catch{ const r=document.createRange(); r.selectNodeContents($("#bd-text")); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); toast(t("copyFail")); } };
-  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy}));
-    S.cust=b.customer||""; S.mob=b.mobile||""; S.gst=!!b.gst; S.igst=!!b.igst; S.custGstin=b.custGstin||""; caddrSet(b.custAddr||""); S.billNoOvr=null; poSet(null);   // a repeat is a new order: no PO carried over
+  const doRepeat=()=>{ if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); } S.bill=v.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy}));
+    S.cust=v.customer||""; S.mob=v.mobile||""; S.gst=!!v.gst; S.igst=!!v.igst; S.custGstin=v.custGstin||""; caddrSet(v.custAddr||""); S.billNoOvr=null; poSet(null);   // a repeat is a new order: no PO carried over
     ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_gst",S.gst); ls.set("rb_igst",S.igst); ls.set("rb_cgstin",S.custGstin); ls.set("rb_billno",null);
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
     saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };
-  if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(b);
+  if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(v);
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
 }
 

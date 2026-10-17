@@ -378,5 +378,15 @@ Object.assign(STR.hi,{ myPinT:"मेरा PIN बदलें", myPinOld:"अ�
   myPinShortT:"आपका PIN 4 अंकों का है। 6–8 अंकों का करें: Settings → सिर्फ़ आपके लिए → मेरा PIN बदलें।" });
 Object.assign(STR.hi,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> चुनें · <kbd>Enter</kbd> जोड़ें · <kbd>*5</kbd> से 5 · <kbd>Esc</kbd> साफ़",
   lookFollow:"भाषा, थीम, रूप और क्रम हर फ़ोन और लैपटॉप पर आपके साथ रहते हैं जहाँ आप साइन इन करते हैं।", lookPhone:"सर्च बार, सबसे सही नतीजा और हाल के सामान सिर्फ़ फ़ोन ऐप बदलते हैं; लैपटॉप पर सर्च हमेशा ऊपर रहता है।" });
+Object.assign(STR.en,{ wqFailOne:x=>`Couldn't save: ${x}. It's kept: tap the red bar to see it.`, wqKCust:n=>`customer ${n}`, wqKBill:(n,c)=>`Bill ${n}${c?` (${c})`:""}`, wqKPay:(a,w)=>`payment ${a}${w?` from ${w}`:""}`, wqKCfg:"shop settings",
+  wqCancelled:"This bill was cancelled, so it can't be changed.", wqNothingDue:"Nothing is due on these bills any more (perhaps the payment was already recorded on another phone).",
+  wqFailT:"Changes not saved", wqFailD:"The sheet didn't accept these changes. Nothing has been thrown away: try again, or let a change go if it's no longer needed.",
+  wqMine:"Save mine anyway", wqRetry:"Try again", wqDiscard:"Let it go", wqDiscardQ:"Let this change go? It won't be saved.",
+  wqFailN:n=>`${n} change${n===1?"":"s"} couldn't be saved`, wqSee:"See", wqSaving:n=>`Saving ${n} change${n===1?"":"s"}…`, wqWaitN:n=>`${n} change${n===1?"":"s"} waiting to save`, wqSavingBill:"Saving these changes…" });
+Object.assign(STR.hi,{ wqFailOne:x=>`सेव नहीं हुआ: ${x}। यह रखा हुआ है: लाल पट्टी दबाकर देखें।`, wqKCust:n=>`ग्राहक ${n}`, wqKBill:(n,c)=>`बिल ${n}${c?` (${c})`:""}`, wqKPay:(a,w)=>`भुगतान ${a}${w?` (${w})`:""}`, wqKCfg:"दुकान की सेटिंग",
+  wqCancelled:"यह बिल रद्द हो चुका है, इसलिए बदला नहीं जा सकता।", wqNothingDue:"इन बिलों पर अब कुछ बाकी नहीं है (शायद भुगतान दूसरे फ़ोन से दर्ज हो चुका है)।",
+  wqFailT:"सेव नहीं हुए बदलाव", wqFailD:"शीट ने ये बदलाव नहीं लिए। कुछ भी हटाया नहीं गया है: फिर से कोशिश करें, या ज़रूरत न हो तो छोड़ दें।",
+  wqMine:"फिर भी मेरा सेव करें", wqRetry:"फिर से कोशिश करें", wqDiscard:"छोड़ दें", wqDiscardQ:"यह बदलाव छोड़ दें? यह सेव नहीं होगा।",
+  wqFailN:n=>`${n} बदलाव सेव नहीं हुए`, wqSee:"देखें", wqSaving:n=>`${n} बदलाव सेव हो रहे हैं…`, wqWaitN:n=>`${n} बदलाव सेव होने बाकी`, wqSavingBill:"ये बदलाव सेव हो रहे हैं…" });
 return STR;
 })();

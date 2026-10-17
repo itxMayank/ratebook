@@ -253,6 +253,9 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; cgFocus("#cf-dgst"); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
     const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
+    if(wqOn()){   // (v59) shown at once, saved in the background
+      const x={...S.cfg, ...S.cfg.raw, ...data}; delete x.raw; applyConfig(x); wqAdd({k:"cfg", key:"cfg", body:{action:"setConfig",config:data}});
+      saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); return; }
     try{ const j=await write({action:"setConfig",config:data}); applyConfig(j.config||data); saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); }catch(er){ btn.disabled=false; $("#cf-err").textContent=errMsg(er); } };
 }
 

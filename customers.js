@@ -14,7 +14,7 @@ function duesShow(){ if(!$("#du-body")) return; const q=$("#du-q");
   renderDues(); }
 let duesDraw=null;
 async function loadDues(){
-  const env=S.cfg.mode, j=await apiPost({action:"listDues"}); if(env!==S.cfg.mode) return j; j.env=env; duesCache=j; duesDirty=false; idb.set("images",duesKey(),j);
+  const env=S.cfg.mode, j=await apiPost({action:"listDues"}); if(env!==S.cfg.mode) return j; j.env=env; duesCache=wqDuesView(j); duesDirty=false; idb.set("images",duesKey(),j);
   ls.set(envKey("rb_dues_sum"),{total:j.total||0,n:(j.customers||[]).length}); duesSub(); return j;
 }
 
@@ -116,6 +116,15 @@ function cuEdit(c){
     const cust={name,gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim(),contact:$("#ce-contact").value.trim(),email:em};
     if(isNew) cust.mobile=nm; else { cust.key=c.key||c.mob; cust.mobile=c.mob||""; cust.newMobile=nm; }   // mobile too: an older script (v54 or less) edits by it
     if(!nm && (isNew || !c.mob) && S.sv>0 && S.sv<55){ btnBusy(b,false); err.textContent=t("oldScript"); return; }   // a customer without a mobile needs script v55
+    /* (v59) saved in the background, shown at once. A new or changed mobile number still waits for the sheet: a new number moves
+       the customer's bills over to it, and the sheet has to check no one else already has that number. */
+    const mobChange=!isNew && nm!==(c.mob||"");
+    if(wqOn() && !mobChange){
+      if(isNew && nm){ const ex=custIndex().find(x=>x.mob===nm); if(ex){ btnBusy(b,false); err.innerHTML=`${esc(t("cuExists",ex.name||nm))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=()=>openCustomer(ex.key||nm); return; } }
+      if(isNew) cust.cid=custNewIdJS();
+      const key=isNew?(nm||cust.cid):(c.key||c.mob);
+      wqAdd({k:"cust", key:"cust:"+key, body:{action:"saveCustomer",customer:cust}});
+      custIdx=null; toast(isNew?t("cuAdded",name):t("saved")); openCustomer(key); return; }
     try{ const r=await apiPost({action:"saveCustomer",customer:cust});
       const cc=custCache(); if(c.mob) delete cc[c.mob]; if(nm) delete cc[nm]; ls.set(envKey("rb_customers"),cc); custLV++;
       await custdRefresh(true); custIdx=null; if(r.moved){ try{ await blcRefresh(); }catch{} }   /* bills now carry the new number */
@@ -127,7 +136,7 @@ function cuEdit(c){
 async function openDues(){ duesSort="date";   // opens with the oldest dues first
   if(!S.canWrite){ toast(t("billsNeedPin")); openUnlock(); return; }
   sheetKey("dues"), openSheet(t("duesT"), `<div id="du-body">${skelCards(4,true)}</div>`, "", {full:true});
-  const have=await duesLocal(); if(have){ duesCache=have; duesShow(); }   // the saved list at once; the fresh one replaces it below
+  const have=await duesLocal(); if(have){ duesCache=wqDuesView(have); duesShow(); }   // the saved list at once; the fresh one replaces it below
   try{ await loadDues(); } catch(e){ const el=$("#du-body"); if(el && !have) el.innerHTML=`<p class="err">${esc(e&&e.code==="bad_pin"?t("wrongPin"):t("billsFail"))}</p>`; return; }
   duesShow();
 }
@@ -190,6 +199,24 @@ async function backToCustomer(c){
   try{ await loadDues(); }catch{}
   const again=(duesCache&&duesCache.customers||[]).find(x=>x.mobile===c.mobile && (x.mobile || x.name===c.name)); if(again) openDueCustomer(again); else openDues();
 }
+/** Record payment without waiting (v59): the money is laid out over the bills the same way the sheet does it (oldest first, or
+    the one bill), shown at once on the Credit list, the customer and the bills, and sent through the outbox with its own id so it
+    can never be saved twice. */
+/** A new customer's id made on the phone (same shape as the sheet's: c- and 10 letters, never read as a mobile). */
+function custNewIdJS(){ const L="abcdefghijkmnpqrstuvwxyz"; let x="c-"; const r=crypto.getRandomValues(new Uint8Array(10)); for(const v of r) x+=L.charAt(v%L.length); return x; }
+function payInBg(c,amount,note,bills){
+  let left=amount, cleared=0; const alloc=[];
+  for(const b of bills){ if(left<=0) break; const take=r2(Math.min(+b.due||0,left)); if(!(take>0)) continue; left=r2(left-take); if(r2((+b.due||0)-take)<=0) cleared++; alloc.push({id:b.id||"",row:b.row||0,n:b.n,take}); }
+  const used=r2(amount-left); if(!(used>0)) return;
+  const body={action:"recordPayment",amount:used,note,pid:wqId()};
+  if(c.bill){ body.billId=c.bill.id; body.row=c.bill.row; body.n=c.bill.n; } else body.mobile=c.mobile;
+  wqAdd({k:"pay", body, alloc, who:c.name||c.mobile||""});
+  toast(t("payDone",rs(used),cleared)); duesDirty=true;
+  const ck=custKey(c.mobile); if(ck){ const cc=custCache(); if(cc[ck]){ cc[ck].due=r2(Math.max(0,(+cc[ck].due||0)-used)); ls.set(envKey("rb_customers"),cc); } }
+  if(duesCache) duesCache=wqDuesView(duesCache);
+  if(c.bill) showBill(c.bill._base||c.bill);
+  else { const again=(duesCache&&duesCache.customers||[]).find(x=>x.mobile===c.mobile); if(again) openDueCustomer(again); else openDues(); }
+}
 function openRecordPay(c){
   const due=r2(c.bill?(+c.bill.due||0):c.due), bills=c.bill?[c.bill]:c.bills;
   let note="";
@@ -212,6 +239,7 @@ function openRecordPay(c){
   $("#rp-note").onclick=e=>{ const b=e.target.closest("[data-n]"); if(!b) return; note = note===b.dataset.n ? "" : b.dataset.n; $("#rp-note").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.n===note)); };
   $("#rp-cancel").onclick=()=>{ if(c.bill) showBill(c.bill); else backToCustomer(c); };
   $("#rp-save").onclick=async()=>{ const a=toNum($("#rp-amt").value); if(isNaN(a)||a<=0) return;
+    if(wqOn()){ payInBg(c,Math.min(a,due),note,bills); return; }   // (v59) shown at once, saved in the background
     const btn=$("#rp-save"); btnBusy(btn,true);
     try{ const req={action:"recordPayment",amount:Math.min(a,due),note};
       if(c.bill){ req.billId=c.bill.id; req.row=c.bill.row; req.n=c.bill.n; } else req.mobile=c.mobile;

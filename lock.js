@@ -84,7 +84,7 @@ function pendingUI(msg){ LOCK.re=null; const el=lockEl(); let tm=0;
 function appUnlock(){ if(S.canWrite) shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
   document.documentElement.classList.remove("locked"); renderAll(); if(S.pendShare) setTimeout(askSent,400);
   setTimeout(deskFocusQ,80);   // laptop: ready to type the first item
-  if(S.auth && S.auth.tok){ upReady=true; meRecheck(); pinOldHint(); if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); }
+  if(S.auth && S.auth.tok){ upReady=true; meRecheck(); pinOldHint(); if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); if(wqGet().length) setTimeout(wqFlush,1500); }
   { const u=ls.get("rb_updated",0); if(u){ ls.set("rb_updated",0); if(Date.now()-u<6*3600e3) setTimeout(()=>toast(t("appUpdated")),500); } } }   // the app loaded a newer version by itself (updGo): say so once
 /** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
 function signedOut(msgKey){ upReady=false; lsSet0("rb_upq",{}); S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }

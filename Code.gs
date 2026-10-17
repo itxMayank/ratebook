@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 58;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 59;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1313,7 +1313,11 @@ function updateBill_(b, by, who) {
   if (i < 0) throw new Error('bill_not_found');
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
-  if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) throw new Error('bill_changed');   // someone else saved it after this phone opened it
+  if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) {
+    /* (v59) a resend of a change already saved (the phone lost the reply): the bill already holds exactly this text and these lines */
+    if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000))
+      return { dup: true, bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
+    throw new Error('bill_changed'); }   // someone else saved it after this phone opened it   // someone else saved it after this phone opened it
   /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
      making it; anything later or by someone else is an edit and shows as one. Staff can't change the total or the payment of a
      bill that is on credit or has payments recorded (that would quietly wipe a customer's due): a manager or the owner can,
@@ -1432,6 +1436,11 @@ function recordPayment_(body, by) {
   if (n < 1) throw new Error('bill_not_found');
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
+  /* (v59) a payment carries the phone's id (pid): a resend after a lost reply finds it already recorded and changes nothing */
+  const pid = /^[\w-]{6,40}$/.test(String(body.pid || '')) ? String(body.pid) : '';
+  if (pid) { let used0 = 0, hit = false, cl0 = 0;
+    vals.forEach(r => { payList_(r[B.payments]).forEach(p => { if (p.id === pid) { hit = true; used0 = r2_(used0 + num_(p.a)); if (num_(r[B.due]) <= 0) cl0++; } }); });
+    if (hit) return { used: used0, left: r2_(Math.max(0, amount - used0)), cleared: cl0, dup: true }; }
   let targets = [];
   if (body.billId || body.row) {
     let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
@@ -1449,7 +1458,7 @@ function recordPayment_(body, by) {
     const r = vals[i], due = num_(r[B.due]);
     if (!(due > 0)) return;
     const take = r2_(Math.min(due, left)); left = r2_(left - take);
-    const pays = payList_(r[B.payments]); pays.push(note ? { d: new Date().toISOString(), a: take, by: by, note: note } : { d: new Date().toISOString(), a: take, by: by });
+    const pays = payList_(r[B.payments]), pe = { d: new Date().toISOString(), a: take, by: by }; if (note) pe.note = note; if (pid) pe.id = pid; pays.push(pe);
     const paid = r2_(num_(r[B.paid]) + take), nd = r2_(Math.max(0, num_(r[B.total]) - paid));
     const st = nd > 0 ? 'Part paid' : 'Cleared'; if (st === 'Cleared') cleared++;
     s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, nd, JSON.stringify(pays).slice(0, 20000), st === 'Cleared' ? new Date() : '']]);
@@ -1549,8 +1558,14 @@ function saveCustomer_(x, by) {
     let i;
     if (isNew) {
       const dup = k2 ? custRow_(s, k2) : (g ? custRowBy_(s, r => !mob10_(r[0]) && String(r[2] || '').trim().toUpperCase() === g) : -1);
-      if (dup > 0) { const o = s.getRange(dup, 1, 1, CUST_COLS.length).getValues()[0]; const e = new Error('cust_exists'); e.extra = { name: String(o[1] || ''), key: mob10_(o[0]) || custId_(o[0]) }; throw e; }
-      s.appendRow(CPAD_([k2 ? "'" + k2 : custNewId_(), '', '', 0, 0, '', '', 0])); i = s.getLastRow();
+      /* (v59) a phone saving in the background names the new customer itself (cid), so a resend after a lost reply finds it
+         instead of adding a second one */
+      const cid = /^c-[a-z]{10}$/.test(String(x.cid || '')) ? String(x.cid) : '';
+      if (cid) { const was0 = custRowBy_(s, r => String(r[0]) === cid); if (was0 > 0) return { key: k2 || cid, dup: true }; }
+      if (dup > 0) { const o = s.getRange(dup, 1, 1, CUST_COLS.length).getValues()[0];
+        if (cid && k2 && String(o[1] || '').trim() === name && String(o[11] || '').trim() === String(by || '').trim()) return { key: k2, dup: true };   // the same new customer sent again
+        const e = new Error('cust_exists'); e.extra = { name: String(o[1] || ''), key: mob10_(o[0]) || custId_(o[0]) }; throw e; }
+      s.appendRow(CPAD_([k2 ? "'" + k2 : (cid || custNewId_()), '', '', 0, 0, '', '', 0])); i = s.getLastRow();
     } else {
       i = mob10_(k) ? custRow_(s, k) : custRowBy_(s, r => String(r[0]) === k);
       if (i < 0) { if (!mob10_(k)) throw new Error('cust_not_found'); s.appendRow(CPAD_(["'" + k, '', '', 0, 0, '', '', 0])); i = custRow_(s, k); }

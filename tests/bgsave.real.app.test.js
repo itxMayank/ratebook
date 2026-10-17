@@ -20,7 +20,7 @@ g.CFG = { shopName: 'Pushpadant Plastics', mode: 'live', nextBill: 5, nextGstBil
 g.svNow = () => SV;
 R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; stripFyPrefixOnce_=()=>{}; ensureTriggers_=()=>{}; shopPaused_=()=>false; editTrigger_=()=>{}; popReset_=()=>{}; phEnsure_=()=>{};
    readConfig_=()=>JSON.parse(JSON.stringify(CFG)); setConfig_=o=>{ Object.assign(CFG,o); return {config:readConfig_()}; }; bump_=()=>{};
-   listCached_=()=>({ok:true, rev:'1', sv:svNow(), items:[{id:'i1',name:'PP Bag',unit:'pc',buy:10,sell:12}], config:readConfig_()});`);
+   listCached_=()=>({ok:true, rev:getRev_(), sv:svNow(), items:[{id:'i1',name:'PP Bag',unit:'pc',buy:10,sell:12}], config:readConfig_()});`);
 R("saveUser_({name:'Mayank',pin:'749163',role:'owner'})");
 const BC = R('BILL_COLS'), BI = k => BC.indexOf(k);
 sheets.Bills = mkSheet('Bills'); sheets.Bills.rows.push(BC.slice());
@@ -31,7 +31,7 @@ bill(1, 'b1', 300, 300, 20); bill(2, 'b2', 120, 120, 5);
 const row = id => sheets.Bills.rows.find(r => r[BI('billId')] === id);
 const pays = id => JSON.parse(row(id)[BI('payments')] || '[]');
 
-const html = appHtml('S,sync,openSettings,openDues,openBills,openCustomers,wqGet,wqFails,closeSheet,showBill,BLC');
+const html = appHtml('S,sync,checkRev,payCheck,finishBill,openSettings,openDues,openBills,openCustomers,wqGet,wqFails,closeSheet,showBill,BLC');
 (async () => {
   const b = await launch(); const errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
@@ -51,7 +51,7 @@ const html = appHtml('S,sync,openSettings,openDues,openBills,openCustomers,wqGet
   await p.fill('#al-name', 'Mayank'); await p.fill('#al-pin', '749163'); await p.click('#al-go'); await p.waitForTimeout(1800);
   for (const k of ['#al-bn']) if (await p.$(k)) await p.click(k);
   await p.waitForTimeout(400); await p.evaluate(() => T.sync()); await p.waitForTimeout(3000);
-  ok(await p.evaluate(() => T.S.sv) === 59, 'A0 signed in to the real script, v59');
+  ok(await p.evaluate(() => T.S.sv) >= 59, 'A0 signed in to the real script, v59+');
   const wq = () => p.evaluate(() => T.wqGet().length);
 
   /* B. Record payment: moves on at once while the sheet takes 3 s, then the payment is there once */
@@ -133,6 +133,14 @@ const html = appHtml('S,sync,openSettings,openDues,openBills,openCustomers,wqGet
   await p.fill('#rp-amt', '5'); await p.click('#rp-save'); await p.waitForTimeout(1500);
   // 15 pc × ₹12 = ₹180 after the edits above, ₹85 paid in all
   ok(await wq() === 0 && pays('b2').length === 4 && row('b2')[BI('due')] === 95, 'I1 script v58: Record payment waits for the sheet as before');
+  /* J. (v60) a bill made on another phone: the next number arrives with the 25-second check, no price-list reload */
+  SV = 60; await p.evaluate(() => { T.S.sv = 60; });
+  const nb0 = await p.evaluate(() => T.S.cfg.nextBill), rev0 = R('getRev_()');
+  R(`takeBill_(${JSON.stringify({ n: 5, by: 'Dad', bill: { id: 'other1', gst: false, total: 50, items: 'x', text: 'Bill No: 5', lines: [], pay: 'paid' } })})`);
+  const lists = seen.filter(a => a === 'list' || a === 'boot').length;
+  await p.evaluate(() => T.checkRev()); await p.waitForTimeout(600);
+  ok(R('getRev_()') === rev0 && await p.evaluate(() => T.S.cfg.nextBill) === 6 && nb0 === 5, 'J1 another phone used No. 5: this phone shows 6 next, from the 25-second check');
+  ok(seen.filter(a => a === 'list' || a === 'boot').length === lists && await p.evaluate(() => document.querySelector('#bill-no').value) === '6', 'J2 without reloading the price list; the bill page shows 6');
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();
 })();

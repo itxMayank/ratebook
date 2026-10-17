@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 17 October 2026 (saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 17 October 2026 (faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1135,6 +1135,16 @@ The admin dashboard's Speed page (7 days, Mayank's shop) showed every request wa
 - **Older scripts (v58 or less) or not signed in with a token:** `wqOn()` is false and the old waiting saves run as before.
 - Tests: `tests/bgsave.real.app.test.js` (the real app against the real `Code.gs`: moves on at once while the sheet takes 3 s, saved once, lost reply resent once, offline + app closed then online, edit refused then "Save mine anyway", company added once under the phone's id, settings, v58 still waits), `tests/resend.test.js` (server).
 - **Rollout:** merge; update every shop's script to v59 (dashboard → Update script, your shop first). Until then, nothing changes on phones.
+
+## Faster bill saving (17 Oct 2026, `SCRIPT_VERSION` 60 / `NEED_SV` unchanged, `app.js`)
+
+The dashboard showed **Save bill** taking 3.9 s in the script, the slowest everyday action, and the price list reloaded 135 times a week (14% from the saved reply).
+- **Number check reads recent bills only:** `takeBill_` checked the number against three columns of every bill ever made. For the next number or above (the usual case) it now reads the last 600 rows; a number typed below the next one still checks the whole tab. About 2,900 cells instead of ~8,500 for 2,000 bills (`tests/billfast.test.js`).
+- **Dues only when there are any:** `refreshDue_` (reads every bill) runs only for credit / part-paid bills; a paid bill adds nothing due.
+- **No price-list reload on every phone after each bill:** `takeBill_` no longer bumps `rev`. The next bill numbers go in the cache (`nbPut_`, also from `setConfig_`) and come back with the 25-second check as `nb`; the app takes them in with `nbApply` (`keepTaken` still stops a number this phone just used from coming back).
+- **Script version kept on the phone** (`rb_cache.sv`) and sent by the 25-second check (`sv`). Before, after a restart with no price-list change the app didn't know the script version, so features gated on it (background saves, Change my PIN…) fell back until the next price-list reload.
+- Tests: `tests/billfast.test.js` (server), `tests/bgsave.real.app.test.js` J1–J2 (another phone's bill number arrives without a price-list reload).
+- **Rollout:** merge; update every shop's script to v60 (your shop first).
 
 ## Laptop: billing from the keyboard (16 Oct 2026, `app.js` / `prices.js` / `search.js` / `lock.js` / `settings.js` / `strings.js` / `app.css`, no script change)
 

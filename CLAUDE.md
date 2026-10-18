@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 17 October 2026 (faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 18 October 2026 (past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1145,6 +1145,16 @@ The dashboard showed **Save bill** taking 3.9 s in the script, the slowest every
 - **Script version kept on the phone** (`rb_cache.sv`) and sent by the 25-second check (`sv`). Before, after a restart with no price-list change the app didn't know the script version, so features gated on it (background saves, Change my PIN…) fell back until the next price-list reload.
 - Tests: `tests/billfast.test.js` (server), `tests/bgsave.real.app.test.js` J1–J2 (another phone's bill number arrives without a price-list reload).
 - **Rollout:** merge; update every shop's script to v60 (your shop first).
+
+## Past bills open at once (18 Oct 2026, `SCRIPT_VERSION` 61 / `NEED_SV` unchanged, `bills.js`)
+
+Opening a past bill waited 2–3 s for the sheet every time (`getBill`; even a bill opened a minute earlier was read again after 30 s).
+- **Kept on the phone:** each bill's text and lines (IndexedDB `btx:<mode>`, up to 500, newest kept; `btxLoad` / `btxPut` / `btxFor`). Used only while the bill's number, edit count and edit time match the phone's copy of bills (kept current by the 25-second check; every save on the sheet adds 1 to the edit count, so an edit made on another phone is never shown from an old copy). Bills made on this phone go in at once (`blcAdd`).
+- **Read ahead:** whenever Past bills shows a list (open, search, filters, a background refresh), the bills on screen without a copy are read in **one** request, `getBills {rows:[{row,id,n}]}` (up to 40; staff+, read-only, no lock, allowed while paused; rows close together read as one block; a moved bill is left out and read on its own when opened). `btxPrefetch`, debounced 0.7 s, one at a time.
+- **Opening:** a bill with a copy opens with no wait. If the copy is over 30 s old the sheet's copy is read behind it (`billFresh`) and the screen is redrawn in place only if something changed (not while a cancel / repeat box is open; a typed "Send to" number and focus are kept). Without a copy it loads as before ("Opening bill…").
+- Older scripts (v60 or less): nothing is read ahead; bills still open from the phone's copy once read, with the check behind.
+- Test: `tests/billopen.real.app.test.js` (the real app against the real `Code.gs`).
+- **Rollout:** merge; update every shop's script to v61 (your shop first).
 
 ## Laptop: billing from the keyboard (16 Oct 2026, `app.js` / `prices.js` / `search.js` / `lock.js` / `settings.js` / `strings.js` / `app.css`, no script change)
 

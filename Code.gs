@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 59;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 60;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -233,6 +233,9 @@ function bumpB_(both, id) {
 }
 /* Bills version for the 25-second check: from the short-term cache, so it costs no Properties quota. */
 function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('brev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('brev_' + en) || '0'; c.put('brev_' + en, v, 21600); } return v; }
+/** The next bill numbers, for the 25-second check (v60). */
+function nbPut_(c) { try { c = c || readConfig_(); CacheService.getScriptCache().put('NB', JSON.stringify({ nextBill: c.nextBill, nextGstBill: c.nextGstBill, testNextBill: c.testNextBill, testNextGstBill: c.testNextGstBill, gstFy: c.gstFy || '', testGstFy: c.testGstFy || '' }), 21600); } catch (err) {} }
+function nbGet_() { try { const v = CacheService.getScriptCache().get('NB'); return v ? JSON.parse(v) : null; } catch (err) { return null; } }
 function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
@@ -254,7 +257,7 @@ function doGet(e) {
       case 'insights': return out_(insightsKey_(p));   // the admin dashboard (through the Directory), with this shop's health key
       case 'ping': return out_({ ok: true, shop: shopCode_(), sv: SCRIPT_VERSION });
       case 'retire': return out_(retire_(p.key, p.code));
-      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test') });
+      case 'rev': return out_({ ok: true, rev: getRev_(), bl: brevC_('live'), bt: brevC_('test'), vl: vrevC_('live'), vt: vrevC_('test'), nl: nrevC_('live'), nt: nrevC_('test'), nb: nbGet_(), sv: SCRIPT_VERSION });
       case 'list': { const c = listCached_().config || {};   /* the price list needs a signed-in phone (POST list, since v44); only the units, which the Directory copies into a new shop */
         return out_({ ok: false, error: 'need_signin', config: { units: c.units, defaultUnit: c.defaultUnit, defaultHsn: c.defaultHsn }, sv: SCRIPT_VERSION, shop: shopCode_() }); }
       case 'thumbs': case 'image': case 'images': return out_({ ok: false, error: 'need_signin' });   // photos: POST with a sign-in since v44
@@ -1132,7 +1135,7 @@ function setConfig_(cfg) {
     const i = keys.indexOf(k);
     if (i >= 0) s.getRange(i + 2, 2).setValue(val); else { s.appendRow([k, val]); keys.push(k); }
   });
-  return { config: readConfig_() };
+  const c = readConfig_(); nbPut_(c); return { config: c };
 }
 
 function setPin_(p) {
@@ -1170,10 +1173,13 @@ function takeBill_(body) {
     // Two phones (or a hand-typed number) can pick a number that's already used in this series: give the next free one
     let renumbered = null;
     if (used > 0) {
-      const bs = sheet_(tab_('Bills'), BILL_COLS), bn = bs.getLastRow() - 1;
+      const bs = sheet_(tab_('Bills'), BILL_COLS), bn0 = bs.getLastRow() - 1;
+      /* (v60) the usual case, the next number or above: only bills made lately can hold it, so read the last 600 rows instead of
+         the whole tab (3 columns of every bill ever made, on every bill). A number typed below the next one still checks them all. */
+      const from = used >= cur ? Math.max(0, bn0 - 600) : 0, bn = bn0 - from;
       if (bn > 0) {
         const BI = BILL_COLS.reduce((m, k2, i2) => (m[k2] = i2, m), {});
-        const nos = bs.getRange(2, 1, bn, 2).getValues(), gcol = bs.getRange(2, BI.gstBill + 1, bn, 1).getValues(), fcol = bs.getRange(2, BI.fy + 1, bn, 1).getValues();
+        const nos = bs.getRange(2 + from, 1, bn, 2).getValues(), gcol = bs.getRange(2 + from, BI.gstBill + 1, bn, 1).getValues(), fcol = bs.getRange(2 + from, BI.fy + 1, bn, 1).getValues();
         const taken = {};
         for (let i = 0; i < bn; i++) {
           if ((gcol[i][0] === 'Yes') !== isGst) continue;
@@ -1199,10 +1205,12 @@ function takeBill_(body) {
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
-      try { refreshDue_(b.mobile); } catch (err) {}
+      if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) {} }   // (v60) a paid bill adds nothing due: no need to read every bill
     }
-    bump_();
-    return { ok: true, rev: getRev_(), config: readConfig_(), renumbered: renumbered };
+    /* (v60) no price-list bump: phones learned the next bill number by reloading the whole price list after every bill. They now
+       get it from the 25-second check (nb), kept in the cache here. */
+    const cfgOut = readConfig_(); nbPut_(cfgOut);
+    return { ok: true, rev: getRev_(), config: cfgOut, renumbered: renumbered };
   } catch (err) {
     return { ok: false, error: String(err && err.message || err) };
   } finally {

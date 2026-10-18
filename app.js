@@ -1073,7 +1073,7 @@ function applyItems(list){
   sortItems(arr);
   const old=S.byId; S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true; billFollow(old,true);
 }
-function saveCache(){ ls.set("rb_cache",{ pop:S.pop||null, items:S.items.filter(x=>!String(x.id).startsWith("tmp_")).map(x=>{ const y={...x}; delete y.pending; return y; }), cfg:S.cfg, rev:S.rev, at:S.lastSync }); }
+function saveCache(){ ls.set("rb_cache",{ pop:S.pop||null, items:S.items.filter(x=>!String(x.id).startsWith("tmp_")).map(x=>{ const y={...x}; delete y.pending; return y; }), cfg:S.cfg, rev:S.rev, at:S.lastSync, sv:S.sv||0 }); }
 let syncing=null, bootTried=false;
 function sync(){
   if(!apiUrl()) return Promise.resolve();
@@ -1097,9 +1097,15 @@ async function billsChangedBg(){
   if(CUSTD || await custdGet()) custdRefresh(true).then(()=>{ custIdx=null; if($("#cu-list")) cuRender(); }).catch(()=>{});
   if($("#du-body")) loadDues().then(duesShow).catch(()=>{});   // Credit list open: redraw it; otherwise it refreshes when opened
 }
+/** (v60) A bill made on another phone no longer reloads the whole price list here; the 25-second check carries the next bill
+    numbers (nb) instead, and they're taken in when they differ (keepTaken still stops a number this phone just used coming back). */
+function nbApply(nb){ if(!nb || !S.cfg || !S.cfg.raw) return; const r=S.cfg.raw;
+  if(["nextBill","nextGstBill","testNextBill","testNextGstBill"].every(k=>!(+nb[k]>0) || +nb[k]===+r[k]) && (nb.gstFy||"")===(S.cfg.gstFy||"") && (nb.testGstFy||"")===(S.cfg.testGstFy||"")) return;
+  const x={...S.cfg, ...r}; delete x.raw; for(const k of Object.keys(nb)) if(nb[k]!==undefined && nb[k]!==null && nb[k]!=="") x[k]=nb[k];
+  applyConfig(x); saveCache(); if(S.tab==="bill"||DESK()) updateBillTotals(); }
 async function checkRev(){
   if(!apiUrl() || document.hidden) return;
-  try{ const j=await apiGet({action:"rev"}); S.online=true; if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); }
+  try{ const j=await apiGet({action:"rev"}); S.online=true; if(+j.sv>0 && +j.sv!==S.sv){ S.sv=+j.sv; saveCache(); } if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); nbApply(j.nb); }
     const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv));
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
     if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
@@ -1253,7 +1259,7 @@ async function boot(){
   const cache=ls.get("rb_cache",null);
   if(!ls.get("rb_sort_v2",false)){ ls.set("rb_sort","pop"); ls.set("rb_sort_v2",true); }
   S.sortBy=ls.get("rb_sort","pop");
-  if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; }
+  if(cache){ applyConfig(cache.cfg); S.pop=cache.pop||null; applyItems(cache.items); S.rev=cache.rev; S.lastSync=cache.at||0; if(cache.sv) S.sv=+cache.sv; }   // (v60) the script version too, so features that need a newer script work right after a restart
   applyLang(); renderBadge();
   appLock();   // every fresh open: unlock (or sign in) first
   shopFromLink().then(m=>{ if(m && LOCK.on){ const er=$("#al-err"); if(er) er.textContent=m; } }); shopRefresh();

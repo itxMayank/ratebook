@@ -104,7 +104,8 @@ function blcAdd(rec){ try{ const env=rec.env||S.cfg.mode, now=new Date(), due=+r
   L.unshift({ n:rec.n, date:at.toISOString(), day:dayKey(at), customer:rec.customer, mobile:rec.mobile, total:rec.total, items:rec.items, by:byName(), gst:rec.gst,
     taxable:rec.gst?rec.taxable:null, tax:rec.gst?rec.tax:null, custGstin:rec.custGstin, igst:rec.igst, id:rec.id, row:0, editedAt:"", editedBy:"", edits:0, cost:rec.cost, profit:rec.profit,
     paidBy:rec.paidBy||"", pay:rec.pay==="credit"?"Credit":rec.pay==="part"?"Part paid":"Paid", paid:r2((+rec.total||0)-due), due, payments:[], clearedAt:"", fy:curFY(), cancelled:false, pos:rec.pos||"", po:rec.po||null, custAddr:rec.custAddr||"", text:rec.text, lines:rec.lines, _t:Date.now() });
-  ls.set(blocKey(env), L.slice(0,60)); blcBump(); }catch{} }
+  ls.set(blocKey(env), L.slice(0,60)); blcBump();
+  if(env===S.cfg.mode && rec.id && typeof rec.text==="string") btxLoad().then(()=>btxPut({id:rec.id, n:rec.n, text:rec.text, lines:rec.lines, edits:0, editedAt:""})); }catch{} }
 /* Keep Past bills fresh in the background: after this phone sends bills or changes one, and when the 25-second check says
  * bills changed on another phone. Several quick bills are batched into one small "what changed" request. Only for phones
  * that already keep a copy (Past bills opened once); the copy downloads on first open otherwise. */
@@ -116,7 +117,7 @@ async function blcBg(){
   const C=await blcGet(); if(!C) return;
   if(blcWant && C.brev===blcWant){ blcWant=""; return; }          // already up to date
   blcWant="";
-  try{ const C2=await blcRefresh(); if(C2) blcShow(C2); }catch{}
+  try{ const C2=await blcRefresh(); if(C2){ blcShow(C2); btxSoon(); } }catch{}
 }
 /** Redraw Past bills (if open) from the copy, keeping the scroll position and flashing bills that just appeared. */
 function blcShow(C){
@@ -181,7 +182,7 @@ function renderLocalBills(C,keep){
   if(!keep) BL.col={};
   const ys=C.years||[], sel=$("#bl-year");
   if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
-  renderBills();
+  renderBills(); btxSoon(billsCache.slice(0,40));   // read ahead the bills on screen
   if(C.more && BL.q.trim()){ const l=$("#bl-list"); if(l) l.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost" id="bl-older">${esc(t("blOlder"))}</button>`); }
 }
 async function loadBills(more){
@@ -256,13 +257,57 @@ function linesFromItems(b){
     const it=findDup(m[1].trim()); out.push({id:it?it.id:"", name:m[1].trim(), unit:m[3], rate:+m[4], qty:+m[2], hsn:it?itemHsn(it):undefined, gst:it?itemGst(it):undefined}); }
   return out;
 }
-async function showBill(b){
+/* Past bills open at once (17 Oct 2026). Each bill's text and lines are kept on the phone (IndexedDB "btx:<mode>", up to
+ * 500) and used while the bill's number, edit count and edit time still match the phone's copy of bills (which the 25-second
+ * check keeps current; every save on the sheet adds 1 to the edit count). The newest bills and the ones on screen are read
+ * ahead in one request (getBills, script v61). A bill shown from the phone is still re-read from the sheet in the background
+ * and redrawn in place if anything changed. */
+let BTX=null, BTX_ENV="", btxT=0, btxPT=0, btxBusy=false;
+const BTX_MAX=500, btxTried=new Set();
+async function btxLoad(){ const env=S.cfg.mode; if(BTX && BTX_ENV===env) return BTX; const v=await idb.get("images","btx:"+env); if(env!==S.cfg.mode) return {}; BTX=(v&&typeof v==="object")?v:{}; BTX_ENV=env; return BTX; }
+function btxSave(){ const env=BTX_ENV, M=BTX; clearTimeout(btxT); btxT=setTimeout(()=>{ const ks=Object.keys(M); if(ks.length>BTX_MAX) ks.sort((a,b)=>(M[b].at||0)-(M[a].at||0)).slice(BTX_MAX).forEach(k=>delete M[k]); idb.set("images","btx:"+env,M); },400); }
+function btxPut(g){ if(!g || !g.id || typeof g.text!=="string" || !BTX || BTX_ENV!==S.cfg.mode) return; BTX[g.id]={n:+g.n||0, text:g.text, lines:Array.isArray(g.lines)?g.lines:[], e:+g.edits||0, ea:String(g.editedAt||""), at:Date.now()}; btxSave(); }
+function btxFor(b){ const c=BTX && BTX_ENV===S.cfg.mode && b && b.id ? BTX[b.id] : null;
+  return c && c.n===(+b.n||0) && c.e===(+b.edits||0) && (b.editedAt===undefined || c.ea===String(b.editedAt||"")) ? c : null; }
+/** Read ahead the text of these bills (default: the newest in the phone's copy), at most 40 per request. */
+function btxSoon(list){ clearTimeout(btxPT); btxPT=setTimeout(()=>btxPrefetch(list),700); }
+async function btxPrefetch(list){
+  if(btxBusy || !(+S.sv>=61) || !S.canWrite || document.hidden || navigator.onLine===false || !apiUrl()) return;
+  await btxLoad(); const env=S.cfg.mode;
+  const src=(list && list.length ? list : (BLC && BLC.env===env ? BLC.bills : [])).slice(0,80);
+  const want=src.filter(b=>b && b.id && b.row && !b.pending && !btxFor(b) && !btxTried.has(b.id)).slice(0,40);
+  if(!want.length) return;
+  btxBusy=true; want.forEach(b=>btxTried.add(b.id));
+  try{ const j=await apiPost0({action:"getBills",rows:want.map(b=>({row:b.row,id:b.id,n:b.n}))});
+    if(env===S.cfg.mode) (j.bills||[]).forEach(g=>{ btxPut(g); btxTried.delete(g.id); }); }
+  catch{} finally{ btxBusy=false; }
+}
+const BILL_KEEP=["edits","fy","igst","custGstin","custAddr","pos","po","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"];
+/** Lay the sheet's latest copy (getBill) over a bill: payments, cancel and edits made on other phones; the saved GST details and edit count. */
+function billMerge(b,g){ b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
+  BILL_KEEP.forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });
+  if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile;
+  btxPut({...g, id:b.id, n:b.n}); }
+const billSig=b=>JSON.stringify([b.text,b.lines,b.gst,b.customer,b.mobile,...BILL_KEEP.map(k=>b[k])]);
+/** A bill shown from the phone's copy: read the sheet's copy quietly and redraw in place if it changed (unless a confirm box is
+ *  open; the typed "Send to" number is kept). */
+async function billFresh(b){
+  const key="bill:"+(b.id||b.n), before=billSig(b);
+  let g; try{ g=(await apiPost0({action:"getBill",row:b.row,id:b.id,n:b.n})).bill; }catch{ return; }
+  if(!g) return; billMerge(b,g);
+  if(billSig(b)===before || sheetCurKey!==key || !$("#bd-text")) return;
+  if([...document.querySelectorAll("#bd-cq,#bd-rq")].some(x=>!x.hidden)) return;
+  const m=$("#bd-mob"), mv=m?m.value:null, mf=m && document.activeElement===m;
+  showBill(b,true);
+  const m2=$("#bd-mob"); if(m2 && mv!==null && mv!==m2.value){ m2.value=mv; m2.dispatchEvent(new Event("input")); } if(m2 && mf) m2.focus();
+}
+async function showBill(b,quiet){
   if(!b) return; if(b._base) b=b._base;   // a view with waiting changes laid on: work on the bill itself
-  if(b.row && (b.text===undefined || Date.now()-(b._at||0)>30000)){   // read the sheet's latest copy (other phones may have changed it)
+  if(b.row && b.text===undefined){ await btxLoad(); const c=btxFor(b); if(c){ b.text=c.text; b.lines=c.lines; b._at=c.at; } }   // kept on the phone: open at once
+  const stale=!!b.row && b.text!==undefined && Date.now()-(b._at||0)>30000;
+  if(b.row && b.text===undefined){   // not on the phone yet: read it from the sheet
     sheetKey("bill:"+(b.id||b.n)), openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
-    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); const g=j.bill||{}; b.text=g.text||""; b.lines=g.lines||[]; b._at=Date.now();
-      ["edits","fy","igst","custGstin","custAddr","pos","po","total","items","cancelled","cancelReason","cancelledBy","cancelledAt","editedAt","editedBy","pay","paid","due","payments","clearedAt"].forEach(k=>{ if(g[k]!==undefined) b[k]=g[k]; });   // always the sheet's latest: payments, cancel and edits made on other phones   // the saved values, so an edit keeps GST details and knows the edit count
-      if(g.gst!==undefined) b.gst=g.gst; if(!b.customer && g.customer) b.customer=g.customer; if(!b.mobile && g.mobile) b.mobile=g.mobile; }
+    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); billMerge(b,j.bill||{}); }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
@@ -315,6 +360,7 @@ async function showBill(b){
     saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };
   if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(v);
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
+  if(stale && !quiet) billFresh(b);   // shown from the phone: check the sheet's copy behind it
 }
 
 function billBack(){ (billBackFn||openBills)(); }

@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 60;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 61;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -606,6 +606,7 @@ function doPost(e) {
       case 'listCustomers': { const have = String(body.brev || ''); res = have && have === brev_() ? { same: true, brev: brev_() } : rcRead_('cust:' + ENV_, brev_, () => listCustomers_('')); break; }
       case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
       case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
+      case 'getBills': res = getBills_(body.rows); break;
       case 'updateBill': res = updateBill_(body.bill || {}, by, who); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = rcRead_('dues:' + ENV_, brev_, listDues_); break;
       case 'recordPayment': res = recordPayment_(body, by); bumpB_(false, body.billId); break;
@@ -643,7 +644,7 @@ function doPost(e) {
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
-    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'setMyPin', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
+    if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'getBills', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'setMyPin', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
     return out_({ ok: false, error: String(err && err.message || err) });
@@ -659,7 +660,7 @@ function doPost(e) {
  * Wrong PINs lock only that phone (dev id) after MAX_FAILS in 15 min; GLOBAL_MAX_FAILS per hour locks everyone.
  */
 const ROLE_RANK = { staff: 1, manager: 2, owner: 3 };
-const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff', images: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
+const NEEDS = { verify: 'staff', list: 'staff', thumbs: 'staff', image: 'staff', images: 'staff', listBills: 'staff', findCustomer: 'staff', listCustomers: 'staff', saveCustomer: 'manager', getBill: 'staff', getBills: 'staff', updateBill: 'staff', listDues: 'staff', recordPayment: 'staff',
   upsert: 'manager', setGroups: 'manager', delete: 'manager', setImage: 'manager', setImages: 'manager', undoPayment: 'manager', cancelBill: 'manager', restoreBill: 'manager', report: 'manager',
   setConfig: 'owner', setPin: 'owner', vToLive: 'owner', notices: 'manager', noticeRead: 'manager', backupInfo: 'owner', backupNow: 'owner', restoreBackup: 'owner', setBackupEmail: 'owner',
   vList: 'manager', vSync: 'manager', vGet: 'manager', vSaveVendor: 'manager', vLink: 'manager', vSave: 'manager', vRemove: 'manager', vUseAdvance: 'manager', vUpload: 'manager', vPreviews: 'manager', vFile: 'manager', vRead: 'manager', vCheck: 'manager', vAck: 'manager', vEx: 'manager', vApply: 'manager', itemBuys: 'manager', priceHist: 'staff', aiSetKey: 'owner',
@@ -738,8 +739,8 @@ function listSessions_(who) { const all = sessAll_();
 
 /* ---------- shops made from the admin Directory: pause, new-phone approval, health, one-time setup ---------- */
 /** Paused shops (subscription) stay readable: these still work, everything that makes or changes bills/prices doesn't. */
-const NOLOCK_ = { verify: 1, listSessions: 1, listUsers: 1, getAccess: 1, backupInfo: 1, report: 1, getBill: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1 };
-const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, setMyPin: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
+const NOLOCK_ = { verify: 1, listSessions: 1, listUsers: 1, getAccess: 1, backupInfo: 1, report: 1, getBill: 1, getBills: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1 };
+const PAUSE_OK_ = { perfIn: 1, insights: 1, verify: 1, setMyPrefs: 1, setMyPin: 1, signOut: 1, boot: 1, list: 1, thumbs: 1, image: 1, images: 1, listBills: 1, getBill: 1, getBills: 1, findCustomer: 1, listCustomers: 1, listDues: 1,
   recordPayment: 1, report: 1, listUsers: 1, listSessions: 1, endSession: 1, approveSession: 1, backupInfo: 1, backupNow: 1,
   vList: 1, vSync: 1, vGet: 1, vPreviews: 1, vFile: 1, vEx: 1, itemBuys: 1, priceHist: 1, getAccess: 1, notices: 1, noticeRead: 1 };
 /** Asks the Directory at most once an hour. If the Directory can't be reached, the shop keeps working (never blocks business). */
@@ -1303,6 +1304,32 @@ function getBill_(row, id, billNo) {
     total: num_(r[B.total]), items: String(r[B.items] || ''), cancelled: r[B.status] === 'Cancelled', cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''),
     cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''),
     editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), editedBy: String(r[B.editedBy] || ''), ...payOut_(r, B) } };
+}
+
+/** (v61) Several bills' text and lines in one request, so a phone can keep them ready and open a past bill at once.
+ *  rows: [{row, id, n}] (up to 40). Reads one block of rows (the newest bills sit together at the bottom) and checks each
+ *  bill id, like getBill_. Bills that moved or are missing are left out; the phone then reads them one at a time. */
+function getBills_(rows) {
+  const want = (Array.isArray(rows) ? rows : []).slice(0, 40).map(x => ({ row: Math.floor(Number(x && x.row)), id: str_(x && x.id, 40), n: x && x.n }))
+    .filter(x => x.row >= 2);
+  if (!want.length) return { bills: [] };
+  const s = sheet_(tab_('Bills'), BILL_COLS), last = s.getLastRow();
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
+  const ok = want.filter(x => x.row <= last), out = [];
+  if (!ok.length) return { bills: [] };
+  ok.sort((a, b) => a.row - b.row);
+  /* one read for rows close together, separate reads for far-off ones (never more than 400 rows at once) */
+  const groups = []; let g = null;
+  ok.forEach(x => { if (g && x.row - g.from < 400) { g.to = x.row; g.items.push(x); } else { g = { from: x.row, to: x.row, items: [x] }; groups.push(g); } });
+  groups.forEach(gr => {
+    const vals = s.getRange(gr.from, 1, gr.to - gr.from + 1, BILL_COLS.length).getValues();
+    gr.items.forEach(x => { const r = vals[x.row - gr.from];
+      if ((x.id && String(r[B.billId]) !== String(x.id)) || (!x.id && num_(r[B.billNo]) !== num_(x.n))) return;
+      let lines = []; try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+      out.push({ id: String(r[B.billId] || ''), row: x.row, n: num_(r[B.billNo]), text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]),
+        editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || '') }); });
+  });
+  return { bills: out };
 }
 
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }

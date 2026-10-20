@@ -2,7 +2,7 @@
    with the item, Quantity (cursor here) and Rate (the item's price), and the amount worked out; Enter in Quantity → Rate,
    Enter in Rate adds it; the dialog closes and the cursor goes back to the search. Both boxes take numbers only and select
    their value when they get the cursor (also the bill's own qty / rate boxes, on phones too). Alt+B goes to Done (Enter = Done),
-   Alt+G turns GST on and goes to the GSTIN box. Any page error fails. Run: node tests/qadd.app.test.js */
+   Alt+T (tax; Alt+G opens Gemini in Edge / Chrome) turns GST on and goes to the GSTIN box. Any page error fails. Run: node tests/qadd.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
 const html = appHtml('S,appUnlock');
 const items = [{ id: 'i1', name: 'PP Bag 12x18', nameHi: 'पीपी बैग', unit: 'kg', buy: 150, sell: 180 }, { id: 'i2', name: 'Paper Cup 150ml', unit: 'pc', buy: 0.5, sell: 0.8 },
@@ -61,20 +61,20 @@ let sent = [];
   await L.click('#br-0'); await L.waitForTimeout(100);
   ok(await sel(L), 'C1 laptop: clicking the bill line\'s rate selects its value');
 
-  /* D. Alt+G, Alt+B */
+  /* D. Alt+T, Alt+B */
   await L.keyboard.press('Escape'); await L.evaluate(() => document.activeElement.blur()); await L.waitForTimeout(100);
-  await L.keyboard.press('Alt+g'); await L.waitForTimeout(300);
-  ok(await L.evaluate(() => T.S.gst) && await act(L) === 'cust-gstin', 'D1 Alt+G turns GST on and puts the cursor in the GSTIN box');
+  await L.keyboard.press('Alt+t'); await L.waitForTimeout(300);
+  ok(await L.evaluate(() => T.S.gst) && await act(L) === 'cust-gstin', 'D1 Alt+T turns GST on and puts the cursor in the GSTIN box');
   await L.keyboard.press('Enter'); await L.waitForTimeout(150);
   ok(await act(L) === 'q', 'D2 Enter in the GSTIN box → back to the search');
-  await L.keyboard.press('Alt+g'); await L.waitForTimeout(300);
-  ok(!(await L.evaluate(() => T.S.gst)) && await act(L) === 'q', 'D3 Alt+G again turns it off, the cursor in the search');
+  await L.keyboard.press('Alt+t'); await L.waitForTimeout(300);
+  ok(!(await L.evaluate(() => T.S.gst)) && await act(L) === 'q', 'D3 Alt+T again turns it off, the cursor in the search');
   await L.keyboard.press('Alt+b'); await L.waitForTimeout(150);
   ok(await act(L) === 'bill-done' && await L.$eval('#bill-done', e => getComputedStyle(e).outlineStyle !== 'none'), 'D4 Alt+B goes to Done, with a clear focus ring');
   const n0 = sent.filter(x => x.action === 'takeBill').length;
   await L.keyboard.press('Enter'); await L.waitForTimeout(1200);
   ok(sent.filter(x => x.action === 'takeBill').length === n0 + 1 && !(await L.evaluate(() => T.S.bill.length)) && await act(L) === 'q', 'D5 Enter on Done: the bill is saved and the cursor is back in the search');
-  ok(/Alt G/.test(await L.textContent('#side-foot')) && /Alt B/.test(await L.textContent('#side-foot')), 'D6 the menu lists Alt G and Alt B');
+  ok(/Alt T/.test(await L.textContent('#side-foot')) && /Alt B/.test(await L.textContent('#side-foot')), 'D6 the menu lists Alt T and Alt B');
 
   /* E. look: dark, Hindi, larger text */
   const H = await dev(1280, 800, false, () => { localStorage.setItem('rb_lang', '"hi"'); localStorage.setItem('rb_appear', '"dark"'); localStorage.setItem('rb_fz', '1.38'); });

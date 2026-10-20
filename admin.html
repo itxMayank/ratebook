@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-HPFVHz6qBz+df22ZEjJDjncoHv8Zdep9na9Yx0XXZu8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-pQUWPpI9LwviDnuLcgmbrzx9+cOTdraAqZG6IbdyssE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -155,6 +155,7 @@ label{display:grid;gap:6px;font-size:12.5px;font-weight:600;color:var(--muted)}
 .p-body{padding:18px;display:grid;gap:14px}
 .p-body p{margin:0}
 .p-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pin-big{font:800 40px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;font-variant-numeric:tabular-nums;margin:4px 0 12px;user-select:all}
 .panel.danger .p-head{border-bottom-color:var(--bad)}
 .panel.danger .p-head h2{color:var(--bad)}
 .chk{display:flex;gap:10px;align-items:flex-start;color:var(--fg);font-weight:500;font-size:13.5px}
@@ -396,6 +397,7 @@ input,select,textarea{border-radius:var(--r-sm)}
   <symbol id="i-code" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m8 8-5 4 5 4M16 8l5 4-5 4M14 4l-4 16"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></symbol>
   <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14.5 9.5a4.5 4.5 0 1 1-1.3-3.2 4.5 4.5 0 0 1 1.3 3.2zM13.2 12.8 20 19.6M17 16.6l2-2M18.8 18.4l1.6-1.6"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v12l-4 4H4zM16 20v-4h4M8 9h8M8 13h5"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M9 6v12M15 6v12"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></symbol>
@@ -510,6 +512,10 @@ input,select,textarea{border-radius:var(--r-sm)}
     </div>
   </section>
 
+  <section class="panel" id="s-pin" hidden>
+    <div class="p-head"><h2>Starting PIN · <span id="pn-name"></span></h2><button type="button" class="ghost icon" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="p-body" id="pn-body"></div>
+  </section>
   <section class="panel" id="s-notes" hidden>
     <div class="p-head"><h2>Notes · <span id="nt-name"></span></h2><button type="button" class="ghost icon" data-close aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
     <div class="p-body">
@@ -709,6 +715,8 @@ function render() {
   overview(); }
 let shopFlt = store.get("flt", "all");
 const stat = (label, big, small, cls) => `<div class="stat"><span>${esc(label)}</span><b>${big}</b>${small ? `<small class="${cls || ""}">${small}</small>` : ""}</div>`;
+/* The starting PIN of a Directory-made shop: offered until the shop says it no longer signs in (owner has their own PIN, or it was changed). */
+const pinShow = (x, h) => x.code !== "main" && !!x.scriptId && !(h && h.ok && (h.startPin === "off" || h.startPin === "changed"));
 function card(x, h) {
   const ok = h && h.ok, st = x.status || "", old = latest && x.version && Number(x.version) < Number(latest.sv), main = x.code === "main";
   const badge = !h ? `<span class="badge"><span class="ld" style="width:10px;height:10px;border-width:1.5px"></span>checking</span>`
@@ -747,6 +755,7 @@ function card(x, h) {
         ${x.editUrl ? `<a class="btn ghost" href="${esc(x.editUrl)}" target="_blank" rel="noopener" style="justify-content:flex-start;border:0">${ic("code")}Open script</a>` : ""}
         ${x.scriptId && x.deploymentId && !old ? `<button data-act="update" data-code="${esc(x.code)}">${ic("up")}Update script</button>` : ""}
         <button data-act="notes" data-code="${esc(x.code)}">${ic("note")}Notes & plan</button>
+        ${pinShow(x, h) ? `<button data-act="pin" data-code="${esc(x.code)}">${ic("key")}Starting PIN</button>` : ""}
         ${!main && (st === "live" || st === "paused") ? `<hr><button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(x.code)}" class="${st === "paused" ? "" : "danger"}">${ic(st === "paused" ? "play" : "pause")}${st === "paused" ? "Resume shop" : "Pause shop"}</button>` : ""}
         ${!main ? `<button data-act="delete" data-code="${esc(x.code)}" class="danger">${ic("trash")}Delete shop</button>` : ""}
       </div></details>
@@ -937,7 +946,7 @@ function renderShop() {
     ${ok ? `<div class="meta" style="margin-bottom:12px"><span>Approval for new phones <b>${h.approveNew ? "on" : "off"}</b></span><span>Saved replies <b>${h.noCache ? "off" : "on"}</b></span><span>Jobs <b>${esc(h.triggers ? h.triggers.join(", ") || "none" : "?")}</b></span><span>Sheet <b>${h.cells ? (h.cells / 1e6).toFixed(2) + "M cells" : "?"}</b></span>${F.h && F.h.rows ? `<span>Bills <b>${(F.h.rows.Bills || 0).toLocaleString("en-IN")}</b> rows</span><span>Test bills <b>${(F.h.rows["Test Bills"] || 0).toLocaleString("en-IN")}</b></span>` : ""}</div>` : ""}
     ${x.plan || x.paidUntil || x.notes ? `<div class="meta" style="margin-bottom:12px">${x.plan ? `<span>Plan <b>${esc(x.plan)}</b></span>` : ""}${x.paidUntil ? `<span>Paid until <b>${esc(new Date(x.paidUntil).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }))}</b></span>` : ""}</div>${x.notes ? `<p class="small muted" style="margin:0 0 12px">${esc(x.notes)}</p>` : ""}` : ""}
     <div class="p-acts">${x.sheetUrl ? `<a class="btn" href="${esc(x.sheetUrl)}" target="_blank" rel="noopener">${ic("sheet")}Open sheet</a>` : ""}${x.folderUrl ? `<a class="btn" href="${esc(x.folderUrl)}" target="_blank" rel="noopener">${ic("folder")}Open folder</a>` : ""}${x.editUrl ? `<a class="btn" href="${esc(x.editUrl)}" target="_blank" rel="noopener">${ic("code")}Open script</a>` : ""}
-      ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(code)}"${old ? ` class="primary"` : ""}>${ic("up")}Update script</button>` : ""}<button data-act="notes" data-code="${esc(code)}">${ic("note")}Notes & plan</button>
+      ${x.scriptId && x.deploymentId ? `<button data-act="update" data-code="${esc(code)}"${old ? ` class="primary"` : ""}>${ic("up")}Update script</button>` : ""}<button data-act="notes" data-code="${esc(code)}">${ic("note")}Notes & plan</button>${pinShow(x, h) ? `<button data-act="pin" data-code="${esc(code)}">${ic("key")}Starting PIN</button>` : ""}
       ${!main ? `<button data-act="share" data-code="${esc(code)}">${ic("link")}Copy link</button><button data-act="wa" data-code="${esc(code)}">${ic("wa")}WhatsApp</button>` : ""}
       ${!main && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(code)}" class="${st === "paused" ? "" : "danger"}">${ic(st === "paused" ? "play" : "pause")}${st === "paused" ? "Resume shop" : "Pause shop"}</button>` : ""}
       ${!main ? `<button data-act="delete" data-code="${esc(code)}" class="danger">${ic("trash")}Delete shop</button>` : ""}</div></section>`;
@@ -1299,6 +1308,19 @@ $("#to-own").onclick = e => { e.preventDefault(); store.set("ownMode", true); sh
 /** Texts of the owner sign-in card (it switches language too). */
 function ownTexts() { document.querySelectorAll("[data-bz]").forEach(el => { el.textContent = bt(el.dataset.bz); }); document.querySelectorAll("[data-bzph]").forEach(el => { el.placeholder = bt(el.dataset.bzph); });
   document.querySelectorAll("#ownsi-lang button").forEach(b => b.classList.toggle("on", b.dataset.l === bzLang)); $("#own-codewrap").hidden = !!ASK_SHOP; }
+async function openPin(x, btn) { busy(btn, "Reading…");
+  try { const j = await call({ action: "startPin", code: x.code }), h = health[x.code], link = appBase + "?shop=" + encodeURIComponent(x.code);
+    const msg = `${x.name} – Rate Book\nOpen this link on your phone, then "Add to Home screen":\n${link}\nSign in as Owner with your name and this starting PIN: ${j.pin}\nThen add yourself in Settings → People as Owner with your own 6–8 digit PIN (the starting PIN then stops working).`;
+    const ph = String(x.phone || "").replace(/\D/g, "").slice(-10), st = h && h.ok ? h.startPin : null;
+    $("#pn-name").textContent = x.name || x.code;
+    $("#pn-body").innerHTML = `<div class="pin-big" aria-label="Starting PIN ${esc(j.pin.split("").join(" "))}">${esc(j.pin)}</div>
+      <p class="small ${st === "on" ? "" : "muted"}" style="margin:0 0 14px">${st === "on" ? "Still works. Sign in at the shop link as <b>Owner</b>, with the owner's name and this PIN." : "Works until the owner adds themselves in Settings → People with their own PIN (or the shop PIN is changed). This shop's script is older, so the dashboard can't tell yet whether it still works."}</p>
+      <div class="p-acts"><button type="button" class="primary" id="pn-copy">${ic("check")}Copy PIN</button><a class="btn" id="pn-wa" target="_blank" rel="noopener" href="https://wa.me/${ph.length === 10 ? "91" + ph : ""}?text=${encodeURIComponent(msg)}">${ic("wa")}Send to owner</a><button type="button" class="ghost" data-close>Close</button></div>
+      <p class="small muted" style="margin:14px 0 0">Read from the shop's own script; never stored in the Directory. Shown only to you, and only until the owner has their own PIN.</p>`;
+    $("#pn-copy").onclick = async ev => { const b = ev.currentTarget; try { await navigator.clipboard.writeText(j.pin); busy(b); idle(b, "Copied"); } catch { prompt("Starting PIN:", j.pin); } };
+    panel("s-pin"); }
+  catch (er) { const m = String(er && er.message || er); toast(m === "no_shop_gs" ? "This shop has no Shop.gs with a starting PIN." : m === "bad_action" ? "Update the Directory script (paste admin/Directory.gs, New version) to read the starting PIN here." : errText(er), true); }
+  finally { idle(btn); } }
 let notesShop = null;
 function openNotes(x) { notesShop = x; const f = $("#f-notes"); $("#nt-name").textContent = x.name || x.code; $("#nt-err").textContent = "";
   f.notes.value = x.notes || ""; f.plan.value = x.plan || ""; f.paidUntil.value = x.paidUntil ? new Date(x.paidUntil).toISOString().slice(0, 10) : ""; panel("s-notes"); }
@@ -1313,6 +1335,7 @@ async function act(a, code, btn) {
     if (a === "errors") { openErrors(code); return; }
     if (a === "delete") { openDelete(x); return; }
     if (a === "notes") { openNotes(x); return; }
+    if (a === "pin") { openPin(x, btn); return; }
     if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code);   // just the link
       try { await navigator.clipboard.writeText(link); busy(btn); idle(btn, "Copied"); toast("Link copied: " + link); } catch { prompt("Copy this link:", link); } return; }
     if (a === "wa") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
@@ -1342,7 +1365,7 @@ $("#f-new").onsubmit = async e => { e.preventDefault(); const f = e.target, btn 
     f.hidden = true; const d = $("#new-done"); d.hidden = false;
     d.innerHTML = `<div class="note" style="margin-bottom:14px"><b>${esc(j.shop.name)}</b> is made. Shop code <code>${esc(j.shop.code)}</code></div><div class="steps">
       <div><span><a href="${esc(j.shop.editUrl)}" target="_blank" rel="noopener"><b>Open the shop's script</b></a> → choose <b>setupShop</b> → <b>Run</b> → allow. (Google asks once for every new script.)</span></div>
-      <div><span>Starting shop PIN: <code>${esc(j.initPin)}</code> (owner, with their name). Ask the owner to change it in Settings after the first sign-in, and add their staff in Settings → People.</span></div>
+      <div><span>Starting shop PIN: <code>${esc(j.initPin)}</code> (owner, with their name). Ask the owner to change it in Settings after the first sign-in, and add their staff in Settings → People. <span class="muted small">Lost it? The shop's <b>More → Starting PIN</b> shows it again until the owner has their own PIN.</span></span></div>
       <div><span>Shop link for every phone: <code>${esc(link)}</code><br><span class="muted small">setupShop needs to run before phones can open the link. New phones need the owner's approval (Settings → Signed-in phones). The shop starts in test mode for practice.</span></span></div></div>`;
     f.reset(); toast("Shop created"); await load(); }
   catch (er) { $("#new-err").textContent = errText(er); } finally { idle(btn); } };

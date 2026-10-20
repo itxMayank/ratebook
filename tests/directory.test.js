@@ -102,6 +102,9 @@ ok(!bad.ok && /rolled_back/.test(bad.error) && projects.mainscr.deps.maindep ===
 shopAlive = true;
 const up2 = post({ tok, action: 'update', code: cr.shop.code }); const sg = projects[cr.shop.scriptId].files.find(f => f.name === 'Shop').source;
 ok(up2.ok && JSON.parse(sg.match(/SHOP_BOOT = (\{[\s\S]*?\});/)[1]).sheetId === sid, 'update a made shop: its Shop.gs (sheet, folders, keys) is kept');
+const sp = post({ tok, action: 'startPin', code: cr.shop.code });
+ok(sp.ok && sp.pin === cr.initPin && !JSON.stringify(shopGet(cr.shop.code)).includes(cr.initPin), 'starting PIN: read from the shop\'s own Shop.gs, never kept in the Directory');
+ok(post({ tok, action: 'startPin', code: 'main' }).error === 'no_shop' && post({ action: 'startPin', code: cr.shop.code }).error === 'bad_session', '…not for the original shop, and only with the admin sign-in');
 // error log: new errors copied into the Directory's Errors tab once, listed per shop, counted on the card
 const now = Date.now(); hx = { errors: [['takeBill', 'Exception: timed out', now - 5000]], cerrors: [{ t: now - 3000, m: 'x is undefined', w: 'index.html:10:5', by: 'Raju', d: 'k3x9ab', ua: 'Android', tab: 'bill', st: 'TypeError at stepQty' }] };
 const rc = post({ tok, action: 'recheck' }); post({ tok, action: 'recheck' });

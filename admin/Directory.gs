@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 7;
+const DIR_VERSION = 8;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -103,7 +103,7 @@ function shopStatus_(code, key) { const x = shopGet_(code); if (!x || !key || !x
   return { ok: true, status: x.status === 'paused' ? 'paused' : 'live' }; }
 
 /* ---------- admin ---------- */
-const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1, shopHealth: 1, shopInsights: 1, bizViewOff: 1 };
+const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1, health: 1, create: 1, setStatus: 1, update: 1, register: 1, setNotes: 1, latest: 1, recheck: 1, shopHealth: 1, shopInsights: 1, bizViewOff: 1, startPin: 1 };
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
@@ -128,6 +128,7 @@ function doPost(e) {
       case 'shopHealth': { const h = healthAll_(String(b.code || ''), true); return out_({ ok: true, health: h[String(b.code || '')] || { ok: false, error: 'no_shop' } }); }   // a shop's own page: + 14 days of speed
       case 'recheck': { const h = healthAll_(b.code); return out_({ ok: true, health: h, shops: shops_().map(pub_) }); }
       case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
+      case 'startPin': return out_(Object.assign({ ok: true }, startPin_(String(b.code || ''))));
       case 'deleteShop': return out_(Object.assign({ ok: true }, deleteShop_(b.code, b)));
     }
   } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
@@ -331,6 +332,11 @@ function updateShop_(code, ref) {
   if (!alive && prevVer) { api_('put', '/' + x.scriptId + '/deployments/' + x.deploymentId, cfg(prevVer)); throw new Error('rolled_back|The shop did not answer after the update, so its previous version was put back. If the script needs new permissions, open it and run setupShop (or any function) once, then update again.'); }
   x.version = sv; x.lastUpdate = Date.now(); shopSave_(x);
   return { shop: pub_(x), sv: sv, versionNumber: ver.versionNumber }; }
+/** A Directory-made shop's starting PIN, read from its own Shop.gs (never stored in the Directory). The dashboard offers it only
+    while the shop says it still signs in (health startPin, v62); once the owner has their own PIN it no longer opens anything. */
+function startPin_(code) { const x = shopGet_(code); if (!x || code === 'main') throw new Error('no_shop'); if (!x.scriptId) throw new Error('no_ids');
+  const f = (api_('get', '/' + x.scriptId + '/content').files || []).find(y => y.name === 'Shop'), boot = bootOf_(f && f.source);
+  if (!boot || !boot.initPin) throw new Error('no_shop_gs'); return { pin: String(boot.initPin), createdAt: x.createdAt || '' }; }
 function bootOf_(src) { const m = String(src || '').match(/const SHOP_BOOT = (\{[\s\S]*?\});/); if (!m) return null; try { return JSON.parse(m[1]); } catch (e) { return null; } }
 
 /* ---------- forgot the admin PIN (Run in the editor) ----------

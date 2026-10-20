@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 20 October 2026 (admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 20 October 2026 (new shop's starting PIN kept on the dashboard; admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1192,6 +1192,16 @@ Asked for by Mayank; laptop only (`DESK()`), phones unchanged (test E1–E2).
 - **"Recent" while typing on a laptop** only takes recent items that really match (`strongMatch`: every word typed starts a word of the name, Hindi name or other names); typing "k" had shown "300 Ml Glass" there. Phones keep their rule.
 - **Settings labels:** Text size and Printer say "this device only"; Search bar, Best match and Recent items say "phones only" (and on a laptop a note says they change only the phone app; the card summary leaves out the search bar there); Theme has no "this phone" any more, and a line says language, theme, appearance and sort follow the person.
 - Test: `tests/deskkeys.app.test.js`.
+
+## A new shop's starting PIN stays on the dashboard (20 Oct 2026, `SCRIPT_VERSION` 62 / `NEED_SV` unchanged, `DIR_VERSION` 8, `admin.html`)
+
+Reported: the starting PIN is shown only once, in the Create shop panel, and was lost before the owner signed in.
+- **Dashboard:** a Directory-made shop's card (More) and its Setup tab have **Starting PIN** → a panel with the PIN, whether it still works, **Copy PIN** and **Send to owner** (WhatsApp: shop link, PIN, and the step to add themselves as Owner with their own PIN). The Create shop panel says where to find it again.
+- **Where it comes from:** Directory action `startPin {code}` (admin sign-in; not for `main`) reads `initPin` from that shop's own `Shop.gs` through the Apps Script API. It's never written to the Directory sheet.
+- **Shown only while useful:** the shop's `health` (v62) returns `startPin`: `on` (still signs in), `changed` (shop PIN changed) or `off` (an owner has their own PIN, so the shop PIN is switched off); `startPinWorks_` checks without converting a plain PIN. The button hides on `changed` / `off`. A shop on an older script still shows it, with "can't tell yet whether it still works".
+- **By hand (no dashboard):** the shop's script → `Shop.gs` → `initPin`.
+- Tests: `tests/startpin.test.js` (server), `tests/directory.test.js` (read from Shop.gs, not stored, admin only), `tests/adminshop.test.js` D3, E4–E7.
+- **Rollout:** merge; paste `admin/Directory.gs` into the Directory project (New version); update shops to v62 (your shop first).
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

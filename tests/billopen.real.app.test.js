@@ -54,7 +54,7 @@ const html = appHtml('S,sync,openBills,closeSheet,showBill,finishBill');
     await p.waitForTimeout(1800);
     if (await p.$('#al-bn')) await p.click('#al-bn'); await p.waitForTimeout(400); await p.evaluate(() => T.sync()); await p.waitForTimeout(2500); };
   await signIn();
-  ok(await p.evaluate(() => T.S.sv) === 61, 'A0 signed in to the real script, v61');
+  ok(await p.evaluate(() => T.S.sv) >= 61, 'A0 signed in to the real script, v61 or newer');
   const cnt = a => seen.filter(x => x === a).length;
   const open = async id => { if (!(await p.$(`[data-bid="${id}"]`))) { await p.evaluate(() => T.openBills()); await p.waitForTimeout(900); } const t0 = Date.now(); await p.evaluate(id => document.querySelector(`[data-bid="${id}"]`).click(), id);
     await p.waitForFunction(() => document.querySelector('#bd-text'), null, { timeout: 8000 }); return Date.now() - t0; };

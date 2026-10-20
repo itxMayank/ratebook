@@ -25,6 +25,7 @@ const state = {}; const shops = [{ code: 'main', name: 'Gupta Plastics', status:
   ok((await p.textContent('#signin-err')) === 'Wrong PIN.', 'wrong admin PIN refused');
   await p.fill('#pin', '12345678'); await p.click('#b-signin'); await p.waitForTimeout(900);
   const card = await p.textContent('#shops');
+  await p.waitForFunction(() => document.querySelector('#k-today').textContent === '₹18,450', null, { timeout: 4000 }).catch(() => {});   // the figure counts up once (20 Oct 2026)
   ok(/Gupta Plastics/.test(card) && /23/.test(card) && /₹18,450/.test(card) && /1 waiting/.test(card) && /v34 → v35/.test(card) && /2 test/.test(card) && await p.textContent('#k-today') === '₹18,450', 'live card: bills today (real, plus test ones shown apart), amount, waiting phones, update available; overview totals');
   await p.click('#shops .errlink'); await p.waitForTimeout(500);
   const el = await p.textContent('#e-list');

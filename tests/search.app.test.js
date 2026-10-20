@@ -4,7 +4,7 @@
    buy + sell + unit, two changes spoken in one line); and English → Hindi letters for shop words, acronyms and sizes.
    Any page error fails. Run: node tests/search.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
-const html = appHtml('S,runSearch,localParse,toHindi,looksLikeCommand,findDup,highlight,appUnlock');
+const html = appHtml('S,runSearch,localParse,toHindi,looksLikeCommand,findDup,highlight,appUnlock,buildIndex');
 const items = [
   { id: 'i1', name: 'Chawal Basmati', nameHi: 'चावल बासमती', unit: 'kg', buy: 80, sell: 100 },
   { id: 'i2', name: 'Sugar', nameHi: '', unit: 'kg', buy: 40, sell: 46 },
@@ -51,6 +51,15 @@ const items = [
   ok(hi[5] === 'थर्मोकोल प्लेट' && hi[6] === 'रबर बैंड' && hi[7] === 'कंटेनर', 'C3 other packaging words');
 
   ok(hi[8] === 'एचडीपीई लाइनर', 'C4 Liner → लाइनर (was लिनेर, by sound rules)');
+
+  // D. (20 Oct 2026) several items match: the most-sold ones come first, like the Prices list
+  await p.evaluate(() => { T.S.items.push({ id: 'b1', name: 'Bag Loop Handle', unit: 'kg', sell: 200 }, { id: 'b2', name: 'Garbage Bag 27x30', unit: 'pc', sell: 5 }, { id: 'b3', name: 'Bagasse Plate', unit: 'pc', sell: 3 }, { id: 'b4', name: 'Carry Bag', unit: 'kg', sell: 190 });
+    Object.assign(T.S.pop, { b2: 30, b4: 12, b3: 50, b1: 0 }); T.buildIndex(); });
+  ok((await s('bag')).r.split(',').slice(0, 5).join() === 'b3,b2,b4,b1,i3', 'D1 "bag": every match whose word starts with it, most sold first (Bagasse 50, Garbage Bag 30, Carry Bag 12); not sold yet: the name starting with it first');
+  ok((await s('carry bag')).r.split(',')[0] === 'b4', 'D2 the exact name typed still comes first');
+  ok((await s('ag')).r.split(',').indexOf('b3') > -1, 'D3 a word found inside still matches');
+  await p.evaluate(() => { T.S.sortBy = 'az'; }); ok((await s('bag')).r.split(',')[0] === 'b1', 'D4 with A–Z chosen, the closest name first as before');
+  await p.evaluate(() => { T.S.sortBy = 'pop'; });
 
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); done();

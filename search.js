@@ -69,11 +69,15 @@ function runSearch(q){
   if(!qt.length) return { res:S.index.map(e=>({e,score:0})), suggest:[], exact:true };
   const joined=qt.join(" "); const out=[];
   for(const e of S.index){
-    let total=0, fuzzy=false;
-    for(const tq of qt){ const s=tokScore(tq,e.toks); if(s<=0){ total=-1; break; } if(s<60) fuzzy=true; total+=s; }
-    if(total>0){ if(e.key.startsWith(joined)) total+=30; out.push({e,score:total,fuzzy}); }
+    let total=0, fuzzy=false, low=120;
+    for(const tq of qt){ const s=tokScore(tq,e.toks); if(s<=0){ total=-1; break; } if(s<60) fuzzy=true; if(s<low) low=s; total+=s; }
+    if(total>0){ if(e.key.startsWith(joined)) total+=30;
+      /* (20 Oct 2026) how well it matches, in a few steps: the exact name typed; every word typed starts a word of the item;
+         a word found inside; spelt differently. Within a step the most-sold item comes first, like the Prices list. */
+      const tier=e.key===joined?4:low>=80?3:low>=60?2:1;
+      out.push({e,score:total,fuzzy,tier}); }
   }
-  out.sort((a,b)=>b.score-a.score || (S.sortBy==="az"?0:popN(b.e.it.id)-popN(a.e.it.id)) || a.e.it.name.localeCompare(b.e.it.name));
+  out.sort((a,b)=>b.tier-a.tier || (S.sortBy==="az"?0:popN(b.e.it.id)-popN(a.e.it.id)) || b.score-a.score || a.e.it.name.localeCompare(b.e.it.name));
   let suggest=[];
   const exact = out.some(o=>!o.fuzzy);
   if(exact) return { res:out.filter(o=>!o.fuzzy), suggest, exact };

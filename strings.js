@@ -287,8 +287,8 @@ Object.assign(STR.hi,{bkT:"बैकअप",bkNow:"अभी बैकअप ल
   bkListT:"बैकअप",bkListD:"शीट की पूरी कॉपी: सामान, फ़ोटो, बिल, उधार और सेटिंग। रखी जाती हैं: पिछले 2 दिन की सब, एक महीने तक रोज़ की एक, एक साल तक हर महीने की एक।",
   bkManual:"हाथ से",bkBefore:"वापस लाने से पहले",bkOpen:"खोलें",bkRestore:"वापस लाएँ",bkRestoreQ:d=>`${d} वाला डेटा वापस लाएँ? हर फ़ोन उसी पर चला जाएगा। अभी का डेटा पहले बैकअप में सेव होगा, इसलिए इसे वापस बदला जा सकता है।`,
   bkRestoreYes:"हाँ, वापस लाएँ",bkRestored:"वापस आ गया। हर फ़ोन यही डेटा लोड करेगा।",bkRestoredNote:(d,f)=>`${d} को ${f} से वापस लाया गया`,bkCurrent:"अभी की शीट खोलें"});
-Object.assign(STR.en,{kSearch:"Search",kAdd:"Add the chosen item",kPick:"Choose a result",kQty:"After a name: add 5",kStep:"Change the last item (search empty)",kCust:"Customer name",kDone:"Done (Shift: Share)",kClose:"Close / clear",billEmptyDesk:"Just type to search. ↑ ↓ choose, Enter adds it and you can type the next item."});
-Object.assign(STR.hi,{kSearch:"खोजें",kAdd:"चुना सामान जोड़ें",kPick:"नतीजा चुनें",kQty:"नाम के बाद: 5 जोड़ें",kStep:"आख़िरी सामान बदलें (सर्च ख़ाली)",kCust:"ग्राहक का नाम",kDone:"हो गया (Shift: शेयर)",kClose:"बंद करें / साफ़ करें",billEmptyDesk:"बस टाइप करें। ↑ ↓ से चुनें, Enter से जुड़ेगा, फिर अगला सामान टाइप करें।"});
+Object.assign(STR.en,{kSearch:"Search",kAdd:"Quantity & rate, then add",kPick:"Choose a result",kQty:"After a name: add 5",kStep:"Change the last item (search empty)",kCust:"Customer name",kDone:"Done (Shift: Share)",kClose:"Close / clear",billEmptyDesk:"Just type to search. ↑ ↓ choose, Enter opens quantity and rate, Enter again adds it."});
+Object.assign(STR.hi,{kSearch:"खोजें",kAdd:"मात्रा और रेट, फिर जोड़ें",kPick:"नतीजा चुनें",kQty:"नाम के बाद: 5 जोड़ें",kStep:"आख़िरी सामान बदलें (सर्च ख़ाली)",kCust:"ग्राहक का नाम",kDone:"हो गया (Shift: शेयर)",kClose:"बंद करें / साफ़ करें",billEmptyDesk:"बस टाइप करें। ↑ ↓ से चुनें, Enter से मात्रा और रेट, फिर Enter से जुड़ेगा।"});
 Object.assign(STR.en,{testBadge:"TEST",envT:"Test mode",envD:"Bills made now are practice bills. They, their credit and their bill numbers are kept separate. Turn this off when you start billing real customers: real bills start fresh at No. 1. Items, photos and customer names stay the same in both.",
   envOffQ:"Start real billing? From now on, bills on every phone are real. Test bills are kept separately and won't show.",envOnQ:"Switch back to test mode? New bills on every phone will be practice bills until you turn it off again.",
   envYesLive:"Yes, start real billing",envYesTest:"Yes, switch to test",envLiveNow:"Real billing is on. Bills start from No. 1.",envTestNow:"Test mode is on.",
@@ -369,14 +369,14 @@ Object.assign(STR.en,{ myPinT:"Change my PIN", myPinOld:"Current PIN", myPinSave
   myPinShortT:"Your PIN has 4 digits. Change it to 6–8: Settings → Just for you → Change my PIN." });
 Object.assign(STR.en,{ busyNow:"The sheet is busy right now. Nothing was saved: try again in a moment." });
 Object.assign(STR.hi,{ busyNow:"शीट अभी व्यस्त है। कुछ सेव नहीं हुआ: थोड़ी देर में फिर कोशिश करें।" });
-Object.assign(STR.en,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>Enter</kbd> add · <kbd>*5</kbd> adds 5 · <kbd>Esc</kbd> clear",
+Object.assign(STR.en,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> choose · <kbd>Enter</kbd> qty & rate · <kbd>*5</kbd> adds 5 · <kbd>Esc</kbd> clear",
   lookFollow:"Language, theme, appearance and sort follow you to every phone and laptop you sign in on.", lookPhone:"Search bar, best match and recent items change only the phone app; on a laptop the search is always at the top." });
 Object.assign(STR.hi,{ rcTitle:"हाल में बिल किए", rcRecent:"हाल के", rcAll:"सभी सामान", rcClear:"सब हटाएँ", rcRm:n=>`${n} को हाल की सूची से हटाएँ`, rcAddP:n=>`${n} बिल में जोड़ें`, rcViewP:"पिल की तरह दिखाएँ", rcViewL:"सूची की तरह दिखाएँ", rcStyleT:"हाल के सामान (सिर्फ़ फ़ोन पर)", rcStyleL:"सूची", rcStyleP:"पिल", rcStyleD:"सर्च दबाने पर दिखते हैं। पिल में ज़्यादा सामान आते हैं; दबाकर जोड़ें।" });
 Object.assign(STR.hi,{ myPinT:"मेरा PIN बदलें", myPinOld:"अभी का PIN", myPinSave:"नया PIN सेव करें", myPinD6:"6 से 8 अंक। आपके दूसरे फ़ोन और लैपटॉप एक बार नया PIN माँगेंगे।", myPinD4:"4 से 8 अंक। आपके दूसरे फ़ोन और लैपटॉप एक बार नया PIN माँगेंगे।",
   myPinOldReq:"अभी का PIN डालें।", myPinTaken:"PIN नहीं बदला: यह PIN आपकी दुकान में किसी और का है (या दुकान का PIN था)। कोई दूसरा PIN चुनें।", pinUnsaved:"आपने नया PIN लिखा है पर वह अभी सेव नहीं हुआ। पहले PIN का अपना बटन (नया PIN सेव करें / PIN बदलें) दबाएँ, या PIN के बॉक्स खाली करें।", myPinBadOld:"अभी का PIN गलत है।", myPinSame:"यही आपका PIN है।", myPinNoOwn:"आप दुकान के PIN से साइन इन हैं। मालिक से अपना PIN बनवाएँ।",
   myPinDone:"PIN बदल गया। दूसरे डिवाइस नया PIN माँगेंगे।", myPinShort:"आपका PIN सिर्फ़ 4 अंकों का है। मालिक और मैनेजर का PIN 6 से 8 अंकों का होना चाहिए: यहाँ बदलें।",
   myPinShortT:"आपका PIN 4 अंकों का है। 6–8 अंकों का करें: Settings → सिर्फ़ आपके लिए → मेरा PIN बदलें।" });
-Object.assign(STR.hi,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> चुनें · <kbd>Enter</kbd> जोड़ें · <kbd>*5</kbd> से 5 · <kbd>Esc</kbd> साफ़",
+Object.assign(STR.hi,{ kbHint:"<kbd>↑</kbd><kbd>↓</kbd> चुनें · <kbd>Enter</kbd> मात्रा और रेट · <kbd>*5</kbd> से 5 · <kbd>Esc</kbd> साफ़",
   lookFollow:"भाषा, थीम, रूप और क्रम हर फ़ोन और लैपटॉप पर आपके साथ रहते हैं जहाँ आप साइन इन करते हैं।", lookPhone:"सर्च बार, सबसे सही नतीजा और हाल के सामान सिर्फ़ फ़ोन ऐप बदलते हैं; लैपटॉप पर सर्च हमेशा ऊपर रहता है।" });
 Object.assign(STR.en,{ wqFailOne:x=>`Couldn't save: ${x}. It's kept: tap the red bar to see it.`, wqKCust:n=>`customer ${n}`, wqKBill:(n,c)=>`Bill ${n}${c?` (${c})`:""}`, wqKPay:(a,w)=>`payment ${a}${w?` from ${w}`:""}`, wqKCfg:"shop settings",
   wqCancelled:"This bill was cancelled, so it can't be changed.", wqNothingDue:"Nothing is due on these bills any more (perhaps the payment was already recorded on another phone).",
@@ -388,5 +388,9 @@ Object.assign(STR.hi,{ wqFailOne:x=>`सेव नहीं हुआ: ${x}। �
   wqFailT:"सेव नहीं हुए बदलाव", wqFailD:"शीट ने ये बदलाव नहीं लिए। कुछ भी हटाया नहीं गया है: फिर से कोशिश करें, या ज़रूरत न हो तो छोड़ दें।",
   wqMine:"फिर भी मेरा सेव करें", wqRetry:"फिर से कोशिश करें", wqDiscard:"छोड़ दें", wqDiscardQ:"यह बदलाव छोड़ दें? यह सेव नहीं होगा।",
   wqFailN:n=>`${n} बदलाव सेव नहीं हुए`, wqSee:"देखें", wqSaving:n=>`${n} बदलाव सेव हो रहे हैं…`, wqWaitN:n=>`${n} बदलाव सेव होने बाकी`, wqSavingBill:"ये बदलाव सेव हो रहे हैं…" });
+Object.assign(STR.en,{ qaQty:"Quantity", qaRate:"Rate", qaAmt:"Amount", qaAdd:"Add to bill", qaAddMore:"Add more", qaQtyMore:"Add quantity", qaInBill:q=>"Already on the bill: "+q,
+  qaQtyBad:"Type a quantity more than 0.", qaRateBad:"Type a rate.", qaKeys:"<kbd>Enter</kbd> next · <kbd>Esc</kbd> cancel", kGst:"GST bill on / off", kDoneF:"Go to Done (then Enter)" });
+Object.assign(STR.hi,{ qaQty:"मात्रा", qaRate:"रेट", qaAmt:"रकम", qaAdd:"बिल में जोड़ें", qaAddMore:"और जोड़ें", qaQtyMore:"कितना और", qaInBill:q=>"बिल में पहले से: "+q,
+  qaQtyBad:"0 से ज़्यादा मात्रा लिखें।", qaRateBad:"रेट लिखें।", qaKeys:"<kbd>Enter</kbd> आगे · <kbd>Esc</kbd> रद्द", kGst:"GST बिल चालू / बंद", kDoneF:"हो गया पर जाएँ (फिर Enter)" });
 return STR;
 })();

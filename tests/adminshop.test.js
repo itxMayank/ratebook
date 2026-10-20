@@ -6,6 +6,7 @@ const fs = require('fs'), path = require('path');
 const { launch, ok, done, ROOT } = require('./browser');
 const { withCsp } = require('../tools/stamp');
 const html = withCsp(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8').replace(/const DIR_URL = "[^"]*";/, 'const DIR_URL = "https://script.google.com/macros/s/DIRECTORY/exec";'));
+let sharmaPin = 'on';
 const DIR = 'https://script.google.com/macros/s/DIRECTORY/exec';
 const shops = [{ code: 'main', name: 'Gupta Plastics & Packaging', status: 'live', version: 47, scriptId: 'm', deploymentId: 'd', apiUrl: 'x', editUrl: 'https://script.google.com/d/m/edit', sheetUrl: 'https://docs.google.com/spreadsheets/d/s/edit' },
   { code: 'SHARMA-ABCDEFGHJK', name: 'Sharma Traders', status: 'live', version: 46, scriptId: 's', deploymentId: 'd2', apiUrl: 'y' }];
@@ -22,8 +23,9 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   await p.route(DIR, async r => { const bd = JSON.parse(r.request().postData()); asked.push(bd.action + (bd.code ? ':' + bd.code : '')); const send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, ...o }) });
     if (bd.action === 'list') return send({ shops });
     if (bd.action === 'latest') return send({ latest: { sv: 47 } });
-    if (bd.action === 'recheck') return send({ health: { main: { ok: true, sv: 47, items: 412, bills: full.bills, tbills: {}, sessions: 4 }, 'SHARMA-ABCDEFGHJK': { ok: true, sv: 46, bills: {}, tbills: {} } } });
+    if (bd.action === 'recheck') return send({ health: { main: { ok: true, sv: 47, items: 412, bills: full.bills, tbills: {}, sessions: 4 }, 'SHARMA-ABCDEFGHJK': { ok: true, sv: 46, bills: {}, tbills: {}, startPin: sharmaPin } } });
     if (bd.action === 'shopHealth') return send({ health: bd.code === 'main' ? full : { ok: true, sv: 46, bills: {}, tbills: {}, perf: [{ a: 'list', n: 12, p50: 900, p95: 2100 }], reqs: 12 } });
+    if (bd.action === 'startPin') return bd.code === 'main' ? r.fulfill({ contentType: 'application/json', body: '{"ok":false,"error":"no_shop"}' }) : send({ pin: '482913' });
     if (bd.action === 'errors') return send({ errors: bd.code === 'main' ? [{ t: Date.now() - 6e5, shop: 'main', kind: 'sheet', where: 'takeBill', m: 'Exceeded maximum execution time' }] : [] });
     return send({}); });
   await p.addInitScript(() => { localStorage.setItem('rbadm_tok', '"T"'); });
@@ -84,14 +86,23 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   ok(/Exceeded maximum execution time/.test(await p.textContent('#sp-err')), 'D1 this shop\'s errors (7 days) on its page');
   await p.click('#tab-set'); await p.waitForTimeout(150);
   ok(await p.isVisible('#sp-set [data-act=update]') && await p.getAttribute('#sp-set a[href*="spreadsheets"]', 'target') === '_blank' && /Bills 9,000 rows/.test((await p.textContent('#sp-set')).replace(/\s+/g, ' ')), 'D2 setup: update, open sheet, size of the tabs');
+  ok(!(await p.isVisible('#sp-set [data-act=pin]')), 'D3 your own shop: no starting PIN button');
 
   // E. back, and an older script
   await p.click('#sp-back'); await p.waitForTimeout(300);
   ok(await p.isVisible('#s-app') && !(await p.isVisible('#s-shop')) && !/#shop/.test(p.url()), 'E1 All shops goes back to the list');
   await p.click('#shops [data-act=open][data-code="SHARMA-ABCDEFGHJK"]'); await p.waitForTimeout(600);
   ok(/v47 or newer/.test(await p.textContent('#sp-speed')) && /typical/.test(await p.textContent('#sp-speed')), 'E2 a shop on an older script: a note to update, plus its last few hours of timings');
+  await p.click('#tab-set'); await p.waitForTimeout(150);
+  ok(await p.isVisible('#sp-set [data-act=pin]'), 'E4 a new shop: Setup has Starting PIN while it still signs in');
+  await p.click('#sp-set [data-act=pin]'); await p.waitForTimeout(400);
+  ok(await p.isVisible('#s-pin') && (await p.textContent('#s-pin .pin-big')).trim() === '482913' && /Still works/.test(await p.textContent('#pn-body')) && /482913/.test(decodeURIComponent(await p.getAttribute('#pn-wa', 'href'))), 'E5 the panel shows the PIN, that it still works, and a WhatsApp message with link + PIN');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200); ok(!(await p.isVisible('#s-pin')), 'E6 Esc closes it');
   await p.goBack(); await p.waitForTimeout(300); ok(await p.isVisible('#s-app'), 'E3 the browser\'s Back also returns to the list');
 
+  ok(!!(await p.$('#shops [data-act=pin][data-code="SHARMA-ABCDEFGHJK"]')) && !(await p.$('#shops [data-act=pin][data-code=main]')), 'E6b the card\'s More menu has Starting PIN (not for your own shop)');
+  sharmaPin = 'off'; await p.click('#b-refresh').catch(() => {}); await p.waitForTimeout(800);
+  ok(!(await p.$('#shops [data-act=pin][data-code="SHARMA-ABCDEFGHJK"]')), 'E7 once the owner has their own PIN, the button is gone');
   // F. phone width, dark
   await p.setViewportSize({ width: 360, height: 800 }); await p.goto('https://rb.test/admin.html#shop/main'); await p.waitForTimeout(900);
   ok(await p.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'F0 360 px: the Overview tab fits (its columns stack)');

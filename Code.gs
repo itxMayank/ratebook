@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 61;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 62;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -811,6 +811,7 @@ function health_(key, full) {
   try { out.cerrors = JSON.parse(c.get('CERRS') || '[]'); } catch (e) { out.cerrors = []; }
   try { out.triggers = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction()); } catch (e) { out.triggers = null; }
   out.paused = shopPaused_(); out.approveNew = approveOn_(); out.noCache = rcOff_();
+  if (b && b.initPin) out.startPin = shopPinOff_() ? 'off' : startPinWorks_(b.initPin) ? 'on' : 'changed';   // v62: the dashboard shows the starting PIN only while it still signs in
   out.backupLast = Number(P.getProperty('BK_LAST') || 0) || null;
   if (full) {   // a shop's own page on the dashboard: 14 days of speed, and how big the main tabs are (for "What to fix")
     out.perfDays = perfDays_(); out.rows = {};
@@ -897,6 +898,9 @@ function saveUser_(u, by) {   // by = who is saving (v58: changing your own PIN 
    every bill and change shows who really made it); removing the last such owner turns it back on, so nobody is locked out.
    New PINs: owner and manager 6–8 digits, staff 4–8; no repeated digits, runs (1234, 9876), common picks or 4-digit years. */
 function shopPinOff_() { return users_().some(u => u.active !== false && u.role === 'owner'); }
+/** Does the starting PIN (Shop.gs) still sign in? Checked without converting a plain PIN (health only reads). */
+function startPinWorks_(pin) { const P = PropertiesService.getScriptProperties(), h = P.getProperty('PINH'); pin = String(pin || '');
+  return !!pin && (h ? hashPin_(pin) === h : pin === (P.getProperty('PIN') || String(DEFAULT_PIN))); }
 function shopPinIs_(pin) { pin = String(pin || ''); if (!pin) return false; const P = PropertiesService.getScriptProperties(), h = P.getProperty('PINH');
   if (h) return hashPin_(pin) === h;
   if (pin !== (P.getProperty('PIN') || String(DEFAULT_PIN))) return false;

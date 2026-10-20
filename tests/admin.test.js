@@ -33,7 +33,7 @@ const state = {}; const shops = [{ code: 'main', name: 'Gupta Plastics', status:
   await p.click('#theme button[data-th=dark]'); const dk = await p.evaluate(() => [document.documentElement.dataset.theme, getComputedStyle(document.body).backgroundColor, localStorage.rbadm_theme]);
   await p.click('#theme button[data-th=""]'); const au = await p.evaluate(() => document.documentElement.dataset.theme || '');
   ok(dk[0] === 'dark' && dk[1] === 'rgb(13, 14, 16)' && dk[2] === '"dark"' && au === '', 'theme switch: dark applies and is remembered; Auto follows the computer');
-  ok(await p.$eval('.card', e => getComputedStyle(e).borderRadius) === '0px' && await p.$eval('button', e => getComputedStyle(e).borderRadius) === '0px', 'square corners');
+  ok(await p.$eval('.card', e => getComputedStyle(e).borderRadius) === '20px' && await p.$eval('button', e => getComputedStyle(e).borderRadius) === '999px', 'rounded corners like the app (20 Oct 2026; square until then)');
   await p.screenshot({ path: process.env.SHOT || '/tmp/admin.png', fullPage: true });
   // every action shows it's working: the button spins and says what it's doing, then confirms
   p.once('dialog', d => d.accept()); await p.click('[data-act=update][data-code=main]'); await p.waitForTimeout(200);

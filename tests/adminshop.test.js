@@ -30,11 +30,25 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   await p.goto('https://rb.test/admin.html'); await p.waitForTimeout(700);
 
   // A. the card opens the shop's page
+  if (process.env.SHOT) { await p.waitForTimeout(2500); await p.screenshot({ path: process.env.SHOT + '/list-laptop.png', fullPage: true }); }
   ok(await p.isVisible('#shops [data-act=open][data-code=main]'), 'A1 each card has a Details button');
   await p.click('#shops .card[data-open=main] .stats'); await p.waitForTimeout(600);
   ok(/#shop\/main$/.test(p.url()) && await p.isVisible('#s-shop') && !(await p.isVisible('#s-app')), 'A2 tapping the card opens the shop\'s own page (#shop/main)');
-  ok(/Gupta Plastics & Packaging/.test(await p.textContent('#sp .sp-head')) && await p.$$eval('.sp-nav a', a => a.map(x => x.textContent).join()) === 'Overview,Business,Speed,Errors,Setup', 'A3 name in full, and the five sections listed at the top');
+  ok(/Gupta Plastics & Packaging/.test(await p.textContent('#sp .sp-head')) && await p.$$eval('.sp-tabs [role=tab]', a => a.map(x => x.textContent.replace(/\d+$/, '').trim()).join()) === 'Overview,Business,Speed,Errors,Setup', 'A3 name in full, and the five sections as tabs at the top');
   ok(asked.includes('shopHealth:main') && asked.includes('errors:main'), 'A4 the page asks for that shop\'s full health and its errors');
+
+  // A5–A9 (20 Oct 2026): tabs, one section at a time; Overview in two columns
+  const vis = () => p.$$eval('#sp [role=tabpanel]', a => a.filter(x => !x.hidden).map(x => x.id).join());
+  if (process.env.SHOT) { await p.waitForTimeout(1500); await p.screenshot({ path: process.env.SHOT + '/shop-ov.png', fullPage: true }); }
+  ok(await vis() === 'sp-ov' && await p.getAttribute('#tab-ov', 'aria-selected') === 'true', 'A5 Overview shows first, the other sections are hidden');
+  const ovt = (await p.textContent('#sp-ov')).replace(/\s+/g, ' ');
+  ok(/Bills today/.test(ovt) && /Health/.test(ovt) && /Last backup/.test(ovt) && /Speed/.test(ovt) && /typical wait on phones/.test(ovt) && /Latest errors/.test(ovt) && /Exceeded maximum execution time/.test(ovt), 'A6 Overview: today\'s figures, health, a speed summary and the latest errors');
+  ok(await p.$eval('#sp-ov .ov-side', e => e.getBoundingClientRect().left) > await p.$eval('#sp-ov .ov-main', e => e.getBoundingClientRect().left) + 300, 'A7 on a laptop the health / speed / errors cards sit in a column on the right');
+  await p.click('#sp-ov [data-tab=speed]'); await p.waitForTimeout(200);
+  ok(await vis() === 'sp-speed' && await p.getAttribute('#tab-speed', 'aria-selected') === 'true', 'A8 "Speed details" on Overview opens the Speed tab');
+  await p.focus('#tab-speed'); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(150);
+  ok(await vis() === 'sp-err' && await p.evaluate(() => document.activeElement.id) === 'tab-err', 'A9 → moves to the next tab (keyboard)');
+  await p.click('#tab-speed'); await p.waitForTimeout(200);
 
   // B. speed: tiles, chart, tooltip, table
   const tiles = await p.textContent('#sp-speed .tiles');
@@ -53,7 +67,7 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   ok(await p.$$eval('#sp-chart .hit', h => h.length) === 14 && await p.evaluate(() => localStorage.rbadm_spd) === '14', 'B8 14 days: 14 columns, choice remembered');
 
   // C. what to fix
-  const fixes = await p.$$eval('.fix', f => f.map(x => [x.className, x.querySelector('.ft b').textContent, x.textContent]));
+  const fixes = await p.$$eval('#sp-speed .fix', f => f.map(x => [x.className, x.querySelector('.ft b').textContent, x.textContent]));
   const has = re => fixes.find(f => re.test(f[1]));
   ok(has(/Past bills is slow because the Bills tab is big/) && /9,040 rows/.test(has(/Past bills/)[2]) && /Archive/.test(has(/Past bills/)[2]), 'C1 Past bills slow + a big Bills tab → archive old bills');
   ok(has(/waking up/) && /10\+ quiet minutes/.test(has(/waking up/)[2]), 'C2 slow first requests after quiet spells → keep the script ready');
@@ -66,7 +80,9 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
   ok(/^Past bills/.test(rows[0].trim()) && /phone/.test(rows[0]) && /Android · Chrome · app/.test(rows[1]), 'C5 by action (most waiting first) and by phone type');
 
   // D. errors and setup
+  await p.click('#tab-err'); await p.waitForTimeout(150);
   ok(/Exceeded maximum execution time/.test(await p.textContent('#sp-err')), 'D1 this shop\'s errors (7 days) on its page');
+  await p.click('#tab-set'); await p.waitForTimeout(150);
   ok(await p.isVisible('#sp-set [data-act=update]') && await p.getAttribute('#sp-set a[href*="spreadsheets"]', 'target') === '_blank' && /Bills 9,000 rows/.test((await p.textContent('#sp-set')).replace(/\s+/g, ' ')), 'D2 setup: update, open sheet, size of the tabs');
 
   // E. back, and an older script
@@ -78,6 +94,8 @@ const full = { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450
 
   // F. phone width, dark
   await p.setViewportSize({ width: 360, height: 800 }); await p.goto('https://rb.test/admin.html#shop/main'); await p.waitForTimeout(900);
+  ok(await p.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'F0 360 px: the Overview tab fits (its columns stack)');
+  await p.click('#tab-speed'); await p.waitForTimeout(300);
   ok(await p.isVisible('#sp-chart svg') && await p.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth), 'F1 360 px wide: opens straight from the link, nothing spills sideways');
   ok(await p.evaluate(() => [...document.querySelectorAll('#sp .stat b, #sp .stat small, #sp .fix b')].every(e => e.scrollWidth <= e.clientWidth + 1)), 'F2 no number or title cut off');
   await p.click('#theme button[data-th=dark]'); await p.waitForTimeout(100);

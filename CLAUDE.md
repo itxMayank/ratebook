@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 18 October 2026 (past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 20 October 2026 (search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1145,6 +1145,13 @@ The dashboard showed **Save bill** taking 3.9 s in the script, the slowest every
 - **Script version kept on the phone** (`rb_cache.sv`) and sent by the 25-second check (`sv`). Before, after a restart with no price-list change the app didn't know the script version, so features gated on it (background saves, Change my PIN…) fell back until the next price-list reload.
 - Tests: `tests/billfast.test.js` (server), `tests/bgsave.real.app.test.js` J1–J2 (another phone's bill number arrives without a price-list reload).
 - **Rollout:** merge; update every shop's script to v60 (your shop first).
+
+## Search: most-sold matches first (20 Oct 2026, `search.js`, no script change)
+
+Asked for by Mayank: when a search matches several items, the hot sellers should come first, like the Prices list. Before, matches were sorted by a closeness score that differed by a point or two for almost every item (e.g. a shorter word scored higher), so sales hardly ever decided the order.
+- `runSearch` puts each match in a step (`tier`): 4 = the exact name typed; 3 = every word typed starts a word of the item (name, Hindi name, other names, group); 2 = a word found inside another; 1 = spelt differently. Within a step, **most sold first** (`popN`, same count as the Prices list), then the closer score, then A–Z. With **A–Z** chosen, the closer score decides as before.
+- Same order everywhere search is used: Prices, the Bill tab, laptop Enter / ↑ ↓, the wand.
+- Test: `tests/search.app.test.js` D1–D4.
 
 ## Past bills open at once (18 Oct 2026, `SCRIPT_VERSION` 61 / `NEED_SV` unchanged, `bills.js`)
 

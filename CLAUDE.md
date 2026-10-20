@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 20 October 2026 (laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 20 October 2026 (admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -566,7 +566,7 @@ The same `index.html` serves every shop; each shop has its **own** Google Sheet,
 - **Shop script:** `clientErr_` keeps the last 40 in CacheService `CERRS` (6 h), at most 20 per phone per hour, no PIN, no lock, never the sheet. The name sent is what the phone says. Sheet-side failures stay in `ERRS` as before. `health` returns both (`errors`, `cerrors`).
 - **Directory:** each health check copies new errors (by time, `ERRSEEN_<code>` property) into its sheet's **Errors** tab (`at | shop | kind (sheet/phone) | where | message | who | phone | detail`, last ~3,000 rows). `pullErrors` does this every hour after **`setupErrorLog`** is run once in the editor (needs the `script.scriptapp` scope in `admin/appsscript.json`), so errors are kept even when the dashboard is closed. Admin action `errors {code, days}`; `list` adds `err24` per shop.
 - **Dashboard:** "N errors in 24 h" on each card and an **Errors** button: the log per shop or all, 24 h / 7 / 30 days, phone or sheet, who, phone, screen and details.
-- **Dashboard look:** square corners (`--r:0`) and an Auto / Light / Dark switch (`rbadm_theme`, `data-theme` on `<html>`).
+- **Dashboard look:** an Auto / Light / Dark switch (`rbadm_theme`, `data-theme` on `<html>`). Square corners until 20 Oct 2026; now rounded like the app (see "Admin dashboard redesign").
 
 **Delete a shop (added 9 Oct 2026, `SCRIPT_VERSION` 37, `DIR_VERSION` 3)**: dashboard → shop card → **Delete shop** (not on the original shop). Type the shop's code to enable the button; "Delete permanently now" is ticked by default (untick = Drive Trash, emptied by Google after 30 days). Directory `deleteShop_ {code, confirm, permanent}`:
 1. `retire` on the shop's script (`GET ?action=retire&key=<health key>&code=`, Directory-made shops only, never main): deletes all its triggers and sets `RETIRED` so `ensureTriggers_` never re-adds them; returns the current `SHEET_ID` (a restored copy). An older script (`bad_action`) is updated from GitHub first, then retired.
@@ -1145,6 +1145,16 @@ The dashboard showed **Save bill** taking 3.9 s in the script, the slowest every
 - **Script version kept on the phone** (`rb_cache.sv`) and sent by the 25-second check (`sv`). Before, after a restart with no price-list change the app didn't know the script version, so features gated on it (background saves, Change my PIN…) fell back until the next price-list reload.
 - Tests: `tests/billfast.test.js` (server), `tests/bgsave.real.app.test.js` J1–J2 (another phone's bill number arrives without a price-list reload).
 - **Rollout:** merge; update every shop's script to v60 (your shop first).
+
+## Admin dashboard redesign (20 Oct 2026, `admin.html` only, no script change)
+
+From a mock-up Mayank approved (rounded corners, tabs, owners' page too).
+- **Look:** one "Look refresh" block at the end of the `<style>` (light and dark): the app's corners (20 px cards, 14 px tiles, pill buttons and switches), white cards without borders on `--bg` #F1F2F4 (1 px line in dark), stat tiles as soft grey boxes, the logo and the original shop's letter in Iris, "What to fix" with a coloured bar inside. Shop names wrap, never cut.
+- **Shops list:** "Namaste · Your shops today" over the four figures; filter chips **All · Needs you · Update ready** with counts (`shopFlt`, `rbadm_flt`; Needs you = not authorised yet, not answering, errors in 24 h, or a phone waiting for approval; a chip with 0 isn't shown).
+- **A shop's page is tabs** (`SPT`, `spTab`, back to Overview when another shop opens): Overview · Business · Speed · Errors (red count) · Setup; one shows at a time (`role=tablist` / `tabpanel`, ← → move between them). Every section is still drawn (hidden), so a quiet refresh keeps what it kept. **Overview** = two columns: Today (the figures) and Do this today (top 3 from the business page, "See the business page"); Health (script, last backup, phones, wrong PINs, sheet size, each with ✓ or !), Speed (typical wait, script / phone & internet split, the top thing to fix, "Speed details") and Latest errors (3, "All errors"). The links switch tabs (`data-tab`).
+- **Loading:** the first time a view shows with its figures, its blocks fade up one after another (`intro(el, key)`, 80 ms apart, once per view) and the money counts up (`countTo`, ~0.8 s; a figure that arrives while counting becomes the end value). Refreshes change things in place. "Reduce motion": everything shows at once.
+- **Owners' business page:** the same look, on one white card.
+- Tests: `tests/adminlook.test.js` (new), `tests/adminshop.test.js` A3, A5–A9, F0 (tabs, Overview), `tests/admin.test.js` (rounded), `tests/adminbiz.test.js` and `tests/adminrefresh.test.js` (open the tab first).
 
 ## Laptop: quantity and rate before adding, more keys (20 Oct 2026, `app.js` / `app.css` / `strings.js`, no script change)
 

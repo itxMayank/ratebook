@@ -107,16 +107,16 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
 
   // B. the admin
   const a = await page(`https://rb.test/admin.html#shop/${SH}`, { admin: true });
-  await a.waitForTimeout(600);
+  await a.waitForTimeout(600); await a.click('#tab-biz'); await a.waitForTimeout(200);
   ok(await a.isVisible('#sp-biz') && /Do this today/.test(await a.textContent('#sp-biz')) && a.log.dir.includes('shopInsights:' + SH), 'B1 the admin sees each shop\'s business page on its shop page (through the Directory)');
-  ok(await a.isVisible('#sp-speed') && await a.isVisible('#sp-err'), 'B2 …next to the technical sections');
+  ok(await a.isVisible('#tab-speed') && await a.isVisible('#tab-err'), 'B2 …next to the technical sections (tabs)');
   if (process.env.SHOT) await a.screenshot({ path: process.env.SHOT + '/biz-admin.png', fullPage: true });
   await a.click('#sp-back'); await a.waitForTimeout(300);
   ok(/for testing/.test(await a.textContent('#bizoff')) && await a.isVisible('#b-bizoff'), 'B3 the shops list says other shops\' business pages are visible for testing');
   await a.click('#b-bizoff'); await a.waitForTimeout(400);
   ok(a.log.dir.includes('bizViewOff') && /switched off/.test(await a.textContent('#bizoff')) && !(await a.isVisible('#b-bizoff')), 'B4 Turn off for good: off, and no button to turn it back on');
   await a.evaluate(h => { location.hash = h; }, '#shop/' + SH); await a.waitForTimeout(700);
-  ok(/switched off/.test(await a.textContent('#sp-biz')) && await a.isVisible('#sp-speed'), 'B5 another shop\'s page: business switched off, technical sections still there');
+  ok(/switched off/.test(await a.textContent('#sp-biz')) && await a.isVisible('#tab-speed'), 'B5 another shop\'s page: business switched off, technical sections still there');
   await a.evaluate(() => { location.hash = '#shop/main'; }); await a.waitForTimeout(700);
   ok(/Do this today/.test(await a.textContent('#sp-biz')), 'B6 your own shop\'s business page still shows');
   const ao = await page(`https://rb.test/admin.html?shop=${SH}`, { admin: true, old: true }); await ao.waitForTimeout(600);

@@ -32,7 +32,7 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
     await p.goto(url); await p.waitForTimeout(900); return p; }
 
   const a = await page(`https://rb.test/admin.html#shop/${SH}`, { admin: true });
-  await a.waitForSelector('#sp-tbl'); await a.evaluate(() => { document.getElementById('sp-speed').scrollIntoView(); window.scrollBy(0, 40); }); await a.click('#sp-tbl summary');
+  await a.waitForSelector('#tab-speed'); await a.click('#tab-speed'); await a.waitForSelector('#sp-tbl'); await a.evaluate(() => { document.getElementById('sp-speed').scrollIntoView(); window.scrollBy(0, 40); }); await a.click('#sp-tbl summary');
   const y0 = await a.evaluate(() => scrollY); await a.evaluate(() => { document.getElementById('sp-speed').__mark = 1; });
   // same figures: nothing redrawn
   a.st.slow = 500; const p1 = a.evaluate(c => __T.loadShopFull(c, true), SH); await a.waitForTimeout(200);
@@ -45,6 +45,7 @@ const shops = [{ code: 'main', name: 'Gupta Plastics', status: 'live', version: 
   a.st.slow = 0; a.st.bills = 9; await a.evaluate(c => __T.loadShopFull(c, true), SH); await a.waitForTimeout(200);
   ok(await a.evaluate(() => document.getElementById('sp-speed').__mark === undefined) && /9/.test(await a.textContent('#sp-ov')), 'A5 new figures (9 bills today): the page is redrawn with them');
   ok(Math.abs(await a.evaluate(() => scrollY) - y0) < 2 && await a.evaluate(() => document.getElementById('sp-tbl').open) && await a.isVisible('#rfpill.show'), 'A6 …in place: same scroll position, "Show as table" still open, pill shown');
+  await a.click('#tab-biz'); await a.waitForTimeout(200);
   await a.evaluate(() => { const d = document.querySelector('#spbz details.bz-more'); if (d) { d.open = true; d.scrollIntoView(); } }); const y1 = await a.evaluate(() => scrollY);
   a.st.bills = 11; await a.evaluate(c => __T.loadShopFull(c, true), SH); await a.waitForTimeout(200);
   ok(Math.abs(await a.evaluate(() => scrollY) - y1) < 2 && await a.evaluate(() => { const d = document.querySelector('#spbz details.bz-more'); return !d || d.open; }), 'A7 down in the Business part too: scroll kept and "Show more" stays open');

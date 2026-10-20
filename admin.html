@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-zhtrGoIjN9vKiFHamY/3W81nRvlullOSvmTHcvFBvQE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-HPFVHz6qBz+df22ZEjJDjncoHv8Zdep9na9Yx0XXZu8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" media="print" id="fontcss"><script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
 <style>
-/* Square corners by choice (Mayank prefers pointed). Colours: ink for primary, maroon accent from the app, green/amber/red for status. */
+/* Colours: ink for primary, Iris accent from the app, green/amber/red for status. Corners and shadows: see "Look refresh" at the end. */
 :root{--bg:#F4F5F7;--surface:#fff;--surface-2:#F0F1F4;--surface-3:#E7E9EE;--fg:#111317;--muted:#6B7180;--line:#E2E4E9;--line-2:#D3D6DD;--ink:#111317;--ink-fg:#fff;--accent:#4F46E5;
   --good:#16794A;--good-bg:#E5F4EC;--warn:#9A5B05;--warn-bg:#FBF0DC;--bad:#B3261E;--bad-bg:#FBE7E5;--shadow:0 1px 2px rgba(17,19,23,.05),0 8px 24px -12px rgba(17,19,23,.12);color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0E10;--surface:#16171A;--surface-2:#1D1F23;--surface-3:#272A2F;--fg:#F2F3F5;--muted:#9A9FAA;--line:#2A2D33;--line-2:#363940;--ink:#F2F3F5;--ink-fg:#111317;--accent:#A5A6FF;
@@ -299,6 +299,86 @@ html[lang="hi"] body{line-height:1.6}
 .bizoff{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--muted);margin:-4px 0 14px}
 @media (max-width:820px){.ov{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.hwrap,main{padding-left:16px;padding-right:16px}.grid{grid-template-columns:minmax(0,1fr)}.kpi b{font-size:22px}.brand small{display:none}.hacts .lbl{display:none}}
+/* ---- Look refresh (20 Oct 2026, Mayank): rounded like the app, white cards on a soft grey page, pill buttons; blocks fade up
+   one after another the first time a view shows (.intro), numbers count up. Replaces the square corners chosen on 9 Oct. ---- */
+:root{--bg:#F1F2F4;--surface-2:#F1F2F5;--line:#E6E8EC;--r:20px;--r-md:14px;--r-sm:10px;--r-full:999px;
+  --shadow:0 1px 2px rgba(16,17,20,.05),0 6px 20px rgba(16,17,20,.05);--shadow-lg:0 1px 2px rgba(16,17,20,.06),0 16px 40px rgba(16,17,20,.14);--ease-out:cubic-bezier(.23,1,.32,1)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0E10;--surface-2:#1D1F23;--line:#26292E;--shadow:none;--shadow-lg:0 16px 40px rgba(0,0,0,.55)}}
+:root[data-theme="dark"]{--bg:#0D0E10;--surface-2:#1D1F23;--line:#26292E;--shadow:none;--shadow-lg:0 16px 40px rgba(0,0,0,.55)}
+button,.btn,.more summary{border-radius:var(--r-full)}
+.seg{border:0;background:var(--surface-2);border-radius:var(--r-full);padding:3px;gap:2px}
+.seg button{border:0!important;border-radius:var(--r-full);min-height:32px;padding:5px 14px;font-weight:600}
+.seg button.on{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(16,17,20,.10)}
+:root[data-theme="dark"] .seg button.on{background:var(--surface-3)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button.on{background:var(--surface-3)}}
+input,select,textarea{border-radius:var(--r-sm)}
+.gate,.kpi,.card,.sec,.empty,.panel{border-radius:var(--r);border-color:transparent}
+.gate,.panel{box-shadow:var(--shadow-lg)}
+:root[data-theme="dark"] .gate,:root[data-theme="dark"] .kpi,:root[data-theme="dark"] .card,:root[data-theme="dark"] .sec,:root[data-theme="dark"] .panel{border-color:var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) :is(.gate,.kpi,.card,.sec,.panel){border-color:var(--line)}}
+.p-head{border-radius:var(--r) var(--r) 0 0}
+.empty{border-color:var(--line-2)}
+.kpi{padding:16px 20px}
+.kpi span{text-transform:none;letter-spacing:0;font-size:13px}
+.kpi b{font-size:28px;margin-top:6px}
+.card{transition:box-shadow .2s var(--ease-out)}
+.card.go:hover{box-shadow:var(--shadow-lg)}
+.c-head{padding:18px 20px 12px}.c-body{padding:0 20px 16px}.c-foot{padding:12px 16px}
+.av{border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent)}
+.card.main .av{background:var(--accent);color:#fff}
+.badge{border-radius:var(--r-full)}
+.badge.test{border-radius:var(--r-full)}
+.stats,.tiles{border:0;gap:10px;background:none}
+.stats .stat,.tiles .stat{border:0!important;background:var(--surface-2);border-radius:var(--r-md);padding:10px 12px}
+.note,.callout,.upbar,.fix,.arows,.errs,.erow pre,code,#tip,#toast,#rfpill,.menu{border-radius:var(--r-md)}
+.callout{border-left:0;background:var(--warn-bg)}
+.upbar{border-left:0;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border-radius:var(--r-md)}
+.fix{border-left-width:1px;position:relative;padding-left:18px}
+.fix::before{content:"";position:absolute;left:8px;top:14px;width:4px;height:calc(100% - 28px);border-radius:2px;background:var(--line-2)}
+.fix.high::before{background:var(--bad)}.fix.medium::before{background:var(--warn)}
+.fix.high,.fix.medium{border-left-color:var(--line)}
+.sev,.erow .k{border-radius:6px}
+.menu{overflow:hidden}
+.sp-nav a{border-radius:var(--r-full)}
+.steps>div::before{border-radius:50%}
+.skel{border-radius:var(--r)}
+.logo{border-radius:10px;background:var(--accent);color:#fff}
+#toast{border-radius:var(--r-full)}
+/* the shop page's sections are tabs: one at a time (Mayank, 20 Oct 2026) */
+.sp-tabs{position:sticky;top:64px;z-index:20;display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;margin:0 0 18px;background:var(--surface-3);border-radius:var(--r-full)}
+.sp-tabs button{border:0;background:transparent;color:var(--muted);min-height:36px;padding:6px 16px;font-weight:700;font-size:13.5px}
+.sp-tabs button:hover{background:color-mix(in srgb,var(--surface) 60%,transparent)}
+.sp-tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(16,17,20,.10)}
+.sp-tabs .n{min-width:18px;height:18px;padding:0 5px;border-radius:var(--r-full);background:var(--bad);color:#fff;font-size:11px;display:inline-grid;place-items:center}
+.ov-cols{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.ov-main{flex:999 1 520px;min-width:0;display:grid;gap:16px}.ov-side{flex:1 1 300px;min-width:0;display:grid;gap:16px}
+.hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.hrow:first-of-type{border-top:0}
+.hrow .mk{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;flex:none;background:var(--good-bg);color:var(--good)}
+.hrow .mk.w{background:var(--warn-bg);color:var(--warn)}.hrow .mk.b{background:var(--bad-bg);color:var(--bad)}
+.hrow span{flex:1;color:var(--muted)}.hrow b{text-align:right}
+.linkb{background:none;border:0;padding:0;min-height:0;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;border-radius:0}
+.linkb:hover{background:none;text-decoration:underline}
+.spl{display:flex;height:10px;border-radius:var(--r-full);overflow:hidden;background:var(--surface-2);margin:8px 0}
+.spl i{display:block;height:100%}
+.ovtodo{display:grid}.ovtodo .fix{margin-top:8px}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchips button{min-height:32px;padding:5px 12px;font-size:13px;font-weight:600}
+.fchips button.on{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+.hello{font-size:14px;color:var(--muted);margin:0}
+.kpi.click{border-radius:var(--r)}
+#s-own #bz,#spbz{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px}
+#spbz{padding:0;box-shadow:none}
+:root[data-theme="dark"] #s-own #bz{border:1px solid var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #s-own #bz{border:1px solid var(--line)}}
+@media (max-width:520px){#s-own #bz{padding:14px 14px}}
+.c-title b{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}   /* names wrap, never cut */
+@media (max-width:520px){.hwrap{gap:8px}.hacts{gap:6px}}
+/* first time a view shows: blocks fade up one after another */
+@media (prefers-reduced-motion:no-preference){
+  .intro>*{animation:rbrise .5s var(--ease-out) both;animation-delay:calc(var(--i,0) * 80ms)}
+  @keyframes rbrise{from{opacity:0;transform:translateY(10px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -375,13 +455,14 @@ html[lang="hi"] body{line-height:1.6}
   </section>
 
   <section id="s-app" hidden>
+    <div class="sechead" style="margin-bottom:16px"><div><p class="hello">Namaste</p><h2 style="font-size:26px;letter-spacing:-.02em">Your shops today</h2></div></div>
     <div class="ov" id="ov">
       <div class="kpi"><span>Shops</span><b id="k-shops">—</b><small id="k-shops2">&nbsp;</small></div>
       <div class="kpi"><span>Bills today</span><b id="k-today">—</b><small id="k-today2">&nbsp;</small></div>
       <div class="kpi"><span>This month</span><b id="k-month">—</b><small id="k-month2">&nbsp;</small></div>
       <button type="button" class="kpi click" id="k-errw"><span>Errors · 24 h</span><b id="k-err">—</b><small id="k-err2">&nbsp;</small></button>
     </div>
-    <div class="sechead"><h2>Shops</h2><span class="ver">Latest script <b id="latest">…</b> <span id="checked"></span></span>
+    <div class="sechead"><h2>Shops</h2><div class="fchips" id="fchips" role="group" aria-label="Show"></div><span class="ver">Latest script <b id="latest">…</b> <span id="checked"></span></span>
       <button id="b-updall"><svg class="ic"><use href="#i-up"/></svg>Update all shops</button><button id="b-reg" class="ghost">Register my shop</button></div>
     <div class="bizoff" id="bizoff" hidden></div>
     <div class="err" id="app-err"></div>
@@ -584,13 +665,24 @@ async function load() {
 }
 async function loadHealth() { try { health = (await call({ action: "recheck" })).health || {}; const j = await call({ action: "list" }); shops = j.shops || shops; if (j.bizView !== undefined) bizView = j.bizView !== false; render(); } catch (e) { $("#app-err").textContent = errText(e); } }
 
+/* The first time a view shows, its blocks fade up one after another (CSS .intro) and the big numbers count up; refreshes
+   after that change in place, without moving anything. */
+const introSeen = new Set(), reduceMo = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+function intro(el, key) { if (!el || introSeen.has(key)) return false; introSeen.add(key);
+  [...el.children].forEach((c, i) => c.style.setProperty("--i", Math.min(i, 12))); el.classList.add("intro"); setTimeout(() => el.classList.remove("intro"), 2200); return true; }
+function countTo(el, n, fmt, run) { if (!el) return; el._to = n; if (el._raf && !run) return;   // still counting: it ends on the newest figure
+  cancelAnimationFrame(el._raf); el._raf = 0; if (!run || reduceMo() || !(n > 0)) { el.textContent = fmt(n); return; }
+  const t0 = performance.now() + 150, d = 800; const step = now => { const x = Math.min(1, Math.max(0, (now - t0) / d)); el.textContent = fmt(el._to * (1 - Math.pow(1 - x, 3))); el._raf = x < 1 ? requestAnimationFrame(step) : 0; };
+  el.textContent = fmt(0); el._raf = requestAnimationFrame(step); }
+let ovCounted = false;
 function overview() {
   const live = shops.filter(x => x.status === "live").length; let bt = 0, ba = 0, mt = 0, ma = 0, tt = 0, er = 0;
   shops.forEach(x => { const h = health[x.code]; er += +x.err24 || 0; if (!h || !h.ok) return; const b = h.bills || {}, t = h.tbills || {};
     bt += +b.today || 0; ba += +b.todayAmt || 0; mt += +b.month || 0; ma += +b.monthAmt || 0; tt += +t.today || 0; });
-  $("#k-shops").textContent = shops.length; $("#k-shops2").textContent = `${live} live`;
-  $("#k-today").textContent = rs(ba); $("#k-today2").textContent = `${bt} real bill${bt === 1 ? "" : "s"}${tt ? ` · ${tt} test` : ""}`;
-  $("#k-month").textContent = rs(ma); $("#k-month2").textContent = `${mt} real bill${mt === 1 ? "" : "s"}`;
+  const run = !ovCounted && !curShop && (ba > 0 || ma > 0); if (run) ovCounted = true;   // count up once, when the first figures arrive
+  countTo($("#k-shops"), shops.length, n => String(Math.round(n)), run); $("#k-shops2").textContent = `${live} live`;
+  countTo($("#k-today"), ba, rs, run); $("#k-today2").textContent = `${bt} real bill${bt === 1 ? "" : "s"}${tt ? ` · ${tt} test` : ""}`;
+  countTo($("#k-month"), ma, rs, run); $("#k-month2").textContent = `${mt} real bill${mt === 1 ? "" : "s"}`;
   $("#k-err").textContent = er; $("#k-err2").textContent = er ? "open the error log" : "all quiet"; $("#k-errw").classList.toggle("bad", er > 0); }
 function render() {
   if (curShop) { renderShop(); overview(); return; }
@@ -598,13 +690,24 @@ function render() {
     bo.innerHTML = bizView ? `<span>You can see other shops' business pages, for testing.</span><button id="b-bizoff" class="danger">Turn off for good</button>` : `<span>Other shops' business pages are switched off; you see only your own shop's.</span>`;
     const bb = $("#b-bizoff"); if (bb) bb.onclick = async () => { if (!confirm("Stop seeing other shops' business pages? Their owners still see their own. You'll still see technical details (speed, errors). Turning it back on needs the Directory script's BIZ_VIEW property removed by hand.")) return;
       busy(bb, "Turning off…"); try { await call({ action: "bizViewOff" }); bizView = false; toast("Other shops' business pages are off"); render(); } catch (e) { idle(bb); toast(errText(e), true); } }; }
-  const list = shops.slice().sort((a, b) => (a.code === "main" ? -1 : b.code === "main" ? 1 : (b.createdAt || 0) - (a.createdAt || 0)));
+  /* filter chips: All · Needs you (one step left, not answering, errors, phones waiting) · Update ready */
+  const needsYou = x => { const h = health[x.code]; return x.status === "needs-auth" || (h && !h.ok) || +x.err24 > 0 || !!(h && h.ok && h.pending); };
+  const updReady = x => !!(latest && x.version && Number(x.version) < Number(latest.sv));
+  const nN = shops.filter(needsYou).length, nU = shops.filter(updReady).length;
+  if ((shopFlt === "need" && !nN) || (shopFlt === "upd" && !nU)) shopFlt = "all";
+  $("#fchips").innerHTML = [["all", `All ${shops.length}`, 1], ["need", `Needs you ${nN}`, nN], ["upd", `Update ready ${nU}`, nU]].filter(c => c[2])
+    .map(([k, l]) => `<button type="button" data-f="${k}" class="${shopFlt === k ? "on" : ""}" aria-pressed="${shopFlt === k}">${esc(l)}</button>`).join("");
+  $("#fchips").querySelectorAll("button").forEach(b => b.onclick = () => { shopFlt = b.dataset.f; store.set("flt", shopFlt); render(); });
+  const list = shops.filter(x => shopFlt === "need" ? needsYou(x) : shopFlt === "upd" ? updReady(x) : true).sort((a, b) => (a.code === "main" ? -1 : b.code === "main" ? 1 : (b.createdAt || 0) - (a.createdAt || 0)));
   const open = [...document.querySelectorAll("details.more[open]")].map(d => d.dataset.code);   // keep an open menu open across refreshes
+  $("#shops").classList.remove("intro");   // redrawn while fading in: the new cards just show
   $("#shops").innerHTML = list.map(x => card(x, health[x.code])).join("") || `<div class="empty">No shops yet. Register your own shop, then create one.</div>`;
   open.forEach(c => { const d = document.querySelector(`details.more[data-code="${CSS.escape(c)}"]`); if (d) d.open = true; });
   document.querySelectorAll("#shops [data-act]").forEach(b => b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); act(b.dataset.act, b.dataset.code, b); });
   document.querySelectorAll("#shops .card.go").forEach(c => c.onclick = ev => { if (ev.target.closest("button,a,summary,details,input,select,textarea")) return; location.hash = "#shop/" + encodeURIComponent(c.dataset.open); });
+  if (shops.some(x => health[x.code])) { intro($("#ov"), "ov"); intro($("#shops"), "shops"); }   // once the first figures are in
   overview(); }
+let shopFlt = store.get("flt", "all");
 const stat = (label, big, small, cls) => `<div class="stat"><span>${esc(label)}</span><b>${big}</b>${small ? `<small class="${cls || ""}">${small}</small>` : ""}</div>`;
 function card(x, h) {
   const ok = h && h.ok, st = x.status || "", old = latest && x.version && Number(x.version) < Number(latest.sv), main = x.code === "main";
@@ -651,7 +754,8 @@ function card(x, h) {
 }
 /* ===================== A shop's own page (#shop/<code>) =====================
    Overview, Speed (14 days kept by the shop's script, v47+, with "What to fix" worked out from it), Errors and Setup, stacked. */
-let curShop = "", full = {}, spDays = store.get("spd", 7), spSel = null;
+let curShop = "", full = {}, spDays = store.get("spd", 7), spSel = null, spTab = "ov";
+const SPT = [["ov", "Overview"], ["biz", "Business"], ["speed", "Speed"], ["err", "Errors"], ["set", "Setup"]];
 const ACTN = { boot: "App start", list: "Price list", verify: "Sign in", upsert: "Save items", delete: "Delete items", takeBill: "Save bill", updateBill: "Edit bill", getBill: "Open bill", listBills: "Past bills", findCustomer: "Customer lookup", listCustomers: "Customers", listDues: "Credit", recordPayment: "Record payment", undoPayment: "Undo payment", cancelBill: "Cancel bill", restoreBill: "Restore bill", report: "Reports", setConfig: "Save settings", setMyPrefs: "My settings", images: "Photos", image: "Photo", thumbs: "Photo thumbnails", setImages: "Save photos", notices: "Notifications", noticeRead: "Mark read", vSync: "Vendors", vSave: "Vendor entry", vSaveVendor: "Save vendor", vUpload: "Bill photo upload", vRead: "Read bill (AI)", vCheck: "Check bill (AI)", vApply: "Bill items", itemBuys: "Bought", backupInfo: "Backups", backupNow: "Back up now", listSessions: "Signed-in phones", listUsers: "People", saveUser: "Save person", saveCustomer: "Save customer", vFile: "Vendor bill file", vPreviews: "Vendor photos", vEx: "Bill reading", signOut: "Sign out" };
 const actName = k => ACTN[k] || k;
 const PB = [300, 600, 1000, 1500, 2500, 4000, 7000];
@@ -729,7 +833,7 @@ function spChart(box, days) {
   return pts; }
 
 async function openShop(code) {
-  curShop = code; $("#s-app").hidden = true; $("#s-shop").hidden = false; window.scrollTo(0, 0);
+  if (curShop !== code) spTab = "ov"; curShop = code; $("#s-app").hidden = true; $("#s-shop").hidden = false; window.scrollTo(0, 0);
   const x = shops.find(y => y.code === code); if (!x && shops.length) { location.hash = ""; return; }
   renderShop(); loadShopFull(code); }
 let spEnv = store.get("spEnv", "live"), bizView = true;
@@ -771,13 +875,31 @@ function renderShop() {
   let html = `<div class="sp-head"><div class="av" style="width:52px;height:52px;font-size:20px">${esc((x.name || x.code).trim().charAt(0).toUpperCase())}</div>
     <div class="c-title"><b>${esc(x.name || x.code)}</b><div class="mono">${esc(main ? "your shop" : x.code)}${ok && h.mode === "test" ? ` <span class="badge test">TEST MODE</span>` : ""}</div></div>
     <div class="c-side">${ok ? `<span class="badge ${esc(h.paused ? "paused" : st)}"><i></i>${esc(st === "live" ? (h.paused ? "paused" : "live") : st)}</span>` : h ? `<span class="badge bad"><i></i>${esc(h.error || "unreachable")}</span>` : ""}<span class="vchip${old ? " old" : ""}">script v${esc(x.version || (ok ? h.sv : "?"))}${old ? ` → v${esc(latest.sv)}` : ""}</span></div></div>
-    <nav class="sp-nav" aria-label="Sections"><a href="#" data-to="sp-ov">Overview</a><a href="#" data-to="sp-biz">Business</a><a href="#" data-to="sp-speed">Speed</a><a href="#" data-to="sp-err">Errors</a><a href="#" data-to="sp-set">Setup</a></nav>
+    <div class="sp-tabs" role="tablist" aria-label="Sections">${SPT.map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" aria-controls="sp-${k}" aria-selected="${spTab === k}" tabindex="${spTab === k ? 0 : -1}" data-tab="${k}">${l}${k === "err" && F.er && F.er.length ? ` <span class="n">${F.er.length > 99 ? "99+" : F.er.length}</span>` : ""}</button>`).join("")}</div>
     <div class="c-msg" id="err-${esc(code)}"></div><div class="sp-grid">`;
-  html += `<section class="sec" id="sp-ov"><h3>Overview</h3><p class="sub"><span id="sp-upd">Updated ${ago(F.at || Date.now())}.</span> Refreshes every minute while open.</p>` + (ok ? `<div class="tiles">
+  /* Overview: two columns. Left: the figures and "Do this today"; right: health, a speed summary and the latest errors. */
+  const mk = (c, k, v) => `<div class="hrow"><i class="mk ${c}" aria-hidden="true">${c ? "!" : "✓"}</i><span>${k}</span><b>${v}</b></div>`;
+  const bkOld = ok && (!h.backupLast || Date.now() - new Date(h.backupLast).getTime() > 2 * 864e5);
+  const healthHtml = ok ? mk(old ? "w" : "", "Script", old ? `v${esc(x.version)} → v${esc(latest.sv)} ready` : `v${esc(x.version || h.sv)} · up to date`)
+      + mk(bkOld ? "w" : "", "Last backup", h.backupLast ? ago(h.backupLast) : "none yet") + mk(h.pending ? "w" : "", "Phones", h.pending ? `${h.sessions || 0} signed in · ${h.pending} waiting` : `${h.sessions || 0} signed in`)
+      + mk(h.wrongPins ? "w" : "", "Wrong PINs this hour", `${h.wrongPins || 0}`) + (h.cells ? mk(h.cells > 7e6 ? "w" : "", "Sheet size", `${(h.cells / 1e6).toFixed(1)}M of 10M cells`) : "")
+    : h ? `<div class="callout">${esc(h.error === "needs_auth" ? "Needs authorising: run setupShop once in its script." : "Not answering (" + (h.error || "unreachable") + ").")}</div>` : `<div class="skel" style="height:150px"></div>`;
+  const bzI = F.bz && F.bz.ok ? F.bz : null;
+  const todoHtml = !F.bz ? `<div class="skel" style="height:120px"></div>` : !bzI ? `<div class="note">The business page isn't available for this shop (see Business).</div>`
+    : bzI.todo && bzI.todo.length ? `<div class="ovtodo">${bzI.todo.slice(0, 3).map(t => bzTodo(t, bzI.shopName || "")).join("")}</div>` : `<div class="note">${esc(bt("todoNone"))}</div>`;
+  const errHtml = F.er == null ? (F.h ? `<div class="err">Couldn't load the error log.</div>` : `<div class="skel" style="height:90px"></div>`) : F.er.length ? errRows(F.er.slice(0, 3)) : `<div class="note">No errors in 7 days.</div>`;
+  html += `<section class="ovp" id="sp-ov"><div class="ov-cols"><div class="ov-main">
+      <div class="sec"><h3>Today</h3><p class="sub"><span id="sp-upd">Updated ${ago(F.at || Date.now())}.</span> Refreshes every minute while open.</p>` + (ok ? `<div class="tiles">
       ${stat("Bills today", `${b.today || 0}`, rs(b.todayAmt) + (tb.today ? ` · +${tb.today} test` : ""))}${stat("This month", `${b.month || 0}`, rs(b.monthAmt) + (tb.month ? ` · +${tb.month} test` : ""))}
       ${stat("Items", `${h.items || 0}`, "")}${stat("Phones", `${h.sessions || 0}`, h.pending ? `${h.pending} waiting for approval` : "signed in")}
       ${stat("People", `${h.users || 0}`, "with their own PIN")}${stat("Last change", ago(h.lastChange), "")}${stat("Last backup", ago(h.backupLast), "")}${stat("Wrong PINs", `${h.wrongPins || 0}`, "this hour")}</div>`
-    : `<div class="skel" style="height:120px"></div>`) + `</section>`;
+    : `<div class="skel" style="height:120px"></div>`) + `</div>
+      <div class="sec"><div class="bz-cht"><h3 style="margin:0">Do this today</h3>${bzI ? `<button type="button" class="linkb" data-tab="biz">See the business page</button>` : ""}</div>${todoHtml}</div>
+    </div><div class="ov-side">
+      <div class="sec"><h3 style="margin-bottom:6px">Health</h3>${healthHtml}</div>
+      %%SPSUM%%
+      <div class="sec"><div class="bz-cht"><h3 style="margin:0">Latest errors</h3>${F.er && F.er.length ? `<button type="button" class="linkb" data-tab="err">All errors</button>` : ""}</div><div style="margin-top:10px">${errHtml}</div></div>
+    </div></div></section>`;
   /* Business: what the shop's owner sees on their own dashboard (other shops: only while that's switched on, for testing) */
   const bzE = F.bz && !F.bz.ok ? String(F.bz.error || "") : "";
   html += `<section class="sec live" id="sp-biz"><h3>Business</h3><p class="sub">What ${main ? "you see" : "the shop's owner sees"} on the business dashboard.</p><div id="spbz">${!F.bz ? `<div class="skel" style="height:160px"></div>`
@@ -785,15 +907,16 @@ function renderShop() {
     : bzE ? `<div class="callout">${bzE === "bad_action" || bzE === "old_script" ? "The business page needs the shop's script on <b>v48 or newer</b>. Update the script." : "Couldn't load the business page (" + esc(bzE) + ")."}</div>` : ""}</div></section>`;
   /* Speed */
   const days = F.h && F.h.ok && Array.isArray(F.h.perfDays) ? F.h.perfDays : null;
-  spSel = null; html += `<section class="sec live" id="sp-speed"><h3>Speed</h3><p class="sub">How long things take, from the phones (whole wait) and inside the shop's script, kept for 14 days. Phones send their timings about once an hour.</p>`;
+  let spSum = null, spFix = null; spSel = null; html += `<section class="sec live" id="sp-speed"><h3>Speed</h3><p class="sub">How long things take, from the phones (whole wait) and inside the shop's script, kept for 14 days. Phones send their timings about once an hour.</p>`;
   if (!F.h) html += `<div class="skel" style="height:220px"></div>`;
   else if (!days) html += `<div class="callout">Speed history needs the shop's script on <b>v47 or newer</b> (it's on v${esc(ok ? h.sv : x.version || "?")}). Update the script; history starts from then.</div>`
     + (ok && h.perf && h.perf.length ? `<p class="small muted" style="margin:12px 0 6px">Last ${h.reqs} requests in the script (6 hours):</p><div class="arows">${h.perf.map(p => `<div class="arow"><span class="an">${esc(actName(p.a))}</span><span class="av2"><span><b>${p.n}</b>×</span><span>typical <b>${sec(p.p50)}</b></span><span>slow <b>${sec(p.p95)}</b></span></span></div>`).join("")}</div>` : "");
   else { const now = Date.now(), sel = []; spSel = sel;
     for (let i = spDays - 1; i >= 0; i--) { const d = new Date(now - i * 864e5); const k = new Date(d.getTime() + 5.5 * 36e5).toISOString().slice(0, 10); sel.push(days.find(z => z.d === k) || { d: k, a: {}, p: {}, l: {} }); }
-    const g = spAgg(sel), rows = spRows(g), fixes = spDiagnose(rows, F.h, spDays);
+    const g = spAgg(sel), rows = spRows(g), fixes = spDiagnose(rows, F.h, spDays); spFix = fixes[0] || null;
     const pn = rows.reduce((t, r) => t + r.pn, 0), an = rows.reduce((t, r) => t + r.an, 0), whole = rows.reduce((t, r) => t + (r.whole || 0) * r.pn, 0), inS = rows.reduce((t, r) => t + (r.inScript || 0) * r.pn, 0);
     const wb = new Array(8).fill(0); Object.values(g.P).forEach(p => addTo(wb, p.slice(3, 11))); const sb = new Array(8).fill(0); Object.values(g.A).forEach(a => addTo(sb, a.slice(6, 14)));
+    spSum = { pn, w: pn ? bq(wb, .5) : null, sl: pn ? bq(wb, .95) : null, sc: pn && whole ? Math.round(inS / whole * 100) : null };
     html += `<div class="row-f"><div class="seg" id="sp-days" role="group" aria-label="Period"><button data-d="7" class="${spDays === 7 ? "on" : ""}">7 days</button><button data-d="14" class="${spDays === 14 ? "on" : ""}">14 days</button></div></div>
       <div class="tiles">${stat("Typical wait on phones", pn ? sec(bq(wb, .5)) : "—", pn ? `slow ${sec(bq(wb, .95))}` : "no phone timings yet")}${stat("In the script", an ? sec(bq(sb, .5)) : "—", an ? `slow ${sec(bq(sb, .95))}` : "")}
         ${stat("Phone & internet share", pn && whole ? Math.round((whole - inS) / whole * 100) + "%" : "—", "of the whole wait")}${stat("Requests", (Math.max(pn, an)).toLocaleString("en-IN"), `${spDays} days`)}</div>
@@ -819,15 +942,32 @@ function renderShop() {
       ${!main && (st === "live" || st === "paused") ? `<button data-act="${st === "paused" ? "resume" : "pause"}" data-code="${esc(code)}" class="${st === "paused" ? "" : "danger"}">${ic(st === "paused" ? "play" : "pause")}${st === "paused" ? "Resume shop" : "Pause shop"}</button>` : ""}
       ${!main ? `<button data-act="delete" data-code="${esc(code)}" class="danger">${ic("trash")}Delete shop</button>` : ""}</div></section>`;
   html += `</div>`;
+  /* the speed summary on Overview, from the figures worked out for the Speed tab */
+  const spCard = !F.h ? `<div class="sec"><h3>Speed</h3><div class="skel" style="height:90px"></div></div>`
+    : !days ? `<div class="sec"><h3>Speed</h3><p class="sub" style="margin:0">Speed history needs the shop's script on v47 or newer.</p></div>`
+    : `<div class="sec"><div class="bz-cht"><h3 style="margin:0">Speed</h3><button type="button" class="linkb" data-tab="speed">Speed details</button></div>
+      ${spSum && spSum.pn ? `<div style="display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;margin-top:8px"><b style="font-size:28px;letter-spacing:-.02em;font-variant-numeric:tabular-nums">${sec(spSum.w)}</b><span class="small muted">typical wait on phones · slow ${sec(spSum.sl)} · ${spDays} days</span></div>
+        ${spSum.sc != null ? `<div class="spl" role="img" aria-label="In the script ${spSum.sc}%, phone and internet ${100 - spSum.sc}%"><i style="width:${spSum.sc}%;background:var(--s1)"></i><i style="width:${100 - spSum.sc}%;background:var(--s2)"></i></div>
+        <div class="legend" style="margin:0"><span><i style="background:var(--s1)"></i>In the script ${spSum.sc}%</span><span><i style="background:var(--s2)"></i>Phone &amp; internet ${100 - spSum.sc}%</span></div>` : ""}`
+        : `<p class="sub" style="margin:8px 0 0">No phone timings yet.</p>`}
+      ${spFix ? `<div class="fix ${spFix.sev}" style="margin-top:12px"><div class="ft"><b>${esc(spFix.t)}</b><span class="sev ${spFix.sev}">${spFix.sev === "high" ? "Fix first" : spFix.sev === "medium" ? "Worth fixing" : "Good to know"}</span></div>${spFix.lostT ? `<span class="lost">${esc(spFix.lostT)}</span>` : ""}</div>` : ""}</div>`;
+  html = html.replace("%%SPSUM%%", () => spCard)
+    .replace(/<section class="([^"]*)" id="sp-(\w+)"/g, (m, c, k) => `<section class="${c}" id="sp-${k}" role="tabpanel" aria-labelledby="tab-${k}"${spTab === k ? "" : " hidden"}`);
   const sp = $("#sp"), restore = keepView(sp); sp.innerHTML = html;
   sp.querySelectorAll("[data-act]").forEach(bt => bt.onclick = ev => { ev.preventDefault(); act(bt.dataset.act, bt.dataset.code, bt); });
-  sp.querySelectorAll(".sp-nav a").forEach(a => a.onclick = ev => { ev.preventDefault(); const t = document.getElementById(a.dataset.to); if (t) t.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); });
+  /* tabs: one section at a time; ← → move between them (keyboard) */
+  const goTab = k => { if (spTab === k) return; spTab = k; renderShop(); const t = $("#tab-" + k); if (t) t.focus({ preventScroll: true }); const tb = $(".sp-tabs"); if (tb && tb.getBoundingClientRect().top < 0) tb.scrollIntoView({ block: "start" }); };
+  sp.querySelectorAll("[data-tab]").forEach(b => b.onclick = ev => { ev.preventDefault(); goTab(b.dataset.tab); });
+  { const tl = sp.querySelector(".sp-tabs"); if (tl) tl.onkeydown = ev => { if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return; ev.preventDefault();
+    const i = SPT.findIndex(t => t[0] === spTab), n = SPT[(i + (ev.key === "ArrowRight" ? 1 : SPT.length - 1)) % SPT.length][0]; goTab(n); }; }
   sp.querySelectorAll("#sp-days button").forEach(bt => bt.onclick = () => { spDays = +bt.dataset.d; store.set("spd", spDays); renderShop(); });
   { const bb = $("#spbz"); if (bb && F.bz && F.bz.ok) { bb.innerHTML = bzHTML(F.bz); bzWire(bb, env => { spEnv = env; store.set("spEnv", env); F.bz = null; renderShop(); loadShopFull(code); }, F.bz); } }
   const cb = $("#sp-chart");
   if (cb && spSel) { const sel = spSel, pts = spChart(cb, sel);
     $("#sp-tbl").insertAdjacentHTML("beforeend", `<table><thead><tr><th>Day</th><th>Requests</th><th>In the script</th><th>Phone &amp; internet</th><th>Whole wait</th></tr></thead><tbody>${pts.map(p => `<tr><td>${esc(spDayLabel(p.d))}</td><td>${p.n}</td><td>${p.n ? sec(p.script) : "—"}</td><td>${p.n && p.ph ? sec(p.rest) : "—"}</td><td>${p.n ? sec(p.script + p.rest) : "—"}</td></tr>`).join("")}</tbody></table>`);
     cb._sel = sel; }
+  /* first time a tab shows with its figures: its cards fade up one after another */
+  { const pnl = $("#sp-" + spTab); if (pnl && F.h) { if (spTab === "ov") { intro(pnl.querySelector(".ov-main"), "ovm:" + code); intro(pnl.querySelector(".ov-side"), "ovs:" + code); } else intro(pnl, "tab:" + code + ":" + spTab); } }
   restore(); }
 let spRT = 0; window.addEventListener("resize", () => { clearTimeout(spRT); spRT = setTimeout(() => { const cb = $("#sp-chart"); if (curShop && cb && cb._sel) spChart(cb, cb._sel); }, 150); });
 /* ===================== Business page (the owner's "brain") =====================
@@ -1136,7 +1276,7 @@ function renderOwn() { const box = $("#bz"); if (!box) return; box.classList.rem
   $("#own-name").textContent = (OWN && (OWN.shopName || OWN.name)) || ""; $("#own-who").textContent = OWN ? OWN.by : "";
   document.querySelectorAll("#own-lang button").forEach(b => b.classList.toggle("on", b.dataset.l === bzLang));
   document.documentElement.lang = bzLang === "hi" ? "hi" : "en";
-  if (!ownData) return; const restore = keepView(box); box.innerHTML = bzHTML(ownData); bzWire(box, env => { ownEnv = env; store.set("ownEnv", env); ownData = null; ownLoad(); }, ownData); restore(); }
+  if (!ownData) return; const restore = keepView(box); box.innerHTML = bzHTML(ownData); bzWire(box, env => { ownEnv = env; store.set("ownEnv", env); ownData = null; ownLoad(); }, ownData); restore(); intro(box, "own"); }
 /* Owner sign-in: the same name + PIN as the app. The phone label says it's this dashboard, so it shows up (and can be signed
    out) in the app's Settings → Signed-in phones. Only an owner gets in. */
 $("#f-own").onsubmit = async e => { e.preventDefault(); const b = $("#b-own"), er = $("#own-err"); er.textContent = "";

@@ -467,7 +467,7 @@ const DESK=()=>deskMQ.matches;
 function applyDesk(){
   const d=DESK(); document.documentElement.classList.toggle("desk",d); placeSearch();
   const vb=$("#view-bill"); if(vb) vb.hidden = !(d || S.tab==="bill");
-  const f=$("#side-foot"); if(f) f.innerHTML = [["↑ ↓","kPick"],["Enter","kAdd"],["*5","kQty"],["+ −","kStep"],["Alt C","kCust"],["Alt G","kGst"],["Alt B","kDoneF"],["Ctrl Enter","kDone"],["Esc","kClose"]].map(([k,s])=>`<div><kbd>${esc(k)}</kbd><span>${esc(t(s))}</span></div>`).join("");
+  const f=$("#side-foot"); if(f) f.innerHTML = [["↑ ↓","kPick"],["Enter","kAdd"],["*5","kQty"],["+ −","kStep"],["Alt C","kCust"],["Alt T","kGst"],["Alt B","kDoneF"],["Ctrl Enter","kDone"],["Esc","kClose"]].map(([k,s])=>`<div><kbd>${esc(k)}</kbd><span>${esc(t(s))}</span></div>`).join("");
 }
 deskMQ.addEventListener ? deskMQ.addEventListener("change",()=>{ applyDesk(); setTab(S.tab==="bill"&&DESK()?"items":S.tab); }) : deskMQ.addListener(()=>{ applyDesk(); setTab(S.tab); });
 document.addEventListener("keydown",e=>{
@@ -503,7 +503,7 @@ document.addEventListener("keydown",e=>{ if(!DESK() || LOCK.on || !$("#sheet").h
   const alt=e.altKey && !e.ctrlKey && !e.metaKey ? (e.code||"").replace(/^Key/,"").toLowerCase() : "";
   if(alt==="c"){ e.preventDefault(); const c=$("#cust"); if(c){ c.focus(); c.select(); } return; }
   if(alt==="b"){ e.preventDefault(); const d=$("#bill-done"); if(d && d.offsetParent){ d.focus(); d.scrollIntoView({block:"nearest"}); } return; }   // Enter on it = Done
-  if(alt==="g"){ e.preventDefault(); $("#gst-chip").click();
+  if(alt==="t" || alt==="g"){ e.preventDefault(); $("#gst-chip").click();   // Alt+T (tax). Alt+G also works where the browser doesn't keep it: Edge and Chrome open Gemini / Copilot on Alt+G
     if(S.gst){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); const g=$("#cust-gstin"); if(g){ g.focus(); g.select(); g.scrollIntoView({block:"nearest"}); } }
     else { if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); deskFocusQ(); }
     return; }

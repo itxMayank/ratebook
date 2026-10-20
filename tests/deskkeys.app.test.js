@@ -18,6 +18,7 @@ let sent = [];
   }
   const act = p => p.evaluate(() => document.activeElement && document.activeElement.id);
   const bill = p => p.evaluate(() => T.S.bill.map(l => l.name + ':' + l.qty).join(', '));
+  const enter3 = async p => { for (let i = 0; i < 3; i++) { await p.keyboard.press('Enter'); await p.waitForTimeout(150); } await p.waitForTimeout(250); };   // Enter opens quantity & rate, Enter → rate, Enter adds (20 Oct 2026)
   const nm = (p, s) => p.$$eval(s, els => els.map(e => e.querySelector('.name').textContent.trim()));
   const L = await dev(1280, 800);
 
@@ -29,17 +30,17 @@ let sent = [];
   ok(await L.$eval('#list', l => l.classList.contains('drows') && !l.classList.contains('gridv') && getComputedStyle(l).flexDirection === 'column'), 'A3 results are one list, not cards');
   ok(/Enter/.test(await L.textContent('#meta-r .kbhint')), 'A4 a keyboard hint by the count');
   ok(await L.$eval('#list .card.kbsel .name', e => e.textContent.trim()) === 'Kirana 250 G Kunj', 'A5 the first shown result is highlighted');
-  await L.keyboard.press('Enter'); await L.waitForTimeout(400);
+  await enter3(L);
   ok(await bill(L) === 'Kirana 250 G Kunj:1' && await act(L) === 'q' && await L.inputValue('#q') === '', 'A6 Enter adds the highlighted item (the one shown first), empties the box, cursor stays');
   await L.keyboard.type('k'); await L.waitForTimeout(300); await L.keyboard.press('ArrowDown'); await L.keyboard.press('ArrowDown'); await L.waitForTimeout(150);
   const sel = await L.$eval('#list .card.kbsel .name', e => e.textContent.trim()); await L.keyboard.press('ArrowUp'); await L.waitForTimeout(100);
   const sel2 = await L.$eval('#list .card.kbsel .name', e => e.textContent.trim());
   ok(sel !== sel2 && await act(L) === 'q', 'A7 ↓ ↓ ↑ move the highlight while the cursor stays in the box (' + sel + ' → ' + sel2 + ')');
-  await L.keyboard.press('Enter'); await L.waitForTimeout(400);
+  await enter3(L);
   ok((await bill(L)).includes(sel2 + ':1') && await act(L) === 'q', 'A8 Enter adds the highlighted one');
   await L.keyboard.type('kaju *3'); await L.waitForTimeout(300);
   ok((await nm(L, '#list .card'))[0] === 'Kaju Box 1kg', 'A9 "kaju *3" still finds Kaju Box');
-  await L.keyboard.press('Enter'); await L.waitForTimeout(400);
+  await enter3(L);
   ok((await bill(L)).includes('Kaju Box 1kg:3'), 'A10 …and Enter adds 3');
   await L.keyboard.press('+'); await L.keyboard.press('+'); await L.keyboard.press('-'); await L.waitForTimeout(300);
   ok((await bill(L)).includes('Kaju Box 1kg:4') && await L.inputValue('#q') === '', 'A11 with the box empty, + + − change the item just added (3 → 4)');

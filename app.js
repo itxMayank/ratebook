@@ -467,14 +467,14 @@ const DESK=()=>deskMQ.matches;
 function applyDesk(){
   const d=DESK(); document.documentElement.classList.toggle("desk",d); placeSearch();
   const vb=$("#view-bill"); if(vb) vb.hidden = !(d || S.tab==="bill");
-  const f=$("#side-foot"); if(f) f.innerHTML = [["↑ ↓","kPick"],["Enter","kAdd"],["*5","kQty"],["+ −","kStep"],["Alt C","kCust"],["Ctrl Enter","kDone"],["Esc","kClose"]].map(([k,s])=>`<div><kbd>${esc(k)}</kbd><span>${esc(t(s))}</span></div>`).join("");
+  const f=$("#side-foot"); if(f) f.innerHTML = [["↑ ↓","kPick"],["Enter","kAdd"],["*5","kQty"],["+ −","kStep"],["Alt C","kCust"],["Alt G","kGst"],["Alt B","kDoneF"],["Ctrl Enter","kDone"],["Esc","kClose"]].map(([k,s])=>`<div><kbd>${esc(k)}</kbd><span>${esc(t(s))}</span></div>`).join("");
 }
 deskMQ.addEventListener ? deskMQ.addEventListener("change",()=>{ applyDesk(); setTab(S.tab==="bill"&&DESK()?"items":S.tab); }) : deskMQ.addListener(()=>{ applyDesk(); setTab(S.tab); });
 document.addEventListener("keydown",e=>{
   if(!DESK()) return;
   const a=document.activeElement, typing=a && a.matches && a.matches("input,textarea,select,[contenteditable=true]");
   const sheetOpen=!$("#sheet").hidden || !$("#picker").hidden;
-  if(!sheetOpen && ((e.key==="/" && !typing) || ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"))){ e.preventDefault(); if(S.tab!=="items") setTab("items"); const q=$("#q"); q.focus(); q.select(); return; }
+  if(!sheetOpen && !QA.on && ((e.key==="/" && !typing) || ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="k"))){ e.preventDefault(); if(S.tab!=="items") setTab("items"); const q=$("#q"); q.focus(); q.select(); return; }
   if(e.key==="Escape" && !sheetOpen && a===$("#q") && $("#q").value){ $("#q").value=""; onQuery(""); }
 });
 /* ---- Laptop: billing from the keyboard (16 Oct 2026) ----
@@ -493,16 +493,87 @@ function kbAdd(id,n){ const before=billQty(id); addToBill(id); KB.last=id;
   kbFlash(id); }
 function kbFlash(id){ const i=S.bill.findIndex(x=>x.id===id); const el=i>=0 && document.querySelectorAll("#bill-lines .bill-line")[i]; if(!el) return;
   el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); el.scrollIntoView({block:"nearest"}); }
-function deskFocusQ(){ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden) return; const a=document.activeElement;
+function deskFocusQ(){ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden || QA.on) return; const a=document.activeElement;
   if(a && a!==document.body && a.matches && a.matches("input,textarea,select,[contenteditable=true]")) return;
   const q=$("#q"); if(q && q.offsetParent) q.focus({preventScroll:true}); }
-document.addEventListener("keydown",e=>{ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden) return;
+document.addEventListener("keydown",e=>{ if(!DESK() || LOCK.on || !$("#sheet").hidden || !$("#picker").hidden || QA.on) return;
   const a=document.activeElement, typing=a && a.matches && a.matches("input,textarea,select,[contenteditable=true]");
   if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); if(!S.bill.length) return; if(e.shiftKey){ const w=$("#bill-wa"); if(w && !w.hidden) w.click(); } else $("#bill-done").click(); setTimeout(deskFocusQ,400); return; }
-  if(e.altKey && !e.ctrlKey && e.key.toLowerCase()==="c"){ e.preventDefault(); const c=$("#cust"); if(c){ c.focus(); c.select(); } return; }
+  /* Alt + letter by the key's place (e.code), so it also works with Option on a Mac */
+  const alt=e.altKey && !e.ctrlKey && !e.metaKey ? (e.code||"").replace(/^Key/,"").toLowerCase() : "";
+  if(alt==="c"){ e.preventDefault(); const c=$("#cust"); if(c){ c.focus(); c.select(); } return; }
+  if(alt==="b"){ e.preventDefault(); const d=$("#bill-done"); if(d && d.offsetParent){ d.focus(); d.scrollIntoView({block:"nearest"}); } return; }   // Enter on it = Done
+  if(alt==="g"){ e.preventDefault(); $("#gst-chip").click();
+    if(S.gst){ setOpen("#bh-more","#bh-extra","rb_bh_open",true); const g=$("#cust-gstin"); if(g){ g.focus(); g.select(); g.scrollIntoView({block:"nearest"}); } }
+    else { if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); deskFocusQ(); }
+    return; }
   if(!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length===1 && e.key!=="/" && e.key!==" "){ const q=$("#q"); if(q && q.offsetParent){ if(S.tab!=="items") setTab("items"); q.focus(); } }   // the letter then lands in the search
 });
 $("#cust-mob").addEventListener("keydown",e=>{ if(DESK() && e.key==="Enter" && !e.defaultPrevented){ e.preventDefault(); e.target.blur(); deskFocusQ(); } });
+$("#cust-gstin").addEventListener("keydown",e=>{ if(DESK() && e.key==="Enter" && !e.defaultPrevented){ e.preventDefault(); e.target.blur(); deskFocusQ(); } });
+
+/* ---- Laptop: quantity and rate before adding (20 Oct 2026) ----
+   Enter on a search result opens a small dialog: the item, Quantity (cursor here, value selected), Rate (the item's price, or
+   the bill line's rate if it's already on the bill) and the amount worked out live. Enter in Quantity moves to Rate; Enter in
+   Rate adds it (or adds to the line already on the bill, at this rate). Esc, ✕ or a click outside closes it; either way the
+   cursor goes back to the search box. Both boxes take numbers only. */
+const QA={on:false,id:"",el:null};
+function qaEl(){ if(QA.el) return QA.el; const d=document.createElement("div"); d.className="qadd"; d.id="qadd"; d.hidden=true;
+  d.innerHTML=`<div class="qa-card" role="dialog" aria-modal="true" aria-labelledby="qa-name">
+    <div class="qa-head"><div class="qa-it"><b id="qa-name"></b><span id="qa-sub"></span></div><button type="button" class="iconbtn qa-x" id="qa-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="qa-in" id="qa-in" hidden></div>
+    <div class="qa-row">
+      <div class="qa-f"><label for="qa-qty" id="qa-ql"></label><div class="qa-box"><input id="qa-qty" class="num" inputmode="decimal" autocomplete="off" enterkeyhint="next"><span class="qa-u" id="qa-u"></span></div></div>
+      <span class="qa-times" aria-hidden="true">×</span>
+      <div class="qa-f"><label for="qa-rate" id="qa-rl"></label><div class="qa-box"><span class="qa-cur" aria-hidden="true">₹</span><input id="qa-rate" class="num money" data-dp="3" inputmode="decimal" autocomplete="off" enterkeyhint="done"><span class="qa-u" id="qa-ru"></span></div></div>
+    </div>
+    <span class="err" id="qa-err" role="alert"></span>
+    <div class="qa-amt"><span id="qa-al"></span><b class="num" id="qa-amt" aria-live="polite"></b></div>
+    <div class="qa-foot"><span class="qa-keys" id="qa-keys"></span><button type="button" class="btn ghost" id="qa-cancel"></button><button type="button" class="btn primary" id="qa-ok"></button></div>
+  </div>`;
+  document.body.appendChild(d); QA.el=d;
+  const q=$("#qa-qty"), r=$("#qa-rate");
+  q.addEventListener("input",()=>{ const v=numOnly(q.value); if(v!==q.value) q.value=v; qaCalc(); });
+  r.addEventListener("input",qaCalc);
+  q.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); if(qaCheck(true)){ r.focus(); r.select(); } } });
+  r.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); qaCommit(); } });
+  [q,r].forEach(x=>x.addEventListener("keydown",e=>{ if(e.key.length===1 && !e.ctrlKey && !e.metaKey && !e.altKey && !/[\d.०-९]/.test(e.key)) e.preventDefault(); }));   // numbers only
+  d.addEventListener("keydown",e=>{ if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); qaClose(); }
+    else if(e.key==="Tab"){ const f=[...d.querySelectorAll("input,button")].filter(x=>!x.disabled && x.offsetParent); const i=f.indexOf(document.activeElement);
+      if(e.shiftKey && i<=0){ e.preventDefault(); f[f.length-1].focus(); } else if(!e.shiftKey && i===f.length-1){ e.preventDefault(); f[0].focus(); } } });   // Tab stays inside
+  d.addEventListener("mousedown",e=>{ if(e.target===d) qaClose(); });
+  $("#qa-x").onclick=qaClose; $("#qa-cancel").onclick=qaClose; $("#qa-ok").onclick=qaCommit;
+  return d; }
+const numOnly=v=>{ let x=devDigits(String(v||"")).replace(/[^\d.]/g,""); const i=x.indexOf("."); return i<0?x:x.slice(0,i+1)+x.slice(i+1).replace(/\./g,""); };
+function qaOpen(id,n){ const it=S.byId.get(id); if(!it) return; const d=qaEl(), l=S.bill.find(x=>x.id===id);
+  QA.on=true; QA.id=id; const unit=l?l.unit:it.unit, rate=l?+l.rate||0:+it.sell||0;
+  $("#qa-name").textContent=lineName({name:it.name,nameHi:it.nameHi}); const hi=it.nameHi&&it.nameHi!==it.name?it.nameHi:""; $("#qa-sub").textContent=[hi,rs(+it.sell||0)+" / "+unitL(it.unit)].filter(Boolean).join(" · ");
+  const inb=$("#qa-in"); inb.hidden=!l; if(l) inb.textContent=t("qaInBill",qtyText(l.qty,l.unit));
+  $("#qa-ql").textContent=t(l?"qaQtyMore":"qaQty"); $("#qa-rl").textContent=t("qaRate"); $("#qa-al").textContent=t("qaAmt");
+  $("#qa-u").textContent=unitL(unit); $("#qa-ru").textContent="/ "+unitL(unit);
+  $("#qa-cancel").textContent=t("cancel"); $("#qa-ok").textContent=t(l?"qaAddMore":"qaAdd"); $("#qa-keys").innerHTML=t("qaKeys");
+  $("#qa-x").setAttribute("aria-label",t("cancel")); $("#qa-x").title=t("cancel")+" (Esc)";
+  const q=$("#qa-qty"), r=$("#qa-rate"); q.value=String(n>0?n:1); moneySet(r,rate); $("#qa-err").textContent=""; q.parentElement.classList.remove("need"); r.parentElement.classList.remove("need");
+  qaCalc(); d.hidden=false; requestAnimationFrame(()=>d.classList.add("on")); q.focus(); q.select(); }
+function qaVals(){ return { q:toNum($("#qa-qty").value), r:toNum($("#qa-rate").value) }; }
+function qaCalc(){ const {q,r}=qaVals(); $("#qa-amt").textContent= q>0 && r>=0 ? rs(Math.round(q*r*100)/100) : "—"; }
+function qaCheck(qtyOnly){ const {q,r}=qaVals(), qe=$("#qa-qty"), re=$("#qa-rate"), er=$("#qa-err"); qe.parentElement.classList.remove("need"); re.parentElement.classList.remove("need"); er.textContent="";
+  if(!(q>0)){ qe.parentElement.classList.add("need"); er.textContent=t("qaQtyBad"); qe.focus(); qe.select(); return false; }
+  if(!qtyOnly && !(r>=0)){ re.parentElement.classList.add("need"); er.textContent=t("qaRateBad"); re.focus(); re.select(); return false; }
+  return true; }
+function qaCommit(){ if(!QA.on || !qaCheck(false)) return; const {q,r}=qaVals(), id=QA.id;
+  addToBill(id, Math.round(q*1000)/1000); const l=S.bill.find(x=>x.id===id);
+  if(l && Math.abs((+l.rate||0)-r)>=0.0005){ l.rate=Math.round(r*1000)/1000; saveBill(); renderBill(); renderList(); }
+  KB.last=id; qaClose(); kbFlash(id); }
+function qaClose(){ if(!QA.on) return; QA.on=false; const d=qaEl(); d.classList.remove("on"); setTimeout(()=>{ if(!QA.on) d.hidden=true; },160);
+  const qi=$("#q"); if(qi && qi.value){ qi.value=""; onQuery(""); } if(document.activeElement && d.contains(document.activeElement)) document.activeElement.blur(); deskFocusQ(); }
+
+/* Number boxes on the bill (and the dialog above): the value is selected when the box gets the cursor, so typing replaces it
+   (like Ctrl+A). The selection is kept through the tap or click that focused the box. */
+const SELALL="#qa-qty,#qa-rate,#view-bill .bill-line input[data-qty]:not([readonly]),#view-bill .bill-line input[data-rate],#pay-recv,#cash-in";
+document.addEventListener("focusin",e=>{ const el=e.target; if(!el.matches || !el.matches(SELALL)) return; el._selAt=Date.now();
+  const sel=()=>{ try{ el.setSelectionRange(0,el.value.length); }catch{ try{ el.select(); }catch{} } }; sel(); setTimeout(()=>{ if(document.activeElement===el) sel(); },0); });
+document.addEventListener("mouseup",e=>{ const el=e.target; if(el.matches && el.matches(SELALL) && el._selAt && Date.now()-el._selAt<600){ e.preventDefault(); el._selAt=0; } });
 let blurT;
 function syncQe(){ const a=document.activeElement, qf=!DESK() && !!a && a.id==="q"; document.body.classList.toggle("qe", qf && !a.value.trim()); document.body.classList.toggle("qtyp",qf);
   /* recent items: open on focus with nothing typed, frozen order while open; redrawn when it opens or closes */
@@ -551,7 +622,7 @@ $("#q").addEventListener("keydown",e=>{
   }
   if(e.key==="Enter"){ const {q,n}=qSplit(S.q); if(can("manager") && looksLikeCommand(S.q)) openCmd(S.q,true);
   else if(DESK() && q){ const c=kbCards()[KB.i], id=c ? c.dataset.id : (runSearch(q).res[0]||{e:{it:{}}}).e.it.id;   // the highlighted result (the first one shown unless ↑ ↓ moved it)
-    if(id){ kbAdd(id, n||1); e.target.value=""; onQuery(""); } }
+    if(id) qaOpen(id, n||0); }
   else e.target.blur(); } });
 /* Bill tab on phones: tap the round search button = the bar opens with the keyboard; ✕ empties it but keeps it open;
    leaving it (keyboard closed, tapped elsewhere, an item added) = back to the button. */

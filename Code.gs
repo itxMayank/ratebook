@@ -11,6 +11,9 @@
  *   4. Copy the Web app URL into app.js (API_URL at the top).
  *
  * Anyone with the app can VIEW prices. Adding or changing anything needs the shop PIN.
+ *
+ * This file is built: the source is server/*.gs (one file per area, joined in name order by `node tools/stamp.js`).
+ * Edit those, never Code.gs; it is what gets pasted into Apps Script and what the Directory installs on every shop.
  */
 
 const DEFAULT_PIN = '1234';
@@ -234,10 +237,25 @@ function brev_() { return PropertiesService.getScriptProperties().getProperty('b
 /* With each change, a short log notes which bill changed (by id), so a phone can fetch just those bills. Anything else (sheet edited
    by hand, restore, a payment spread over several bills) is logged as "full" and that phone downloads its whole copy again. */
 function blog_(env) { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('blog_' + env) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+/* ---------- one change log (v67) ----------
+   Every change phones must learn about goes through chg_: the price list and settings ('rev'), bills per mode ('brev_<mode>'),
+   vendors ('vrev_<mode>') and notices ('nrev_<mode>'). It writes the new version (script property, then the cache copy) and one
+   line in the shared change log CHG (last 60: {v, k}), which the dashboard's health reply carries, so there is one place that
+   shows what changed and when. A version is always higher than the one before, also for two changes in the same millisecond
+   (before, those got the same number and a phone could miss the second). bump_, bumpB_, vbump_, vbumpAll_ and nbump_ are the
+   names the rest of the script uses; they only call chg_. */
+function chg_(keys, at) {
+  const p = PropertiesService.getScriptProperties();
+  let v = Math.max(Number(at) || Date.now(), 0); keys.forEach(k => { v = Math.max(v, (Number(p.getProperty(k)) || 0) + 1); });
+  const vs = String(v); keys.forEach(k => { p.setProperty(k, vs); cPut_(k, vs); });
+  try { let L = []; try { L = JSON.parse(p.getProperty('CHG') || '[]'); } catch (e) {} if (!Array.isArray(L)) L = [];
+    L.push({ v: v, k: keys.join(',') }); p.setProperty('CHG', JSON.stringify(L.slice(-60))); } catch (e) { p.deleteProperty('CHG'); }
+  return vs;
+}
+function chgLog_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('CHG') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function bumpB_(both, id) {
-  const p = PropertiesService.getScriptProperties(), v = String(Date.now());
-  (both ? ['live', 'test'] : [ENV_]).forEach(en => {
-    p.setProperty('brev_' + en, v); cPut_('brev_' + en, v);
+  const p = PropertiesService.getScriptProperties(), envs = both ? ['live', 'test'] : [ENV_], v = chg_(envs.map(en => 'brev_' + en));
+  envs.forEach(en => {
     let L = blog_(en); L.push(id ? { v: v, id: String(id) } : { v: v, full: 1 }); if (L.length > 150) L = L.slice(-150);
     try { p.setProperty('blog_' + en, JSON.stringify(L)); } catch (e) { p.deleteProperty('blog_' + en); }
   });
@@ -248,7 +266,7 @@ function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('br
 function nbPut_(c) { try { c = c || readConfig_(); cPut_('NB', JSON.stringify({ nextBill: c.nextBill, nextGstBill: c.nextGstBill, testNextBill: c.testNextBill, testNextGstBill: c.testNextGstBill, gstFy: c.gstFy || '', testGstFy: c.testGstFy || '' }), 21600); } catch (err) {} }
 function nbGet_() { try { const v = CacheService.getScriptCache().get('NB'); if (v) return JSON.parse(v); } catch (err) {}
   try { readConfig_(); const v = CacheService.getScriptCache().get('NB'); return v ? JSON.parse(v) : null; } catch (err) { return null; } }   // (v67) not cached (emptied by Google, or a hand edit): from the Config tab
-function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); cPut_('rev', v); }
+function bump_() { return chg_(['rev']); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
 function onEdit(e) { try { cfgCacheDrop_(); bump_(); bumpB_(true); vbumpAll_(); } catch (err) { softErr_('onEdit', err); } }
@@ -851,6 +869,7 @@ function health_(key, full) {
   if (!want || !keyEq_(key, want)) return { ok: false, error: 'bad_key' };
   const c = CacheService.getScriptCache(), HK = 'HEALTH:' + SCRIPT_VERSION + (full ? ':f' : ''), hit = c.get(HK); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const now = Date.now(), out = { ok: true, shop: shopCode_(), sv: SCRIPT_VERSION, now: now };
+  out.changes = chgLog_().slice(-20);   // (v67) the shared change log: what changed lately, newest last
   out.lastChange = Math.max(Number(getRev_()) || 0, Number(brevC_('live')) || 0, Number(brevC_('test')) || 0, Number(vrevC_('live')) || 0, Number(vrevC_('test')) || 0);
   const ss = ss_(); let cells = 0;   // the sheet's id isn't sent (v45): the dashboard doesn't need it, and an id is a key to a file in the owner's Drive ss.getSheets().forEach(sh => { cells += sh.getMaxRows() * sh.getMaxColumns(); }); out.cells = cells;
   const it = ss.getSheetByName(ITEMS); out.items = it ? Math.max(0, it.getLastRow() - 1) : 0;
@@ -2289,14 +2308,6 @@ function report_(body) {
     received: received, creditGiven: r2_(creditGiven), outstanding: outstanding, modes: modes, register: register.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.no - b.no) } };
 }
 
-/* ======================= Vendor khata (purchases and payments to suppliers) =======================
- * Tabs (separate in test mode via tab_): Vendors, VendorLedger, VendorDocs (small previews of bill photos).
- * Full-quality bill photos / PDFs are files in a private Drive folder ("Rate Book vendor bills", test: "… (test)").
- * Balance = opening + bills − payments − returns. Payments/returns store which bills they cover (alloc {billId: amount});
- * what isn't allocated is an advance, which can later be used against a bill (vUseAdvance).
- * A vendor's private read-only link (token) is served by doGet vpub / vpubprev / vpubfile. Owner + manager only otherwise. */
-const VEND_COLS = ['id', 'name', 'mobile', 'gstin', 'address', 'creditDays', 'opening', 'openingDate', 'token', 'linkOn', 'note', 'createdAt', 'updatedAt', 'by', 'removed', 'map'];
-const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history', 'ex', 'check', 'applied'];
 /* ======================= Insights: the owner's business page (13 Oct 2026, v48) =======================
  * One pass over the last 180 days of this mode's bills, plus the price list, Purchases (bill lines matched to items), vendors
  * and dues. Plain rules, no AI; every estimate is marked as one. Only bills that weren't cancelled count. The phone turns
@@ -2517,6 +2528,14 @@ function insightsBuild_(dayOf, today) {
 }
 
 const PUR_COLS = ['entryId', 'vendorId', 'itemId', 'date', 'desc', 'qty', 'unit', 'rate', 'f', 'buy', 'at', 'by'];   // Purchases tab: one row per bill line matched to an item
+/* ======================= Vendor khata (purchases and payments to suppliers) =======================
+ * Tabs (separate in test mode via tab_): Vendors, VendorLedger, VendorDocs (small previews of bill photos).
+ * Full-quality bill photos / PDFs are files in a private Drive folder ("Rate Book vendor bills", test: "… (test)").
+ * Balance = opening + bills − payments − returns. Payments/returns store which bills they cover (alloc {billId: amount});
+ * what isn't allocated is an advance, which can later be used against a bill (vUseAdvance).
+ * A vendor's private read-only link (token) is served by doGet vpub / vpubprev / vpubfile. Owner + manager only otherwise. */
+const VEND_COLS = ['id', 'name', 'mobile', 'gstin', 'address', 'creditDays', 'opening', 'openingDate', 'token', 'linkOn', 'note', 'createdAt', 'updatedAt', 'by', 'removed', 'map'];
+const VLED_COLS = ['id', 'vendorId', 'type', 'date', 'amount', 'gst', 'billNo', 'mode', 'ref', 'noteV', 'noteP', 'photos', 'alloc', 'by', 'at', 'editedAt', 'editedBy', 'removed', 'history', 'ex', 'check', 'applied'];
 const VDOC_COLS = ['fileId', 'vendorId', 'preview', 'mime', 'at'];
 const VD_FOLDER_NAME = 'Rate Book vendor bills';
 function vjson_(v, d) { try { const x = JSON.parse(v || ''); return x == null ? d : x; } catch (e) { return d; } }
@@ -2555,10 +2574,10 @@ function vCalc_(v, entries) {
    every change bumps a vendors version (vrev_<mode>) so phones can ask "anything new?" (vSync) without reading tabs. */
 function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedger', VLED_COLS);
   return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => vEntryOut_(r)) }; }
-function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); cPut_('vrev_' + ENV_, v); return v; }
+function vbump_() { return chg_(['vrev_' + ENV_]); }
 function vrev_() { return vrevC_(ENV_); }
 /** Hand edit or restore: vendors in both modes may have changed. */
-function vbumpAll_() { const v = String(Date.now()), P = PropertiesService.getScriptProperties(); ['live', 'test'].forEach(en => { P.setProperty('vrev_' + en, v); cPut_('vrev_' + en, v); }); }
+function vbumpAll_() { return chg_(['vrev_live', 'vrev_test']); }
 /** Vendors version for one mode (cache first, so the 25-second rev check from every phone costs no Properties quota). */
 function vrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + en) || '0'; cPut_('vrev_' + en, v); } return v; }
 /** Everything for this mode, or {same:true} when the phone's copy is current (no sheet read at all). */
@@ -2850,7 +2869,7 @@ function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => Str
 const NOTE_COLS = ['id', 'at', 'kind', 'vendorId', 'entryId', 'vname', 'amount', 'billNo', 'extra', 'by', 'read'];
 const NOTE_KINDS_ = { vendor: 1, bill: 1, pay: 1, adj: 1, paid: 1, rm: 1, check: 1, move: 1, below: 1 };
 function nrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('nrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('nrev_' + en) || '0'; cPut_('nrev_' + en, v); } return v; }
-function nbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('nrev_' + ENV_, v); cPut_('nrev_' + ENV_, v); return v; }
+function nbump_() { return chg_(['nrev_' + ENV_]); }
 function notice_(kind, o) {
   try { const s = sheet_(tab_('Notices'), NOTE_COLS);
     s.appendRow(NOTE_COLS.map(k => k === 'id' ? 'n' + Utilities.getUuid().replace(/-/g, '').slice(0, 12) : k === 'at' ? Date.now() : k === 'kind' ? kind

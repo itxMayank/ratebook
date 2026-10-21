@@ -61,10 +61,10 @@ function vRebuild(){ const vs=VDB.srv.vendors.map(v=>({...v})), es=VDB.srv.entri
   const det={}, list=[]; vs.filter(v=>!v.removed).forEach(v=>{ const en=es.filter(e=>e.vendorId===v.id).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.at||0)-(b.at||0)); const calc=vCalcJS(v,en); calc.flagged=en.filter(vFlagged).length; det[v.id]={vendor:v,entries:en,calc}; const s={...v,...calc}; delete s.bills; delete s.token; list.push(s); });
   VD.det=det; VD.list={vendors:list, owe:Math.round(list.reduce((a,v)=>a+Math.max(0,v.balance),0)*100)/100}; }
 /** Add a change: shown at once, sent in the background. Returns the job id (for Undo). */
-function vqAdd(job){ job.jid=vId("j"); job.at=Date.now(); vqSet([...vqGet(),job]); vRebuild(); vRefreshOpen(); setTimeout(vqFlush,30); return job.jid; }
+function vqAdd(job){ job.jid=vId("j"); job.at=Date.now(); vqSet([...vqGet(),job]); vRebuild(); vRefreshOpen(); obKick(30); return job.jid; }
 /** Undo: drop the change if it hasn't been sent yet, else send the opposite change. */
 function vUndo(jid,inverse){ const q=vqGet(); if(q.some(j=>j.jid===jid) && !(vqBusy && q[0].jid===jid)){ vqSet(q.filter(j=>j.jid!==jid)); vRebuild(); vRefreshOpen(); } else if(inverse) vqAdd(inverse); toast(t("vUndone")); }
-let vqBusy=false, vqErr=null, vqTimer=0;
+let vqBusy=false, vqErr=null;
 let vMergeN=0;   // counts replies merged from sends, so a vSync that started before one can't overwrite it with older data
 function vMerge(r){ if(!r || !r.vendor) return; vMergeN++; const s=VDB.srv; const i=s.vendors.findIndex(v=>v.id===r.vendor.id); if(i>=0) s.vendors[i]=r.vendor; else s.vendors.push(r.vendor);
   s.entries=s.entries.filter(e=>e.vendorId!==r.vendor.id).concat(r.entries||[]); vdbSave(); }
@@ -94,9 +94,8 @@ async function vqFlush(){ if(vqBusy || navigator.onLine===false || !S.canWrite |
       catch(e){ if(vNetErr(e)) throw e; if(e.code==="drive_auth" || e.code==="bad_pin" || e.code==="locked"){ vqErr=e.code; throw e; } toast(vErr(e)); }   // other server refusals: drop this change
       vqSet(vqGet().filter(j=>j.jid!==job.jid)); vRebuild(); vRefreshOpen(); }
     vqBusy=false; vNoteUpd(); vSync(true); }
-  catch(e){ clearTimeout(vqTimer); vqTimer=setTimeout(vqFlush,20000); }
+  catch(e){}   // left waiting: the outbox (obRun) tries again
   finally{ vqBusy=false; vNoteUpd(); } }
-window.addEventListener("online",()=>setTimeout(vqFlush,800));
 let vSyncing=null, vSyncAt=0; const VSCHEMA=2;
 /** Ask the sheet for changes (from other phones). Shows the local copy meanwhile. At most every 8 s unless forced. */
 function vSync(force){ if(vSyncing) return vSyncing; if(!force && Date.now()-vSyncAt<8000 && vSynced()) return Promise.resolve(); vSyncAt=Date.now(); vSyncing=(async()=>{ await vdbInit(); if(!S.canWrite||!can("manager")) return;

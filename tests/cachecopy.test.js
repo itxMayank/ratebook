@@ -32,3 +32,10 @@ R(`ENV_='live'; bumpB_()`);
 ok(rev().bl === g.props.brev_live, 'C2 the same for the bills version');
 R(`sessEdit_(all => { all.k1 = {u:'x', n:'Raju', c:Date.now(), s:Date.now()}; })`); delete g.cache.SESS;
 ok(R('Object.keys(sessAll_()).includes("k1")'), 'D1 sign-ins come back from script properties when the cache is emptied');
+/* (v67) one change log: every version goes up, even two changes in the same millisecond, and each is logged once */
+R(`Date.now0 = Date.now; Date.now = () => 1800000000000`);
+R(`ENV_='live'; bumpB_(false, 'x1')`); const a1 = g.props.brev_live; R(`bumpB_(false, 'x2')`); const a2 = g.props.brev_live; const a3 = R(`bump_()`), a4 = R(`bump_()`);
+R(`Date.now = Date.now0`);
+ok(Number(a2) > Number(a1) && Number(a4) > Number(a3), 'E1 two changes in the same millisecond still get different, higher versions (before: the same, so a phone could miss the second)');
+const L = R('chgLog_()');
+ok(L.slice(-4).map(x => x.k).join('|') === 'brev_live|brev_live|rev|rev' && JSON.parse(R(`JSON.stringify(blog_('live').slice(-2).map(e => e.id))`)).join() === 'x1,x2', 'E2 each change is in the one change log, and the bills log still says which bill');

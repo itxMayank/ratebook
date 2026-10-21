@@ -49,8 +49,7 @@ let upReady=false, upApplying=false, upT=0;
 const lsSet0=ls.set;
 ls.set=(k,v)=>{ lsSet0(k,v); const f=UP_KEYS[k];
   if(f && upReady && !upApplying && S.auth && S.auth.tok){ const q=ls.get("rb_upq",{}); q[f]=v; lsSet0("rb_upq",q); upSoon(); } };
-function upSoon(){ clearTimeout(upT); upT=setTimeout(upFlush,1200); }
-window.addEventListener("online",()=>{ if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); });
+function upSoon(){ clearTimeout(upT); upT=setTimeout(()=>obKick(0),1200); }   // a few quick switches go as one
 async function upFlush(){ if(!(S.auth&&S.auth.tok) || navigator.onLine===false) return;
   const q=ls.get("rb_upq",{}); if(!q || !Object.keys(q).length) return; lsSet0("rb_upq",{});
   try{ const j=await apiPost0({action:"setMyPrefs",prefs:{ui:q}}); if(S.auth && j.prefs){ S.auth={...S.auth,prefs:j.prefs}; lsSet0("rb_auth",S.auth); } }
@@ -292,7 +291,7 @@ function renderQueue(){
   el.hidden=!n; if(!n) return;
   el.classList.toggle("bad",!!S.needCode);
   el.innerHTML=`<span class="dot"></span><span>${esc(S.needCode?t("queueCode"):t("queueN",n))}</span>${S.needCode?"":`<button type="button" id="queue-send">${esc(t("queueSend"))}</button>`}`;
-  const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); flushBills(); };
+  const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); obKick(0); };
 }
 function renderSvNote(){
   const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv>0 && S.sv<NEED_SV && TECH();   // other shops: the admin updates their scripts (the dashboard lists them under "Needs you")
@@ -958,11 +957,34 @@ function enqueue(fn){ const p=chain.then(fn); chain=p.catch(()=>{}); return p; }
    "N changes couldn't be saved" opens a screen to try again or let it go. Resends are safe (v59): a payment carries its own id,
    a bill edit already saved is recognised by its content, a new customer by the id the phone gave it. Older scripts: the old
    waiting saves (wqOn() is false). */
-var WQ_KEY="rb_wq", WQ_FAIL="rb_wqfail", wqBusy=false, wqCur=null, wqV=0, wqT=0;   // var: read by renderQueue / custIndex, which may run before this line
+var WQ_KEY="rb_wq", WQ_FAIL="rb_wqfail", wqBusy=false, wqCur=null, wqV=0;   // var: read by renderQueue / custIndex, which may run before this line
 function wqGet(){ const q=ls.get(WQ_KEY,[]); return Array.isArray(q)?q:[]; }
 const wqSet=q=>{ ls.set(WQ_KEY,q); wqV++; };
 function wqFails(){ const q=ls.get(WQ_FAIL,[]); return Array.isArray(q)?q:[]; }
 const wqOn=()=>!!(S.auth&&S.auth.tok);
+/* ---------- one outbox (21 Oct 2026) ----------
+   Four kinds of change wait on the phone until the sheet has them, each in its own store (kept as they were, so nothing queued
+   before an update is lost): new bills (rb_billq), bill edits / payments / customers / settings (rb_wq), vendor changes
+   (rb_vq_<mode>) and display choices (rb_upq). One sender drives them all, in that order (an edit or a payment may be for a bill
+   still waiting; vendor changes and display choices never depend on bills), one pass at a time, with one rule for trying again:
+   anything still waiting after a pass (no signal, sheet busy) goes again after 4 s, doubling to 60 s; every 25-second check,
+   coming back online and unlocking start a pass at once. A new bill is still sent straight away by finishBill (Share waits for
+   its number); the sender just picks up whatever is left. */
+const OB={busy:false, again:false, t:0, tries:0};
+/** Changes this phone can send right now and hasn't yet (another person's waiting changes and vendor changes without the right don't count). */
+function obPending(){ let n=(S.billQ||[]).length+wqGet().filter(wqMine).length;
+  if(typeof vqGet==="function" && S.canWrite && can("manager")) n+=vqGet().length;
+  if(S.auth && S.auth.tok) n+=Object.keys(ls.get("rb_upq",{})||{}).length; return n; }
+function obKick(ms){ clearTimeout(OB.t); OB.t=setTimeout(obRun, ms||0); }
+async function obRun(){
+  if(OB.busy){ OB.again=true; return; }
+  if(navigator.onLine===false || !apiUrl()) return;   // the "online" event starts the next pass
+  OB.busy=true;
+  try{ await flushBills(); if(!(S.billQ||[]).length) await wqFlush(); await vqFlush(); await upFlush(); }
+  catch{} finally{ OB.busy=false; }
+  if(OB.again){ OB.again=false; return obKick(0); }
+  if(obPending() && !flushing){ OB.tries++; obKick(Math.min(60000,4000*Math.pow(2,Math.min(4,OB.tries-1)))); } else OB.tries=0;
+}
 const wqId=()=>"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
 const wqMine=e=>!e.by || !S.auth || String(e.by).trim().toLowerCase()===String(S.auth.by||"").trim().toLowerCase();
 function wqPending(k,env){ env=env||S.cfg.mode; return wqGet().filter(e=>e.k===k && e.env===env); }
@@ -973,19 +995,19 @@ function wqAdd(e){
   if(e.body.bill) e.body.bill={...e.body.bill, oid:e.oid};
   const q=wqGet(), i=e.key ? q.findIndex(x=>x.key===e.key && x.env===e.env && x.oid!==wqCur) : -1;
   if(i>=0){ const m=WQ_K[e.k].merge; q[i]=m?m(q[i],e):e; } else q.push(e);
-  wqSet(q); wqUi(); setTimeout(wqFlush,0); return e;
+  wqSet(q); wqUi(); obKick(0); return e;
 }
 function wqDrop(oid){ wqSet(wqGet().filter(x=>x.oid!==oid)); }
 async function wqFlush(){
   if(wqBusy || navigator.onLine===false || !S.auth || !S.canWrite) return;
-  if((S.billQ||[]).length){ flushBills(); clearTimeout(wqT); wqT=setTimeout(wqFlush,3000); return; }   // new bills first: a payment or an edit may be for one of them
+  if((S.billQ||[]).length){ obKick(3000); return; }   // new bills first: a payment or an edit may be for one of them
   const first=wqGet().find(wqMine); if(!first) return;
   wqBusy=true; wqUi();
   try{ for(;;){ const e=wqGet().find(wqMine); if(!e) break; wqCur=e.oid; let j;
       try{ j=await apiPost({...e.body, oid:e.oid}); }
       catch(err){ const c=err&&err.code;
         if(!WQ_REFUSE.has(c)){ const q=wqGet(), x=q.find(y=>y.oid===e.oid); if(x){ x.tries=(x.tries||0)+1; x.err=String(c||"net").slice(0,60); wqSet(q); }
-          clearTimeout(wqT); wqT=setTimeout(wqFlush,Math.min(60000,4000*Math.pow(2,Math.min(4,(x&&x.tries||1)-1)))); break; }
+          break; }   // the outbox (obRun) tries again
         wqDrop(e.oid); const f=wqFails(); f.push({...e, err:c, existing:err.existing||null, failedAt:Date.now()}); ls.set(WQ_FAIL,f.slice(-30));
         try{ (WQ_K[e.k].fail||(()=>{}))(e,err); }catch{}
         toast(t("wqFailOne",wqLabel(e))); continue; }
@@ -1018,8 +1040,8 @@ function openWqFails(){
     if(b.dataset.wqd!==undefined && !confirm(t("wqDiscardQ"))) return;
     F.splice(i,1); ls.set(WQ_FAIL,F);
     if(b.dataset.wqd===undefined){ const body={...f.body}; if(b.dataset.wqo!==undefined && body.bill){ body.bill={...body.bill}; delete body.bill.baseEdits; }   // "save mine": over the other change, on purpose
-      if(f.k==="newb"){ S.billQ.push(body.bill); ls.set("rb_billq",S.billQ); setTimeout(flushBills,0); }   // a new bill goes back to the bill queue
-      else { const q=wqGet(); q.push({...f, body, err:undefined, tries:0, existing:undefined, failedAt:undefined}); wqSet(q); setTimeout(wqFlush,0); } }
+      if(f.k==="newb"){ S.billQ.push(body.bill); ls.set("rb_billq",S.billQ); obKick(0); }   // a new bill goes back to the bill queue
+      else { const q=wqGet(); q.push({...f, body, err:undefined, tries:0, existing:undefined, failedAt:undefined}); wqSet(q); obKick(0); } }
     wqUi(); draw(); };
 }
 /* ---- what each kind does once the sheet has it, or refused it ---- */
@@ -1194,12 +1216,11 @@ function nbApply(nb){ if(!nb || !S.cfg || !S.cfg.raw) return; const r=S.cfg.raw;
 let lastAct=Date.now(), pollT=null, lastPoll=0;   // polling plan, see POLL_ACTIVE below
 async function checkRev(){
   if(!apiUrl() || document.hidden) return; lastPoll=Date.now();
-  try{ const j=await apiGet({action:"rev"}); S.online=true; if(+j.sv>0 && +j.sv!==S.sv){ S.sv=+j.sv; saveCache(); } if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); nbApply(j.nb); }
+  try{ const j=await apiGet({action:"rev"}); S.online=true; if(+j.sv>0 && +j.sv!==S.sv){ S.sv=+j.sv; saveCache(); } if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); nbApply(j.nb); }
     const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv));
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
     if(bv && S.canWrite && lastBv!==S.cfg.mode+":"+bv){ const first=!lastBv; lastBv=S.cfg.mode+":"+bv; if(!first) billsChangedBg(); }
-    if(vqGet().length && !vqBusy) vqFlush();
-    if(wqGet().length && !wqBusy) wqFlush();
+    if(obPending()) obKick(0);   // anything still waiting goes with each check
     const vv=S.cfg.mode==="live"?j.vl:j.vt; if(vv && S.canWrite && can("manager") && (!VDB.loaded || VDB.mode!==S.cfg.mode || String(VDB.srv.vrev)!==String(vv))) vSync(true);
     nCheck(j); perfSend(); }
   catch{ S.online=false; renderNet(); }
@@ -1221,7 +1242,7 @@ function renderNet(){
 }
 $("#meta-l").addEventListener("click",e=>{ if(e.target.closest("#meta-sync")){ e.target.closest("#meta-sync").textContent="· "+t("loading"); sync(); } });
 $("#net-refresh").onclick=()=>{ $("#net-txt").textContent=t("loading"); sync(); };
-window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); setTimeout(wqFlush,900); });
+window.addEventListener("online",()=>{ checkRev(); obKick(300); });
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });
 /* (v66) How often a phone asks the sheet for changes. Every phone of every shop runs as one Google account, which can only do so
    much at once (see "How many shops" in CLAUDE.md), so a phone nobody is using asks less: every 25 s while someone is using it

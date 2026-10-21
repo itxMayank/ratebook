@@ -11,7 +11,7 @@ function aiErrText(e){ const c=String(e&&e.code||""); if(c==="ai_key") return t(
 function renderAiCfg(){ const box=$("#cf-ai"); if(!box) return; const on=!!S.cfg.aiOn, w=can("owner");
   box.innerHTML=`<h3 style="margin:0">${esc(t("aiT"))} <span class="pill ${on?"paid":"open"}">${esc(t(on?"aiOnL":"aiOffL"))}</span></h3><p class="note" style="margin:0">${esc(t("aiD"))}</p>
     ${w?`<ol class="ai-steps"><li>${t("aiStep1")}</li><li>${esc(t("aiStep2"))}</li><li>${esc(t("aiStep3"))}</li></ol>
-    <div class="catnew"><input id="cf-aikey" type="password" autocomplete="off" placeholder="${esc(t(on?"aiKeyPhOn":"aiKeyPh"))}"><button type="button" class="btn primary" id="cf-aisave">${esc(t("aiSave"))}</button></div>
+    <div class="catnew"><input id="cf-aikey" type="${PIN_TYPE}" data-pin="1" autocomplete="off" placeholder="${esc(t(on?"aiKeyPhOn":"aiKeyPh"))}"><button type="button" class="btn primary" id="cf-aisave">${esc(t("aiSave"))}</button></div>
     ${on?`<button type="button" class="btn ghost" id="cf-aioff" style="justify-self:start">${esc(t("aiRemove"))}</button>`:""}<p class="err" id="cf-aierr" style="margin:0"></p>`:""}`;
   if(!w) return;
   const go=async key=>{ const b=key?$("#cf-aisave"):$("#cf-aioff"); btnBusy(b,true); $("#cf-aierr").textContent="";
@@ -58,7 +58,7 @@ function openPerson(u){
   const roles=["owner","manager","staff"];
   openSheet(u?u.name:t("pplAdd"), `<div class="form">
     <div class="field"><label for="pp-name">${esc(t("pplName"))}</label><input id="pp-name" value="${esc(u?u.name:"")}" maxlength="40"></div>
-    <div class="field"><label for="pp-pin">${esc(u?t("pplNewPin"):t("pplPin"))}</label><input id="pp-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password"></div>
+    <div class="field"><label for="pp-pin">${esc(u?t("pplNewPin"):t("pplPin"))}</label><input id="pp-pin" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" maxlength="8" autocomplete="off"></div>
     <div class="field"><label>${esc(t("pplRole"))}</label><div class="role-list" id="pp-roles">${roles.map(r=>`<button type="button" data-role="${r}" aria-pressed="${r===role}"><b>${esc(t("role"+r[0].toUpperCase()+r.slice(1)))}</b><span>${esc(t("role"+r[0].toUpperCase()+r.slice(1)+"D"))}</span></button>`).join("")}</div></div>
     <label class="switch"><span><b>${esc(t("pplTest"))}</b><br><span class="note">${esc(t("pplTestD"))}</span></span><input type="checkbox" id="pp-test" ${!u||u.testOk!==false?"checked":""}></label>
     ${u?`<label class="switch"><span><b>${esc(t("pplActive"))}</b></span><input type="checkbox" id="pp-active" ${u.active?"checked":""}></label>`:""}
@@ -125,8 +125,8 @@ ${cg("me","user",t("meT"),cgSumMe(),`
       <div id="cf-bio"></div>
       ${S.auth.personal && !(S.sv>0 && S.sv<57)?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
         ${pinShortMe()?`<p class="note mpwarn">${IC.warn} ${esc(t("myPinShort"))}</p>`:""}
-        <div id="cf-mpform" class="mpform" hidden><div class="field"><label for="cf-mp0">${esc(t("myPinOld"))}</label><input id="cf-mp0" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8"></div>
-          <div class="two"><div class="field"><label for="cf-mp1">${esc(t("newPin"))}</label><input id="cf-mp1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-mp2">${esc(t("newPin2"))}</label><input id="cf-mp2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></div></div>
+        <div id="cf-mpform" class="mpform" hidden><div class="field"><label for="cf-mp0">${esc(t("myPinOld"))}</label><input id="cf-mp0" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div>
+          <div class="two"><div class="field"><label for="cf-mp1">${esc(t("newPin"))}</label><input id="cf-mp1" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div><div class="field"><label for="cf-mp2">${esc(t("newPin2"))}</label><input id="cf-mp2" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div></div>
           <p class="note" style="margin:0">${esc(t(pinNeed6()?"myPinD6":"myPinD4"))}</p>
           <div><button type="button" class="btn primary" id="cf-mpsave">${esc(t("myPinSave"))}</button></div><div class="err" id="cf-mperr" role="alert"></div></div></div>`:""}
       <div><button type="button" class="btn ghost" id="cf-signout">${esc(t("signOutBtn"))}</button></div>
@@ -186,7 +186,7 @@ ${w?cg("ppl","users",t("cgPpl"),t("cgPplD"),`
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("sessT"))}</h3><p class="note" style="margin:0">${esc(t("sessD"))}</p><div id="sess-body">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>
-    <div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="password" autocomplete="new-password" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`):""}
+    <div class="cfg-sec"><h3>${esc(t("changePin"))}</h3><div class="two"><div class="field"><label for="cf-p1">${esc(t("newPin"))}</label><input id="cf-p1" inputmode="numeric" type="${PIN_TYPE}" data-pin="1" autocomplete="off" maxlength="8"></div><div class="field"><label for="cf-p2">${esc(t("newPin2"))}</label><input id="cf-p2" inputmode="numeric" type="${PIN_TYPE}" data-pin="1" autocomplete="off" maxlength="8"></div></div><div><button class="btn ghost" id="cf-pin" type="button">${esc(t("changePin"))}</button></div><div class="err" id="cf-perr"></div></div>`):""}
 ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     <div class="cfg-sec bk-sec" id="cf-bk"><div class="bk-head"><h3 style="margin:0">${esc(t("bkT"))}</h3><button type="button" class="btn ghost sm" id="bk-now">${esc(t("bkNow"))}</button></div><div id="bk-body">${ldBlock()}</div></div>`):""}
     <div class="err" id="cf-err" role="alert"></div>`;

@@ -465,7 +465,8 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 7. **Contrast:** text 4.5:1, UI parts 3:1; colour never alone.
 8. **Motion:** transform and opacity only, interruptible, reduced-motion path checked, nothing slows repeated actions.
 9. **States:** empty, loading (skeleton after ~300 ms), error (inline), offline, a very long name or amount (e.g. ₹17,52,013), test mode.
-10. **Screenshots** before and after, sent to the user. Add or update a Playwright test (`tests/*.test.js`) and run `node tests/run-all.js`.
+10. **Nothing that was there moves.** When something new is added to an existing screen (a tag, a chip, a line, a button), a test measures the old parts with and without it (left edge, size, row) at 390 px and at 320 px Largest, and fails if they move. A new piece inside a grid gets its own place (`grid-column`), never a free slot. Example: `tests/buyview.app.test.js` B5a–B5c (the "Low margin" tag first landed in the number circle's column and pushed the item name 64 px right, 21 Oct 2026).
+11. **Screenshots** before and after, sent to the user. Add or update a Playwright test (`tests/*.test.js`) and run `node tests/run-all.js`.
 
 ---
 

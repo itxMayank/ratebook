@@ -29,8 +29,7 @@ const items = [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 150, sell: 180, imgV
   ok(await a.p.evaluate(() => T.S.items.length) === 1, '…and the list arrives');
   await a.p.waitForTimeout(1500);
   ok(a.reqs.includes('POST thumbs +tok') && !a.reqs.includes('GET thumbs'), 'photos (thumbnails) too');
-  const o = await phone(43, true);
-  ok(o.reqs.includes('POST list +tok') && o.reqs.includes('GET list') && await o.p.evaluate(() => T.S.items.length) === 1, 'older script (no POST list yet): falls back to the old request, list arrives');
+  /* ("an older script (no POST list) falls back to the old GET" was removed with scripts below v60, 21 Oct 2026) */
   const n = await phone(44, false);
   ok(n.reqs.includes('GET list') && await n.p.evaluate(() => T.S.online !== false), 'not signed in yet: list refused, but not shown as "offline"');
   // the shop PIN switching off (v46): People says what to do; adding yourself as owner signs this shop-PIN phone out with the reason

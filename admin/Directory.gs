@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 8;
+const DIR_VERSION = 9;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
@@ -107,7 +107,7 @@ const ADMIN_ACTIONS = { deleteShop: 1, errors: 1, signIn: 1, signOut: 1, list: 1
 function doPost(e) {
   T0_ = Date.now(); let b = {};
   try { b = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) { return out_({ ok: false, error: 'bad_json' }); }
-  if (!ADMIN_ACTIONS[b.action]) return out_({ ok: false, error: 'bad_action' });
+  if (!Object.prototype.hasOwnProperty.call(ADMIN_ACTIONS, String(b.action))) return out_({ ok: false, error: 'bad_action' });   // (v9) own names only: "constructor" etc. aren't actions
   if (b.action === 'signIn') return out_(adminSignIn_(b));
   if (!adminOk_(b.tok)) return out_({ ok: false, error: 'bad_session' });
   const lock = LockService.getScriptLock();
@@ -130,6 +130,7 @@ function doPost(e) {
       case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
       case 'startPin': return out_(Object.assign({ ok: true }, startPin_(String(b.code || ''))));
       case 'deleteShop': return out_(Object.assign({ ok: true }, deleteShop_(b.code, b)));
+      default: return out_({ ok: false, error: 'bad_action' });
     }
   } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); }
   finally { try { lock.releaseLock(); } catch (e2) {} }
@@ -154,6 +155,7 @@ function adminDevs_() { try { return JSON.parse(P_().getProperty('ADMIN_DEVS') |
 function adminSess_() { try { return JSON.parse(P_().getProperty('ADMIN_SESS') || '{}'); } catch (e) { return {}; } }
 function adminSessSave_(all) { const old = Date.now() - 30 * 864e5; Object.keys(all).forEach(k => { if (all[k] < old) delete all[k]; }); P_().setProperty('ADMIN_SESS', JSON.stringify(all)); }
 function adminOk_(t) { if (!t) return false; const all = adminSess_(), k = hash_('t:' + t); if (!all[k]) return false;
+  if (Date.now() - all[k] > 30 * 864e5) { delete all[k]; adminSessSave_(all); return false; }   // (v9) unused for 30 days: signed out (before, only once something else was saved)
   if (Date.now() - all[k] > 864e5) { all[k] = Date.now(); adminSessSave_(all); } return true; }
 function adminSessEnd_(t) { const all = adminSess_(); delete all[hash_('t:' + t)]; adminSessSave_(all); }
 
@@ -195,7 +197,10 @@ function api_(method, path, body) {
     if (/has not been used|is disabled|not been enabled|SERVICE_DISABLED|User has not enabled the Apps Script API/i.test(m)) throw new Error('script_api_off|' + m);
     throw new Error('script_api|' + code + '|' + m); }
   return j; }
-function codeGs_(ref) { const r = UrlFetchApp.fetch(REPO_RAW + (ref || 'main') + '/Code.gs?_=' + Date.now(), { muteHttpExceptions: true });
+/** (v9) A branch name only: letters, digits, - _ . /, no "..", no leading / or : (before, "../../someone/else/main" could make the
+    Directory fetch another repository's Code.gs and put it into every shop). */
+function refOk_(ref) { const r = String(ref == null || ref === '' ? 'main' : ref); if (!/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,99}$/.test(r) || r.indexOf('..') >= 0 || /\/\//.test(r)) throw new Error('bad_ref'); return r; }
+function codeGs_(ref) { ref = refOk_(ref); const r = UrlFetchApp.fetch(REPO_RAW + ref + '/Code.gs?_=' + Date.now(), { muteHttpExceptions: true });
   if (r.getResponseCode() !== 200) throw new Error('github|' + r.getResponseCode()); const s = r.getContentText();
   if (s.indexOf('const SCRIPT_VERSION') < 0) throw new Error('github|not Code.gs'); return s; }
 function svOf_(src) { const m = String(src).match(/const SCRIPT_VERSION = (\d+)/); return m ? Number(m[1]) : null; }

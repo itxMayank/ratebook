@@ -404,5 +404,7 @@ Object.assign(STR.hi,{ moveBtn:"नए नंबर पर ले जाएँ",
   moveFail:n=>`नया बिल सेव हो गया, पर बिल ${n} रद्द नहीं हो सका। पुराने बिलों से रद्द करें।`, moveEditing:"पहले इस बिल का बदलाव पूरा करें या रद्द करें।", movedPill:n=>`${n} पर गया` });
 Object.assign(STR.en,{ lwShop:"Opening your shop", lwOpening:"Opening the shop…", lwD:"Getting the shop ready. This takes a few seconds the first time.", siLoading:"Loading your prices…", siFail:"Couldn't sign in. Try again." });
 Object.assign(STR.hi,{ lwShop:"आपकी दुकान खुल रही है", lwOpening:"दुकान खुल रही है…", lwD:"दुकान तैयार हो रही है। पहली बार कुछ सेकंड लगते हैं।", siLoading:"आपके रेट आ रहे हैं…", siFail:"साइन इन नहीं हुआ। फिर कोशिश करें।" });
+Object.assign(STR.en,{ badTotal:"The bill total can't be below ₹0.", billJump:n=>`That bill number is too far ahead. The next number is ${n}.`, billJumpQ:(n,a)=>`Bill number ${n} is ${n-a} more than the next number (${a}). Numbers after it will carry on from ${n+1}. Use it?`, wqKNew:(n,c)=>`New bill ${n}${c?` (${c})`:""}` });
+Object.assign(STR.hi,{ badTotal:"बिल का कुल ₹0 से कम नहीं हो सकता।", billJump:n=>`यह बिल नंबर बहुत आगे है। अगला नंबर ${n} है।`, billJumpQ:(n,a)=>`बिल नंबर ${n} अगले नंबर (${a}) से ${n-a} ज़्यादा है। इसके बाद नंबर ${n+1} से चलेंगे। यही रखें?`, wqKNew:(n,c)=>`नया बिल ${n}${c?` (${c})`:""}` });
 return STR;
 })();

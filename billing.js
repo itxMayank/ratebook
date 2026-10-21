@@ -413,6 +413,7 @@ function finishBill(opts){
   if(!S.bill.length) return;
   if(S.editing){ saveEdit(opts); return; }
   const n=curBillNo(), auto=autoBillNo();
+  if(+n>+auto+50 && !confirm(t("billJumpQ",+n,+auto))) return;   // a typo with an extra digit would move the series on for good
   const g=S.gst?gstCalc():null;
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
@@ -472,6 +473,7 @@ function setCash(v){ S.cash=v; renderCash(); }
 /** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
 function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 let flushing=false;
+const BILL_REFUSE=new Set(["bad_total","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
 async function flushBills(){
   if(flushing || !S.billQ.length || !apiUrl()) return;
   renderQueue();
@@ -483,7 +485,13 @@ async function flushBills(){
       blcDirty(); const r=await fetch(apiUrl(),{method:"POST",redirect:"follow",body:JSON.stringify({action:"takeBill",n:rec.n,by:byName(),env:rec.env||"test",bill:rec,shop:SHOP.code,k:ls.get("rb_view",""),...(S.auth&&S.auth.tok?{tok:S.auth.tok}:{pin:(S.auth&&S.auth.pin)||""}),dev:DEV})});
       const j=await r.json();
       if(j.shop && j.shop!==SHOP.code){ shopMismatch(); throw 0; }   /* never record a bill in another shop's sheet; it stays queued */
-      if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } if(j.error==="paused") shopPausedNote(); throw 0; }
+      if(!j.ok){ if(j.error==="need_code"){ S.needCode=true; renderQueue(); renderCodeNote(); } if(j.error==="paused") shopPausedNote();
+        /* (21 Oct 2026, break pass) a refusal that sending again won't change used to stay first in the queue for ever, so every
+           bill made after it waited too ("1 bill waiting" that never went). It moves to the "couldn't be saved" list, kept with
+           its text (Copy / Try again / Let it go), and the next bills go on. */
+        if(BILL_REFUSE.has(j.error)){ S.billQ.shift(); ls.set("rb_billq",S.billQ); const f=wqFails(); f.push({k:"newb", oid:"n"+rec.id, env:rec.env||S.cfg.mode, at:Date.now(), by:byName(), body:{bill:rec}, err:j.error, next:j.next, failedAt:Date.now()}); ls.set(WQ_FAIL,f.slice(-30));
+          toast(t("wqFailOne",t("wqKNew",rec.n,rec.customer||""))); wqUi(); continue; }
+        throw 0; }
       S.needCode=false;
       if(j.renumbered){ { const li=ls.get("rb_lastinv",null); if(li && String(li.no)===String(j.renumbered.from) && S.lastBill && S.lastBill.n===rec.n){ li.no=String(j.renumbered.to); ls.set("rb_lastinv",li); } }
         if(S.lastBill && S.lastBill.n===rec.n){ S.lastBill.n=j.renumbered.to;

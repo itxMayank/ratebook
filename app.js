@@ -719,8 +719,8 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const q=e.target.dataset?.qty, r=e.target.dataset?.rate;
-  if(q!=null){ const l=S.bill[+q], v=parseQty(e.target.value,l&&l.unit); if(l && !isNaN(v)&&v>=0){ l.qty=v; saveBill(); updateBillTotals(); qpHint(e.target,+q); } else if(l) qpHint(e.target,+q); }
-  if(r!=null){ const v=toNum(e.target.value); if(!isNaN(v)&&v>=0){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
+  if(q!=null){ const l=S.bill[+q], v=parseQty(e.target.value,l&&l.unit); if(l && isFinite(v)&&v>=0&&v<1e7){ l.qty=v; saveBill(); updateBillTotals(); qpHint(e.target,+q); } else if(l) qpHint(e.target,+q); }
+  if(r!=null){ const v=toNum(e.target.value); if(isFinite(v)&&v>=0&&v<1e9){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
   const h=e.target.dataset?.hsn;
   if(h!=null){ const v=e.target.value.replace(/\D/g,"").slice(0,8); if(v!==e.target.value) e.target.value=v; const l=S.bill[+h]; if(!l) return; if(v) l.hsn=v; else delete l.hsn; saveBill(); updateBillTotals(); }
 });
@@ -933,7 +933,7 @@ async function apiPost0(body){
     throw {code:c||"server", existing:j.existing}; }
   return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="bad_old_pin") return t("myPinBadOld"); if(c==="pin_same") return t("myPinSame"); if(c==="not_personal") return t("myPinNoOwn"); if(c==="bad_new_pin") return t("pplPin"); if(c==="need_name") return t("needYourName"); if(c==="bad_session") return t("siGone"); if(c==="busy" || /lock timeout/i.test(String(c||""))) return t("busyNow"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="signin_fail") return t("siFail"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail");
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="bad_old_pin") return t("myPinBadOld"); if(c==="pin_same") return t("myPinSame"); if(c==="not_personal") return t("myPinNoOwn"); if(c==="bad_new_pin") return t("pplPin"); if(c==="need_name") return t("needYourName"); if(c==="bad_session") return t("siGone"); if(c==="busy" || /lock timeout/i.test(String(c||""))) return t("busyNow"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="signin_fail") return t("siFail"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_total") return t("badTotal"); if(c==="credit_needs_mobile") return t("creditNeeds"); if(c==="bill_no_jump") return t("billJump",e.next||""); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail");
   /* anything else: the sheet refused for a reason the app has no words for; the shop owner of the original shop sees the code, so it can be looked up (it is also in the dashboard's error log) */
   return t("writeFail") + (c && c!=="http" && c!=="offline" && TECH() ? " ("+String(c).slice(0,80)+")" : ""); }
 let chain=Promise.resolve();
@@ -955,7 +955,7 @@ const wqId=()=>"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,9)
 const wqMine=e=>!e.by || !S.auth || String(e.by).trim().toLowerCase()===String(S.auth.by||"").trim().toLowerCase();
 function wqPending(k,env){ env=env||S.cfg.mode; return wqGet().filter(e=>e.k===k && e.env===env); }
 /** The sheet said no for a reason sending again won't change; anything else (no signal, busy, Google hiccup) is tried again. */
-const WQ_REFUSE=new Set(["bill_changed","bill_cancelled","bill_not_found","nothing_due","not_allowed","needs_manager","credit_needs_mobile","cust_exists","cust_not_found","bad_name","bad_mobile","bad_gstin","bad_email","bad_amount","bad_action","no_test","bad_json"]);
+const WQ_REFUSE=new Set(["bad_total","bill_no_jump","bill_changed","bill_cancelled","bill_not_found","nothing_due","not_allowed","needs_manager","credit_needs_mobile","cust_exists","cust_not_found","bad_name","bad_mobile","bad_gstin","bad_email","bad_amount","bad_action","no_test","bad_json"]);
 function wqAdd(e){
   e.oid=wqId(); e.env=e.env||S.cfg.mode; e.at=Date.now(); e.by=(S.auth&&S.auth.by)||""; e.body={...e.body, env:e.env};
   if(e.body.bill) e.body.bill={...e.body.bill, oid:e.oid};
@@ -982,13 +982,14 @@ async function wqFlush(){
 }
 function wqLabel(e){ const b=e.body||{};
   if(e.k==="cust") return t("wqKCust",(b.customer||{}).name||"");
+  if(e.k==="newb") return t("wqKNew",(b.bill||{}).n,(b.bill||{}).customer||"");
   if(e.k==="bill") return t("wqKBill",(b.bill||{}).n,(b.bill||{}).customer||"");
   if(e.k==="pay") return t("wqKPay",rs(b.amount||0),e.who||"");
   return t("wqKCfg"); }
 function wqWhy(f){ const c=f.err;
   if(c==="bill_changed") return t("billChanged"); if(c==="bill_cancelled") return t("wqCancelled"); if(c==="nothing_due") return t("wqNothingDue");
   if(c==="cust_exists") return t("cuExists",(f.existing&&(f.existing.name||f.existing.key))||""); if(c==="bad_gstin") return t("gstinBad"); if(c==="bad_mobile") return t("mobBad");
-  if(c==="not_allowed"||c==="needs_manager") return t("notAllowed"); return errMsg({code:c}); }
+  if(c==="not_allowed"||c==="needs_manager") return t("notAllowed"); return errMsg({code:c, next:f.next}); }
 function wqUi(){ try{ renderQueue(); }catch{} }
 /** The failed changes: what each was, why the sheet said no, and try again / let it go. Nothing leaves this list by itself. */
 function openWqFails(){
@@ -996,16 +997,17 @@ function openWqFails(){
     if(!F.length){ closeSheet(); return; }
     $("#sheet-body").innerHTML=`<div style="display:grid;gap:12px"><p class="note" style="margin:0">${esc(t("wqFailD"))}</p>${F.map((f,i)=>`<div class="wqf">
       <b>${esc(wqLabel(f))}</b><span class="note">${esc(fmtDT(new Date(f.at).toISOString()))}</span><p class="err" style="margin:0">${esc(wqWhy(f))}</p>
-      ${f.k==="bill"&&(f.body.bill||{}).text?`<pre class="billtext" style="max-height:160px;overflow:auto">${esc(f.body.bill.text)}</pre>`:""}
+      ${(f.k==="bill"||f.k==="newb")&&(f.body.bill||{}).text?`<pre class="billtext" style="max-height:160px;overflow:auto">${esc(f.body.bill.text)}</pre>`:""}
       <div class="row-btns" style="justify-content:flex-start">${f.err==="bill_changed"?`<button type="button" class="btn primary" data-wqo="${i}">${esc(t("wqMine"))}</button>`:`<button type="button" class="btn primary" data-wqr="${i}">${esc(t("wqRetry"))}</button>`}
-        ${f.k==="bill"&&(f.body.bill||{}).text?`<button type="button" class="btn ghost" data-wqc="${i}">${esc(t("copy"))}</button>`:""}<button type="button" class="btn ghost" data-wqd="${i}">${esc(t("wqDiscard"))}</button></div></div>`).join("")}</div>`; };
+        ${(f.k==="bill"||f.k==="newb")&&(f.body.bill||{}).text?`<button type="button" class="btn ghost" data-wqc="${i}">${esc(t("copy"))}</button>`:""}<button type="button" class="btn ghost" data-wqd="${i}">${esc(t("wqDiscard"))}</button></div></div>`).join("")}</div>`; };
   openSheet(t("wqFailT"), "", "", {full:true}); draw();
   $("#sheet-body").onclick=e=>{ const b=e.target.closest("[data-wqr],[data-wqo],[data-wqd],[data-wqc]"); if(!b) return; const F=wqFails(), i=+(b.dataset.wqr??b.dataset.wqo??b.dataset.wqd??b.dataset.wqc), f=F[i]; if(!f) return;
     if(b.dataset.wqc!==undefined){ try{ navigator.clipboard.writeText(f.body.bill.text); toast(t("copied")); }catch{} return; }
     if(b.dataset.wqd!==undefined && !confirm(t("wqDiscardQ"))) return;
     F.splice(i,1); ls.set(WQ_FAIL,F);
     if(b.dataset.wqd===undefined){ const body={...f.body}; if(b.dataset.wqo!==undefined && body.bill){ body.bill={...body.bill}; delete body.bill.baseEdits; }   // "save mine": over the other change, on purpose
-      const q=wqGet(); q.push({...f, body, err:undefined, tries:0, existing:undefined, failedAt:undefined}); wqSet(q); setTimeout(wqFlush,0); }
+      if(f.k==="newb"){ S.billQ.push(body.bill); ls.set("rb_billq",S.billQ); setTimeout(flushBills,0); }   // a new bill goes back to the bill queue
+      else { const q=wqGet(); q.push({...f, body, err:undefined, tries:0, existing:undefined, failedAt:undefined}); wqSet(q); setTimeout(wqFlush,0); } }
     wqUi(); draw(); };
 }
 /* ---- what each kind does once the sheet has it, or refused it ---- */

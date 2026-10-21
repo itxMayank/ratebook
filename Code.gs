@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 63;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 64;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -552,7 +552,7 @@ function doPost(e) {
   }
   const who = auth_(body);
   if (who.error) return out_({ ok: false, error: who.error });
-  if (!NEEDS[body.action]) return out_({ ok: false, error: 'bad_action' });
+  if (!Object.prototype.hasOwnProperty.call(NEEDS, String(body.action))) return out_({ ok: false, error: 'bad_action' });   // own names only ("constructor" isn't an action)
   if (ROLE_RANK[who.role] < ROLE_RANK[NEEDS[body.action]]) return out_({ ok: false, error: 'not_allowed' });
   if (ENV_ === 'test' && who.testOk === false && body.action !== 'verify' && body.action !== 'setMyPrefs' && body.action !== 'setMyPin') return out_({ ok: false, error: 'no_test' });
   if (who.viaPin && approveOn_() && body.action !== 'verify') return out_({ ok: false, error: 'need_signin' });   // new-phone approval: only signed-in phones
@@ -1167,17 +1167,27 @@ function takeBill_(body) {
     }
     let used = Math.floor(num_(body.n));
     const isGst = !!(body.bill && body.bill.gst);
+    { const bb = body.bill || {};   /* (v64) checks a phone already makes, here too (an older or tampered copy) */
+      if (!totalOk_(bb.total)) return { ok: false, error: 'bad_total' };
+      if ((bb.pay === 'credit' || bb.pay === 'part') && !mob10_(bb.mobile)) return { ok: false, error: 'credit_needs_mobile' }; }
     let key = isGst ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
     const cfg0 = readConfig_(), fyNow = fy_(new Date());
     let cur = cfg0[key];
     const fyKey = ENV_ === 'test' ? 'testGstFy' : 'gstFy';
+    let fyNew = false;
     if (isGst && cfg0.fyReset && cfg0[fyKey] !== fyNow) {
       if (!cfg0[fyKey]) { const o = {}; o[fyKey] = fyNow; setConfig_(o); }                  // first run: just note the current year
-      else { cur = 1; const o = {}; o[key] = 1; o[fyKey] = fyNow; setConfig_(o); }          // new financial year: GST invoices start again from 1
+      else { cur = 1; fyNew = true; const o = {}; o[key] = 1; o[fyKey] = fyNow; setConfig_(o); }          // new financial year: GST invoices start again from 1
     }
     // Two phones (or a hand-typed number) can pick a number that's already used in this series: give the next free one
     let renumbered = null;
+    cur = Math.max(1, Math.floor(num_(cur)) || 1);
+    /* (v64) no number (blank or 0): before, such a bill was quietly not saved while the phone was told it was. It takes the next one. */
+    if (!(used > 0)) { renumbered = { from: used || 0, to: cur }; used = cur; }
+    /* (v64) a typo with extra digits (17760 for 1776) would move the series on for good (GST invoice numbers must run on). A jump of
+       up to 1,000 (a new bill book) is fine; the phone asks first from 50 up. */
+    else if (used > cur + 1000 && !fyNew) return { ok: false, error: 'bill_no_jump', next: cur };
     if (used > 0) {
       const bs = sheet_(tab_('Bills'), BILL_COLS), bn0 = bs.getLastRow() - 1;
       /* (v60) the usual case, the next number or above: only bills made lately can hold it, so read the last 600 rows instead of
@@ -1208,7 +1218,7 @@ function takeBill_(body) {
       try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
-        (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000),
+        (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), linesJson_(b.lines),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) {} }   // (v60) a paid bill adds nothing due: no need to read every bill
@@ -1371,9 +1381,10 @@ function updateBill_(b, by, who) {
   if (i < 0) throw new Error('bill_not_found');
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
+  if (!totalOk_(b.total)) throw new Error('bad_total');
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) {
     /* (v59) a resend of a change already saved (the phone lost the reply): the bill already holds exactly this text and these lines */
-    if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000))
+    if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === linesJson_(b.lines))
       return { dup: true, bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
     throw new Error('bill_changed'); }   // someone else saved it after this phone opened it   // someone else saved it after this phone opened it
   /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
@@ -1385,7 +1396,7 @@ function updateBill_(b, by, who) {
   b.fresh = freshOk;
   if (who && ROLE_RANK[who.role] < ROLE_RANK.manager && !freshOk) {
     const oldPays = payList_(r[B.payments]), oldMode = modeOf_(r[B.payment], oldPays), hasMoney = num_(r[B.due]) > 0 || oldPays.some(p => !p.at);
-    if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
+    if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || mob10_(b.mobile) !== mob10_(r[B.mobile]) || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
   }
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
@@ -1398,7 +1409,7 @@ function updateBill_(b, by, who) {
   if (b.po !== undefined) r[B.po] = poCell_(b.po);
   if (b.custAddr !== undefined) r[B.custAddr] = str_(String(b.custAddr || '').trim(), 300);
   r[B.text] = safe(String(b.text || '').slice(0, 45000));
-  r[B.lines] = JSON.stringify(Array.isArray(b.lines) ? b.lines.slice(0, 200) : []).slice(0, 45000);
+  r[B.lines] = linesJson_(b.lines);
   if (!r[B.billId]) r[B.billId] = str_(b.id || Utilities.getUuid().replace(/-/g, '').slice(0, 16), 40);
   r[B.cost] = costOut_(b.cost); r[B.profit] = costOut_(b.profit);
   if (!b.fresh) { r[B.editedAt] = new Date(); r[B.editedBy] = by; }   // fresh: tweaks right after sharing, not an edit of an old bill
@@ -1428,6 +1439,26 @@ function poCell_(po) { const p = poClean_(po); return p.no || p.date ? "'" + p.n
 function poOut_(v) { const t = String(v || ''); if (!t) return null; const i = t.lastIndexOf('|'); return i < 0 ? { no: t, date: '' } : { no: t.slice(0, i), date: t.slice(i + 1) }; }
 function paidBy_(v) { const k = String(v || '').trim().toLowerCase(); return k === 'cash' ? 'Cash' : k === 'upi' ? 'UPI' : k === 'cheque' || k === 'check' ? 'Cheque' : ''; }
 function payList_(v) { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch (err) { return []; } }
+/* (v64) A bill's payment history and its lines are kept as readable data, never cut mid-way. Before, they were cut at 20,000 /
+   45,000 characters: after ~250 payments the history stopped being readable, so it started again from nothing, and an undo then
+   worked the paid amount out from that part only (seen in the break pass: undo of ₹1 added ₹241 back to the customer's due).
+   Payments: past the limit, the oldest later payments are merged into one line with the same total (m = how many). */
+const CELL_MAX_ = 45000;
+function payJson_(pays) { if (!pays || !pays.length) return ''; let s = JSON.stringify(pays); if (s.length <= CELL_MAX_) return s;
+  let at = pays.filter(p => p.at), later = pays.filter(p => !p.at);
+  while (later.length > 2 && s.length > CELL_MAX_) {
+    const k = Math.max(2, Math.ceil(later.length / 4)), old = later.slice(0, k);
+    const m = { d: old[0].d, a: r2_(old.reduce((x, p) => x + num_(p.a), 0)), by: '', m: old.reduce((x, p) => x + (Number(p.m) || 1), 0), note: 'earlier payments' };
+    later = [m].concat(later.slice(k)); s = JSON.stringify(at.concat(later)); }
+  return s; }
+/** Bill lines (up to 200) as readable data: past the cell size the Hindi names go, then long names are shortened, then the last lines. */
+function linesJson_(lines) { let a = Array.isArray(lines) ? lines.slice(0, 200) : [], s = JSON.stringify(a); if (s.length <= CELL_MAX_) return s;
+  a = a.map(l => { const o = Object.assign({}, l); delete o.nameHi; return o; }); s = JSON.stringify(a); if (s.length <= CELL_MAX_) return s;
+  a = a.map(l => Object.assign({}, l, { name: String(l.name || '').slice(0, 60) })); s = JSON.stringify(a);
+  while (s.length > CELL_MAX_ && a.length > 1) { a = a.slice(0, -1); s = JSON.stringify(a); }
+  return s; }
+/** (v64) A bill total must be a number, not below 0 (a minus total would take money off the day's sales). */
+function totalOk_(v) { const n = Number(String(v == null ? '' : v).replace(/[₹,\s]/g, '')); return String(v == null ? '' : v).trim() !== '' && isFinite(n) && n >= 0; }
 function modeOf_(status, pays) {
   const atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);
   if (!status || status === 'Paid') return 'paid';
@@ -1445,7 +1476,7 @@ function payCalc_(total, mode, received, later, by, note) {
   const pays = (atBill > 0 && (mode !== 'paid' || later.length) ? [Object.assign({ d: new Date().toISOString(), a: atBill, by: by || '', at: 1 }, note ? { note: note } : {})] : []).concat(later);
   return { status: status, paid: paid, due: due, pays: pays, clearedAt: status === 'Cleared' ? new Date() : '' };
 }
-function payRow_(pc) { return [pc.status, pc.status === 'Paid' ? '' : pc.paid, pc.status === 'Paid' ? '' : pc.due, pc.pays.length ? JSON.stringify(pc.pays).slice(0, 20000) : '', pc.clearedAt]; }
+function payRow_(pc) { return [pc.status, pc.status === 'Paid' ? '' : pc.paid, pc.status === 'Paid' ? '' : pc.due, payJson_(pc.pays), pc.clearedAt]; }
 function payOut_(r, B) {
   const st = String(r[B.payment] || '') || 'Paid', total = num_(r[B.total]);
   return { pay: st, paid: st === 'Paid' ? total : num_(r[B.paid]), due: st === 'Paid' ? 0 : num_(r[B.due]), payments: payList_(r[B.payments]),
@@ -1504,6 +1535,7 @@ function recordPayment_(body, by) {
     let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
     if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
     if (i < 0) throw new Error('bill_not_found');
+    if (vals[i][B.status] === 'Cancelled') throw new Error('bill_cancelled');   // (v64) e.g. queued on an offline phone while it was cancelled or moved
     targets = [i];
   } else {
     const want = mob10_(body.mobile); if (!want) throw new Error('bad_mobile');
@@ -1519,7 +1551,7 @@ function recordPayment_(body, by) {
     const pays = payList_(r[B.payments]), pe = { d: new Date().toISOString(), a: take, by: by }; if (note) pe.note = note; if (pid) pe.id = pid; pays.push(pe);
     const paid = r2_(num_(r[B.paid]) + take), nd = r2_(Math.max(0, num_(r[B.total]) - paid));
     const st = nd > 0 ? 'Part paid' : 'Cleared'; if (st === 'Cleared') cleared++;
-    s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, nd, JSON.stringify(pays).slice(0, 20000), st === 'Cleared' ? new Date() : '']]);
+    s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, nd, payJson_(pays), st === 'Cleared' ? new Date() : '']]);
     mob = r[B.mobile];
   });
   if (left === amount) throw new Error('nothing_due');
@@ -1543,7 +1575,7 @@ function undoPayment_(body) {
   const gone = pays.splice(j, 1)[0];
   const paid = r2_(pays.reduce((x, p) => x + num_(p.a), 0)), due = r2_(Math.max(0, num_(r[B.total]) - paid));
   const st = due > 0 ? (paid > 0 ? 'Part paid' : 'Credit') : 'Cleared';
-  s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, due, pays.length ? JSON.stringify(pays) : '', st === 'Cleared' ? r[B.clearedAt] : '']]);
+  s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, due, payJson_(pays), st === 'Cleared' ? r[B.clearedAt] : '']]);
   try { refreshDue_(r[B.mobile]); } catch (err) {}
   return { removed: num_(gone.a), pay: st, paid: paid, due: due };
 }
@@ -1871,6 +1903,7 @@ function cancelBill_(body, by, cancel) {
   const r = vals[i];
   if (!cancel && /^Moved to No\. /.test(String(r[B.cancelReason] || ''))) throw new Error('bill_moved');   // (v63) its sale now lives on the new bill
   if (cancel) {
+    if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');   // (v64) keeps who cancelled it and why ("Moved to No. X" could be overwritten, then restored)
     const reason = str_(body.reason || '', 120).trim(); if (!reason) throw new Error('need_reason');
     s.getRange(i + 2, B.status + 1, 1, 4).setValues([['Cancelled', new Date(), by, reason]]);
   } else s.getRange(i + 2, B.status + 1, 1, 4).setValues([['', '', '', '']]);
@@ -2357,6 +2390,7 @@ function vPrevOk_(x) { x = String(x || ''); return /^data:image\/(jpeg|png|webp)
 function vFile_(f) { const file = vOwnFile_(f); const b = file.getBlob(); return { data: Utilities.base64Encode(b.getBytes()), mime: b.getContentType() }; }
 /* ---- the vendor's own read-only page ---- */
 function vPubFind_(t) { t = String(t || ''); if (!/^[tl][0-9a-f]{22}$/.test(t)) return null; ENV_ = t[0] === 't' ? 'test' : 'live';
+  if (!ss_().getSheetByName(tab_('Vendors'))) return null;   // (v64) a stranger's made-up link never adds a tab to the shop's sheet
   const V = vtab_('Vendors', VEND_COLS); const r = V.rows.find(o => String(o.token) === t && String(o.linkOn) === '1' && String(o.removed) !== '1'); return r || null; }
 function vPub_(t) { const r = vPubFind_(t); if (!r) return { ok: false, error: 'link_off' }; const G = vGet_(r.id), cfg = readConfig_();
   const entries = G.entries.filter(e => !e.removed).map(e => { const o = vEntryOut_(Object.assign({}, e, { photos: JSON.stringify(e.photos), alloc: JSON.stringify(e.alloc), check: e.check ? JSON.stringify(e.check) : '' }), true); delete o.removed; return o; });

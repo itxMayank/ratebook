@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 65;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 66;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1218,7 +1218,9 @@ function takeBill_(body) {
     const isGst = !!(body.bill && body.bill.gst);
     { const bb = body.bill || {};   /* (v64) checks a phone already makes, here too (an older or tampered copy) */
       if (!totalOk_(bb.total)) return { ok: false, error: 'bad_total' };
-      if ((bb.pay === 'credit' || bb.pay === 'part') && !mob10_(bb.mobile)) return { ok: false, error: 'credit_needs_mobile' }; }
+      if ((bb.pay === 'credit' || bb.pay === 'part') && !mob10_(bb.mobile)) return { ok: false, error: 'credit_needs_mobile' };
+      if (body.buyOk === false) fillBuy_(bb, null);   // (v65) made by someone who can't see buy rates: the sheet adds them
+      const bad = billSums_(bb); if (bad) return { ok: false, error: bad.error, line: bad.line, expect: bad.expect }; }
     let key = isGst ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
     const cfg0 = readConfig_(), fyNow = fy_(new Date());
@@ -1264,7 +1266,6 @@ function takeBill_(body) {
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
-      if (body.buyOk === false) fillBuy_(b, null);   // (v65) made by someone who can't see buy rates: the sheet adds them
       try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
@@ -1435,6 +1436,7 @@ function updateBill_(b, by, who) {
   if (!totalOk_(b.total)) throw new Error('bad_total');
   let oldLines = []; try { oldLines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   if (who && !buyOk_(who)) fillBuy_(b, oldLines);   // (v65) their copy of the bill had no buy rates: keep the ones it had (before the resend check, so a resend matches)
+  { const bad = billSums_(b); if (bad) { const e = new Error(bad.error); e.extra = { line: bad.line, expect: bad.expect }; throw e; } }   // (v66)
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) {
     /* (v59) a resend of a change already saved (the phone lost the reply): the bill already holds exactly this text and these lines */
     if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === linesJson_(b.lines))
@@ -1512,6 +1514,53 @@ function linesJson_(lines) { let a = Array.isArray(lines) ? lines.slice(0, 200) 
   while (s.length > CELL_MAX_ && a.length > 1) { a = a.slice(0, -1); s = JSON.stringify(a); }
   return s; }
 /** (v64) A bill total must be a number, not below 0 (a minus total would take money off the day's sales). */
+/* ==== money.js: copied by tools/stamp.js, edit money.js instead ==== */
+/** A bill's sums from its lines ({qty, rate, gst}). Normal bill: total = lines added up (paise kept). GST bill: tax added on top,
+    grouped by rate, half CGST + half SGST (or IGST), total rounded to the rupee with a round-off. rateOf: a line's GST %. */
+function billMath_(lines, gst, igst, rateOf) {
+  const r2 = n => Math.round((+n || 0) * 100) / 100, L = Array.isArray(lines) ? lines : [];
+  if (!gst) { const total = r2(L.reduce((a, l) => a + (+(l && l.qty) || 0) * (+(l && l.rate) || 0), 0)); return { taxable: total, tax: 0, groups: [], roundOff: 0, total: total }; }
+  rateOf = rateOf || (l => +l.gst || 0);
+  const by = {}; let taxable = 0;
+  L.forEach(l => { const amt = r2((+l.qty || 0) * (+l.rate || 0)), g = rateOf(l); taxable += amt; by[g] = (by[g] || 0) + amt; });
+  taxable = r2(taxable);
+  const groups = []; let tax = 0;
+  Object.keys(by).map(Number).sort((a, b) => a - b).forEach(rate => { if (!rate) return;
+    if (igst) { const v = r2(by[rate] * rate / 100); tax += v; groups.push({ rate: rate, v: v, kind: 'I' }); }
+    else { const v = r2(by[rate] * (rate / 2) / 100); tax += 2 * v; groups.push({ rate: rate, v: v, kind: 'C' }); } });
+  tax = r2(tax); const exact = r2(taxable + tax), total = Math.round(exact);
+  return { taxable: taxable, tax: tax, groups: groups, roundOff: r2(total - exact), total: total };
+}
+/** Profit on the sale before GST. Lines without a buy rate (missing or 0) are left out of both sale and cost. % is on cost, the
+    same way margins are shown on price cards. buyOf: a line's buy rate per its unit (null when unknown). */
+function billCost_(lines, buyOf) {
+  const r2 = n => Math.round((+n || 0) * 100) / 100; buyOf = buyOf || (l => l.buy);
+  let sale = 0, csale = 0, cost = 0, known = true, any = false; const per = [];
+  (Array.isArray(lines) ? lines : []).forEach(l => { const q = +l.qty || 0, amt = r2(q * (+l.rate || 0)), b = buyOf(l); sale += amt;
+    if (b == null || !(+b > 0)) { known = false; per.push({ name: l.name, amt: amt, cost: null, p: null }); return; }
+    const c = r2(q * b); cost += c; csale += amt; any = true; per.push({ name: l.name, amt: amt, cost: c, p: r2(amt - c) }); });
+  sale = r2(sale); csale = r2(csale); cost = r2(cost); const p = r2(csale - cost);
+  return { sale: sale, cost: cost, profit: p, pct: cost > 0 ? Math.round(p / cost * 1000) / 10 : null, known: known, any: any, per: per };
+}
+/** What's wrong with a bill's lines and sums, or null when it adds up. Every line needs a quantity above 0 and a rate of 0 or more
+    (and a GST % of 0–100 on a GST bill); the total (and on a GST bill the taxable value and tax) must match the lines to the
+    paisa. expect: the sums the lines give. */
+function billCheck_(b) {
+  const L = b && Array.isArray(b.lines) ? b.lines : null, ok = v => typeof v === 'number' ? isFinite(v) : (String(v == null ? '' : v).trim() !== '' && isFinite(Number(v)));
+  if (!L || !L.length) return { error: 'no_lines' };
+  for (let i = 0; i < L.length; i++) { const l = L[i];
+    if (!l || typeof l !== 'object' || !ok(l.qty) || !ok(l.rate) || !(Number(l.qty) > 0) || Number(l.rate) < 0 || Number(l.qty) >= 1e7 || Number(l.rate) >= 1e9 ||
+      (b.gst && (!ok(l.gst) || Number(l.gst) < 0 || Number(l.gst) > 100))) return { error: 'bad_line', line: i + 1 }; }
+  const m = billMath_(L, !!b.gst, !!b.igst), n = v => Number(String(v == null ? '' : v).replace(/[₹,\s]/g, '')), off = (a, x) => !(Math.abs(n(a) - x) < 0.005);
+  if (off(b.total, m.total) || (b.gst && (off(b.taxable, m.taxable) || off(b.tax, m.tax)))) return { error: 'total_mismatch', expect: { total: m.total, taxable: m.taxable, tax: m.tax } };
+  return null;
+}
+/* ==== end of money.js ==== */
+/** (v66) The sheet adds every bill up itself (money.js, the same code the phone uses): a bill whose total, taxable value or tax
+    doesn't match its lines is refused (total_mismatch, with what the lines give), and its cost and profit are always worked out
+    here from the lines' buy rates, never taken from the phone. Before, the phone's figures were saved as sent. */
+function billSums_(b) { const bad = billCheck_(b); if (bad) return bad;
+  const c = billCost_(b.lines); b.cost = c.any ? c.cost : ''; b.profit = c.any ? c.profit : ''; return null; }
 function totalOk_(v) { const n = Number(String(v == null ? '' : v).replace(/[₹,\s]/g, '')); return String(v == null ? '' : v).trim() !== '' && isFinite(n) && n >= 0; }
 function modeOf_(status, pays) {
   const atBill = pays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0);

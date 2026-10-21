@@ -9,7 +9,7 @@ const stripped = full.map(i => ({ ...i, buy: null, lo: Math.ceil(i.buy * 1.05) }
 (async () => {
   const b = await launch(); const errs = [];
   async function phone(role, o = {}) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, colorScheme: o.dark ? 'dark' : 'light' }), p = await ctx.newPage(); p.sent = [];
+    const ctx = await b.newContext({ viewport: o.vp || { width: 390, height: 844 }, colorScheme: o.dark ? 'dark' : 'light' }), p = await ctx.newPage(); p.sent = [];
     p.on('pageerror', e => errs.push(role + ': ' + e.message)); p.on('dialog', d => d.accept());
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const q = r.request(), send = x => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...x }) });
@@ -25,7 +25,7 @@ const stripped = full.map(i => ({ ...i, buy: null, lo: Math.ceil(i.buy * 1.05) }
       if (bd.action === 'getBill') return send({ bill: { id: 'b21', n: 21, text: 'Bill No: 21', lines: [], total: 141, pay: 'Paid', payments: [] } });
       if (bd.action === 'priceHist') return send({ hist: [], count: 0 });
       return send({ me }); });
-    await p.addInitScript(([r]) => { if (sessionStorage.x) return; sessionStorage.x = 1; localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: r === 'staff' ? 'Raju' : 'Mayank', role: r, personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live', showProfit: true } })); }, [role]);
+    await p.addInitScript(([r, fz]) => { if (sessionStorage.x) return; sessionStorage.x = 1; localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: r === 'staff' ? 'Raju' : 'Mayank', role: r, personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live', showProfit: true } })); if (fz) localStorage.setItem('rb_fz', String(fz)); }, [role, o.fz || 0]);
     await p.goto('https://rb.test/'); await p.waitForTimeout(1300); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400); return p; }
   const rate = async (p, v) => { await p.fill('#br-0', String(v)); await p.waitForTimeout(150); return p.evaluate(() => { const t = document.querySelector('.bill-line[data-i="0"] .mgtag'); return t ? t.className.replace('mgtag ', '') + ':' + t.textContent : ''; }); };
 
@@ -61,6 +61,14 @@ const stripped = full.map(i => ({ ...i, buy: null, lo: Math.ceil(i.buy * 1.05) }
   await o.evaluate(() => { document.querySelector('.bill-line[data-i="1"] [data-unitsw]').click(); }); await o.waitForTimeout(300);
   await o.fill('#br-1', '24'); await o.waitForTimeout(150);
   ok(await o.evaluate(() => (document.querySelector('.bill-line[data-i="1"] .mgtag') || {}).textContent) === 'Below cost', 'B5 a packet line (₹100 a box of 4 = ₹25 a packet) at ₹24: "Below cost"');
+  // the tag must not move anything: name, number circle and controls stay where they are without it
+  const geo = () => o.evaluate(() => { const L = document.querySelector('.bill-line[data-i="0"]'), nm = L.querySelector('.name'), r = x => x.getBoundingClientRect();
+    const tx = document.createRange(); tx.selectNodeContents(nm.firstChild); const t0 = tx.getBoundingClientRect(), tg = L.querySelector('.mgtag'), c = r(L.querySelector('.ctrl'));
+    const circ = getComputedStyle(nm, '::before').width; return { nameX: Math.round(t0.left), circ, tag: tg ? { x: Math.round(r(tg).left), top: r(tg).top, bottom: r(tg).bottom } : null, nameBottom: t0.bottom, ctrlTop: c.top, spill: document.documentElement.scrollWidth - innerWidth }; });
+  await o.fill('#br-0', '180'); await o.waitForTimeout(150); const g0 = await geo();
+  await o.fill('#br-0', '140'); await o.waitForTimeout(150); const g1 = await geo();
+  ok(g1.tag && g1.nameX === g0.nameX && g1.circ === g0.circ, `B5a the tag doesn't push the name or change the number circle (name at ${g0.nameX} → ${g1.nameX} px, circle ${g0.circ} → ${g1.circ})`);
+  ok(g1.tag && g1.tag.x >= g1.nameX - 1 && g1.tag.top >= g1.nameBottom - 1 && g1.tag.bottom <= g1.ctrlTop + 1 && g1.spill <= 0, 'B5b it sits under the name, lined up with it, above the controls, nothing spills sideways');
   // Settings: who sees buy rates, and the margin
   await o.evaluate(() => { T.setTab('tools'); }); await o.click('#t-settings'); await o.waitForTimeout(600);
   await o.click('details[data-cg="ppl"] summary'); await o.waitForTimeout(300);
@@ -79,6 +87,13 @@ const stripped = full.map(i => ({ ...i, buy: null, lo: Math.ceil(i.buy * 1.05) }
   ok(o.sent.some(x => x.action === 'getBill' && x.id === 'b21'), 'B10 tapping it opens that bill');
   await o.close();
 
+  // the same at 320 px with the largest text
+  { const x = await phone('owner', { vp: { width: 320, height: 640 }, fz: 1.38 }); await x.evaluate(() => { T.addToBill('i1'); T.setTab('bill'); }); await x.waitForTimeout(400);
+    const g = async v => { await x.fill('#br-0', String(v)); await x.waitForTimeout(150); return x.evaluate(() => { const L = document.querySelector('.bill-line[data-i="0"]'), nm = L.querySelector('.name'), tx = document.createRange(); tx.selectNodeContents(nm.firstChild);
+      const tg = L.querySelector('.mgtag'); return { nameX: Math.round(tx.getBoundingClientRect().left), tagX: tg ? Math.round(tg.getBoundingClientRect().left) : null, spill: document.documentElement.scrollWidth - innerWidth }; }); };
+    const a0 = await g(180), a1 = await g(140);
+    ok(a1.tagX !== null && a1.nameX === a0.nameX && a1.tagX >= a1.nameX - 1 && a1.spill <= 0, 'B5c 320 px, largest text: same, the name stays put and the tag sits under it');
+    await x.close(); }
   // C. switched off, and an older script
   const z = await phone('owner', { lm: 0 }); await z.evaluate(() => { T.addToBill('i1'); T.setTab('bill'); }); await z.waitForTimeout(300);
   ok(await rate(z, 100) === '', 'C1 margin warning set to 0: no tags');

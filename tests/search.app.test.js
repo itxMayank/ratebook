@@ -10,7 +10,8 @@ const items = [
   { id: 'i2', name: 'Sugar', nameHi: '', unit: 'kg', buy: 40, sell: 46 },
   { id: 'i3', name: 'PP Bag 12x18', unit: 'kg', buy: 150, sell: 180, aliases: 'thaili, poly bag', cat: 'Bags' },
   { id: 'i4', name: 'Paper Cup 150ml', unit: 'pc', buy: 0.5, sell: 0.8, cat: 'Cups' },
-  { id: 'i5', name: 'Maida', unit: 'kg', buy: 30, sell: 36 }];
+  { id: 'i5', name: 'Maida', unit: 'kg', buy: 30, sell: 36 },
+  { id: 'i6', name: '55 Ml 76 piece', unit: 'packet', buy: 14.6, sell: 15 }, { id: 'i7', name: 'Kirana 500 G Kunj', unit: 'kg', buy: 50, sell: 60 }, { id: 'i8', name: '550 ml tub', unit: 'pc', buy: 3, sell: 4 }];
 (async () => {
   const b = await launch(); const errs = [];
   const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
@@ -23,8 +24,8 @@ const items = [
   const lp = t => p.evaluate(t => T.localParse(t).map(a => [a.op, a.id || a.name, a.buy, a.sell, a.unit].join('|')), t);
 
   // A. search
-  ok(await p.evaluate(() => T.S.items.map(i => i.id).join()) === 'i2,i5,i1,i4,i3', 'A1 most sold first (bills from the sheet), then A–Z');
-  ok((await s('')).r === 'i2,i5,i1,i4,i3', 'A2 empty search lists everything in that order');
+  ok(await p.evaluate(() => T.S.items.map(i => i.id).join()) === 'i2,i5,i1,i6,i8,i7,i4,i3', 'A1 most sold first (bills from the sheet), then A–Z');
+  ok((await s('')).r === 'i2,i5,i1,i6,i8,i7,i4,i3', 'A2 empty search lists everything in that order');
   ok((await s('chawal')).r === 'i1' && (await s('चावल')).r === 'i1', 'A3 English and Hindi letters find the same item');
   ok((await s('thaili')).r === 'i3' && (await s('थैली')).r === 'i3', 'A4 another name (alias) finds it, typed in English or Hindi');
   ok((await s('bags')).r === 'i3' && (await s('cup 150')).r === 'i4', 'A5 the group name and name + size find the item');
@@ -58,6 +59,8 @@ const items = [
   ok((await s('bag')).r.split(',').slice(0, 5).join() === 'b3,b2,b4,b1,i3', 'D1 "bag": every match whose word starts with it, most sold first (Bagasse 50, Garbage Bag 30, Carry Bag 12); not sold yet: the name starting with it first');
   ok((await s('carry bag')).r.split(',')[0] === 'b4', 'D2 the exact name typed still comes first');
   ok((await s('ag')).r.split(',').indexOf('b3') > -1, 'D3 a word found inside still matches');
+  { const r = (await s('55')).r.split(','); ok(r.includes('i6') && r.includes('i8') && !r.includes('i7'), 'D5 "55" finds 55 Ml and 550 ml, not Kirana 500 (numbers aren\'t squeezed like letters: 55 ≠ 50) · ' + r.join()); }
+  { const r = (await s('500')).r.split(','); ok(r.includes('i7') && !r.includes('i8') && !r.includes('i6'), 'D6 "500" finds Kirana 500, not 550 (a number is never "spelt differently")'); }
   await p.evaluate(() => { T.S.sortBy = 'az'; }); ok((await s('bag')).r.split(',')[0] === 'b1', 'D4 with A–Z chosen, the closest name first as before');
   await p.evaluate(() => { T.S.sortBy = 'pop'; });
 

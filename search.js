@@ -28,7 +28,7 @@ function translit(str){
 function phonWord(w){
   w=w.replace(/ch/g,"\u0001").replace(/c/g,"k").replace(/\u0001/g,"ch").replace(/ai/g,"a").replace(/au/g,"o").replace(/aa/g,"a").replace(/ee/g,"i").replace(/oo/g,"u").replace(/ph/g,"f").replace(/ck/g,"k").replace(/x/g,"ks")
      .replace(/([kgcjtdpbs])h/g,"$1").replace(/([kgcjtdpbs])h/g,"$1").replace(/w/g,"v").replace(/z/g,"j").replace(/q/g,"k")
-     .replace(/y$/,"i").replace(/(.)\1+/g,"$1");
+     .replace(/y$/,"i").replace(/([a-z])\1+/g,"$1");   // letters only: "55" stays 55 (it became "5", so 55 matched 500)
   if(w.length>3 && w.endsWith("a")) w=w.slice(0,-1);
   return w;
 }
@@ -44,6 +44,7 @@ function lev(a,b,max){
 }
 function tokScore(q,toks){
   let best=0; const allow=q.length<=2?0:q.length<=4?1:2;
+  if(/^\d+$/.test(q)){ for(const tk of toks){ const s=tk===q?120:tk.startsWith(q)?100-Math.min(20,tk.length-q.length):0; if(s>best) best=s; } return best; }   // a number matches only as typed (55 → 55, 550; never 50 or 500 by "spelling")
   for(const tk of toks){
     let s=0;
     if(tk===q) s=120;

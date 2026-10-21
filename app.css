@@ -1992,6 +1992,7 @@ html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 1
 #applock .al-wait{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:16px;color:var(--fg);min-height:52px}
 
 /* Low-margin tag on a bill line (21 Oct 2026): amber "Low margin", red "Below cost" */
+.bill-line .name .mgtag{grid-column:2;justify-self:start}   /* under the name, never in the number circle's column */
 .bill-line .mgtag{display:inline-flex;align-items:center;gap:4px;margin-top:3px;padding:2px 8px;border-radius:var(--r-full);font-size:12px;font-weight:700;line-height:1.4;width:max-content;max-width:100%;
   background:#FFF1D6;color:#7A4D00}
 .bill-line .mgtag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}

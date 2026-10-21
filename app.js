@@ -1192,8 +1192,9 @@ function nbApply(nb){ if(!nb || !S.cfg || !S.cfg.raw) return; const r=S.cfg.raw;
   if(["nextBill","nextGstBill","testNextBill","testNextGstBill"].every(k=>!(+nb[k]>0) || +nb[k]===+r[k]) && (nb.gstFy||"")===(S.cfg.gstFy||"") && (nb.testGstFy||"")===(S.cfg.testGstFy||"")) return;
   const x={...S.cfg, ...r}; delete x.raw; for(const k of Object.keys(nb)) if(nb[k]!==undefined && nb[k]!==null && nb[k]!=="") x[k]=nb[k];
   applyConfig(x); saveCache(); if(S.tab==="bill"||DESK()) updateBillTotals(); }
+let lastAct=Date.now(), pollT=null, lastPoll=0;   // polling plan, see POLL_ACTIVE below
 async function checkRev(){
-  if(!apiUrl() || document.hidden) return;
+  if(!apiUrl() || document.hidden) return; lastPoll=Date.now();
   try{ const j=await apiGet({action:"rev"}); S.online=true; if(+j.sv>0 && +j.sv!==S.sv){ S.sv=+j.sv; saveCache(); } if(String(j.rev)!==String(S.rev)) await sync(); else { S.lastSync=Date.now(); renderNet(); if(S.billQ.length) flushBills(); nbApply(j.nb); }
     const bv=S.cfg.mode==="live"?j.bl:j.bt; if(bv && S.canWrite && (!BLC || BLC.env!==S.cfg.mode || String(BLC.brev)!==String(bv))) blcSoon(300,String(bv));
     /* vendors changed on another phone: fetch now, so Vendors is already current when it's opened */
@@ -1223,8 +1224,18 @@ $("#meta-l").addEventListener("click",e=>{ if(e.target.closest("#meta-sync")){ e
 $("#net-refresh").onclick=()=>{ $("#net-txt").textContent=t("loading"); sync(); };
 window.addEventListener("online",()=>{ checkRev(); setTimeout(flushBills,300); setTimeout(wqFlush,900); });
 window.addEventListener("offline",()=>{ S.online=false; renderNet(); });
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden) checkRev(); });
-setInterval(checkRev,25000);
+/* (v66) How often a phone asks the sheet for changes. Every phone of every shop runs as one Google account, which can only do so
+   much at once (see "How many shops" in CLAUDE.md), so a phone nobody is using asks less: every 25 s while someone is using it
+   (a tap or a key in the last 2 minutes), every 3 minutes when it's open but untouched, and not at all in the background. The
+   first tap after a quiet spell, and coming back to the app, check at once, so nobody sees old prices or bill numbers. One small
+   request carries every version (prices, bills, vendors, notices, bill numbers, script). */
+const POLL_ACTIVE=25000, POLL_IDLE=180000, IDLE_AFTER=120000;
+function pollGap(){ return Date.now()-lastAct>IDLE_AFTER ? POLL_IDLE : POLL_ACTIVE; }
+function pollPlan(){ clearTimeout(pollT); if(document.hidden) return; pollT=setTimeout(async()=>{ try{ await checkRev(); }catch{} pollPlan(); }, pollGap()); }
+["pointerdown","keydown","input"].forEach(ev=>document.addEventListener(ev,()=>{ const woke=Date.now()-lastAct>IDLE_AFTER; lastAct=Date.now();
+  if(woke){ if(Date.now()-lastPoll>POLL_ACTIVE) checkRev(); pollPlan(); } },{passive:true,capture:true}));
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ clearTimeout(pollT); return; } lastAct=Date.now(); checkRev(); pollPlan(); });
+pollPlan();
 
 /* ---------------- Notifications (vendors; owner + managers) ----------------
    The sheet writes a notice when a vendor / bill / payment is saved (Code.gs notice_). The 25-second rev check carries the

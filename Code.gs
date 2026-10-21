@@ -890,7 +890,7 @@ function setupShop() {
   ['live', 'test'].forEach(en => { ENV_ = en; sheet_(tab_('Bills'), BILL_COLS); }); ENV_ = 'live';
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'autoBackup' || t.getHandlerFunction() === 'watchSheet').forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('autoBackup').timeBased().everyHours(4).create();
-  ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(15).create();
+  ScriptApp.newTrigger('watchSheet').timeBased().everyHours(1).create(); PropertiesService.getScriptProperties().setProperty('WATCH_H', '1');   // (v66) hourly: the edit trigger catches hand edits
   editTrigger_();
   if (b.dirUrl) { try { UrlFetchApp.fetch(b.dirUrl + '?action=ping', { muteHttpExceptions: true }); } catch (e) {} }   // asks for the "connect to an external service" permission now
   DriveApp.getFolderById(b.folderId || b.bkFolder);   // Drive permission now
@@ -1007,8 +1007,14 @@ function ensureTriggers_() {
   if (cache.get('TRIG_OK') === '1') return;
   if (PropertiesService.getScriptProperties().getProperty('RETIRED')) return;   // shop being deleted: never put its jobs back
   try {
-    if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'watchSheet')) ScriptApp.newTrigger('watchSheet').timeBased().everyMinutes(boot_() ? 15 : 5).create();
-    editTrigger_();
+    try { editTrigger_(); } catch (e) { softErr_('editTrigger', e); }   // without it, watchSheet stays at every 5 / 15 minutes
+    /* (v66) watchSheet is only the fallback for hand edits once the sheet's own edit trigger is there (it fires for every hand
+       edit), so it runs hourly then instead of every 5 / 15 minutes. Timed jobs of every shop count against one Google account's
+       daily limit (see "How many shops" in CLAUDE.md). */
+    const P = PropertiesService.getScriptProperties(), hourly = !!P.getProperty('EDIT_TRIG');
+    const ws = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'watchSheet');
+    if (hourly && ws.length && P.getProperty('WATCH_H') !== '1') { ws.forEach(t => ScriptApp.deleteTrigger(t)); ws.length = 0; }
+    if (!ws.length) { const tb = ScriptApp.newTrigger('watchSheet').timeBased(); (hourly ? tb.everyHours(1) : tb.everyMinutes(boot_() ? 15 : 5)).create(); if (hourly) P.setProperty('WATCH_H', '1'); }
     cache.put('TRIG_OK', '1', 21600);
   } catch (err) { cache.put('TRIG_OK', '1', 3600); }   // needs the one-time setupBackups permission; try again in an hour
 }

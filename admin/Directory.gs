@@ -14,8 +14,9 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 9;
-const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <branch>/Code.gs
+const DIR_VERSION = 10;
+const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <commit>/Code.gs
+const REPO_API = 'https://api.github.com/repos/itxMayank/ratebook/';     // + commits/<branch>
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
 const SC_ = SHOP_COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const ADMIN_MAX_FAILS = 6, ADMIN_FAIL_SEC = 900, CODE_MAX_FAILS = 10;
@@ -118,7 +119,7 @@ function doPost(e) {
       case 'errors': return out_({ ok: true, errors: errList_(b.code ? String(b.code) : '', b.days) });
       case 'health': return out_({ ok: true, health: healthAll_(b.code) });
       case 'latest': return out_({ ok: true, latest: latestVersion_(b.ref) });
-      case 'create': return out_(Object.assign({ ok: true }, createShop_(b.shop || {}, b.ref)));
+      case 'create': return out_(Object.assign({ ok: true }, createShop_(b.shop || {}, b.sha, b.hash)));
       case 'setStatus': { const x = shopGet_(b.code); if (!x) throw new Error('no_shop'); if (['live', 'paused'].indexOf(b.status) < 0) throw new Error('bad_status');
         x.status = b.status; shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
       case 'setNotes': { const x = shopGet_(b.code); if (!x) throw new Error('no_shop'); ['notes', 'plan', 'paidUntil', 'owner', 'phone'].forEach(k => { if (b[k] !== undefined) x[k] = b[k]; }); shopSave_(x); return out_({ ok: true, shop: pub_(x) }); }
@@ -127,7 +128,7 @@ function doPost(e) {
       case 'bizViewOff': P_().setProperty('BIZ_VIEW', 'off'); return out_({ ok: true, bizView: false });
       case 'shopHealth': { const h = healthAll_(String(b.code || ''), true); return out_({ ok: true, health: h[String(b.code || '')] || { ok: false, error: 'no_shop' } }); }   // a shop's own page: + 14 days of speed
       case 'recheck': { const h = healthAll_(b.code); return out_({ ok: true, health: h, shops: shops_().map(pub_) }); }
-      case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.ref)));
+      case 'update': return out_(Object.assign({ ok: true }, updateShop_(b.code, b.sha, b.hash)));
       case 'startPin': return out_(Object.assign({ ok: true }, startPin_(String(b.code || ''))));
       case 'deleteShop': return out_(Object.assign({ ok: true }, deleteShop_(b.code, b)));
       default: return out_({ ok: false, error: 'bad_action' });
@@ -200,11 +201,25 @@ function api_(method, path, body) {
 /** (v9) A branch name only: letters, digits, - _ . /, no "..", no leading / or : (before, "../../someone/else/main" could make the
     Directory fetch another repository's Code.gs and put it into every shop). */
 function refOk_(ref) { const r = String(ref == null || ref === '' ? 'main' : ref); if (!/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,99}$/.test(r) || r.indexOf('..') >= 0 || /\/\//.test(r)) throw new Error('bad_ref'); return r; }
-function codeGs_(ref) { ref = refOk_(ref); const r = UrlFetchApp.fetch(REPO_RAW + ref + '/Code.gs?_=' + Date.now(), { muteHttpExceptions: true });
-  if (r.getResponseCode() !== 200) throw new Error('github|' + r.getResponseCode()); const s = r.getContentText();
-  if (s.indexOf('const SCRIPT_VERSION') < 0) throw new Error('github|not Code.gs'); return s; }
+/* (v10) Shops get only the exact commit the dashboard showed. "latest" looks up the newest commit on the branch (its id, message,
+   author and time) and the Code.gs at that commit with a digest; Create and Update must name that commit and digest, and the
+   Directory fetches the code at that commit (fixed: a later push can't change it) and checks the digest before installing.
+   So code pushed to GitHub reaches no shop until the admin has seen which commit it is and tapped Update; "Update all" gives
+   every shop byte-for-byte the same code. Each shop's installed commit is kept (COMMIT_<code>). */
+const SHA_RE_ = /^[0-9a-f]{40}$/;
+function ghGet_(url) { const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { Accept: 'application/vnd.github+json' } });
+  if (r.getResponseCode() !== 200) throw new Error('github|' + r.getResponseCode()); return r.getContentText(); }
+function commitOf_(ref) { ref = refOk_(ref); let j = {}; try { j = JSON.parse(ghGet_(REPO_API + 'commits/' + encodeURIComponent(ref).replace(/%2F/g, '/'))); } catch (e) { if (/^github\|/.test(e.message)) throw e; throw new Error('github|bad reply'); }
+  const sha = String(j.sha || ''); if (!SHA_RE_.test(sha)) throw new Error('github|no commit');
+  const c = j.commit || {}, a = c.author || {};
+  return { sha: sha, msg: String(c.message || '').split('\n')[0].slice(0, 140), by: String(a.name || (j.author && j.author.login) || '').slice(0, 60), at: String(a.date || '') }; }
+function codeHash_(src) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, src, Utilities.Charset.UTF_8).map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('').slice(0, 16); }
+function codeAt_(sha, hash) { sha = String(sha || '').toLowerCase(); if (!SHA_RE_.test(sha)) throw new Error('need_commit');
+  const s = ghGet_(REPO_RAW + sha + '/Code.gs'); if (s.indexOf('const SCRIPT_VERSION') < 0) throw new Error('github|not Code.gs');
+  const h = codeHash_(s); if (hash !== undefined && hash !== null && String(hash) !== h) throw new Error('code_changed');
+  return { src: s, sha: sha, hash: h }; }
 function svOf_(src) { const m = String(src).match(/const SCRIPT_VERSION = (\d+)/); return m ? Number(m[1]) : null; }
-function latestVersion_(ref) { return { ref: ref || 'main', sv: svOf_(codeGs_(ref)) }; }
+function latestVersion_(ref) { const c = commitOf_(ref), k = codeAt_(c.sha); return { ref: ref || 'main', sv: svOf_(k.src), sha: c.sha, hash: k.hash, msg: c.msg, by: c.by, at: c.at }; }
 function manifest_(old) { let m = {}; try { m = JSON.parse(old || '{}'); } catch (e) {}
   m.timeZone = m.timeZone || 'Asia/Kolkata'; m.runtimeVersion = 'V8'; m.exceptionLogging = m.exceptionLogging || 'STACKDRIVER';
   m.webapp = m.webapp || { executeAs: 'USER_DEPLOYING', access: 'ANYONE_ANONYMOUS' };   // keeps a shop's link working as a web app
@@ -226,10 +241,10 @@ function seedConfig_(o) {
     ['fyReset', 'true'], ['mode', 'test'], ['approveNew', 'true'], ['showProfit', 'false'], ['billFooter', '']];
   if (units) rows.splice(1, 0, ['units', JSON.stringify(units)]);
   return rows; }
-function createShop_(o, ref) {
+function createShop_(o, sha, hash) {
   const name = String(o.name || '').trim().slice(0, 60); if (!name) throw new Error('need_name');
   const slug = name.toUpperCase().replace(/[^A-Z0-9]+/g, '').slice(0, 10) || 'SHOP', code = slug + '-' + rand_(10);
-  const src = codeGs_(ref);                                   // fail early (before making files) if GitHub can't be read
+  const kc = codeAt_(sha, hash), src = kc.src;                // fail early (before making files) if GitHub can't be read or the code isn't the one shown
   // 1. folders
   const shopF = rootFolder_().createFolder(name + ' (' + code + ')'), vd = shopF.createFolder('vendor bills'), vdt = shopF.createFolder('vendor bills (test)'), bk = shopF.createFolder('backups');
   // 2. the sheet, with starting settings (other tabs make themselves with their headers on first use)
@@ -254,7 +269,8 @@ function createShop_(o, ref) {
     x.deploymentId = dep.deploymentId; x.apiUrl = web && web.webApp && web.webApp.url || ''; x.status = 'needs-auth';
     const xs = shops_().filter(y => y.code === code)[0]; x._row = xs && xs._row; shopSave_(x);
   } catch (err) { const xs = shops_().filter(y => y.code === code)[0]; x._row = xs && xs._row; x.notes = 'Script not made: ' + String(err.message || err).slice(0, 300); shopSave_(x); throw err; }
-  return { shop: pub_(x), initPin, shopLink: '?shop=' + code }; }
+  P_().setProperty('COMMIT_' + code, kc.sha);
+  return { shop: pub_(x), initPin, shopLink: '?shop=' + code, sha: kc.sha }; }
 
 /* ---------- register the original shop (made by hand before the Directory) ---------- */
 function registerMain_(b) {
@@ -285,7 +301,7 @@ function deleteShop_(code, b) {
   const permanent = b.permanent !== false, out = { steps: [], warn: [] };
   // 1. timed jobs
   if (x.apiUrl && x.healthKey) { let r = retireCall_(x);
-    if (!r.ok && r.error === 'bad_action' && x.scriptId && x.deploymentId) { try { updateShop_(x.code); r = retireCall_(x); } catch (e) {} }
+    if (!r.ok && r.error === 'bad_action' && x.scriptId && x.deploymentId) { try { const L = latestVersion_(); updateShop_(x.code, L.sha, L.hash); r = retireCall_(x); } catch (e) {} }
     if (r.ok) out.steps.push('Timed jobs removed (' + r.triggers + ')');
     else if (x.status === 'needs-auth' || r.error === 'needs_auth') out.steps.push('No timed jobs (setupShop was never run)');
     else out.warn.push('Couldn\'t reach the shop to remove its timed jobs (' + r.error + ')' + (permanent ? '; they stop when its script is deleted below.' : '; they stop when the Trash is emptied.'));
@@ -311,9 +327,9 @@ function deleteShop_(code, b) {
   out.steps.push('Removed from the dashboard');
   return out; }
 
-function updateShop_(code, ref) {
+function updateShop_(code, sha, hash) {
   const x = shopGet_(code); if (!x || !x.scriptId || !x.deploymentId) throw new Error('no_ids');
-  const src = codeGs_(ref), sv = svOf_(src);
+  const kc = codeAt_(sha, hash), src = kc.src, sv = svOf_(src);
   const cur = api_('get', '/' + x.scriptId + '/content');
   const files = (cur.files || []).slice();
   const put = (name, type, source) => { const i = files.findIndex(f => f.name === name); const f = { name, type, source }; if (i >= 0) files[i] = f; else files.push(f); };
@@ -335,8 +351,8 @@ function updateShop_(code, ref) {
     try { const r = UrlFetchApp.fetch(x.apiUrl + '?action=ping&_=' + Date.now(), { muteHttpExceptions: true }), t = r.getContentText(); alive = /"ok":true/.test(t);
       const m = t.match(/"sv":(\d+)/); runs = m ? Number(m[1]) : null; } catch (e) {} }
   if (!alive && prevVer) { api_('put', '/' + x.scriptId + '/deployments/' + x.deploymentId, cfg(prevVer)); throw new Error('rolled_back|The shop did not answer after the update, so its previous version was put back. If the script needs new permissions, open it and run setupShop (or any function) once, then update again.'); }
-  x.version = sv; x.lastUpdate = Date.now(); shopSave_(x);
-  return { shop: pub_(x), sv: sv, versionNumber: ver.versionNumber }; }
+  x.version = sv; x.lastUpdate = Date.now(); shopSave_(x); P_().setProperty('COMMIT_' + x.code, kc.sha);
+  return { shop: pub_(x), sv: sv, versionNumber: ver.versionNumber, sha: kc.sha }; }
 /** A Directory-made shop's starting PIN, read from its own Shop.gs (never stored in the Directory). The dashboard offers it only
     while the shop says it still signs in (health startPin, v62); once the owner has their own PIN it no longer opens anything. */
 function startPin_(code) { const x = shopGet_(code); if (!x || code === 'main') throw new Error('no_shop'); if (!x.scriptId) throw new Error('no_ids');

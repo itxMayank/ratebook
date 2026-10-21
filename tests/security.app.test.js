@@ -29,15 +29,14 @@ const items = [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 150, sell: 180, imgV
   ok(await a.p.evaluate(() => T.S.items.length) === 1, '…and the list arrives');
   await a.p.waitForTimeout(1500);
   ok(a.reqs.includes('POST thumbs +tok') && !a.reqs.includes('GET thumbs'), 'photos (thumbnails) too');
-  const o = await phone(43, true);
-  ok(o.reqs.includes('POST list +tok') && o.reqs.includes('GET list') && await o.p.evaluate(() => T.S.items.length) === 1, 'older script (no POST list yet): falls back to the old request, list arrives');
+  /* ("an older script (no POST list) falls back to the old GET" was removed with scripts below v60, 21 Oct 2026) */
   const n = await phone(44, false);
   ok(n.reqs.includes('GET list') && await n.p.evaluate(() => T.S.online !== false), 'not signed in yet: list refused, but not shown as "offline"');
   // the shop PIN switching off (v46): People says what to do; adding yourself as owner signs this shop-PIN phone out with the reason
   { const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); let off = false;
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const q = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
-      const L = { rev: '1', items, config: { shopName: 'Gupta', mode: 'live' }, sv: 46 };
+      const L = { rev: '1', items, config: { shopName: 'Gupta', mode: 'live' }, sv: 60 };
       if (q.method() === 'GET') return send({ rev: '1' });
       const bd = JSON.parse(q.postData());
       if (bd.action === 'boot' || bd.action === 'list') return send({ ...L, me: { name: 'Mayank', role: 'owner', personal: false, prefs: {} } });

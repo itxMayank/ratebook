@@ -2,7 +2,7 @@ const fs=require('fs'), vm=require('vm'), crypto=require('crypto');
 const props={}, cache={};
 const ctx={ console, PropertiesService:{getScriptProperties:()=>({getProperty:k=>props[k]??null,setProperty:(k,v)=>{props[k]=String(v);},deleteProperty:k=>{delete props[k];}})},
   CacheService:{getScriptCache:()=>({get:k=>cache[k]??null,put:(k,v)=>{cache[k]=v;}})},
-  Utilities:{ getUuid:()=>crypto.randomUUID(), DigestAlgorithm:{SHA_256:'sha256'}, computeDigest:(a,s)=>[...crypto.createHash('sha256').update(s).digest()], base64Encode:b=>Buffer.from(b.map(x=>x&255)).toString('base64') },
+  Utilities:{ getUuid:()=>crypto.randomUUID(), DigestAlgorithm:{SHA_256:'sha256'}, computeDigest:(a,s)=>[...crypto.createHash('sha256').update(s).digest()], base64Encode:b=>Buffer.from(b.map(x=>x&255)).toString('base64'), base64EncodeWebSafe:b=>Buffer.from(b.map(x=>x&255)).toString('base64url')+'=', DigestAlgorithm:{SHA_256:'sha256', MD5:'md5'}, computeDigest:(a,s)=>[...crypto.createHash(a==='md5'?'md5':'sha256').update(String(s)).digest()] },
   SpreadsheetApp:{}, DriveApp:{}, LockService:{} };
 vm.createContext(ctx); vm.runInContext(fs.readFileSync(require('path').join(__dirname,'..','..','Code.gs'),'utf8'),ctx);
 const R=c=>vm.runInContext(c,ctx), ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);

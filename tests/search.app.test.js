@@ -17,7 +17,7 @@ const items = [
   const ctx = await b.newContext(); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items,
-    config: { shopName: 'Gupta Plastics', mode: 'live', roundTo: 1, defaultUnit: 'kg' }, sv: 43, pop: { i2: 9, i5: 4, i1: 1 }, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
+    config: { shopName: 'Gupta Plastics', mode: 'live', roundTo: 1, defaultUnit: 'kg' }, sv: 60, pop: { i2: 9, i5: 4, i1: 1 }, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'M', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1500); await p.evaluate(() => T.appUnlock());
   const s = q => p.evaluate(q => { const x = T.runSearch(q); return { r: x.res.map(o => o.e.it.id).join(), s: x.suggest.map(i => i.id).join(), ex: x.exact }; }, q);

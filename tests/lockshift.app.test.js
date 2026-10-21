@@ -10,7 +10,7 @@ const html = appHtml('S');
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', async r => { const q = r.request(), send = x => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...x }) });
       if (q.method() === 'GET') return send({ rev: '1' }); const bd = JSON.parse(q.postData()); await new Promise(z => setTimeout(z, 600));
-      if (bd.action === 'boot' || bd.action === 'list') return send({ rev: '1', items: [], config: { shopName: 'Sharma Packaging Traders', mode: 'live' }, sv: 50, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
+      if (bd.action === 'boot' || bd.action === 'list') return send({ rev: '1', items: [], config: { shopName: 'Sharma Packaging Traders', mode: 'live' }, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
       if (bd.action === 'verify') return send({ ok: false, error: 'bad_pin' });
       return send({ me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }); });
     await p.addInitScript(bio => { if (sessionStorage.d) return; sessionStorage.d = 1;

@@ -7,9 +7,9 @@ const { launch, ok, done, ROOT } = require('./browser');
 const { withCsp } = require('../tools/stamp');
 const html = withCsp(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8').replace(/const DIR_URL = "[^"]*";/, 'const DIR_URL = "https://script.google.com/macros/s/DIRECTORY/exec";'));
 const DIR = 'https://script.google.com/macros/s/DIRECTORY/exec';
-const shops = [{ code: 'main', name: 'Gupta Plastics & Packaging Wholesale and Retail Suppliers', status: 'live', version: 47, scriptId: 'm', deploymentId: 'd' },
-  { code: 'SHARMA-ABCDEFGHJK', name: 'Sharma Traders', status: 'live', version: 46, scriptId: 's', deploymentId: 'd2' },
-  { code: 'RAVI-ABCDEFGHJK', name: 'Ravi Kirana', status: 'needs-auth', version: 47, editUrl: 'https://script.google.com/d/r/edit' }];
+const shops = [{ code: 'main', name: 'Gupta Plastics & Packaging Wholesale and Retail Suppliers', status: 'live', version: 67, scriptId: 'm', deploymentId: 'd' },
+  { code: 'SHARMA-ABCDEFGHJK', name: 'Sharma Traders', status: 'live', version: 66, scriptId: 's', deploymentId: 'd2' },
+  { code: 'RAVI-ABCDEFGHJK', name: 'Ravi Kirana', status: 'needs-auth', version: 67, editUrl: 'https://script.google.com/d/r/edit' }];
 (async () => {
   const b = await launch(); const errs = [];
   async function page(w, dark) {
@@ -19,8 +19,8 @@ const shops = [{ code: 'main', name: 'Gupta Plastics & Packaging Wholesale and R
     p.n = 0;
     await p.route(DIR, async r => { const bd = JSON.parse(r.request().postData()); const send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify(Object.assign({ ok: true }, o)) });
       if (bd.action === 'list') return send({ shops });
-      if (bd.action === 'latest') return send({ latest: { sv: 47 } });
-      if (bd.action === 'recheck') { p.n++; await new Promise(res => setTimeout(res, 300)); return send({ health: { main: { ok: true, sv: 47, items: 412, bills: { today: 23, todayAmt: 18450, month: 410, monthAmt: 512000 }, tbills: {}, sessions: 4 }, 'SHARMA-ABCDEFGHJK': { ok: true, sv: 46, bills: {}, tbills: {}, sessions: 1, pending: 1 } } }); }
+      if (bd.action === 'latest') return send({ latest: { sv: 67 } });
+      if (bd.action === 'recheck') { p.n++; await new Promise(res => setTimeout(res, 300)); return send({ health: { main: { ok: true, sv: 67, items: 412, bills: { today: 23, todayAmt: 18450, month: 410, monthAmt: 512000 }, tbills: {}, sessions: 4 }, 'SHARMA-ABCDEFGHJK': { ok: true, sv: 66, bills: {}, tbills: {}, sessions: 1, pending: 1 } } }); }
       return send({}); });
     await p.addInitScript(() => { localStorage.setItem('rbadm_tok', '"T"'); window.__intro = 0;
       new MutationObserver(m => m.forEach(x => { if (x.target.id === 'shops' && x.target.classList.contains('intro')) window.__intro = window.__intro || Date.now(); })).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] }); });
@@ -58,7 +58,7 @@ const shops = [{ code: 'main', name: 'Gupta Plastics & Packaging Wholesale and R
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' }), r = await ctx.newPage();
   await r.route('https://rb.test/**', x => x.fulfill({ body: html, contentType: 'text/html' }));
   await r.route(DIR, async x => { const bd = JSON.parse(x.request().postData()); const send = o => x.fulfill({ contentType: 'application/json', body: JSON.stringify(Object.assign({ ok: true }, o)) });
-    if (bd.action === 'list') return send({ shops }); if (bd.action === 'recheck') return send({ health: { main: { ok: true, sv: 47, bills: { today: 1, todayAmt: 18450, month: 2, monthAmt: 9000 }, tbills: {} } } }); return send({}); });
+    if (bd.action === 'list') return send({ shops }); if (bd.action === 'recheck') return send({ health: { main: { ok: true, sv: 67, bills: { today: 1, todayAmt: 18450, month: 2, monthAmt: 9000 }, tbills: {} } } }); return send({}); });
   await r.addInitScript(() => { localStorage.setItem('rbadm_tok', '"T"'); });
   await r.goto('https://rb.test/admin.html'); await r.waitForTimeout(700);
   ok(await r.textContent('#k-today') === '₹18,450' && await r.$eval('#shops .card', e => getComputedStyle(e).animationName) === 'none', 'C1 "reduce motion": figures show at once, nothing fades');

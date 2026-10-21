@@ -9,7 +9,7 @@ const vendors = Array.from({ length: 30 }, (_, i) => ({ id: 'v' + i, name: 'Vend
   const p = await (await b.newContext({ viewport: { width: 390, height: 780 } })).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await p.route('https://script.google.com/**', r => { const q = r.request(); const send = o => r.fulfill({ body: JSON.stringify({ ok: true, ...o }), contentType: 'application/json' });
-    if (q.method() === 'GET') return send({ rev: '1', items: [], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 34 });
+    if (q.method() === 'GET') return send({ rev: '1', items: [], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 60 });
     const bd = JSON.parse(q.postData());
     if (bd.action === 'verify') return send({ me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
     if (bd.action === 'listUsers' || bd.action === 'saveUser') return send({ users });

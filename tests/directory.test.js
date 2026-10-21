@@ -3,6 +3,8 @@ const path = require('path'), fs = require('fs');
 const { gas } = require('./gas-mock');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const CODE = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
+// (DIR v10) GitHub: the newest commit on the branch, and Code.gs at each commit (fixed once pushed)
+const GH = { sha: 'a'.repeat(40), code: { ['a'.repeat(40)]: CODE }, raw: [] };
 // --- tiny in-memory Sheets/Drive ---
 let nid = 0; const files = {}, sheetsById = {};
 function mkSheet(name) { const rows = []; return { name, rows, getName: () => name, setName(n) { this.name = n; name = n; },
@@ -22,7 +24,8 @@ const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 const projects = {}; let healthUrls = [], apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
-  if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
+  if (url.startsWith('https://api.github.com/repos/itxMayank/ratebook/commits/')) return respond(200, { sha: GH.sha, commit: { message: 'The sheet adds up every bill\nmore', author: { name: 'Mayank', date: '2026-10-21T10:00:00Z' } } });
+  if (url.startsWith('https://raw.githubusercontent.com/')) { GH.raw.push(url); const k = url.split('/')[5]; return GH.code[k] !== undefined ? respond(200, GH.code[k]) : respond(404, 'Not Found'); }
   if (url.startsWith('https://script.googleapis.com/v1/projects')) { if (!apiOn) return respond(403, { error: { message: 'Apps Script API has not been used in project 123 before or it is disabled.' } });
     const p = url.replace('https://script.googleapis.com/v1/projects', '').split('/').filter(Boolean);
     if (!p.length && m === 'post') { const id = 'scr' + (++nid); projects[id] = { files: [], versions: 0, deps: {} }; files[id] = { id, name: body.title, parent: 'root' }; return respond(200, { scriptId: id }); }
@@ -47,7 +50,9 @@ const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp,
 g.Utilities.sleep = () => {}; const R = g.R; const shopGet = c => R('shopGet_(' + JSON.stringify(c) + ')');
 // setup + admin sign-in
 R('setupDirectory()'); const pinH = g.props.ADMIN_PIN_H; ok(!!pinH && !!g.props.DIR_SHEET_ID, 'setupDirectory: sheet made, admin PIN stored only as a hash');
-const post = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents: JSON.stringify(b) } }) + ').text'));
+const post0 = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents: JSON.stringify(b) } }) + ').text'));
+/* create / update name the commit the dashboard showed (DIR v10): tests that don't pass one take the latest, as the dashboard does */
+const post = b => { if ((b.action === 'create' || b.action === 'update') && !('sha' in b)) { const L = post0({ tok: b.tok, action: 'latest' }).latest; if (L) b = Object.assign({ sha: L.sha, hash: L.hash }, b); } return post0(b); };
 const get = q => JSON.parse(R('doGet(' + JSON.stringify({ parameter: q }) + ').text'));
 ok(post({ action: 'list' }).error === 'bad_session', 'admin actions need sign-in');
 for (let i = 0; i < 6; i++) post({ action: 'signIn', pin: '0', dev: 'x' }); ok(post({ action: 'signIn', pin: '0', dev: 'x' }).error === 'locked', 'wrong admin PINs lock that device');
@@ -131,5 +136,17 @@ apiOn = false; const off = post({ tok, action: 'create', shop: { name: 'X' } });
 healthUrls = []; post({ tok, action: 'recheck' }); const shH = post({ tok, action: 'shopHealth', code: 'main' });
 ok(shH.ok && shH.health && shH.health.ok && healthUrls.length >= 2 && !/full=1/.test(healthUrls[0]) && /MAIN.*full=1/.test(healthUrls[healthUrls.length - 1]), 'a shop\'s own page asks that shop for its full health (14 days of speed); the every-minute check stays small');
 ok(post({ tok, action: 'shopHealth', code: 'NOPE' }).health.error === 'no_shop', '…an unknown shop answers no_shop');
+// (DIR v10) updates install only the commit the dashboard showed
+{ apiOn = true; shopAlive = true; const L = post0({ tok, action: 'latest' }).latest;
+  ok(L && L.sha === GH.sha && L.sv === SV && /^[0-9a-f]{16}$/.test(L.hash) && L.msg === 'The sheet adds up every bill' && L.by === 'Mayank', 'commit: "latest" names the commit (id, first line of its message, author) and a digest of its Code.gs');
+  ok(post0({ tok, action: 'update', code: 'main' }).error === 'need_commit' && post0({ tok, action: 'create', shop: { name: 'No Commit' } }).error === 'need_commit', 'commit: an update or a new shop without a commit is refused');
+  const before = JSON.stringify(projects.mainscr.files);
+  ok(post0({ tok, action: 'update', code: 'main', sha: L.sha, hash: '0'.repeat(16) }).error === 'code_changed' && JSON.stringify(projects.mainscr.files) === before, 'commit: code that isn\'t the one shown (digest differs) is refused and nothing is installed');
+  // someone pushes new code after the dashboard looked: the shown commit still installs exactly what was shown
+  const evil = CODE.replace('const SCRIPT_VERSION', '/* pushed later */ const SCRIPT_VERSION'); GH.sha = 'b'.repeat(40); GH.code[GH.sha] = evil; GH.raw = [];
+  const u = post0({ tok, action: 'update', code: 'main', sha: L.sha, hash: L.hash });
+  ok(u.ok && u.sha === L.sha && projects.mainscr.files.find(f => /const SCRIPT_VERSION/.test(f.source)).source === CODE && GH.raw.every(x => x.indexOf('/' + L.sha + '/') > 0), 'commit: a push made after the dashboard looked doesn\'t get in: the shown commit is fetched by its id and installed as shown');
+  ok(R("P_().getProperty('COMMIT_main')") === L.sha, 'commit: the installed commit is kept per shop');
+  const L2 = post0({ tok, action: 'latest' }).latest; ok(L2.sha === GH.sha && L2.hash !== L.hash, 'commit: the dashboard sees the new commit (and its different digest) the next time it looks'); }
 ok(g.locks.n === 0, 'locks released');
 process.exit(fails ? 1 : 0);

@@ -18,7 +18,7 @@ async function refreshMe(j){
   }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); else if(e&&e.code==="shop_pin_off") signedOut("shopPinOff"); }
 }
 /** An owner or manager still on a PIN from before the 6–8 digit rule: say so once a day after unlocking. */
-function pinOldHint(){ const a=S.auth; if(!a || !a.personal || !(a.pinLen>0 && a.pinLen<6) || !["owner","manager"].includes(a.role) || !(S.sv>=57)) return;
+function pinOldHint(){ const a=S.auth; if(!a || !a.personal || !(a.pinLen>0 && a.pinLen<6) || !["owner","manager"].includes(a.role)) return;
   const d=new Date().toDateString(); if(ls.get("rb_pinhint","")===d) return; ls.set("rb_pinhint",d); setTimeout(()=>toast(t("myPinShortT")),1200); }
 /** After every unlock with the PIN saved on this device (or fingerprint), ask the sheet once more (online only; skipped only
     when it was just asked, e.g. at start), so a sign-in ended elsewhere is noticed within a second or two. */
@@ -84,7 +84,7 @@ function pendingUI(msg){ LOCK.re=null; const el=lockEl(); let tm=0;
 function appUnlock(){ if(S.canWrite) shopRemember({code:SHOP.code, name:S.cfg.shopName||"", api:SHOP_MAIN?"":SHOP.api}); LOCK.on=false; LOCK.fails={n:0,until:0}; ls.set("rb_lockfail",LOCK.fails); lockEl().hidden=true; lockEl().innerHTML=""; lockInert(false);
   document.documentElement.classList.remove("locked"); renderAll(); if(S.pendShare) setTimeout(askSent,400);
   setTimeout(deskFocusQ,80);   // laptop: ready to type the first item
-  if(S.auth && S.auth.tok){ upReady=true; meRecheck(); pinOldHint(); if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); if(wqGet().length) setTimeout(wqFlush,1500); }
+  if(S.auth && S.auth.tok){ upReady=true; meRecheck(); pinOldHint(); if(obPending()) obKick(1500); }
   { const u=ls.get("rb_updated",0); if(u){ ls.set("rb_updated",0); if(Date.now()-u<6*3600e3) setTimeout(()=>toast(t("appUpdated")),500); } } }   // the app loaded a newer version by itself (updGo): say so once
 /** Signed out (here, remotely, or after too many wrong PINs): forget the token and ask to sign in. */
 function signedOut(msgKey){ upReady=false; lsSet0("rb_upq",{}); S.auth=null; ls.set("rb_auth",null); S.canWrite=false; applyPrefs(); appLock(msgKey?t(msgKey):""); }

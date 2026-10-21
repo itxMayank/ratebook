@@ -7,7 +7,7 @@ const { launch, appHtml, ok, done } = require('./browser');
   const snap = `<script>(()=>{const m=new Map();let o=window;while(o&&o!==Object.prototype){for(const k of Object.getOwnPropertyNames(o)){if(!m.has(k)){const d=Object.getOwnPropertyDescriptor(o,k);m.set(k,d&&('value' in d)?d.value:d&&d.get);}}o=Object.getPrototypeOf(o);}window.__G=m;})()</script>`;
   const html = appHtml('S').replace('<head>', () => '<head>' + snap);   // before any of the page's scripts
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 43 }) }));
+  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 60 }) }));
   await ctx.route('https://fonts.*/**', r => r.abort());
   await p.goto('https://rb.test/'); await p.waitForTimeout(800);
   const r = await p.evaluate(() => { const bad = []; for (const [k, v] of window.__G) { let o = window, d; while (o && !(d = Object.getOwnPropertyDescriptor(o, k))) o = Object.getPrototypeOf(o); const now = d && ('value' in d ? d.value : d.get); if (now !== v && typeof v === 'function') bad.push(k); } return { bad, n: window.__G.size, app: typeof appLock === 'function' && typeof window.boot === 'function' }; });

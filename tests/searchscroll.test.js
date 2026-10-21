@@ -7,7 +7,7 @@ const items = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, name: 'PP Bag
   const b = await launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'G', mode: 'live' }, sv: 41, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
+  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'G', mode: 'live' }, sv: 60, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'M', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400);
   await p.focus('#q'); await p.setViewportSize({ width: 390, height: 520 }); await p.keyboard.type('bag'); await p.waitForTimeout(600);

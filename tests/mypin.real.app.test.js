@@ -47,7 +47,7 @@ const html = appHtml('S,openSettings');
   ok(await p.inputValue('#cf-mp1') === '814912', 'C2 the typed PIN is still there');
   await p.click('#cf-mpsave'); await p.waitForTimeout(1500);
   ok(/already used by someone in your shop/.test(await p.textContent('#cf-mperr')) && R("auth_({pin:'640297',by:'Mayank Binayake'}).name") === 'Mayank Binayake', 'C3 a PIN someone else has: clear "PIN not changed" message, old PIN still works');
-  await p.fill('#cf-mp0', ''); await p.fill('#cf-mp1', ''); await p.fill('#cf-mp2', ''); await p.click('#cf-save'); await p.waitForTimeout(1200);
+  await p.fill('#cf-mp0', ''); await p.fill('#cf-mp1', ''); await p.fill('#cf-mp2', ''); await p.evaluate(() => { const d = document.querySelector('#cf-shop').closest('details'); if (d) d.open = true; }); await p.fill('#cf-shop', 'Gupta Plastics & Co'); await p.click('#cf-save');   /* (v66) Save sends only what changed: change the shop name */ await p.waitForTimeout(1200);
   ok(g.cfgPosts === 1, 'C4 with the PIN boxes empty, main Save saves as before');
   ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
   await b.close(); done();

@@ -1,7 +1,7 @@
 /* Who sees buy rates (Code.gs v65): owner only / owner and managers (default) / everyone, enforced by the sheet, plus the
    below-cost notice. The real Code.gs over an in-memory sheet, every request through doPost with a real sign-in.
    Run: node tests/buyview.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, billTxt } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -24,7 +24,8 @@ const item = o => sheets.Items.rows.push(COLS.map(k => o[k] === undefined ? '' :
 item({ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 150, sell: 180 }); item({ id: 'i2', name: 'Paper Cup', unit: 'box', buy: 100, sell: 160, altUnit: 'packet', altQty: 4, altSell: 45 }); item({ id: 'i3', name: 'Loose', unit: 'kg', sell: 10 });
 R("pop_=()=>({}); listCached_=()=>list_(); notice0=notice_;");
 const setV = v => { CFG.buyView = v; R("cache.BUYV && delete cache.BUYV"); };
-const post = b => JSON.parse(R(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
+const post = b => { if (b && b.bill && (b.action === 'takeBill' || b.action === 'updateBill') && /^(t2?|e2?)$/.test(String(b.bill.text))) b.bill.text = billTxt(b.bill, b.n || b.bill.n);   // (v67) a text that matches the bill
+  return JSON.parse(R(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`)); };
 R("saveUser_({name:'Mayank',pin:'739164',role:'owner'})"); R("saveUser_({name:'Sanjay',pin:'582917',role:'manager'})"); R("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
 const tokOf = (pin, name) => post({ action: 'verify', pin, by: name, dev: 'ph-' + name, wantTok: true }).tok;
 const OWN = tokOf('739164', 'Mayank'), MAN = tokOf('582917', 'Sanjay'), STF = tokOf('5273', 'Raju');

@@ -10,7 +10,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m); let bodies = [];
   const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
   await p.route('https://gupta.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await p.route('https://script.google.com/**', r => { const q = r.request(); const send = o => r.fulfill({ body: JSON.stringify(o), contentType: 'application/json' });
-    if (q.method() === 'GET') return send({ ok: true, rev: '1', bl: '0', bt: '0', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 34 });
+    if (q.method() === 'GET') return send({ ok: true, rev: '1', bl: '0', bt: '0', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 60 });
     const bd = JSON.parse(q.postData()); bodies.push(bd);
     if (bd.action === 'takeBill') return send({ ok: true, n: bd.n });
     return send({ ok: true, me: { name: 'Dad', role: 'manager', personal: true, prefs: {} }, tok: bd.wantTok ? 'tokD' : undefined }); });

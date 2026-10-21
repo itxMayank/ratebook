@@ -17,13 +17,13 @@ let entries = [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', amo
   await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } }, cfg = { shopName: 'Ganesh Packaging', mode: 'live' };
-    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 43 });
+    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 60 });
     const bd = JSON.parse(req.postData()); sent.push(bd);
     const one = id => ({ vendor: vendors.find(v => v.id === id), entries: entries.filter(e => e.vendorId === id) });
     if (bd.action === 'vSync') return send(bd.vrev === String(vrev) ? { same: true } : { vrev: String(vrev), vendors, entries });
     if (bd.action === 'vSave') { const e = { ...bd.entry, at: Date.now() }; delete e.isNew; entries = entries.filter(x => x.id !== e.id).concat(e); vrev++; return send(one(e.vendorId)); }
     if (bd.action === 'vSaveVendor') { const v = { ...bd.vendor, token: 'l' + 'a'.repeat(22), linkOn: false, createdAt: Date.now(), updatedAt: Date.now() }; vendors = vendors.filter(x => x.id !== v.id).concat(v); vrev++; return send(one(v.id)); }
-    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 43, me });
+    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 60, me });
     return send({ me }); });
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);

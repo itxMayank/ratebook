@@ -10,8 +10,8 @@ const dues = { total: 1648, bills: 3, customers: [C('Mohan Traders', '9000000003
   await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => { const q = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } }, cfg = { shopName: 'G', mode: 'live' };
-    if (q.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 55 }); const bd = JSON.parse(q.postData());
-    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 55, me });
+    if (q.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 60 }); const bd = JSON.parse(q.postData());
+    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 60, me });
     if (bd.action === 'listDues') return send(dues);
     return send({ me }); });
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })));

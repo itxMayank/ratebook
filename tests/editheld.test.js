@@ -11,11 +11,11 @@ const items = [{ id: 'a', name: 'PP Bag', unit: 'pc', buy: 90, sell: 120 }, { id
   await ctx.route('https://script.google.com/**', r => {
     const req = r.request(), send = o => r.fulfill({ body: JSON.stringify({ shop: 'main', ...o }), contentType: 'application/json' });
     const cfg = { shopName: 'Gupta Plastics', mode: 'live', nextBill: 20 };
-    if (req.method() === 'GET') return send({ ok: true, rev: '1', items, config: cfg, sv: 41, bl: '0', bt: '0', vl: '0', vt: '0' });
+    if (req.method() === 'GET') return send({ ok: true, rev: '1', items, config: cfg, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0' });
     const bd = JSON.parse(req.postData());
     if (bd.action === 'updateBill') { if (bd.bill.baseEdits != null && bd.bill.baseEdits !== serverEdits) return send({ ok: false, error: 'bill_changed' });
       serverEdits++; saves.push(bd.bill); return send({ ok: true, bill: { edits: serverEdits } }); }
-    if (bd.action === 'boot') return send({ ok: true, rev: '1', items, config: cfg, sv: 41, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
+    if (bd.action === 'boot') return send({ ok: true, rev: '1', items, config: cfg, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
     return send({ ok: true, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }); });
   await p.addInitScript(() => { if (!sessionStorage.done) { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); sessionStorage.done = 1; } });
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400);

@@ -115,12 +115,11 @@ function cuEdit(c){
     const b=$("#ce-save"); btnBusy(b,true);
     const cust={name,gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim(),contact:$("#ce-contact").value.trim(),email:em};
     if(isNew) cust.mobile=nm; else { cust.key=c.key||c.mob; cust.mobile=c.mob||""; cust.newMobile=nm; }   // mobile too: an older script (v54 or less) edits by it
-    if(!nm && (isNew || !c.mob) && S.sv>0 && S.sv<55){ btnBusy(b,false); err.textContent=t("oldScript"); return; }   // a customer without a mobile needs script v55
     /* (v59) saved in the background, shown at once. A new or changed mobile number still waits for the sheet: a new number moves
        the customer's bills over to it, and the sheet has to check no one else already has that number. */
     const mobChange=!isNew && nm!==(c.mob||"");
     if(wqOn() && !mobChange){
-      if(isNew && nm){ const ex=custIndex().find(x=>x.mob===nm); if(ex){ btnBusy(b,false); err.innerHTML=`${esc(t("cuExists",ex.name||nm))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=()=>openCustomer(ex.key||nm); return; } }
+      if(isNew && (nm||g)){ const ex=custIndex().find(x=>nm ? x.mob===nm : (!x.mob && String(x.gstin||"").toUpperCase()===g)); if(ex){ /* the sheet's duplicate rule, checked here too: the save goes in the background */ btnBusy(b,false); err.innerHTML=`${esc(t("cuExists",ex.name||nm||g))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=()=>openCustomer(ex.key||nm); return; } }
       if(isNew) cust.cid=custNewIdJS();
       const key=isNew?(nm||cust.cid):(c.key||c.mob);
       wqAdd({k:"cust", key:"cust:"+key, body:{action:"saveCustomer",customer:cust}});

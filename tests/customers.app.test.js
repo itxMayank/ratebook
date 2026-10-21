@@ -23,7 +23,7 @@ let brev = '1';
   await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } }, cfg = { shopName: 'Gupta Plastics', mode: 'live' };
-    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 43 });
+    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 60 });
     const bd = JSON.parse(req.postData()); sent.push(bd);
     if (bd.action === 'listDues') return send(dues);
     if (bd.action === 'listCustomers') return send(bd.brev === brev ? { brev, same: true } : { brev, customers: custs });
@@ -31,7 +31,7 @@ let brev = '1';
     if (bd.action === 'recordPayment') { const c = dues.customers[0]; c.bills[0].due = 0; c.bills[0].paid = 500; c.bills[1].due = 28; c.bills[1].paid = 120; c.bills = [c.bills[1]]; c.due = 28; dues.total = 228; custs[0][6] = 28; brev = '2';   // like the sheet: Customers due updated, bills version bumped
       return send({ used: Math.min(bd.amount, 548), cleared: 1 }); }
     if (bd.action === 'saveCustomer') return send({ moved: 0 });
-    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 43, me });
+    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 60, me });
     return send({ me }); });
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);
@@ -102,7 +102,7 @@ let brev = '1';
   ok(sv && sv.customer.mobile === '9876543210' && sv.customer.newMobile === '9876543210' && sv.customer.name === 'Sunil Traders & Co' && sv.customer.gstin === '09ABCDE1234F1Z5' && sv.customer.address === 'Main Road, Kanpur', 'Edit saved: name, GSTIN in capitals, mobile normalised, address kept');
 
   await p.click('#cu-bill'); await p.waitForTimeout(500);
-  ok(await p.evaluate(() => document.body.dataset.tab) === 'bill' && (await p.inputValue('#cust')) === 'Sunil Traders' && (await p.inputValue('#cust-mob')) === '9876543210' && (await p.inputValue('#cust-gstin')) === '09ABCDE1234F1Z5', 'Start a bill: the Bill tab opens with name, mobile and GSTIN filled');
+  ok(await p.evaluate(() => document.body.dataset.tab) === 'bill' && /^Sunil Traders( & Co)?$/.test(await p.inputValue('#cust')) && (await p.inputValue('#cust-mob')) === '9876543210' && (await p.inputValue('#cust-gstin')) === '09ABCDE1234F1Z5', 'Start a bill (the name just edited may already show, saved in the background): the Bill tab opens with name, mobile and GSTIN filled');
   await p.evaluate(() => T.openCustomers()); await p.waitForTimeout(600); await p.click('[data-cm="9123456780"]'); await p.waitForTimeout(600);
   await p.click('#cu-credit'); await p.waitForTimeout(800);
   ok(await title() === 'Ravi Stores' && (await p.$$('[data-db]')).length === 1, 'Dues & payment opens their Credit screen');

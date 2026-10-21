@@ -9,7 +9,7 @@ const items = ['PP Bag 12x18', 'PP Bag 16x20', 'Paper Cup 150ml', 'Paper Cup 250
   async function phone(w, h, init, mob) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, ...(mob ? { isMobile: true, hasTouch: true } : {}) }); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Gupta Plastics', mode: 'live', nextBill: 5 }, sv: 41, bl: '0', bt: '0', vl: '0', vt: '0', me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
+    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Gupta Plastics', mode: 'live', nextBill: 5 }, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0', me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
     await p.addInitScript(x => { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); if (x) localStorage.setItem('rb_spos', JSON.stringify(x)); }, init || '');
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(500); return p;
   }

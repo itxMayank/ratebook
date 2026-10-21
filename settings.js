@@ -111,6 +111,9 @@ function cgWire(){ $("#sheet-body").querySelectorAll("details.cg").forEach(d=>{
 function cgFocus(sel){ const el=$(sel); if(!el) return; const d=el.closest("details"); if(d) d.open=true; el.scrollIntoView({block:"center"}); el.focus(); }
 function openSettings(){
   const c={ shopName:S.cfg.shopName, units:S.cfg.units.map(u=>({...u})), defaultUnit:S.cfg.defaultUnit, roundTo:S.cfg.roundTo, billFooter:S.cfg.billFooter, nextBill:seriesNext(false), nextGstBill:seriesNext(true), shopGstin:S.cfg.shopGstin, shopAddress:S.cfg.shopAddress, defaultGst:S.cfg.defaultGst, defaultHsn:S.cfg.defaultHsn };
+  /* (v66) what the shop-wide fields were when Settings opened: Save sends only the ones changed here, so two people saving at once
+     don't undo each other's changes (and bill numbers another phone moved on aren't put back) */
+  const cfg0={ ...JSON.parse(JSON.stringify({...S.cfg, raw:undefined})), nb0:seriesNext(false), ngb0:seriesNext(true) };
   const w=can("owner"), me=S.canWrite, test=S.cfg.mode==="test";
   if($("#sheet").hidden || (sheetCurKey!=="settings" && !SHEET_STK.some(x=>x.key==="settings"))) CG_OPEN.clear();
   const body=`
@@ -123,7 +126,7 @@ ${cg("me","user",t("meT"),cgSumMe(),`
       ${nSetHTML()}
       ${noBuy()?`<p class="note" style="margin:0">${esc(t("bvMine"))}</p><input type="checkbox" id="cf-hide" hidden>`:`<label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>`}
       <div id="cf-bio"></div>
-      ${S.auth.personal && !(S.sv>0 && S.sv<57)?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
+      ${S.auth.personal?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
         ${pinShortMe()?`<p class="note mpwarn">${IC.warn} ${esc(t("myPinShort"))}</p>`:""}
         <div id="cf-mpform" class="mpform" hidden><div class="field"><label for="cf-mp0">${esc(t("myPinOld"))}</label><input id="cf-mp0" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div>
           <div class="two"><div class="field"><label for="cf-mp1">${esc(t("newPin"))}</label><input id="cf-mp1" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div><div class="field"><label for="cf-mp2">${esc(t("newPin2"))}</label><input id="cf-mp2" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" autocomplete="off" maxlength="8"></div></div>
@@ -260,6 +263,10 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     const lmEl=$("#cf-lowm"), lm=lmEl?toNum(lmEl.value):S.cfg.lowMargin; if(lmEl && (isNaN(lm)||lm<0||lm>100)){ btn.disabled=false; $("#cf-err").textContent=t("lowmBad"); cgFocus("#cf-lowm"); return; }
     const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
     data.lowMargin=lm; if(c.buyView) data.buyView=c.buyView;   // (v65)
+    { const w={ ...cfg0, nextBill:cfg0.nb0, nextGstBill:cfg0.ngb0, testNextBill:cfg0.nb0, testNextGstBill:cfg0.ngb0, buyView:cfg0.buyView||"all" }, nv=v=>v==null?"":v;
+      const same=(a,b)=>JSON.stringify(nv(a))===JSON.stringify(nv(b)) || (typeof a!=="object" && typeof b!=="object" && String(nv(a))===String(nv(b)));
+      Object.keys(data).forEach(k=>{ if(same(data[k],w[k])) delete data[k]; });
+      if(!Object.keys(data).length){ closeSheet(); toast(t("settingsSaved")); return; } }
     if(wqOn()){   // (v59) shown at once, saved in the background
       const x={...S.cfg, ...S.cfg.raw, ...data}; delete x.raw; applyConfig(x); wqAdd({k:"cfg", key:"cfg", body:{action:"setConfig",config:data}});
       saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); return; }

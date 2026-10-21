@@ -22,4 +22,8 @@ const S = global.window.RB_STR;
 ok(S && Object.keys(S.en).length > 900 && Object.keys(S.hi).length > 900, `strings.js has the English and Hindi texts (${Object.keys(S.en).length} / ${Object.keys(S.hi).length})`);
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
 ok(/url\.search\.startsWith\('\?v='\)/.test(sw) && /saveAssets/.test(sw), 'the offline cache saves the stamped files with each copy of the page');
+{ const need = +(fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').match(/const NEED_SV=(\d+)/) || [])[1], min = +(fs.readFileSync(path.join(ROOT, 'admin.html'), 'utf8').match(/const MIN_SV = (\d+)/) || [])[1];
+  ok(need >= 60 && need === min, `the oldest supported script version is the same in the app and the dashboard (v${need})`); }
+{ const st = require('../tools/stamp'), files = st.serverFiles();
+  ok(files.length >= 10 && fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8') === st.buildCode(), `Code.gs is exactly server/*.gs joined (${files.length} files); run node tools/stamp.js after editing them`); }
 done();

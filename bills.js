@@ -36,7 +36,9 @@ function profitBox(pf){
 }
 function profitChip(pf){ if(!pf) return ""; return `<span class="profit${pf.profit<0?" neg":""}">${esc(t("profitShort",rs(pf.profit),pf.pct))}${pf.est?" *":""}</span>`; }
 function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(text); }
-let billsServer=false, billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
+let billsServer=false, billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null, billsNext=null;
+/** (v67) Years whose bills are (partly) in the sheet's archive: the phone's copy doesn't hold them, so a Year or Date filter on one asks the sheet. */
+const arcNeed=C=>{ const ys=(C&&C.arcY)||[], y=BL.year||String(BL.date||"").slice(0,4); return !!y && ys.includes(y); };
 const BL={q:"", year:"", date:"", f:"", col:{}};   // f: quick filter chip (gst | normal | due | cancelled | edited)
 const BL_F=["gst","normal","due","cancelled","edited"];
 /** (v63) Transfer a bill to another number: a new bill opens with the same items, customer, GST settings, address and PO, dated
@@ -161,9 +163,9 @@ function blcRefresh(){
         const at=new Map(have.bills.map((x,i)=>[x.id,i])), fresh=[];
         (j.bills||[]).forEach(x=>{ if(x.id && at.has(x.id)) have.bills[at.get(x.id)]=x; else fresh.push(x); });
         have.bills=fresh.concat(have.bills); if(have.bills.length>3000){ have.bills.length=3000; have.more=true; }
-        have.brev=j.brev||""; have.years=j.years||have.years; have.at=Date.now();
+        have.brev=j.brev||""; have.years=j.years||have.years; if(j.arcY) have.arcY=j.arcY; have.at=Date.now();
         if(env===S.cfg.mode){ BLC=have; blcFreshAt=Date.now(); } idb.set("images","bills:"+env,have); return have; }
-      const C={env, at:Date.now(), brev:j.brev||"", bills:j.bills||[], more:!!j.more, years:j.years||[]};
+      const C={env, at:Date.now(), brev:j.brev||"", bills:j.bills||[], more:!!j.more, years:j.years||[], arcY:j.arcY||[]};
       if(env===S.cfg.mode){ BLC=C; blcFreshAt=Date.now(); }
       idb.set("images","bills:"+env,C); return C; })().finally(()=>{ blcLoading=null; blcSyncUi(false); });
   return blcLoading;
@@ -194,6 +196,7 @@ function blcQuery(C){
 }
 function renderLocalBills(C,keep){
   if(!$("#bl-list")) return;
+  if(arcNeed(C)) return loadBillsServer();   // (v67) an archived year: only the sheet has those bills
   const r=blcQuery(C);
   billsCache=r.out.slice(0,BL.shown||60); billsDays=r.days; billsMonths=r.months; billsAll=r.all;
   billsMore=r.out.length>billsCache.length; billsServer=false;
@@ -201,7 +204,7 @@ function renderLocalBills(C,keep){
   const ys=C.years||[], sel=$("#bl-year");
   if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
   renderBills(); btxSoon(billsCache.slice(0,40));   // read ahead the bills on screen
-  if(C.more && BL.q.trim()){ const l=$("#bl-list"); if(l) l.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost" id="bl-older">${esc(t("blOlder"))}</button>`); }
+  if((C.more||(C.arcY||[]).length) && BL.q.trim()){ const l=$("#bl-list"); if(l) l.insertAdjacentHTML("beforeend",`<button type="button" class="btn ghost" id="bl-older">${esc(t("blOlder"))}</button>`); }
 }
 async function loadBills(more){
   const list=$("#bl-list"); if(!list) return;
@@ -220,15 +223,15 @@ async function loadBillsServer(more){
   if(more) btnBusy($("#bl-more"),true);
   else list.innerHTML=skelCards(5,true);
   try{
-    const req={action:"listBills",q:BL.q,limit:60,tz:new Date().getTimezoneOffset(),...billFilter()};
-    if(more && billsCache.length) req.before=billsCache[billsCache.length-1].row;
+    const req={action:"listBills",q:BL.q,limit:60,tz:new Date().getTimezoneOffset(),...billFilter(),arc:1,skip:0};   // (v67) arc: archived years too
+    if(more && billsNext!=null) req.skip=billsNext; else if(more && billsCache.length){ delete req.skip; req.before=billsCache[billsCache.length-1].row; }
     const j=await apiPost(req); if(my!==billsReq || !$("#bl-list")) return;
     const got=(j.bills||[]).filter(blF);
     billsCache = more ? billsCache.concat(got) : got;
     billsDays = more ? {...billsDays, ...(j.days||{})} : (j.days||{});
     billsMonths = more ? {...billsMonths, ...(j.months||{})} : (j.months||{});
     if(!more) BL.col={};
-    billsMore = !!j.more; billsAll = j.all||null; billsServer = true;
+    billsMore = !!j.more; billsAll = j.all||null; billsServer = true; billsNext = j.next!==undefined && j.next!==null ? +j.next : null;
     const ys=j.years||[], sel=$("#bl-year");
     if(sel) sel.innerHTML=`<option value="">${esc(t("blAllYears"))}</option>`+[...new Set(BL.year?[BL.year,...ys]:ys)].sort().reverse().map(y=>`<option value="${esc(y)}"${y===BL.year?" selected":""}>${esc(y)}</option>`).join("");
     renderBills();
@@ -321,11 +324,11 @@ async function billFresh(b){
 }
 async function showBill(b,quiet){
   if(!b) return; if(b._base) b=b._base;   // a view with waiting changes laid on: work on the bill itself
-  if(b.row && b.text===undefined){ await btxLoad(); const c=btxFor(b); if(c){ b.text=c.text; b.lines=c.lines; b._at=c.at; } }   // kept on the phone: open at once
-  const stale=!!b.row && b.text!==undefined && Date.now()-(b._at||0)>30000;
+  if(b.row && !b.arc && b.text===undefined){ await btxLoad(); const c=btxFor(b); if(c){ b.text=c.text; b.lines=c.lines; b._at=c.at; } }   // kept on the phone: open at once
+  const stale=!!b.row && !b.arc && b.text!==undefined && Date.now()-(b._at||0)>30000;
   if(b.row && b.text===undefined){   // not on the phone yet: read it from the sheet
     sheetKey("bill:"+(b.id||b.n)), openSheet(`${t("billNoL")} ${dispNo(b.n,b.gst,b.fy)}`, ldBlock(t("billOpening")), "", {full:true});
-    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n}); billMerge(b,j.bill||{}); }
+    try{ const j=await apiPost({action:"getBill",row:b.row,id:b.id,n:b.n,...(b.arc?{arc:b.arc}:{})}); billMerge(b,j.bill||{}); }
     catch(e){ $("#sheet-body").innerHTML=`<p class="err">${esc(t("billsFail"))}</p><button class="btn ghost" id="bd-back2">← ${esc(t("back"))}</button>`; $("#bd-back2").onclick=()=>billBack(); return; }
   }
   if((!b.lines||!b.lines.length) && b.items) b.lines=linesFromItems(b);
@@ -333,6 +336,7 @@ async function showBill(b,quiet){
   const text=(b.cancelled?t("cancelledText")+"\n":"")+(v.text||oldBillText(v))+payUpdateText(v);
   const body=`<div style="display:grid;gap:12px">
     <div><button type="button" class="btn ghost" id="bd-back">← ${esc(t("back"))}</button></div>
+    ${b.arc?`<p class="note arcnote" style="margin:0">${esc(t("arcNote",b.arc))}</p>`:""}
     ${b.cancelled?`<div class="cancelnote">${esc(t("cancelledInfo",b.cancelledAt?fmtDT(b.cancelledAt):"",b.cancelledBy,b.cancelReason))}</div>`:""}
     ${b.editedAt?`<div class="editnote">${esc(t("editedInfo",fmtDT(b.editedAt),b.editedBy,b.edits))}</div>`:""}
     ${v.saving?`<p class="note wq-saving" style="margin:0"><span class="ld"></span> ${esc(t("wqSavingBill"))}</p>`:""}${b.cancelled?"":payBoxHTML(v)}
@@ -358,6 +362,7 @@ async function showBill(b,quiet){
   $("#bd-pdf").onclick=()=>pdfFor(invFromBill(v), $("#bd-pdf"));
   $("#bd-print").onclick=()=>printInv(invFromBill(v), $("#bd-print"));
   if(b.cancelled){ ["#bd-edit"].forEach(k=>{ const el=$(k); if(el) el.remove(); }); }
+  if(b.arc) ["#bd-edit","#bd-move","#bd-mq","#bd-cancel","#bd-cq","#bd-restore","#pb-rec","#pb-undo"].forEach(k=>{ const el=$(k); if(el) (el.closest("div:not(.row-btns)")===el.parentElement&&el.parentElement.children.length===1?el.parentElement:el).remove(); });   // (v67) archived: open, share, print and repeat only
   if($("#bd-cancel")){ $("#bd-cancel").onclick=()=>{ $("#bd-cq").hidden=false; $("#bd-cancel").hidden=true; setTimeout(()=>$("#bd-cq").scrollIntoView({block:"center",behavior:"smooth"}),30); };
     $("#bd-cn").onclick=()=>{ $("#bd-cq").hidden=true; $("#bd-cancel").hidden=false; };
     $("#bd-cr").onclick=e=>{ const c=e.target.closest("button"); if(c) $("#bd-reason").value=c.textContent; };

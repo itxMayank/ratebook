@@ -14,7 +14,7 @@ const ok = (c, m) => console.log((c ? 'PASS ' : 'FAIL ') + m);
       const req = r.request(), u = new URL(req.url()); const send = o => r.fulfill({ body: JSON.stringify(o), contentType: 'application/json' });
       if (req.method() === 'GET') { const a = u.searchParams.get('action');
         if (a === 'rev') return send({ ok: true, rev: '1', bl: '0', bt: '0', vl: '0', vt: '0' });
-        if (a === 'list') return send({ ok: true, items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: { shopName: 'Gupta Plastics', mode: 'live' }, rev: '1', sv: 34 }); return send({ ok: true }); }
+        if (a === 'list') return send({ ok: true, items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: { shopName: 'Gupta Plastics', mode: 'live' }, rev: '1', sv: 60 }); return send({ ok: true }); }
       const body = JSON.parse(req.postData()); bodies.push(body);
       const me = body.tok ? tokens[body.tok] : people[body.pin];
       if (!me) return send({ ok: false, error: body.tok ? 'bad_session' : 'bad_pin' });

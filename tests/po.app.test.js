@@ -15,9 +15,9 @@ const PAST = { n: 41, date: '2026-10-15T06:00:00.000Z', day: '2026-10-15', custo
   await ctx.route('https://wa.me/**', r => r.fulfill({ body: 'wa' }));
   await ctx.route('https://script.google.com/**', r => { const q = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const cfg = { shopName: 'Shri Pushpdant Plastics', mode: 'live', roundTo: 1, defaultUnit: 'pc', nextBill: 21, nextGstBill: 42, shopGstin: '27ABTPB1142J1ZP', shopState: '27', defaultGst: 18, defaultHsn: '3923' };
-    if (q.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 54, bl: '0', bt: '0', vl: '0', vt: '0' });
+    if (q.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0' });
     const bd = JSON.parse(q.postData()); sent.push(bd);
-    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 54, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
+    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
     if (bd.action === 'takeBill') return send({});
     if (bd.action === 'listBills') return send({ bills: [PAST], full: true, brev: '1', days: {}, months: {}, all: { count: 1, total: 19205 }, years: ['2026'] });
     if (bd.action === 'getBill') return send({ bill: { ...PAST, text: 'TAX INVOICE…', lines: [{ id: 'i1', name: items[0].name, unit: 'pc', rate: 7.75, qty: 2100, hsn: '39231090', gst: 18 }] } });

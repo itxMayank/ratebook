@@ -28,10 +28,10 @@ function report(from, to) {
     await ctx.route('https://script.google.com/**', async r => {
       const req = r.request(), u = new URL(req.url()), send = o => r.fulfill({ body: JSON.stringify({ shop: 'main', ...o }), contentType: 'application/json' });
       const cfg = { shopName: 'Gupta Plastics', mode: 'live' };
-      if (req.method() === 'GET') return send({ ok: true, rev: '1', items, config: cfg, sv: 37, bl: '0', bt: '0', vl: '0', vt: '0' });
+      if (req.method() === 'GET') return send({ ok: true, rev: '1', items, config: cfg, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0' });
       const bd = JSON.parse(req.postData());
       if (bd.action === 'report') { reqs.push(bd.from + '_' + bd.to); await new Promise(x => setTimeout(x, 250)); return send({ ok: true, report: report(bd.from, bd.to) }); }
-      if (bd.action === 'boot') return send({ ok: true, rev: '1', items, config: cfg, sv: 37, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
+      if (bd.action === 'boot') return send({ ok: true, rev: '1', items, config: cfg, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
       if (bd.action === 'verify') return send({ ok: true, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } });
       return send({ ok: true }); });
     await p.addInitScript(() => { if (!sessionStorage.done) { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); sessionStorage.done = 1; } });

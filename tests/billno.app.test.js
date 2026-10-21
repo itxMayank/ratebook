@@ -14,9 +14,9 @@ let off = false, delay = 0, taken = new Set([21]), slowReply = null;   // bill 2
   await ctx.route('https://wa.me/**', r => r.fulfill({ body: 'wa' }));
   await ctx.route('https://script.google.com/**', async r => { if (off) return r.abort(); const q = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const cfg = { shopName: 'Gupta Plastics', mode: 'live', roundTo: 1, defaultUnit: 'kg', nextBill: 21, nextGstBill: 7 };
-    if (q.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 53, bl: '0', bt: '0', vl: '0', vt: '0' });
+    if (q.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0' });
     const bd = JSON.parse(q.postData());
-    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 53, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
+    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
     if (bd.action === 'takeBill') {   // like the sheet: a number already used gets the next free one
       if (delay) await new Promise(res => { slowReply = res; setTimeout(res, delay); });
       let n = bd.bill.n, ren = null; if (taken.has(n)) { let m = n + 1; while (taken.has(m)) m++; ren = { from: n, to: m }; n = m; } taken.add(n);

@@ -27,8 +27,7 @@ const html = appHtml('S,checkRev,appUnlock,openSettings');
   ok(a.sent.length === 1 || a.sent[1].rows.every(r => r[3] > Math.max(...s1.rows.map(x => x[3]))), 'A4 an hour later only the new timings go (nothing sent twice)');
   await a.p.evaluate(() => T.openSettings()); await a.p.waitForTimeout(400);
   ok(!(await a.p.$('details[data-cg="speed"]')) && !(await a.p.$('#speed-body')), 'A5 Settings no longer has a Speed card');
-  const o = await phone(46, true); await o.p.evaluate(() => T.checkRev()); await o.p.waitForTimeout(400);
-  ok(o.sent.length === 0, 'B1 older script (v46): nothing sent (it wouldn\'t know the request)');
+  /* (B1, "an older script (v46) is sent nothing", was removed with scripts below v60, 21 Oct 2026) */
   const n = await phone(47, false); await n.p.evaluate(() => T.checkRev()); await n.p.waitForTimeout(400);
   ok(n.sent.length === 0, 'B2 a phone that isn\'t signed in sends nothing');
   ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));

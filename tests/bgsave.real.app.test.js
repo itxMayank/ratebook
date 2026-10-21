@@ -136,7 +136,7 @@ const html = appHtml('S,sync,checkRev,payCheck,finishBill,openSettings,openDues,
   /* J. (v60) a bill made on another phone: the next number arrives with the 25-second check, no price-list reload */
   SV = 60; await p.evaluate(() => { T.S.sv = 60; });
   const nb0 = await p.evaluate(() => T.S.cfg.nextBill), rev0 = R('getRev_()');
-  R(`takeBill_(${JSON.stringify({ n: 5, by: 'Dad', bill: { id: 'other1', gst: false, total: 50, items: 'x', text: 'Bill No: 5', lines: [], pay: 'paid' } })})`);
+  R(`takeBill_(${JSON.stringify({ n: 5, by: 'Dad', bill: { id: 'other1', gst: false, total: 50, items: 'x', text: 'Bill No: 5\n= ₹50\nTotal: ₹50', lines: [{ id: 'i1', qty: 1, rate: 50 }], pay: 'paid' } })})`);
   const lists = seen.filter(a => a === 'list' || a === 'boot').length;
   await p.evaluate(() => T.checkRev()); await p.waitForTimeout(600);
   ok(R('getRev_()') === rev0 && await p.evaluate(() => T.S.cfg.nextBill) === 6 && nb0 === 5, 'J1 another phone used No. 5: this phone shows 6 next, from the 25-second check');

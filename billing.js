@@ -127,28 +127,17 @@ function itemBuyFor(it,alt){ if(!it) return null; const b=+it.buy||0; return alt
 function lineLp(l){ if(+l.lp>0) return +l.lp; const it=S.byId.get(l.id); return it && +it.sell>0 ? +it.sell : 0; }
 function lineBuy(l){ if(l.buy!=null && l.buy!=="" && !isNaN(+l.buy)) return +l.buy; return itemBuyFor(S.byId.get(l.id), l.alt); }
 /** Profit on the sale before GST. % is on cost, the same way margins are shown on price cards. */
-function profitOf(lines){ let sale=0, csale=0, cost=0, known=true; const per=[];
-  for(const l of lines||[]){ const q=+l.qty||0, amt=r2(q*(+l.rate||0)), b=lineBuy(l); sale+=amt;
-    if(b==null || !(+b>0)){ known=false; per.push({name:l.name,amt,cost:null,p:null}); continue; }   // no buy price: not counted as profit
-    const c=r2(q*b); cost+=c; csale+=amt; per.push({name:l.name,amt,cost:c,p:r2(amt-c)}); }
-  sale=r2(sale); csale=r2(csale); cost=r2(cost); const p=r2(csale-cost);
-  return { sale, cost, profit:p, pct: cost>0 ? Math.round(p/cost*1000)/10 : null, known, per }; }
+function profitOf(lines){ return billCost_(lines, lineBuy); }   // money.js
 function lineInfo(l){ const it=S.byId.get(l.id); return { hsn: l.hsn || itemHsn(it), gst: (l.gst!=null? +l.gst : itemGst(it)) }; }
 const r2=n=>Math.round((+n||0)*100)/100;
 const rs2=n=>"₹"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
 /** GST is added on top of the rate. Groups tax by rate; total rounded to the nearest rupee. */
 function gstCalc(){ return gstCalcFor(S.bill, S.igst, l=>lineInfo(l).gst); }
-function gstCalcFor(lines, igst, rateOf){
-  rateOf=rateOf||(l=>+l.gst||0);
-  const groups={}; let taxable=0;
-  lines.forEach(l=>{ const amt=r2((+l.qty||0)*(+l.rate||0)); const g=rateOf(l); taxable+=amt; groups[g]=(groups[g]||0)+amt; });
-  taxable=r2(taxable);
-  const rows=[]; let tax=0;
-  Object.keys(groups).map(Number).sort((a,b)=>a-b).forEach(rate=>{ if(!rate) return;
-    if(igst){ const v=r2(groups[rate]*rate/100); tax+=v; rows.push({label:t("igst",fmtN(rate)),v,rate,kind:"I"}); }
-    else { const half=rate/2, v=r2(groups[rate]*half/100); tax+=2*v; rows.push({label:t("cgst",fmtN(half)),v,rate,kind:"C"},{label:t("sgst",fmtN(half)),v,rate,kind:"S"}); } });
-  tax=r2(tax); const exact=r2(taxable+tax), total=Math.round(exact), roundOff=r2(total-exact);
-  return { taxable, tax, rows, roundOff, total };
+function gstCalcFor(lines, igst, rateOf){   // the sums come from money.js (the sheet checks every bill with the same code)
+  const m=billMath_(lines, true, igst, rateOf), rows=[];
+  m.groups.forEach(g=>{ if(g.kind==="I") rows.push({label:t("igst",fmtN(g.rate)),v:g.v,rate:g.rate,kind:"I"});
+    else rows.push({label:t("cgst",fmtN(g.rate/2)),v:g.v,rate:g.rate,kind:"C"},{label:t("sgst",fmtN(g.rate/2)),v:g.v,rate:g.rate,kind:"S"}); });
+  return { taxable:m.taxable, tax:m.tax, rows, roundOff:m.roundOff, total:m.total };
 }
 function billTotal(){ return S.gst ? gstCalc().total : billSum(); }
 function gstinOk(v){ const x=String(v||"").trim().toUpperCase(); return !x || /^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]Z[0-9A-Z]$/.test(x); }
@@ -162,7 +151,7 @@ function normMobile(v){ let d=devDigits(String(v||"")).replace(/\D/g,""); if(!d)
 const mob10=v=>{ const m=normMobile(v); return m?m.slice(2):""; };   /* the plain 10 digits, for saving */
 const telHref=v=>{ const m=normMobile(v); return m?"tel:+"+m:"tel:"+String(v||"").replace(/[^\d+]/g,""); };
 function waLink(){ const m=normMobile(S.mob); return (m?`https://wa.me/${m}`:"https://wa.me/")+"?text="+encodeURIComponent(billText()); }
-function billSum(){ return Math.round(S.bill.reduce((a,l)=>a+(+l.qty||0)*(+l.rate||0),0)*100)/100; }
+function billSum(){ return billMath_(S.bill, false).total; }
 /** The price list changed (another phone, this phone's edit, a reload): every bill still being made follows its items. Name,
     unit, HSN, GST and buy rate come from the item; the rate follows only if it was the item's price (a rate typed for this
     bill stays). Bills being edited or already shared are left as they were billed. Returns how many lines changed visibly. */
@@ -360,7 +349,7 @@ function startEdit(b){
   if(!draftEmpty()){ const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; }
     const snap=snapDraft(); h.push(snap); heldSet(h); from=snap.hid; }
   blankDraft();
-  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from, total0:+b.total||0 };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, custAddr:b.custAddr||"", po:b.po, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
@@ -386,6 +375,8 @@ async function saveEdit(opts){
       if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
   if(navigator.onLine===false && !wqOn()){ toast(t("editOffline")); return; }
+  /* (v66) staff can't change a saved bill's total (the sheet refuses it too); said here before anything is sent */
+  if(!ed.fresh && !can("manager") && ed.total0!=null && +S.sv>=66 && Math.abs(billTotal()-ed.total0)>0.004){ toast(t("staffTotal"),true); return; }
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
@@ -486,7 +477,7 @@ function setCash(v){ S.cash=v; renderCash(); }
 /** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
 function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 let flushing=false;
-const BILL_REFUSE=new Set(["bad_total","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
+const BILL_REFUSE=new Set(["bad_total","total_mismatch","text_mismatch","no_lines","bad_line","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
 async function flushBills(){
   if(flushing || !S.billQ.length || !apiUrl()) return;
   renderQueue();

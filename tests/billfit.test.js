@@ -9,7 +9,7 @@ const items = ['PP Bag 12x18 heavy quality', 'Sugar loose', 'Paper Cup 150ml', '
   async function phone(w, h, spos, fz) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Shree Ganesh Packaging & Disposables', mode: 'live', nextBill: 5 }, sv: 43, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
+    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Shree Ganesh Packaging & Disposables', mode: 'live', nextBill: 5 }, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
     await p.addInitScript(x => { localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); localStorage.setItem('rb_spos', JSON.stringify(x.spos)); localStorage.setItem('rb_fz', JSON.stringify(x.fz)); }, { spos, fz });
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400);
     await p.evaluate(() => { for (let i = 0; i < 5; i++) T.addToBill('i' + i, i === 1 ? 0.25 : 30); T.setTab('bill'); }); await p.waitForTimeout(400); return p;

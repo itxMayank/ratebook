@@ -1,7 +1,7 @@
 /* The customer's purchase order (PO) on bills, server side (Code.gs v54): takeBill saves it in the new last Bills column
    ("number|yyyy-mm-dd", kept as text), listBills / getBill / listDues give it back, updateBill changes or clears it, and a
    bill without one leaves the cell empty. Run: node tests/po.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, fitBill, billTxt } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -16,7 +16,7 @@ R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; shopPaused_=()=>false;
   customersSheet_=()=>{}; touchCustomer_=()=>{}; refreshDue_=()=>{}; ENV_='live';`);
 const COLS = R('BILL_COLS'), PO = COLS.indexOf('po');
 ok(PO === COLS.length - 2 && COLS[COLS.length - 1] === 'custAddr' && R('SCRIPT_VERSION') >= 54, 'A1 Bills gets a column "po" (v54), then "custAddr" (v55)');
-const take = (n, po, extra) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', bill: { id: 'b' + n, gst: true, total: 100, text: 'Invoice No: ' + n, lines: [], pay: 'paid', ...(po === undefined ? {} : { po }), ...(extra || {}) } })})`);
+const take = (n, po, extra) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', bill: fitBill({ id: 'b' + n, gst: true, total: 100, text: 'Invoice No: ' + n, lines: [], pay: 'paid', ...(po === undefined ? {} : { po }), ...(extra || {}) }) })})`);
 take(1, { no: '1100-4500253480', date: '2026-10-15' });
 const row = () => sheets.Bills.rows[sheets.Bills.rows.length - 1];
 ok(row()[PO] === '1100-4500253480|2026-10-15', 'A2 saved as "1100-4500253480|2026-10-15" (written as text, so Sheets doesn\'t turn it into a number or date): ' + row()[PO]);
@@ -35,11 +35,11 @@ take(6, { no: 'C-9', date: '2026-10-02' }, { pay: 'credit', mobile: '9876543210'
 const du = R(`listDues_()`).customers[0].bills[0];
 ok(du.po && du.po.no === 'C-9', 'B4 the Credit list has it too (a bill edited from there keeps it)');
 
-R(`updateBill_(${JSON.stringify({ id: 'b2', total: 100, text: 'x', lines: [], gst: true, po: { no: 'NEW-1', date: '2026-10-14' } })}, 'Mayank', {role:'owner'})`);
+R(`updateBill_(${JSON.stringify(fitBill({ id: 'b2', total: 100, text: 'Invoice No: 2', lines: [], gst: true, po: { no: 'NEW-1', date: '2026-10-14' } }))}, 'Mayank', {role:'owner'})`);
 ok(sheets.Bills.rows[2][PO] === 'NEW-1|2026-10-14', 'C1 editing a bill can add a PO');
-R(`updateBill_(${JSON.stringify({ id: 'b1', total: 100, text: 'x', lines: [], gst: true, po: null })}, 'Mayank', {role:'owner'})`);
+R(`updateBill_(${JSON.stringify(fitBill({ id: 'b1', total: 100, text: 'Invoice No: 1', lines: [], gst: true, po: null }))}, 'Mayank', {role:'owner'})`);
 ok(sheets.Bills.rows[1][PO] === '', 'C2 …or remove it');
-R(`updateBill_(${JSON.stringify({ id: 'b2', total: 100, text: 'x', lines: [], gst: true })}, 'Mayank', {role:'owner'})`);
+R(`updateBill_(${JSON.stringify(fitBill({ id: 'b2', total: 100, text: 'Invoice No: 2', lines: [], gst: true }))}, 'Mayank', {role:'owner'})`);
 ok(sheets.Bills.rows[2][PO] === 'NEW-1|2026-10-14', 'C3 an older app that sends no PO when editing leaves it as it was');
 
 // D. the customer's address (v55): saved with the bill, given back, changed by an edit
@@ -48,5 +48,5 @@ take(7, null, { custAddr: 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 4311
 ok(row()[CA] === 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 431136', 'D1 the customer\'s address is saved with the bill');
 const g7 = R(`getBill_(${sheets.Bills.rows.length}, 'b7')`).bill;
 ok(g7.custAddr === 'Plot F-20, Waluj MIDC\nChhatrapati Sambhajinagar 431136' && R(`listBills_('', 60, {full:true})`).bills.find(x => x.id === 'b7').custAddr.startsWith('Plot F-20'), 'D2 getBill and listBills give it back');
-R(`updateBill_(${JSON.stringify({ id: 'b7', total: 100, text: 'x', lines: [], gst: true, custAddr: '=cmd()' })}, 'Mayank', {role:'owner'})`);
+R(`updateBill_(${JSON.stringify(fitBill({ id: 'b7', total: 100, text: 'Invoice No: 7', lines: [], gst: true, custAddr: '=cmd()' }))}, 'Mayank', {role:'owner'})`);
 ok(row()[CA] === "=cmd()" || row()[CA] === "'=cmd()", 'D3 an edit changes it; text starting with = is kept as text');

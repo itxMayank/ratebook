@@ -13,7 +13,7 @@ const html = appHtml('S,t,setTab,openSummary,sumText,appUnlock');
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = x => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...x }) }), cfg = { shopName: 'Sharma Traders', mode: 'live' };
       if (req.method() === 'GET') return send({ rev: '1' });
       const bd = JSON.parse(req.postData()); p.asked.push(bd);
-      if (bd.action === 'boot' || bd.action === 'list') return send({ rev: '1', items: [], config: cfg, sv: 50, me: { name: 'Sharma ji', role, personal: true, prefs: {} } });
+      if (bd.action === 'boot' || bd.action === 'list') return send({ rev: '1', items: [], config: cfg, sv: 60, me: { name: 'Sharma ji', role, personal: true, prefs: {} } });
       if (bd.action === 'insights') return o.old ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'bad_action' }) }) : send(Object.assign({}, FX, { env: bd.env || 'live' }));
       return send({ me: { name: 'Sharma ji', role, personal: true, prefs: {} } }); });
     await p.addInitScript(([a, l]) => { if (sessionStorage.d) return; sessionStorage.d = 1; localStorage.setItem('rb_auth', a); if (l) localStorage.setItem('rb_lang', JSON.stringify(l)); },

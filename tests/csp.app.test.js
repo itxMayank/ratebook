@@ -13,7 +13,7 @@ const html = appHtml('S,appUnlock,setTab,addToBill,openSettings');
   p.on('pageerror', e => errs.push(e.message));
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://evil.test/**', r => r.fulfill({ body: 'stolen' }));
-  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 1, sell: 2 }], config: { shopName: 'Gupta', mode: 'live' }, sv: 46, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
+  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 1, sell: 2 }], config: { shopName: 'Gupta', mode: 'live' }, sv: 60, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
   await p.addInitScript(() => { window.__v = []; document.addEventListener('securitypolicyviolation', e => window.__v.push(e.violatedDirective + ' ' + (e.blockedURI || ''))); localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'M', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' })); });
   await p.goto('https://rb.test/'); await p.waitForTimeout(1500); await p.evaluate(() => T.appUnlock());
   await p.evaluate(() => { T.addToBill('i1'); T.setTab('bill'); }); await p.waitForTimeout(300); await p.evaluate(() => T.openSettings()); await p.waitForTimeout(600);

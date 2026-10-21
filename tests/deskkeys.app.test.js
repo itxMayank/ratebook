@@ -12,7 +12,7 @@ let sent = [];
     const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: !!touch, hasTouch: !!touch }), p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const bd = r.request().method() === 'POST' ? JSON.parse(r.request().postData()) : {}; sent.push(bd);
-      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Pushpadant Plastics', mode: 'live', nextBill: 5 }, sv: 57, bl: '0', bt: '0', vl: '0', vt: '0', n: 5, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } }) }); });
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Pushpadant Plastics', mode: 'live', nextBill: 5 }, sv: 60, bl: '0', bt: '0', vl: '0', vt: '0', n: 5, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } }) }); });
     await p.addInitScript(() => { if (sessionStorage.x) return; sessionStorage.x = 1; localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })); localStorage.setItem('rb_recent', JSON.stringify(['i2', 'i3', 'i1', 'i0'])); });
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400); return p;
   }

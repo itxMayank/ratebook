@@ -1999,3 +1999,6 @@ html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 1
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .bill-line .mgtag{background:#3A2D10;color:#F2C46B}:root:not([data-theme="light"]) .bill-line .mgtag.below{background:#3D1A18;color:#F7A49D}}
 :root[data-theme="dark"] .bill-line .mgtag{background:#3A2D10;color:#F2C46B}:root[data-theme="dark"] .bill-line .mgtag.below{background:#3D1A18;color:#F7A49D}
 .lowm-row{display:flex;align-items:center;gap:8px}.lowm-row input{width:90px}.lowm-row span{font-weight:700}
+
+/* PIN boxes shown as dots without being password fields (21 Oct 2026, see noAutofill in app.js) */
+input[data-pin]{-webkit-text-security:disc}

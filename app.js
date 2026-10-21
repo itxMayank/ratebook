@@ -25,7 +25,8 @@ if(S.canWrite && S.auth.prefs && typeof S.auth.prefs.hideBuy==="boolean") S.hide
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=34;   // Code.gs SCRIPT_VERSION this app needs
+const NEED_SV=34;
+var PIN_TYPE=(window.CSS&&CSS.supports&&CSS.supports("-webkit-text-security","disc"))?"text":"password";   // PIN boxes: dots without being a password field (see noAutofill)   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
 /* (v65) Who may see buy rates is the shop's choice (Config buyView: owner / manager = owner and managers / all); for anyone
@@ -230,6 +231,15 @@ function addSearchX(inp){
   b.addEventListener("click",()=>{ inp.value=""; inp.dispatchEvent(new Event("input",{bubbles:true})); sync(); inp.focus(); });
 }
 new MutationObserver(()=>document.querySelectorAll('input[type="search"]:not([data-sx])').forEach(addSearchX)).observe(document.body,{childList:true,subtree:true});
+/* No password / autofill pop-up on the app's boxes (21 Oct 2026). The PIN boxes were real password fields, so the phone's
+   password manager saved the shop's PIN and then offered it on every box in the app (search, customer, qty…). PIN boxes are
+   now plain boxes shown as dots (PIN_TYPE, CSS -webkit-text-security; a real password box only where a browser can't show
+   dots), and every box the app draws gets autocomplete="off" plus the "ignore me" marks password managers read. */
+function noAutofill(el){ if(el.dataset.naf) return; el.dataset.naf="1"; const ty=(el.getAttribute("type")||"text").toLowerCase();
+  if(/^(checkbox|radio|hidden|file|date|range|button|submit|color)$/.test(ty)) return;
+  if(!el.hasAttribute("autocomplete")) el.setAttribute("autocomplete","off"); el.setAttribute("data-lpignore","true"); el.setAttribute("data-1p-ignore",""); el.setAttribute("data-form-type","other"); }
+new MutationObserver(()=>document.querySelectorAll("input:not([data-naf]),textarea:not([data-naf])").forEach(noAutofill)).observe(document.documentElement,{childList:true,subtree:true});
+document.querySelectorAll("input,textarea").forEach(noAutofill);
 document.querySelectorAll('input[type="search"]').forEach(addSearchX);
 /* Every date box looks like the app's date chip (15 Oct 2026, after the PO date): the app's calendar icon and the date as
    dd/mm/yyyy, with the phone's own date picker invisible on top (tapping anywhere opens it), like Past bills and the PO date.

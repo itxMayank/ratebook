@@ -177,8 +177,8 @@ function linkWaitUI(){ LOCK.re=()=>linkWaitUI(); const el=lockEl(), nm=SHOP_ASK_
     <div class="al-wait" role="status" aria-live="polite">${LD("")}<span>${esc(t("lwOpening"))}</span></div><p class="note" style="margin:0;text-align:center">${esc(t("lwD"))}</p></div>`; }
 function signInUI(msg){ if(linkWait()){ linkWaitUI(); return; } LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=n&&n.value, pv=p&&p.value; signInUI(); if(n) $("#al-name").value=nv; if(p) $("#al-pin").value=pv; }; const el=lockEl();
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:18px;color:var(--fg);font-weight:700">${esc(t("siT"))}</div><p class="note" style="margin:0">${esc(t("siD"))}</p>
-    <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="name" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
-    <input id="al-pin" type="password" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="current-password" enterkeyhint="go" aria-label="${esc(t("siPin"))}">
+    <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="off" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
+    <input id="al-pin" type="${PIN_TYPE}" data-pin="1" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="off" enterkeyhint="go" aria-label="${esc(t("siPin"))}">
     <button type="submit" class="btn primary" id="al-go">${esc(t("siBtn"))}</button></form><div class="al-err" id="al-err" role="alert">${esc(msg||"")}</div>
     ${shopSwitchHTML()}${shopCodeHTML(true)}</div>`;
   shopSwitchWire(); shopCodeWire();

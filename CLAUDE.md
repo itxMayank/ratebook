@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 21 October 2026 (who sees buy rates, low-margin tag, below-cost alert; break pass: money, bills, sign-in, Directory, app; new shop's first open and sign-in; Transfer a bill to another number; new shop's starting PIN kept on the dashboard; admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 21 October 2026 (no password pop-up on the app's boxes; who sees buy rates, low-margin tag, below-cost alert; break pass: money, bills, sign-in, Directory, app; new shop's first open and sign-in; Transfer a bill to another number; new shop's starting PIN kept on the dashboard; admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1211,6 +1211,14 @@ Reported: GST bills are sometimes written by hand in the paper book, so a number
 - **The old bill:** a cancelled copy, counted nowhere (sales, credit, reports, customer totals), still listed in Past bills and on the customer's page with a "Moved to 1776" pill (`billMovedTo`, `movedPill`). It can't be restored (`bill_moved`; its sale is on the new bill) or transferred again.
 - Tests: `tests/transfer.test.js` (server, 11), `tests/transfer.app.test.js` (17).
 - **Rollout:** merge; update every shop's script to v63 (your shop first). The button shows only on v63.
+
+## No password pop-up on the app's boxes (21 Oct 2026, `app.js` / `lock.js` / `settings.js` / `app.css`, no script change)
+
+Reported: tapping the search or any box on a phone opened the phone's saved-passwords dialog. The sign-in, Change my PIN, shop PIN, person's PIN and Gemini key boxes were real password fields, so the phone's password manager saved the shop's PIN and then offered it on every box of the app.
+- **No password fields any more:** those boxes are `type="${PIN_TYPE}"` with `data-pin` and still show dots (`input[data-pin]{-webkit-text-security:disc}`; `PIN_TYPE` is `text` where the browser can show dots, else `password`). Their `autocomplete` is `off` (was `current-password` / `new-password` / `name`).
+- **Every box the app draws** gets `autocomplete="off"` (when it has none) and the marks password managers read (`data-lpignore`, `data-1p-ignore`, `data-form-type="other"`): `noAutofill()` with a MutationObserver, like `addSearchX`. The customer boxes keep their made-up `rb-…` values.
+- A PIN already saved on a phone stays there until removed: Google Password Manager (or Samsung Pass) → the app's site → Delete. With nothing to save any more, it won't come back.
+- Test: `tests/noautofill.app.test.js`.
 
 ## Who sees buy rates; low-margin tag; below-cost alert (21 Oct 2026, `SCRIPT_VERSION` 65 / `NEED_SV` unchanged, `app.js` / `billing.js` / `settings.js` / `prices.js` / `strings.js` / `app.css`)
 

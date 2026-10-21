@@ -15,7 +15,7 @@ let sent = [];
     p.on('console', m => { if (m.type() === 'log') errs.push('console.log: ' + m.text()); });   // "no logs"
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const bd = r.request().method() === 'POST' ? JSON.parse(r.request().postData()) : {}; sent.push(bd);
-      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Pushpadant Plastics', mode: 'live', nextBill: 5, nextGstBill: 1 }, sv: 57, n: 5, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } }) }); });
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Pushpadant Plastics', mode: 'live', nextBill: 5, nextGstBill: 1 }, sv: 60, n: 5, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } }) }); });
     await p.addInitScript(init || (() => {}));
     await p.addInitScript(() => { if (sessionStorage.x) return; sessionStorage.x = 1; localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })); });
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(400); return p;

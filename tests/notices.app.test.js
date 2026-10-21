@@ -15,13 +15,13 @@ const base = [N('n2', 'bill', { amount: 1180, billNo: 'M-77', entryId: 'e1', ext
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = x => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...x }) });
       const me = { name: 'Mayank', role, personal: true, prefs: st.prefs };
-      if (req.method() === 'GET') { const u = new URL(req.url()); if (u.searchParams.get('action') === 'rev') return send({ rev: '1', nl: st.nrev, nt: '0' }); return send({ rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 43 }); }
+      if (req.method() === 'GET') { const u = new URL(req.url()); if (u.searchParams.get('action') === 'rev') return send({ rev: '1', nl: st.nrev, nt: '0' }); return send({ rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 60 }); }
       const bd = JSON.parse(req.postData()); st.sent.push(bd);
       if (bd.action === 'notices') return send({ nrev: st.nrev, list: st.list });
       if (bd.action === 'noticeRead') { st.list.forEach(n => { if (bd.all || (bd.ids || []).includes(n.id)) n.read = true; }); st.nrev = String(+st.nrev + 1); return send({ nrev: st.nrev, list: st.list }); }
       if (bd.action === 'setMyPrefs') { st.prefs = { ...st.prefs, ...bd.prefs }; return send({ prefs: st.prefs, testOk: true }); }
       if (bd.action === 'vSync') return send({ vrev: '1', vendors: [{ id: 'vA', name: 'Mahaveer', opening: 0, openingDate: '2026-10-01', creditDays: 15, token: 't', createdAt: 1, updatedAt: 1 }], entries: [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', amount: 1180, billNo: 'M-77', photos: [], alloc: {}, at: 10 }] });
-      if (bd.action === 'boot') return send({ rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 43, me });
+      if (bd.action === 'boot') return send({ rev: '1', items: [], config: { shopName: 'G', mode: 'live' }, sv: 60, me });
       return send({ me }); });
     await p.addInitScript(([role, prefs]) => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role, personal: true, pinH: 'x', pinS: 'AAAA', prefs })), [role, st.prefs]);
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);

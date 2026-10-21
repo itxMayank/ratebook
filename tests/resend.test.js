@@ -1,7 +1,7 @@
 /* Saving in the background (Code.gs v59): the phone keeps a change until the sheet confirms it, so after a lost reply it sends
    the same change again. That must never count twice: a payment carries its own id (pid), a bill edit already saved is
    recognised by its content, and a new customer by the id the phone gave it (cid). Run: node tests/resend.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, billTxt } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -39,13 +39,13 @@ ok(pay({ mobile: '9876543210', amount: 50, pid: 'p-cccccc3' }).used === 50 && ro
 
 // B. bill edits
 const upd = b => T(`updateBill_(${JSON.stringify(b)}, 'Mayank', null)`);
-const e1 = { id: 'b2', n: 2, customer: 'Sunil', mobile: '9876543210', total: 200, items: 'x', text: 'Bill 2 edited', lines: [{ id: 'i1', qty: 2, rate: 100 }], baseEdits: 0, oid: 'w1', pay: 'paid' };
+const e1 = { id: 'b2', n: 2, customer: 'Sunil', mobile: '9876543210', total: 200, items: 'x', text: 'Bill 2 edited\n= ₹200\nTotal: ₹200', lines: [{ id: 'i1', qty: 2, rate: 100 }], baseEdits: 0, oid: 'w1', pay: 'paid' };
 let u1 = upd(e1);
-ok(u1.bill && u1.bill.edits === 1 && row('b2')[BI('text')] === 'Bill 2 edited', 'B1 an edit is saved (edits 1)');
+ok(u1.bill && u1.bill.edits === 1 && row('b2')[BI('text')] === e1.text, 'B1 an edit is saved (edits 1)');
 const hist = () => (sheets.BillHistory ? sheets.BillHistory.rows.length : 0), h1 = hist();
 let u2 = upd(e1);
 ok(u2.dup === true && u2.bill.edits === 1 && hist() === h1, 'B2 the same edit sent again: recognised, not saved twice, no extra history');
-ok(upd({ ...e1, text: 'Someone else' }).thrown === 'bill_changed', 'B3 a different change made on an older copy is still refused (someone else saved first)');
+ok(upd({ ...e1, text: 'Someone else, bill 2\n= ₹200\nTotal: ₹200' }).thrown === 'bill_changed', 'B3 a different change made on an older copy is still refused (someone else saved first)');
 ok(upd({ ...e1, oid: undefined }).thrown === 'bill_changed', 'B4 without an id (older app) a resend is refused as before');
 
 // C. new customers

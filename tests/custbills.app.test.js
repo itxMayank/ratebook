@@ -24,9 +24,9 @@ const bills = [
   await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } }, cfg = { shopName: 'Shri Pushpdant Plastics', mode: 'live' };
-    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 56 });
+    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 60 });
     const bd = JSON.parse(req.postData());
-    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 56, me });
+    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 60, me });
     if (bd.action === 'listCustomers') return send({ brev: '1', customers: custs });
     if (bd.action === 'listBills') return send(bd.brev === '1' ? { brev: '1', same: true, full: true } : { brev: '1', bills, full: true });
     return send({ me }); });

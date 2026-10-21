@@ -54,8 +54,9 @@ const items = shop => [{ id: 'i1', name: shop === 'main' ? 'PP Bag (main)' : 'St
   // 1f. A script error on the phone is reported to its own shop's script (once); the app's expected failures are not
   state.quiet = true; state.log = []; await mine.evaluate(() => { const f = () => { null.qty; }; setTimeout(f, 0); setTimeout(f, 0); Promise.reject({ code: 'offline' }); }); await mine.waitForTimeout(700); state.quiet = false;
   ok(state.log.filter(l => l.startsWith('main POST clientErr')).length === 1, '1f a phone error goes to the shop\'s own script, once; "offline" is not an error');
-  state.quiet = true; state.log = []; await mine.evaluate(() => { T.S.sv = 35; setTimeout(() => { null.zz; }, 0); }); await mine.waitForTimeout(500); state.quiet = false;
-  ok(!state.log.some(l => l.includes('clientErr')), '1g an older shop script is never sent error reports (it would count them as wrong PINs)');
+  /* 1g (v67): scripts older than v60 aren't supported any more (NEED_SV), so error reports no longer wait for the version */
+  state.quiet = true; state.log = []; await mine.evaluate(() => { T.S.sv = 0; setTimeout(() => { null.zz; }, 0); }); await mine.waitForTimeout(500); state.quiet = false;
+  ok(state.log.some(l => l.includes('clientErr')), '1g the script version not known yet (just signed in): an error is still reported');
 
   // 1e. A link to a shop that isn't set up yet: clear message, the code asked for (not this shop's name), ready to retry
   const fresh = await phone(null);

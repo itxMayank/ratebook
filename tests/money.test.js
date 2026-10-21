@@ -3,7 +3,7 @@
    sums match what the app worked out before; the sheet refuses a bill whose total, taxable value or tax doesn't add up from its
    lines, or a line with an impossible quantity or rate; cost and profit are worked out on the sheet, never taken from the phone.
    Run: node tests/money.test.js */
-const fs = require('fs'), path = require('path'), vm = require('vm'), { gas } = require('./gas-mock'), stamp = require('../tools/stamp');
+const fs = require('fs'), path = require('path'), vm = require('vm'), { gas, billTxt } = require('./gas-mock'), stamp = require('../tools/stamp');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const ROOT = path.join(__dirname, '..'), GS = fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8');
 
@@ -46,7 +46,7 @@ const g = gas([path.join(ROOT, 'Code.gs')]); const R = g.R; g.SS = SS;
 const CFG = { roundTo: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, fyReset: false }; g.CFG = CFG;
 R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; shopPaused_=()=>false; stripFyPrefixOnce_=()=>{}; ensureTriggers_=()=>{};
   readConfig_=()=>Object.assign({}, CFG); setConfig_=o=>{ Object.assign(CFG,o); return {}; }; popReset_=()=>{};`);
-ok(R('SCRIPT_VERSION') === 66, 'C0 script version 66');
+ok(R('SCRIPT_VERSION') >= 66, 'C0 script version 66 or later');
 const BC = R('BILL_COLS'), BI = k => BC.indexOf(k);
 const post = b => JSON.parse(R(`doPost({postData:{contents:${JSON.stringify(JSON.stringify(b))}}}).text`));
 R("saveUser_({name:'Mayank',pin:'739164',role:'owner'})"); R("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
@@ -56,6 +56,7 @@ const L2 = () => [{ id: 'i1', name: 'PP Bag', qty: 2, rate: 180, gst: 18, buy: 1
 let seq = 0;
 const take = (o = {}, tok = STF) => { const id = 'b' + (++seq), n = CFG.nextBill;
   const bill = { id, customer: 'Sunil', mobile: '9876543210', total: 440, items: 'x', text: `Bill No. ${n}`, lines: L2(), pay: 'paid', ...o };
+  if (!('text' in o)) bill.text = billTxt(bill, n);
   const r = post({ action: 'takeBill', tok, env: 'live', n, bill }); r.id = id; return r; };
 const rowOf = id => (sheets.Bills ? sheets.Bills.rows : []).find(r => r[BI('billId')] === id);
 const a = take();
@@ -80,9 +81,9 @@ ok(d.ok && rowOf(d.id)[BI('cost')] === '' && rowOf(d.id)[BI('profit')] === '', '
 ok(take({ total: 0, lines: [{ qty: 1, rate: 0 }] }).ok, 'C12 a free item (rate ₹0, total ₹0) is still fine');
 
 // ---------- D. editing a saved bill ----------
-const ed = o => post({ action: 'updateBill', tok: OWN, env: 'live', bill: { id: a.id, n: rowOf(a.id)[BI('billNo')], customer: 'Sunil', mobile: '9876543210', items: 'x', text: 'edited', lines: L2(), total: 440, pay: 'paid', baseEdits: rowOf(a.id)[BI('edits')], ...o } });
+const ed = o => { const bill = { id: a.id, n: rowOf(a.id)[BI('billNo')], customer: 'Sunil', mobile: '9876543210', items: 'x', lines: L2(), total: 440, pay: 'paid', baseEdits: rowOf(a.id)[BI('edits')], ...o }; if (!('text' in o)) bill.text = billTxt(bill, bill.n, 'edited ' + bill.n); return post({ action: 'updateBill', tok: OWN, env: 'live', bill }); };
 const e1 = ed({ total: 1 });
-ok(e1.ok === false && e1.error === 'total_mismatch' && rowOf(a.id)[BI('total')] === 440 && rowOf(a.id)[BI('text')] !== 'edited', 'D1 an edit whose total doesn\'t add up: refused, the saved bill is unchanged');
+ok(e1.ok === false && e1.error === 'total_mismatch' && rowOf(a.id)[BI('total')] === 440 && !/^edited/.test(rowOf(a.id)[BI('text')]), 'D1 an edit whose total doesn\'t add up: refused, the saved bill is unchanged');
 ok(ed({ lines: [{ qty: -1, rate: 440 }], total: -440 }).ok === false, 'D2 an edit with a minus quantity: refused');
 const L3 = L2(); L3[0].qty = 3;
 const e3 = ed({ lines: L3, total: 620, cost: 0, profit: 0 });
@@ -94,3 +95,18 @@ const sf = take();
 const errs = JSON.parse(g.cache.ERRS || '[]');
 ok(sf.ok && rowOf(sf.id) && errs.some(e => e[0] === 'soft:takeBill:customer' && /Customers tab is full/.test(e[1])), 'E1 updating the customer\'s totals fails: the bill is still saved, and the failure is in the error log the dashboard shows (before, it vanished)');
 R("touchCustomer_ = touch0");
+
+// ---------- F. (v67) the bill's text must match the bill ----------
+const nF = () => CFG.nextBill;
+const f1 = take({ text: `Bill No. ${nF()}\n= ₹360\n= ₹80\nTotal: ₹44` });
+ok(f1.ok === false && f1.error === 'text_mismatch' && !rowOf(f1.id), 'F1 lines and total add up, but the text tells the customer ₹44: refused, nothing saved');
+const f2 = take({ text: `Bill No. ${nF()}\n= ₹360\nTotal: ₹440` });
+ok(f2.error === 'text_mismatch', 'F2 the text leaves out an item (₹80 line missing): refused');
+const f3 = take({ text: `Bill No. 9999\n= ₹360\n= ₹80\nTotal: ₹440` });
+ok(f3.error === 'text_mismatch', 'F3 the text carries a different bill number: refused');
+ok(take({ text: '' }).ok, 'F4 no text at all is fine (Past bills builds it from the lines)');
+const f5 = take({ text: `Bill No. ${nF()}\n1. PP Bag — 2 kg × ₹180/kg = ₹360\n2. Paper Cup — 100 pc × ₹0.8/pc = ₹80\n\n*Total: ₹440*` });
+ok(f5.ok, 'F5 a text written the way the app writes it is saved');
+const f6 = ed({ text: 'edited' }); 
+ok(f6.ok === false && f6.error === 'text_mismatch', 'F6 an edit whose text doesn\'t show the bill: refused');
+ok(R(`[inrN_(1234567.5), inrN_(0.25), inrN_(55), inrN_(100000)].join(' ')`) === '12,34,567.5 0.25 55 1,00,000', 'F7 amounts written with Indian commas, like the app');

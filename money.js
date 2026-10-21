@@ -44,3 +44,24 @@ function billCheck_(b) {
   if (off(b.total, m.total) || (b.gst && (off(b.taxable, m.taxable) || off(b.tax, m.tax)))) return { error: 'total_mismatch', expect: { total: m.total, taxable: m.taxable, tax: m.tax } };
   return null;
 }
+/** (v67) An amount as the app writes it on bills: Indian commas (1,25,000), up to 2 decimals, no trailing zeros. The app's
+    screen and bill text (fmtN / rs) use this too, so the sheet can check a bill's text against its sums character for character. */
+function inrN_(n) {
+  let x = Number(n || 0); if (!isFinite(x)) return String(x);
+  const neg = x < 0; x = Math.round(Math.abs(x) * 100) / 100;
+  const p = x.toFixed(2).split('.'); let i = p[0]; const f = p[1].replace(/0+$/, '');
+  if (i.length > 3) i = i.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + i.slice(-3);
+  return (neg && (i !== '0' || f) ? '-' : '') + i + (f ? '.' + f : '');
+}
+/** (v67) What's wrong with a bill's text (the WhatsApp / invoice text saved with it), or null when it matches the bill: it must
+    show the bill's number, every line's amount ("= ₹…") and the total. The text is written on the phone; this stops a changed
+    copy of the app (or a bug) from saving a bill whose text tells the customer something else. No text at all is fine (Past bills
+    then builds it from the lines). no: the bill number the text should carry (0 = don't check). */
+function billTextCheck_(b, no) {
+  const tx = String(b && b.text || ''); if (!tx.trim()) return null;
+  if (no > 0 && !new RegExp('(^|[^0-9])' + Math.floor(no) + '([^0-9]|$)').test(tx)) return { error: 'text_mismatch', what: 'no' };
+  const L = b && Array.isArray(b.lines) ? b.lines : [];
+  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (tx.indexOf('= ₹' + inrN_((+l.qty || 0) * (+l.rate || 0))) < 0) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
+  if (tx.indexOf('₹' + inrN_(b.total)) < 0) return { error: 'text_mismatch', what: 'total' };
+  return null;
+}

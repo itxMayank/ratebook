@@ -37,7 +37,7 @@ const items = [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 150, sell: 180, imgV
   { const ctx = await b.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message)); let off = false;
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const q = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
-      const L = { rev: '1', items, config: { shopName: 'Gupta', mode: 'live' }, sv: 46 };
+      const L = { rev: '1', items, config: { shopName: 'Gupta', mode: 'live' }, sv: 60 };
       if (q.method() === 'GET') return send({ rev: '1' });
       const bd = JSON.parse(q.postData());
       if (bd.action === 'boot' || bd.action === 'list') return send({ ...L, me: { name: 'Mayank', role: 'owner', personal: false, prefs: {} } });

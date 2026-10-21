@@ -8,7 +8,7 @@ let tokens = {}, n = 0, bodies = [], offline = false;
   const p = await (await b.newContext()).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await p.route('https://script.google.com/**', r => { if (offline) return r.abort(); const q = r.request(); const send = o => r.fulfill({ body: JSON.stringify(o), contentType: 'application/json' });
-    if (q.method() === 'GET') return send({ ok: true, rev: '1', bl: '0', bt: '0', items: [], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 34 });
+    if (q.method() === 'GET') return send({ ok: true, rev: '1', bl: '0', bt: '0', items: [], config: { shopName: 'Gupta Plastics', mode: 'live' }, sv: 60 });
     const bd = JSON.parse(q.postData()); bodies.push(bd);
     let me = null; if (bd.tok) me = tokens[bd.tok]; else if (bd.pin === '9999') me = { name: bd.by, role: 'owner', personal: false }; else if (bd.pin === '123456') me = { name: 'Mayank', role: 'owner', personal: true }; else if (bd.pin === '5555') me = { name: 'Dad', role: 'owner', personal: true };
     if (!me) return send({ ok: false, error: bd.tok ? 'bad_session' : 'bad_pin' });

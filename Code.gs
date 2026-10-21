@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 66;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 67;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -216,11 +216,17 @@ function rcRead_(name, ver, build) {
   try { if (out && out.ok !== false && ver() === v1) rcPut_(key, out); } catch (e) {}
   return out; }
 
+/* (v67) The short-term cache is only ever a faster copy: script properties and the Config tab hold the real values. Google
+   can empty the cache at any time, and a put can fail; a failed put now removes the old cached value, so the next read falls
+   back to the real one instead of serving a value that's out of date for up to 6 hours. */
+function cPut_(k, v, secs) { const c = CacheService.getScriptCache(); try { c.put(k, String(v), secs || 21600); } catch (e) { try { c.remove(k); } catch (e2) {} } }
+/** Hand edits and restores: drop the cached copies of Config values (the next request reads the Config tab). */
+function cfgCacheDrop_() { try { const c = CacheService.getScriptCache(); ['NB', 'BUYV'].forEach(k => c.remove(k)); } catch (e) {} }
 /* The change counter is read on every phone's 25-second check, so keep it in the short-term cache (saves daily quota). */
 function getRev_() {
   const cache = CacheService.getScriptCache();
   let v = cache.get('rev');
-  if (!v) { v = PropertiesService.getScriptProperties().getProperty('rev') || '0'; cache.put('rev', v, 21600); }
+  if (!v) { v = PropertiesService.getScriptProperties().getProperty('rev') || '0'; cPut_('rev', v); }
   return v;
 }
 /* Bills version per mode: changes whenever any bill changes, so phones only download their copy of bills when needed. */
@@ -231,20 +237,21 @@ function blog_(env) { try { const a = JSON.parse(PropertiesService.getScriptProp
 function bumpB_(both, id) {
   const p = PropertiesService.getScriptProperties(), v = String(Date.now());
   (both ? ['live', 'test'] : [ENV_]).forEach(en => {
-    p.setProperty('brev_' + en, v); try { CacheService.getScriptCache().put('brev_' + en, v, 21600); } catch (e) {}
+    p.setProperty('brev_' + en, v); cPut_('brev_' + en, v);
     let L = blog_(en); L.push(id ? { v: v, id: String(id) } : { v: v, full: 1 }); if (L.length > 150) L = L.slice(-150);
     try { p.setProperty('blog_' + en, JSON.stringify(L)); } catch (e) { p.deleteProperty('blog_' + en); }
   });
 }
 /* Bills version for the 25-second check: from the short-term cache, so it costs no Properties quota. */
-function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('brev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('brev_' + en) || '0'; c.put('brev_' + en, v, 21600); } return v; }
+function brevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('brev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('brev_' + en) || '0'; cPut_('brev_' + en, v); } return v; }
 /** The next bill numbers, for the 25-second check (v60). */
-function nbPut_(c) { try { c = c || readConfig_(); CacheService.getScriptCache().put('NB', JSON.stringify({ nextBill: c.nextBill, nextGstBill: c.nextGstBill, testNextBill: c.testNextBill, testNextGstBill: c.testNextGstBill, gstFy: c.gstFy || '', testGstFy: c.testGstFy || '' }), 21600); } catch (err) {} }
-function nbGet_() { try { const v = CacheService.getScriptCache().get('NB'); return v ? JSON.parse(v) : null; } catch (err) { return null; } }
-function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
+function nbPut_(c) { try { c = c || readConfig_(); cPut_('NB', JSON.stringify({ nextBill: c.nextBill, nextGstBill: c.nextGstBill, testNextBill: c.testNextBill, testNextGstBill: c.testNextGstBill, gstFy: c.gstFy || '', testGstFy: c.testGstFy || '' }), 21600); } catch (err) {} }
+function nbGet_() { try { const v = CacheService.getScriptCache().get('NB'); if (v) return JSON.parse(v); } catch (err) {}
+  try { readConfig_(); const v = CacheService.getScriptCache().get('NB'); return v ? JSON.parse(v) : null; } catch (err) { return null; } }   // (v67) not cached (emptied by Google, or a hand edit): from the Config tab
+function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); cPut_('rev', v); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
-function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) { softErr_('onEdit', err); } }
+function onEdit(e) { try { cfgCacheDrop_(); bump_(); bumpB_(true); vbumpAll_(); } catch (err) { softErr_('onEdit', err); } }
 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
@@ -325,14 +332,16 @@ function list_() {
 function pop_() {
   const s = ss_().getSheetByName('Bills');   // ss_(): the app's sheet, also when the script isn't attached to it
   if (!s) return {};
-  const n = s.getLastRow() - 1; if (n < 1) return {};
-  const cache = CacheService.getScriptCache(), key = 'pop:' + n;
+  const n = s.getLastRow() - 1, keep = ENV_; ENV_ = 'live'; const arc = arcList_(); ENV_ = keep;
+  if (n < 1 && !arc.length) return {};
+  const cache = CacheService.getScriptCache(), key = 'pop:' + n + (arc.length ? ':' + arc.join(',') : '');
   const hit = cache.get(key); if (hit) { try { return JSON.parse(hit); } catch (e) {} }
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const width = s.getLastColumn();
-  const lines = s.getRange(2, B.lines + 1, n, 1).getValues();
-  const status = width > B.status ? s.getRange(2, B.status + 1, n, 1).getValues() : null;
+  const lines = n > 0 ? s.getRange(2, B.lines + 1, n, 1).getValues() : [];
+  const status = n > 0 && width > B.status ? s.getRange(2, B.status + 1, n, 1).getValues() : null;
   const pop = {};
+  if (arc.length) { ENV_ = 'live'; try { const S2 = arcSums_(); arc.forEach(fy => { const it = (S2[fy] || {}).items || {}; Object.keys(it).forEach(id => { pop[id] = (pop[id] || 0) + num_(it[id]); }); }); } finally { ENV_ = keep; } }   // (v67) archived years count from their summary
   for (let i = 0; i < n; i++) {
     if (status && String(status[i][0]).toLowerCase() === 'cancelled') continue;
     let arr; try { arr = JSON.parse(lines[i][0] || '[]'); } catch (e) { continue; }
@@ -382,7 +391,7 @@ function stripFyPrefixOnce_() {
   } catch (err) { softErr_('stripFyPrefix', err); } finally { ENV_ = keep; }
 }
 
-function popReset_() { try { const b = ss_().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
+function popReset_() { try { const b = ss_().getSheetByName('Bills'), keep = ENV_; ENV_ = 'live'; const arc = arcList_(); ENV_ = keep; if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1) + (arc.length ? ':' + arc.join(',') : '')); } catch (e) {} }
 
 function thumbs_(ids) {
   const want = {}; ids.slice(0, 60).forEach(id => want[id] = 1);
@@ -488,7 +497,7 @@ function recountCustomers_() {
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   const n = bs.getLastRow() - 1;
   const stat = {};
-  if (n > 0) bs.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
+  arcRows_('', '').concat(n > 0 ? bs.getRange(2, 1, n, BILL_COLS.length).getValues() : []).forEach(r => {   // (v67) archived years count too, oldest first
     const g = String(r[B.customerGstin] || '').trim().toUpperCase(), k = mob10_(r[B.mobile]) || (g ? 'g:' + g : ''); if (!k) return;   // no mobile: counted by GSTIN (v55)
     if (r[B.status] === 'Cancelled') return;
     const x = stat[k] || (stat[k] = { bills: 0, total: 0, last: '', lastNo: '', due: 0 });
@@ -565,7 +574,7 @@ function readConfig_() {
   cfg.testNextGstBill = Math.max(1, Math.floor(num_(cfg.testNextGstBill)) || 1);
   cfg.mode = cfg.mode === 'live' ? 'live' : 'test';
   cfg.buyView = BUYV_[cfg.buyView] ? String(cfg.buyView) : 'manager'; cfg.lowMargin = lowMargin_(cfg);   // (v65) who sees buy rates; margin warning on the bill
-  try { CacheService.getScriptCache().put('BUYV', cfg.buyView, 21600); } catch (e) {}
+  cPut_('BUYV', cfg.buyView); nbPut_(cfg);   // (v67) every read of the Config tab refreshes both cached copies
   cfg.fyReset = !(cfg.fyReset === false || String(cfg.fyReset).toLowerCase() === 'false');
   cfg.gstFy = String(cfg.gstFy || ''); cfg.testGstFy = String(cfg.testGstFy || '');
   cfg.fyNow = fy_(new Date());
@@ -653,11 +662,11 @@ function doPost(e) {
       case 'setConfig': res = setConfig_(body.config || {}); break;
       case 'setGroups': res = setGroups_(body.groups); break;
       case 'setPin': res = setPin_(String(body.newPin || '')); sessEnd_((k, x) => x.u.indexOf('m:') === 0 && k !== who.sess); break;   // other phones signed in with the old shop PIN
-      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || '') }); break;
+      case 'listBills': res = listBills_(String(body.q || ''), Number(body.limit) || 50, { tz: body.tz, from: String(body.from || ''), to: String(body.to || ''), before: body.before, full: !!body.full, brev: String(body.brev || ''), arc: !!body.arc, skip: body.skip }); break;
       case 'findCustomer': res = findCustomer_(String(body.mobile || '')); break;
       case 'listCustomers': { const have = String(body.brev || ''); res = have && have === brev_() ? { same: true, brev: brev_() } : rcRead_('cust:' + ENV_, brev_, () => listCustomers_('')); break; }
       case 'saveCustomer': res = saveCustomer_(body.customer || {}, by); break;
-      case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n); break;
+      case 'getBill': res = getBill_(body.row, str_(body.id, 40), body.n, str_(body.arc, 7)); break;
       case 'getBills': res = getBills_(body.rows); break;
       case 'updateBill': res = updateBill_(body.bill || {}, by, who); bumpB_(false, res && res.bill && res.bill.id || (body.bill || {}).id); break;
       case 'listDues': res = rcRead_('dues:' + ENV_, brev_, listDues_); break;
@@ -760,14 +769,14 @@ function listUsers_() { return { shopPinOff: shopPinOff_(), users: users_().map(
    looked up again on every request, so a removed or switched-off person is out at once. Unused for SESS_DAYS = signed out. */
 const SESS_DAYS = 90;
 function tokKey_(t) { return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, 'tok:' + t)).replace(/=+$/, ''); }
-function sessAll_() { const c = CacheService.getScriptCache(); let v = c.get('SESS'); if (!v) { v = PropertiesService.getScriptProperties().getProperty('SESS') || '{}'; try { c.put('SESS', v, 21600); } catch (e) {} }
+function sessAll_() { const c = CacheService.getScriptCache(); let v = c.get('SESS'); if (!v) { v = PropertiesService.getScriptProperties().getProperty('SESS') || '{}'; cPut_('SESS', v); }
   try { const o = JSON.parse(v); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
 /** Change SESS under its own short lock (sign-ins can happen outside the main write lock). */
 let LOCKED_ = false;   // doPost holds the script lock: don't take (and release) it a second time
 function sessEdit_(fn, wait) { const l = LOCKED_ ? null : LockService.getScriptLock(); if (l && !l.tryLock(wait || 10000)) return false;
   try { CacheService.getScriptCache().remove('SESS'); const all = sessAll_(); fn(all); const old = Date.now() - SESS_DAYS * 864e5;
     Object.keys(all).forEach(k => { if ((all[k].s || all[k].c || 0) < old) delete all[k]; });
-    const v = JSON.stringify(all); PropertiesService.getScriptProperties().setProperty('SESS', v); try { CacheService.getScriptCache().put('SESS', v, 21600); } catch (e) {} return true; }
+    const v = JSON.stringify(all); PropertiesService.getScriptProperties().setProperty('SESS', v); cPut_('SESS', v); return true; }
   finally { if (l) l.releaseLock(); } }
 function sessNew_(who, body) { const t = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''), k = tokKey_(t), now = Date.now();
   const dev = String(body.dev || '').replace(/[^\w-]/g, '').slice(0, 40), approve = who.role !== 'owner' && approveOn_(); let pending = false;
@@ -1036,7 +1045,8 @@ function onSheetEdit(e) {
     try { const g = e.range; if (n === ITEMS && g.getRow() > 1 && g.getNumRows() === 1 && g.getNumColumns() === 1 && e.oldValue !== undefined) {   // one price typed in the sheet
       const f = ['buy', 'sell', 'altSell'].filter(k => C[k] + 1 === g.getColumn())[0];
       if (f) { const r = g.getSheet().getRange(g.getRow(), 1, 1, COLS.length).getValues()[0]; const L = []; phPush_(L, Date.now(), r, f, e.oldValue, e.value, 'sheet', 'sheet'); phWrite_(L); } } } catch (err) { softErr_('onSheetEdit', err); }
-    if (/^(Bills|BillHistory|Customers)$/.test(n)) bumpB_(true);
+    if (n === CONFIG) cfgCacheDrop_();   // (v67) bill numbers or who sees buy rates typed in the sheet: read them from the tab
+    if (/^(Bills|BillHistory|Customers|BillYears)( \d{4}-\d{2})?$/.test(n)) bumpB_(true);   // (v67) archive tabs too
     else if (/^(Vendors|VendorLedger|VendorDocs|Purchases)$/.test(n)) vbumpAll_();
     else { bump_(); if (n !== ITEMS && n !== CONFIG && n !== IMAGES) { bumpB_(true); vbumpAll_(); } }
     popReset_();
@@ -1047,7 +1057,8 @@ function watchSheet() {
   const P = PropertiesService.getScriptProperties();
   // the app's last write of any kind (prices, bills or vendors); a newer Drive time means someone edited the sheet by hand
   const last = Math.max.apply(null, ['rev', 'brev_live', 'brev_test', 'vrev_live', 'vrev_test'].map(k => Number(P.getProperty(k) || 0)));
-  if (changed > last + 15000) { bump_(); bumpB_(true); vbumpAll_(); }
+  if (changed > last + 15000) { cfgCacheDrop_(); bump_(); bumpB_(true); vbumpAll_(); }
+  try { arcMaybe_(); } catch (e) { softErr_('archive', e); }   // (v67) once a year, at night: last-but-one year's bills to their own tab
 }
 
 /* ---------- financial year (April–March, India) ---------- */
@@ -1236,7 +1247,8 @@ function takeBill_(body) {
       if (!totalOk_(bb.total)) return { ok: false, error: 'bad_total' };
       if ((bb.pay === 'credit' || bb.pay === 'part') && !mob10_(bb.mobile)) return { ok: false, error: 'credit_needs_mobile' };
       if (body.buyOk === false) fillBuy_(bb, null);   // (v65) made by someone who can't see buy rates: the sheet adds them
-      const bad = billSums_(bb); if (bad) return { ok: false, error: bad.error, line: bad.line, expect: bad.expect }; }
+      const bad = billSums_(bb); if (bad) return { ok: false, error: bad.error, line: bad.line, expect: bad.expect };
+      const badT = billTextCheck_(bb, used > 0 ? used : 0); if (badT) return { ok: false, error: badT.error, what: badT.what, line: badT.line }; }   // (v67) the text shows this bill's number, items and total
     let key = isGst ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
     const cfg0 = readConfig_(), fyNow = fy_(new Date());
@@ -1269,6 +1281,9 @@ function takeBill_(body) {
           if (isGst && cfg0.fyReset && (String(fcol[i][0] || '') || fy_(nos[i][1] instanceof Date ? nos[i][1] : new Date(nos[i][1]))) !== fyNow) continue;
           taken[num_(nos[i][0])] = 1;
         }
+        /* (v67) a number typed below the next one may belong to an archived bill too (GST numbers that restart each April can't) */
+        if (!from && !(isGst && cfg0.fyReset)) arcSheets_('', '').forEach(x => { const an = x.s.getLastRow() - 1, ar = x.s.getRange(2, 1, an, 1).getValues(), ag = x.s.getRange(2, BI.gstBill + 1, an, 1).getValues();
+          for (let i = 0; i < an; i++) if ((ag[i][0] === 'Yes') === isGst) taken[num_(ar[i][0])] = 1; });
         if (taken[used]) {
           let nn = Math.max(cur, used + 1); while (taken[nn]) nn++;
           renumbered = { from: used, to: nn };
@@ -1333,11 +1348,7 @@ function listBills_(q, limit, opt) {
   if (opt.full && opt.brev) { const L = blog_(ENV_), k = L.findIndex(e => e.v === opt.brev), later = k >= 0 ? L.slice(k + 1) : [];
     if (later.length && !later.some(e => e.full || !e.id)) { dIds = {}; later.forEach(e => dIds[e.id] = 1); } }
   const s = sheet_(tab_('Bills'), BILL_COLS);
-  const n = s.getLastRow() - 1;
-  if (n < 1) return { bills: [], days: {}, months: {}, all: { count: 0, total: 0 }, years: [], more: false };
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const a = s.getRange(2, 1, n, B.text).getValues();                                      // billNo … igst
-  const b = s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();       // billId … profit
   const needle = q.trim().toLowerCase();
   const digits = needle.replace(/\D/g, '');
   const tz = isFinite(Number(opt.tz)) ? Number(opt.tz) : -330;                             // default India
@@ -1347,7 +1358,16 @@ function listBills_(q, limit, opt) {
   const before = Number(opt.before) || 0;
   const max = opt.full ? 3000 : Math.min(limit, 200);   // full: the phone keeps its own copy of recent bills and searches it instantly
   const out = [], days = {}, months = {}, years = {}, all = { count: 0, total: 0 };
+  arcYears_().forEach(y => years[y] = 1);   // (v67) years whose bills are (partly) in the archive still show in the Year filter
+  /* (v67) a search on the sheet (not the phone's copy) also looks through the archived years, when the phone asks for them
+     (arc): newest first, the Bills tab, then each archive tab. Those pages go on by count (skip) rather than by row. */
+  const srcs = [{ s: s, arc: '' }]; if (!opt.full && opt.arc) arcSheets_(from, to).forEach(x => srcs.push({ s: x.s, arc: x.fy }));
+  const useSkip = opt.skip !== undefined && opt.skip !== null && opt.skip !== '', skip = Math.max(0, Math.floor(Number(opt.skip) || 0)); let seq = 0;
   let more = false;
+  srcs.forEach(src => {
+  const n = src.s.getLastRow() - 1; if (n < 1) return;
+  const a = src.s.getRange(2, 1, n, B.text).getValues();                                      // billNo … igst
+  const b = src.s.getRange(2, B.billId + 1, n, BILL_COLS.length - B.billId).getValues();       // billId … profit
   for (let i = n - 1; i >= 0; i--) {
     const r = a[i].concat(['', ''], b[i]);
     if (r[B.billNo] === '' && r[B.total] === '') continue;
@@ -1373,7 +1393,7 @@ function listBills_(q, limit, opt) {
     months[mk].count += 1; months[mk].total = Math.round((months[mk].total + num_(r[B.total])) * 100) / 100;
     all.count += 1; all.total = Math.round((all.total + num_(r[B.total])) * 100) / 100;
     }
-    if (before && i + 2 >= before) continue;
+    if (useSkip) { if (seq++ < skip) continue; } else if (before && !src.arc && i + 2 >= before) continue;
     if (out.length >= max) { more = true; continue; }
     out.push({ n: num_(r[B.billNo]), date: isNaN(d) ? '' : d.toISOString(), day: k, customer: String(r[B.customer] || ''), mobile: String(r[B.mobile] || ''),
       total: num_(r[B.total]), items: String(r[B.items] || ''), by: String(r[B.by] || ''), gst: r[B.gstBill] === 'Yes',
@@ -1382,22 +1402,30 @@ function listBills_(q, limit, opt) {
       id: String(r[B.billId] || ''), row: i + 2, editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : (r[B.editedAt] ? String(r[B.editedAt]) : ''),
       editedBy: String(r[B.editedBy] || ''), edits: num_(r[B.edits]),
       cost: r[B.cost] === '' ? null : num_(r[B.cost]), profit: r[B.profit] === '' ? null : num_(r[B.profit]), ...payOut_(r, B),
-      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), custAddr: String(r[B.custAddr] || '') });
+      fy: String(r[B.fy] || ''), cancelled: cancelled, cancelReason: String(r[B.cancelReason] || ''), cancelledBy: String(r[B.cancelledBy] || ''), cancelledAt: r[B.cancelledAt] instanceof Date ? r[B.cancelledAt].toISOString() : String(r[B.cancelledAt] || ''), pos: String(r[B.pos] || ''), paidBy: String(r[B.paidBy] || ''), po: poOut_(r[B.po]), custAddr: String(r[B.custAddr] || ''), ...(src.arc ? { arc: src.arc } : {}) });
   }
+  });
+  const arcY = arcYears_(), next = useSkip ? skip + out.length : undefined;
   const shown = {}, shownM = {}; out.forEach(x => { shown[x.day] = days[x.day] || { count: 0, total: 0 }; shownM[x.day.slice(0, 7)] = months[x.day.slice(0, 7)] || { count: 0, total: 0 }; });
-  if (dIds) return { bills: out, delta: true, full: true, brev: brev_(), years: Object.keys(years).sort().reverse() };
-  if (opt.full) return { bills: out, days: days, months: months, all: all, years: Object.keys(years).sort().reverse(), more: more, full: true, brev: brev_() };
-  return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more };
+  if (dIds) return { bills: out, delta: true, full: true, brev: brev_(), years: Object.keys(years).sort().reverse(), arcY: arcY };
+  if (opt.full) return { bills: out, days: days, months: months, all: all, years: Object.keys(years).sort().reverse(), more: more, full: true, brev: brev_(), arcY: arcY };
+  return { bills: out, days: shown, months: shownM, all: all, years: Object.keys(years).sort().reverse(), more: more, arcY: arcY, next: next };
 }
 
 /** The full text and lines of one bill, read only when it's opened. */
-function getBill_(row, id, billNo) {
-  const s = sheet_(tab_('Bills'), BILL_COLS);
+function getBill_(row, id, billNo, arc) {
+  /* (v67) arc: the financial year of an archived bill: it's read from that year's tab */
+  const s = arc ? (/^\d{4}-\d{2}$/.test(String(arc)) ? ss_().getSheetByName(arcTab_(String(arc))) : null) : sheet_(tab_('Bills'), BILL_COLS);
+  if (!s) throw new Error('bill_not_found');
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
   row = Math.floor(Number(row));
-  if (!(row >= 2) || row > s.getLastRow()) throw new Error('bill_not_found');
-  const r = s.getRange(row, 1, 1, BILL_COLS.length).getValues()[0];
-  if ((id && String(r[B.billId]) !== String(id)) || (!id && num_(r[B.billNo]) !== num_(billNo))) throw new Error('bill_moved');
+  const at = rw => rw >= 2 && rw <= s.getLastRow() ? s.getRange(rw, 1, 1, BILL_COLS.length).getValues()[0] : null;
+  const same = x => !!x && ((id && String(x[B.billId]) === String(id)) || (!id && num_(x[B.billNo]) === num_(billNo)));
+  let r = at(row);
+  /* (v67) rows move up when a year is archived: a phone with an older copy still finds the bill by its id */
+  if (!same(r) && id && s.getLastRow() > 1) { const k = s.getRange(2, B.billId + 1, s.getLastRow() - 1, 1).getValues().findIndex(x => String(x[0]) === String(id)); if (k >= 0) r = at(k + 2); }
+  if (!r) throw new Error('bill_not_found');
+  if (!same(r)) throw new Error('bill_moved');
   let lines = [];
   try { lines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   return { bill: { text: String(r[B.text] || ''), lines: lines, edits: num_(r[B.edits]), fy: String(r[B.fy] || ''), gst: r[B.gstBill] === 'Yes',
@@ -1433,6 +1461,123 @@ function getBills_(rows) {
   return { bills: out };
 }
 
+/* ---------- yearly archive of bills (v67) ----------
+   At the end of each financial year, bills from two years back (FY 2025-26 once FY 2027-28 starts) move out of the Bills tab
+   into their own tab, "Bills 2025-26" ("Test Bills 2025-26" in test mode), so everyday work (dues, most-sold, customer totals,
+   bill numbers, bill edits) reads two years of bills at most instead of every bill ever made. Bills with money still owed stay,
+   and so do credit bills paid off in the last year (the credit charts look back that far); they move a year later.
+   Before anything moves a backup copy of the whole sheet is made; rows are copied first, checked, and only then removed, so a run
+   that stops half-way just runs again (rows already copied aren't copied twice). Archived bills open, search, print, share and
+   repeat like any other, but can't be changed (their GST returns are filed). The small "BillYears" tab keeps a summary per
+   archived year (bills, sales, tax, profit, bills per item, month totals): most-sold order still counts old years from it;
+   reports for an old period and customer recounts read the archive tabs themselves. Runs by itself at night from watchSheet
+   (hourly); editor function archiveNow runs it at once. */
+const ARC_COLS = ['fy', 'bills', 'sales', 'tax', 'profit', 'items', 'months', 'rows', 'at'];
+function arcTab_(fy) { return tab_('Bills') + ' ' + fy; }
+function fyAdd_(fy, k) { const y = Number(String(fy).slice(0, 4)) + k; return y + '-' + String(y + 1).slice(2); }
+function fyRange_(fy) { const y = Number(String(fy).slice(0, 4)); return { from: y + '-04-01', to: (y + 1) + '-03-31' }; }
+/** The archived financial years of this mode, oldest first (script property ARC_<mode>, written when a year is archived). */
+function arcList_() { try { const a = JSON.parse(PropertiesService.getScriptProperties().getProperty('ARC_' + ENV_) || '[]');
+  return Array.isArray(a) ? a.filter(f => /^\d{4}-\d{2}$/.test(f)).sort() : []; } catch (e) { return []; } }
+/** Calendar years that have archived bills (Past bills' Year filter asks the sheet for these). */
+function arcYears_() { const y = {}; arcList_().forEach(fy => { const a = Number(fy.slice(0, 4)); y[a] = 1; y[a + 1] = 1; }); return Object.keys(y); }
+/** Archive tabs holding bills between from and to (yyyy-mm-dd, either may be empty), newest year first. */
+function arcSheets_(from, to) { const SS = ss_();
+  return arcList_().reverse().filter(fy => { const r = fyRange_(fy); return (!from || r.to >= from) && (!to || r.from <= to); })
+    .map(fy => ({ fy: fy, s: SS.getSheetByName(arcTab_(fy)) })).filter(x => x.s && x.s.getLastRow() > 1); }
+/** Every row of those archive tabs, oldest year first (for reports and recounts, which read rows in date order). */
+function arcRows_(from, to) { const out = []; arcSheets_(from, to).reverse().forEach(x => { x.s.getRange(2, 1, x.s.getLastRow() - 1, BILL_COLS.length).getValues().forEach(r => out.push(r)); }); return out; }
+/** Is this bill id in an archive tab? (an edit, cancel or payment sent for an archived bill says so instead of "not found") */
+function arcHas_(id) { if (!id) return false; const k = BILL_COLS.indexOf('billId') + 1;
+  return arcSheets_('', '').some(x => x.s.getRange(2, k, x.s.getLastRow() - 1, 1).getValues().some(r => String(r[0]) === String(id))); }
+/** Summary per archived year (the BillYears tab), {fy: {bills, sales, tax, profit, items:{id: bills}, months:{yyyy-mm:{count,total}}}}. */
+function arcSums_() { const s = ss_().getSheetByName(tab_('BillYears')), out = {}; if (!s || s.getLastRow() < 2) return out;
+  s.getRange(2, 1, s.getLastRow() - 1, ARC_COLS.length).getValues().forEach(r => { const fy = String(r[0] || ''); if (!/^\d{4}-\d{2}$/.test(fy)) return;
+    let items = {}, months = {}; try { items = JSON.parse(r[5] || '{}') || {}; } catch (e) {} try { months = JSON.parse(r[6] || '{}') || {}; } catch (e) {}
+    out[fy] = { bills: num_(r[1]), sales: num_(r[2]), tax: num_(r[3]), profit: num_(r[4]), items: items, months: months, rows: num_(r[7]) }; });
+  return out; }
+
+/** Move what's due this year (both modes). Returns {live: n, test: n} bills moved. */
+function archiveBills_(now) {
+  now = now || new Date(); const cut = fyAdd_(fy_(now), -2), keep = ENV_, out = {};
+  try { ['live', 'test'].forEach(en => { ENV_ = en; out[en] = arcRun_(cut, now); }); } finally { ENV_ = keep; }
+  return out;
+}
+function arcRun_(cut, now) {
+  const SS = ss_(), src = SS.getSheetByName(tab_('Bills'));
+  const P = PropertiesService.getScriptProperties(), listKey = 'ARC_' + ENV_;
+  const fromTabs = () => SS.getSheets().map(s => s.getName()).map(nm => { const m = nm.match(/^(Test )?Bills (\d{4}-\d{2})$/); return m && !!m[1] === (ENV_ === 'test') ? m[2] : null; }).filter(Boolean).sort();
+  if (!src || src.getLastRow() < 2) { P.setProperty(listKey, JSON.stringify(fromTabs())); return 0; }
+  const n = src.getLastRow() - 1, W = Math.max(BILL_COLS.length, src.getLastColumn());
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {}), v = src.getRange(2, 1, n, BILL_COLS.length).getValues();
+  const yearAgo = now.getTime() - 365 * 864e5, byFy = {}; let moved = 0;
+  const key = r => String(r[B.billId] || '') || ('n:' + r[B.billNo] + ':' + (r[B.date] instanceof Date ? r[B.date].getTime() : String(r[B.date])));
+  v.forEach((r, i) => {
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]); if (isNaN(d)) return;
+    const fy = fy_(d); if (!(fy <= cut)) return;
+    if (r[B.status] !== 'Cancelled') {
+      const pay = String(r[B.payment] || ''); if (pay === 'Credit' || pay === 'Part paid' || num_(r[B.due]) > 0) return;   // money still owed: stays
+      const last = payList_(r[B.payments]).reduce((m, p) => Math.max(m, Date.parse(p.d) || 0), 0), cl = r[B.clearedAt] ? new Date(r[B.clearedAt]).getTime() || 0 : 0;
+      if (Math.max(last, cl) > yearAgo) return; }   // paid off within the last year: the credit charts still look at it
+    (byFy[fy] = byFy[fy] || []).push(i);
+  });
+  const fys = Object.keys(byFy).sort();
+  fys.forEach(fy => {
+    const dst = sheet_(arcTab_(fy), BILL_COLS), have = {};
+    const keysOf = () => { const o = {}, dn = dst.getLastRow() - 1; if (dn > 0) dst.getRange(2, 1, dn, BILL_COLS.length).getValues().forEach(r => o[key(r)] = 1); return o; };
+    Object.assign(have, keysOf());
+    const todo = byFy[fy].filter(i => !have[key(v[i])]);
+    arcRunsOf_(todo).forEach(g => { const to = dst.getLastRow() + 1; src.getRange(g[0] + 2, 1, g[1], W).copyTo(dst.getRange(to, 1, g[1], W)); });
+    const got = keysOf(); if (byFy[fy].some(i => !got[key(v[i])])) throw new Error('archive_copy_failed');   // nothing is removed unless every bill is in the archive
+  });
+  /* everything copied and checked: remove those rows, bottom first (row numbers above stay right) */
+  const all = [].concat.apply([], fys.map(fy => byFy[fy])).sort((a, b) => a - b);
+  arcRunsOf_(all).reverse().forEach(g => { src.deleteRows(g[0] + 2, g[1]); moved += g[1]; });
+  const list = fromTabs(); P.setProperty(listKey, JSON.stringify(list));
+  fys.forEach(fy => arcSumWrite_(fy));
+  if (moved) { bumpB_(); popReset_(); }
+  return moved;
+}
+/** Sorted row indexes → [[start, count], …] of rows next to each other. */
+function arcRunsOf_(ix) { const out = []; ix.slice().sort((a, b) => a - b).forEach(i => { const g = out[out.length - 1]; if (g && g[0] + g[1] === i) g[1]++; else out.push([i, 1]); }); return out; }
+/** Work out one archived year's summary from its tab and write it to BillYears (replacing that year's row). */
+function arcSumWrite_(fy) {
+  const s = ss_().getSheetByName(arcTab_(fy)); if (!s) return;
+  const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {}), n = s.getLastRow() - 1;
+  const t = { bills: 0, sales: 0, tax: 0, profit: 0 }, items = {}, months = {};
+  if (n > 0) s.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
+    if (r[B.status] === 'Cancelled' || (r[B.billNo] === '' && r[B.total] === '')) return;
+    const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]), mk = isNaN(d) ? 'unknown' : Utilities.formatDate(d, BK_TZ, 'yyyy-MM');
+    t.bills++; t.sales = r2_(t.sales + num_(r[B.total])); t.tax = r2_(t.tax + num_(r[B.tax])); t.profit = r2_(t.profit + num_(r[B.profit]));
+    const m = months[mk] || (months[mk] = { count: 0, total: 0 }); m.count++; m.total = r2_(m.total + num_(r[B.total]));
+    let L = []; try { L = JSON.parse(r[B.lines] || '[]'); } catch (e) {} const seen = {};
+    (Array.isArray(L) ? L : []).forEach(l => { const id = l && l.id ? String(l.id) : ''; if (id && !seen[id] && id.indexOf('tmp_') !== 0) { seen[id] = 1; items[id] = (items[id] || 0) + 1; } });
+  });
+  let itJ = '{'; Object.keys(items).sort((a, b) => items[b] - items[a]).forEach(id => { const p = (itJ.length > 1 ? ',' : '') + JSON.stringify(id) + ':' + items[id]; if (itJ.length + p.length < 45000) itJ += p; }); itJ += '}';
+  const row = [fy, t.bills, t.sales, t.tax, t.profit, itJ, JSON.stringify(months).slice(0, 45000), Math.max(0, n), new Date()];
+  const ys = sheet_(tab_('BillYears'), ARC_COLS), yn = ys.getLastRow() - 1;
+  const at = yn > 0 ? ys.getRange(2, 1, yn, 1).getValues().findIndex(r => String(r[0]) === fy) : -1;
+  if (at >= 0) ys.getRange(at + 2, 1, 1, ARC_COLS.length).setValues([row]); else ys.appendRow(row);
+}
+/** From watchSheet (hourly): once a financial year, at night, archive what's due. A backup of the whole sheet comes first;
+ *  if it can't be made, nothing moves (and the reason goes to the error log). */
+function arcMaybe_(now) {
+  now = now || new Date(); const P = PropertiesService.getScriptProperties(), cut = fyAdd_(fy_(now), -2);
+  if (P.getProperty('RETIRED') || String(P.getProperty('ARC_DONE') || '') >= cut) return null;
+  if (Number(Utilities.formatDate(now, BK_TZ, 'H')) >= 6) return null;   // between midnight and 6 am India time, when nobody is billing
+  return archiveNow_(now);
+}
+function archiveNow_(now) {
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(30000)) return null;
+  const was = LOCKED_; LOCKED_ = true;
+  try { now = now || new Date();
+    try { backupNow_('before-archive'); } catch (e) { softErr_('archive:backup', e); throw new Error('archive_no_backup'); }
+    const r = archiveBills_(now); PropertiesService.getScriptProperties().setProperty('ARC_DONE', fyAdd_(fy_(now), -2)); return r; }
+  finally { LOCKED_ = was; lock.releaseLock(); }
+}
+/** Editor: archive now (normally it runs by itself, at night after a new financial year starts). View → Logs shows how many moved. */
+function archiveNow() { const r = archiveNow_(); Logger.log(r ? 'Bills moved to the archive: real ' + r.live + ', test ' + r.test : 'Busy, try again in a minute'); return r; }
+
 function pad2_(n) { return (n < 10 ? '0' : '') + n; }
 
 /** Change a saved bill. Keeps the original date and number, records who edited it and when, and keeps the old text in BillHistory. */
@@ -1446,7 +1591,7 @@ function updateBill_(b, by, who) {
   let i = -1;
   if (b.id) i = vals.findIndex(r => String(r[B.billId]) === String(b.id));
   if (i < 0 && b.row) { const k = Number(b.row) - 2; if (k >= 0 && k < vals.length && num_(vals[k][B.billNo]) === num_(b.n)) i = k; }
-  if (i < 0) throw new Error('bill_not_found');
+  if (i < 0) throw new Error(arcHas_(b.id) ? 'bill_archived' : 'bill_not_found');   // (v67) archived bills can't be changed
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
   if (!totalOk_(b.total)) throw new Error('bad_total');
@@ -1458,6 +1603,7 @@ function updateBill_(b, by, who) {
       return { dup: true, bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
     throw new Error('bill_changed'); }   // someone else saved it after this phone opened it   // someone else saved it after this phone opened it
   { const bad = billSums_(b); if (bad) throw new Error(bad.error); }   // (v66) after the conflict check, so an edit on an old copy still says so
+  { const badT = billTextCheck_(b, num_(r[B.billNo])); if (badT) throw new Error(badT.error); }   // (v67) its text still matches it
   /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
      making it; anything later or by someone else is an edit and shows as one. Staff can't change the total or the payment of a
      bill that is on credit or has payments recorded (that would quietly wipe a customer's due): a manager or the owner can,
@@ -1574,6 +1720,27 @@ function billCheck_(b) {
   if (off(b.total, m.total) || (b.gst && (off(b.taxable, m.taxable) || off(b.tax, m.tax)))) return { error: 'total_mismatch', expect: { total: m.total, taxable: m.taxable, tax: m.tax } };
   return null;
 }
+/** (v67) An amount as the app writes it on bills: Indian commas (1,25,000), up to 2 decimals, no trailing zeros. The app's
+    screen and bill text (fmtN / rs) use this too, so the sheet can check a bill's text against its sums character for character. */
+function inrN_(n) {
+  let x = Number(n || 0); if (!isFinite(x)) return String(x);
+  const neg = x < 0; x = Math.round(Math.abs(x) * 100) / 100;
+  const p = x.toFixed(2).split('.'); let i = p[0]; const f = p[1].replace(/0+$/, '');
+  if (i.length > 3) i = i.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + i.slice(-3);
+  return (neg && (i !== '0' || f) ? '-' : '') + i + (f ? '.' + f : '');
+}
+/** (v67) What's wrong with a bill's text (the WhatsApp / invoice text saved with it), or null when it matches the bill: it must
+    show the bill's number, every line's amount ("= ₹…") and the total. The text is written on the phone; this stops a changed
+    copy of the app (or a bug) from saving a bill whose text tells the customer something else. No text at all is fine (Past bills
+    then builds it from the lines). no: the bill number the text should carry (0 = don't check). */
+function billTextCheck_(b, no) {
+  const tx = String(b && b.text || ''); if (!tx.trim()) return null;
+  if (no > 0 && !new RegExp('(^|[^0-9])' + Math.floor(no) + '([^0-9]|$)').test(tx)) return { error: 'text_mismatch', what: 'no' };
+  const L = b && Array.isArray(b.lines) ? b.lines : [];
+  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (tx.indexOf('= ₹' + inrN_((+l.qty || 0) * (+l.rate || 0))) < 0) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
+  if (tx.indexOf('₹' + inrN_(b.total)) < 0) return { error: 'text_mismatch', what: 'total' };
+  return null;
+}
 /* ==== end of money.js ==== */
 /** (v66) The sheet adds every bill up itself (money.js, the same code the phone uses): a bill whose total, taxable value or tax
     doesn't match its lines is refused (total_mismatch, with what the lines give), and its cost and profit are always worked out
@@ -1656,7 +1823,7 @@ function recordPayment_(body, by) {
   if (body.billId || body.row) {
     let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
     if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
-    if (i < 0) throw new Error('bill_not_found');
+    if (i < 0) throw new Error(arcHas_(body.id) ? 'bill_archived' : 'bill_not_found');   // (v67) archived bills can't be changed
     if (vals[i][B.status] === 'Cancelled') throw new Error('bill_cancelled');   // (v64) e.g. queued on an offline phone while it was cancelled or moved
     targets = [i];
   } else {
@@ -1690,7 +1857,7 @@ function undoPayment_(body) {
   const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
   let i = body.billId ? vals.findIndex(r => String(r[B.billId]) === String(body.billId)) : -1;
   if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
-  if (i < 0) throw new Error('bill_not_found');
+  if (i < 0) throw new Error(arcHas_(body.id) ? 'bill_archived' : 'bill_not_found');   // (v67) archived bills can't be changed
   const r = vals[i], pays = payList_(r[B.payments]);
   let j = -1; for (let x = pays.length - 1; x >= 0; x--) if (!pays[x].at) { j = x; break; }
   if (j < 0) throw new Error('nothing_to_undo');
@@ -1789,8 +1956,9 @@ function saveCustomer_(x, by) {
     const was = mob10_(r[0]);
     let moved = 0, keyOut;
     if (!isNew && k2 && k2 !== was) {   // a new (or first) mobile for this customer
-      if (was) { const bs = sheet_(tab_('Bills'), BILL_COLS), B = BILL_COLS.reduce((m, c, j) => (m[c] = j, m), {}), n = bs.getLastRow() - 1;
-        if (n > 0) { const col = bs.getRange(2, B.mobile + 1, n, 1).getValues(); col.forEach(c => { if (mob10_(c[0]) === was) { c[0] = "'" + k2; moved++; } }); if (moved) bs.getRange(2, B.mobile + 1, n, 1).setValues(col); } }
+      if (was) { const B = BILL_COLS.reduce((m, c, j) => (m[c] = j, m), {});
+        [sheet_(tab_('Bills'), BILL_COLS)].concat(arcSheets_('', '').map(x => x.s)).forEach(bs => { const n = bs.getLastRow() - 1; let m2 = 0;   // (v67) archived bills too, so the customer's count stays whole
+          if (n > 0) { const col = bs.getRange(2, B.mobile + 1, n, 1).getValues(); col.forEach(c => { if (mob10_(c[0]) === was) { c[0] = "'" + k2; m2++; } }); if (m2) bs.getRange(2, B.mobile + 1, n, 1).setValues(col); moved += m2; } }); }
       const j = custRow_(s, k2);
       if (j > 0 && j !== i) { const o = CPAD_(s.getRange(j, 1, 1, CUST_COLS.length).getValues()[0]); [1, 2, 8, 9, 12, 13].forEach(c => { if (!r[c]) r[c] = o[c]; }); r[0] = "'" + k2; s.getRange(j, 1, 1, CUST_COLS.length).setValues([r]); s.deleteRow(i); }
       else { r[0] = "'" + k2; s.getRange(i, 1, 1, CUST_COLS.length).setValues([r]); }
@@ -1818,11 +1986,11 @@ function customersSheet_() {
   if (s) return s;
   s = sheet_(tab_('Customers'), CUST_COLS);
   const bs = sheet_(tab_('Bills'), BILL_COLS);
-  const n = bs.getLastRow() - 1;
-  if (n < 1) return s;
+  const n = bs.getLastRow() - 1, ar = arcRows_('', '');   // (v67) archived years too
+  if (n < 1 && !ar.length) return s;
   const B = BILL_COLS.reduce((m, k, i) => (m[k] = i, m), {});
-  const v = bs.getRange(2, 1, n, B.igst + 1).getValues();
-  let dueV = null; try { dueV = bs.getRange(2, B.payment + 1, n, 3).getValues(); } catch (err) {}
+  const v = ar.map(r => r.slice(0, B.igst + 1)).concat(n > 0 ? bs.getRange(2, 1, n, B.igst + 1).getValues() : []);
+  let dueV = null; try { dueV = ar.map(r => r.slice(B.payment, B.payment + 3)).concat(n > 0 ? bs.getRange(2, B.payment + 1, n, 3).getValues() : []); } catch (err) {}
   const map = {}, order = [];
   v.forEach((r, ix) => {
     const k = mob10_(r[B.mobile]); if (!k) return;
@@ -1909,7 +2077,7 @@ function backupNow_(why) {
   const props = PropertiesService.getScriptProperties();
   const src = DriveApp.getFileById(ss_().getId());
   const now = new Date();
-  const label = why === 'before-restore' ? ' (before restore)' : why === 'manual' ? ' (manual)' : '';
+  const label = why === 'before-restore' ? ' (before restore)' : why === 'before-archive' ? ' (before archive)' : why === 'manual' ? ' (manual)' : '';
   const name = BACKUP_PREFIX + Utilities.formatDate(now, BK_TZ, 'yyyy-MM-dd HH:mm') + label;
   const copy = src.makeCopy(name, backupFolder_());
   props.setProperty('BK_LAST', now.toISOString());
@@ -1969,7 +2137,9 @@ function restoreBackup_(id, by) {
     const fresh = f.file.makeCopy('Rate Book prices (restored from ' + f.name.slice(BACKUP_PREFIX.length) + ')');
     const props = PropertiesService.getScriptProperties();
     props.setProperty('SHEET_ID', fresh.getId());
-    CacheService.getScriptCache().put('SHEET_ID', fresh.getId(), 21600);
+    cPut_('SHEET_ID', fresh.getId()); cfgCacheDrop_();   // (v67) a failed put mustn't leave the old sheet's id cached
+    /* (v67) the restored copy may have more or fewer archived years: the list follows its tabs, and the yearly run may go again */
+    try { const names = fresh.getId && SpreadsheetApp.openById(fresh.getId()).getSheets().map(x => x.getName()); ['live', 'test'].forEach(en => props.setProperty('ARC_' + en, JSON.stringify((names || []).map(nm => { const m = nm.match(/^(Test )?Bills (\d{4}-\d{2})$/); return m && !!m[1] === (en === 'test') ? m[2] : null; }).filter(Boolean).sort()))); props.deleteProperty('ARC_DONE'); } catch (e) { softErr_('restore:archive', e); }
     try { editTrigger_(); } catch (e) { CacheService.getScriptCache().remove('TRIG_OK'); }   // hand edits are watched on the restored copy
     props.setProperty('BK_RESTORED_AT', new Date().toISOString());
     props.setProperty('BK_RESTORED_FROM', 'the backup of ' + f.name.slice(BACKUP_PREFIX.length) + (by ? ' · by ' + by : ''));
@@ -2021,7 +2191,7 @@ function cancelBill_(body, by, cancel) {
   const vals = s.getRange(2, 1, n, BILL_COLS.length).getValues();
   let i = body.id ? vals.findIndex(r => String(r[B.billId]) === String(body.id)) : -1;
   if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
-  if (i < 0) throw new Error('bill_not_found');
+  if (i < 0) throw new Error(arcHas_(body.id) ? 'bill_archived' : 'bill_not_found');   // (v67) archived bills can't be changed
   const r = vals[i];
   if (!cancel && /^Moved to No\. /.test(String(r[B.cancelReason] || ''))) throw new Error('bill_moved');   // (v63) its sale now lives on the new bill
   if (cancel) {
@@ -2049,7 +2219,10 @@ function report_(body) {
   const register = [];
   let received = 0, creditGiven = 0, outstanding = 0; const modes = {};   // money that came in during the period, by how it was paid ('' = not marked)
   const addMode = (k, a) => { k = paidBy_(k) || (String(k || '') === 'Bank' ? 'Bank' : ''); modes[k] = r2_((modes[k] || 0) + num_(a)); };
-  if (n > 0) s.getRange(2, 1, n, BILL_COLS.length).getValues().forEach(r => {
+  /* (v67) a period that reaches into archived years reads those tabs too (one year earlier as well: money received in the
+     period on a bill from the year before) */
+  const yb = /^\d{4}-\d{2}-\d{2}$/.test(from) ? (Number(from.slice(0, 4)) - 1) + from.slice(4) : '';
+  arcRows_(yb, to).concat(n > 0 ? s.getRange(2, 1, n, BILL_COLS.length).getValues() : []).forEach(r => {
     const d = r[B.date] instanceof Date ? r[B.date] : new Date(r[B.date]);
     const day = dayOf(d);
     const st = String(r[B.payment] || '');
@@ -2382,12 +2555,12 @@ function vCalc_(v, entries) {
    every change bumps a vendors version (vrev_<mode>) so phones can ask "anything new?" (vSync) without reading tabs. */
 function vAll_() { const V = vtab_('Vendors', VEND_COLS), L = vtab_('VendorLedger', VLED_COLS);
   return { V, L, vendors: V.rows.filter(r => r.id && String(r.removed) !== '1'), entries: L.rows.filter(r => r.id).map(r => vEntryOut_(r)) }; }
-function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); try { CacheService.getScriptCache().put('vrev_' + ENV_, v, 21600); } catch (e) {} return v; }
+function vbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('vrev_' + ENV_, v); cPut_('vrev_' + ENV_, v); return v; }
 function vrev_() { return vrevC_(ENV_); }
 /** Hand edit or restore: vendors in both modes may have changed. */
-function vbumpAll_() { const v = String(Date.now()), P = PropertiesService.getScriptProperties(); ['live', 'test'].forEach(en => { P.setProperty('vrev_' + en, v); try { CacheService.getScriptCache().put('vrev_' + en, v, 21600); } catch (e) {} }); }
+function vbumpAll_() { const v = String(Date.now()), P = PropertiesService.getScriptProperties(); ['live', 'test'].forEach(en => { P.setProperty('vrev_' + en, v); cPut_('vrev_' + en, v); }); }
 /** Vendors version for one mode (cache first, so the 25-second rev check from every phone costs no Properties quota). */
-function vrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + en) || '0'; c.put('vrev_' + en, v, 21600); } return v; }
+function vrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('vrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('vrev_' + en) || '0'; cPut_('vrev_' + en, v); } return v; }
 /** Everything for this mode, or {same:true} when the phone's copy is current (no sheet read at all). */
 function vSync_(have) { const v = vrev_(); if (have && String(have) === v) return { same: true, vrev: v };
   const A = vAll_(); return { vrev: v, vendors: A.vendors.map(vVendorOut_), entries: A.entries }; }
@@ -2676,8 +2849,8 @@ function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => Str
  * its own language from these fields. A notice never stops a save (errors are swallowed). */
 const NOTE_COLS = ['id', 'at', 'kind', 'vendorId', 'entryId', 'vname', 'amount', 'billNo', 'extra', 'by', 'read'];
 const NOTE_KINDS_ = { vendor: 1, bill: 1, pay: 1, adj: 1, paid: 1, rm: 1, check: 1, move: 1, below: 1 };
-function nrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('nrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('nrev_' + en) || '0'; c.put('nrev_' + en, v, 21600); } return v; }
-function nbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('nrev_' + ENV_, v); try { CacheService.getScriptCache().put('nrev_' + ENV_, v, 21600); } catch (e) {} return v; }
+function nrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('nrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('nrev_' + en) || '0'; cPut_('nrev_' + en, v); } return v; }
+function nbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('nrev_' + ENV_, v); cPut_('nrev_' + ENV_, v); return v; }
 function notice_(kind, o) {
   try { const s = sheet_(tab_('Notices'), NOTE_COLS);
     s.appendRow(NOTE_COLS.map(k => k === 'id' ? 'n' + Utilities.getUuid().replace(/-/g, '').slice(0, 12) : k === 'at' ? Date.now() : k === 'kind' ? kind

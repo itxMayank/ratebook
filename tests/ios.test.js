@@ -9,7 +9,7 @@ const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/6
   const b = await launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, userAgent: UA, isMobile: true, hasTouch: true });
   const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'G', mode: 'live' }, sv: 41, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
+  await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'G', mode: 'live' }, sv: 60, me: { name: 'M', role: 'owner', personal: true, prefs: {} } }) }));
   await p.addInitScript(() => {
     localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'M', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA' }));
     // Safari-style visual viewport we can move: innerHeight stays 844, the visible part shrinks/slides with the keyboard

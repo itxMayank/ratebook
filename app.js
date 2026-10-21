@@ -25,7 +25,7 @@ if(S.canWrite && S.auth.prefs && typeof S.auth.prefs.hideBuy==="boolean") S.hide
 /* Each phone has a random id, so a wrong PIN locks only that phone. */
 const DEV = (()=>{ let d=ls.get("rb_dev",""); if(!d){ d=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); ls.set("rb_dev",d); } return d; })();
 const RANK={staff:1,manager:2,owner:3};
-const NEED_SV=34;
+const NEED_SV=60;   // (v67) the oldest sheet script this app still works with; older ones show "update the sheet script" and the code for them is gone
 var PIN_TYPE=(window.CSS&&CSS.supports&&CSS.supports("-webkit-text-security","disc"))?"text":"password";   // PIN boxes: dots without being a password field (see noAutofill)   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
@@ -51,7 +51,7 @@ ls.set=(k,v)=>{ lsSet0(k,v); const f=UP_KEYS[k];
   if(f && upReady && !upApplying && S.auth && S.auth.tok){ const q=ls.get("rb_upq",{}); q[f]=v; lsSet0("rb_upq",q); upSoon(); } };
 function upSoon(){ clearTimeout(upT); upT=setTimeout(upFlush,1200); }
 window.addEventListener("online",()=>{ if(Object.keys(ls.get("rb_upq",{})||{}).length) upSoon(); });
-async function upFlush(){ if(!(S.auth&&S.auth.tok) || !(S.sv>=57) || navigator.onLine===false) return;
+async function upFlush(){ if(!(S.auth&&S.auth.tok) || navigator.onLine===false) return;
   const q=ls.get("rb_upq",{}); if(!q || !Object.keys(q).length) return; lsSet0("rb_upq",{});
   try{ const j=await apiPost0({action:"setMyPrefs",prefs:{ui:q}}); if(S.auth && j.prefs){ S.auth={...S.auth,prefs:j.prefs}; lsSet0("rb_auth",S.auth); } }
   catch(e){ const now=ls.get("rb_upq",{}); lsSet0("rb_upq",{...q,...now}); } }
@@ -60,7 +60,7 @@ function upApply(){ if(!(S.auth&&S.auth.tok)) return; const ui=(myPrefs().ui)||{
   upApplying=true;
   try{ for(const k in UP_KEYS){ const f=UP_KEYS[k]; if(f in q || ui[f]===undefined) continue; if(JSON.stringify(ls.get(k,null))!==JSON.stringify(ui[f])){ ls.set(k,ui[f]); ch[f]=1; } } }
   finally{ upApplying=false; }
-  if(S.sv>=57){ const add={}; for(const k in UP_KEYS){ const f=UP_KEYS[k], v=ls.get(k,null); if(ui[f]===undefined && v!==null && !(f in q)) add[f]=v; }
+  { const add={}; for(const k in UP_KEYS){ const f=UP_KEYS[k], v=ls.get(k,null); if(ui[f]===undefined && v!==null && !(f in q)) add[f]=v; }
     if(Object.keys(add).length) lsSet0("rb_upq",{...q,...add}); }
   upReady=true; if(Object.keys(ls.get("rb_upq",{})).length) upSoon();
   try{ if(ch.lang){ S.lang=ls.get("rb_lang","en"); applyLang(); }
@@ -108,7 +108,7 @@ const IC={warn:ICS('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3
   cam:ICS('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/>'),
   link:ICS('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>')};
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmtN = n => Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:2});
+const fmtN = n => inrN_(n);   // (v67) money.js: the sheet checks bill texts with the same formatting
 const rs = n => "₹" + fmtN(n);
 const unitHi = u => (S.cfg.units.find(x=>x.code===u)||{}).hi;
 const unitL = u => S.lang==="hi" && unitHi(u) ? unitHi(u) : (u||"");
@@ -295,7 +295,7 @@ function renderQueue(){
   const b=$("#queue-send"); if(b) b.onclick=()=>{ btnBusy(b,true); flushBills(); };
 }
 function renderSvNote(){
-  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv!==undefined && S.sv<NEED_SV && TECH();   // other shops: the admin updates their scripts
+  const el=$("#sv-note"); if(!el) return; const old=S.online && S.sv>0 && S.sv<NEED_SV && TECH();   // other shops: the admin updates their scripts (the dashboard lists them under "Needs you")
   el.hidden=!old; if(old) el.innerHTML=`<b>${IC.warn} ${esc(t("svT"))}</b><span>${esc(t("oldScript"))}</span>`;
 }
 function renderCodeNote(){
@@ -889,10 +889,9 @@ async function onUnitBtn(btn,cb){ const v=await pickUnit(btn.dataset.unit); if(v
 
 /* ---------------- Talking to the Google Sheet ---------------- */
 function apiGet(params){ const p=apiGet0(params); return (params.action==="rev"||params.action==="thumbs") ? p : netTrack(p); }
-/** Price list and photos: asked for with this phone's sign-in (POST, script v44+; anonymous GETs get nothing since then). An older script answers bad_action: then the old GET. */
+/** Price list and photos: asked for with this phone's sign-in (POST; anonymous GETs get nothing since script v44). */
 async function apiRead(params){
-  if(S.auth && S.auth.tok && !S.auth.pending && !(S.sv>0 && S.sv<44)){
-    try{ return await apiPost0(params); }catch(e){ if(!(e && e.code==="bad_action")) throw e; } }
+  if(S.auth && S.auth.tok && !S.auth.pending) return apiPost0(params);
   return apiGet0(params); }
 const BILL_CHANGES=new Set(["updateBill","cancelBill","restoreBill","recordPayment","undoPayment","takeBill","restoreBackup"]);
 function apiPost(body){ const bc=body && BILL_CHANGES.has(body.action); if(bc) blcDirty(); const p=netTrack(apiPost0(body)); if(bc) p.then(()=>blcSoon(600),()=>{}); return p; }
@@ -903,7 +902,7 @@ const ERR_SENT=new Set(); let errN=0;
 function errReport(m,w,st){ try{ m=String(m||"").slice(0,300); w=String(w||""); st=String(st||"");
   if(!m || /ResizeObserver loop|^Script error\.?$/i.test(m) || /-extension:\/\//.test(w+st)) return;
   const k=m+"|"+w; if(ERR_SENT.has(k) || ++errN>10) return; ERR_SENT.add(k);
-  if(navigator.onLine===false || !apiUrl() || !(S.sv>=36)) return;   // older scripts would check a PIN first and count it as wrong
+  if(navigator.onLine===false || !apiUrl()) return;
   fetch(apiUrl(),{method:"POST",keepalive:true,redirect:"follow",body:JSON.stringify({action:"clientErr",shop:SHOP.code,dev:DEV,by:(S.auth&&S.auth.by)||"",...(S.auth&&S.auth.tok?{tok:S.auth.tok}:{}),
     e:{m,w:w.slice(0,160),st:st.slice(0,500),ua:navigator.userAgent.slice(0,90),tab:S.tab||""}})}).catch(()=>{}); }catch{} }
 window.addEventListener("error",e=>{ if(e && e.message) errReport(e.message,(e.filename||"").split("/").pop().split("?")[0]+":"+e.lineno+":"+e.colno,e.error&&e.error.stack); });
@@ -913,7 +912,7 @@ function perfAdd(action,t0,j){ if(!action || action==="rev" || action==="thumbs"
 /** About once an hour (from the 25-second check): this phone's timings since the last send go to the shop's script (v47+), which keeps 14 days
     of daily summaries for the dashboard. Signed-in phones only; nothing is shown on the phone. */
 let perfSending=false;
-function perfSend(){ if(perfSending || !(S.auth&&S.auth.tok) || !(S.sv>=47) || navigator.onLine===false) return;
+function perfSend(){ if(perfSending || !(S.auth&&S.auth.tok) || navigator.onLine===false) return;
   const sent=ls.get("rb_perf_sent",0), now=Date.now(); if(now-ls.get("rb_perf_try",0)<3600000) return; ls.set("rb_perf_try",now);
   const rows=ls.get("rb_perf",[]).filter(r=>r[3]>sent); if(!rows.length) return;
   perfSending=true; apiPost0({action:"perfIn",rows,dl:devLabel()}).then(j=>{ if(j&&j.ok) ls.set("rb_perf_sent",Math.max(...rows.map(r=>r[3]))); }).catch(()=>{}).finally(()=>{ perfSending=false; }); }
@@ -946,7 +945,7 @@ async function apiPost0(body){
     throw {code:c||"server", existing:j.existing}; }
   return j;
 }
-function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="bad_old_pin") return t("myPinBadOld"); if(c==="pin_same") return t("myPinSame"); if(c==="not_personal") return t("myPinNoOwn"); if(c==="bad_new_pin") return t("pplPin"); if(c==="need_name") return t("needYourName"); if(c==="bad_session") return t("siGone"); if(c==="busy" || /lock timeout/i.test(String(c||""))) return t("busyNow"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="signin_fail") return t("siFail"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_total") return t("badTotal"); if(c==="total_mismatch"||c==="no_lines"||c==="bad_line") return t("sumsOff"); if(c==="credit_needs_mobile") return t("creditNeeds"); if(c==="bill_no_jump") return t("billJump",e.next||""); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail");
+function errMsg(e){ const c=e&&e.code; if(c==="bad_pin") return t("wrongPin"); if(c==="bad_old_pin") return t("myPinBadOld"); if(c==="pin_same") return t("myPinSame"); if(c==="not_personal") return t("myPinNoOwn"); if(c==="bad_new_pin") return t("pplPin"); if(c==="need_name") return t("needYourName"); if(c==="bad_session") return t("siGone"); if(c==="busy" || /lock timeout/i.test(String(c||""))) return t("busyNow"); if(c==="shop_pin_off") return t("shopPinOff"); if(c==="pin_taken") return t("pplTaken"); if(c==="pin_short") return t("pinShort"); if(c==="pin_easy") return t("pinEasy"); if(c==="needs_manager") return t("needsManager"); if(c==="pending") return t("pendStill"); if(c==="paused") return t("pausedNote"); if(c==="need_signin") return t("siNeed"); if(c==="signin_fail") return t("siFail"); if(c==="bad_code"||c==="no_dir") return t("shopBad"); if(c==="dir_locked") return t("shopWait"); if(c==="not_ready") return t("shopNotReady"); if(c==="locked") return t("lockedOut"); if(c==="offline") return t("offlineWrite"); if(c==="image_too_large") return t("imgFail"); if(c==="not_allowed") return t("notAllowed"); if(c==="bad_action") return t("oldScript"); if(c==="bill_changed") return t("billChanged"); if(c==="bad_total") return t("badTotal"); if(c==="total_mismatch"||c==="no_lines"||c==="bad_line") return t("sumsOff"); if(c==="text_mismatch") return t("textOff"); if(c==="bill_archived") return t("billArchived"); if(c==="credit_needs_mobile") return t("creditNeeds"); if(c==="bill_no_jump") return t("billJump",e.next||""); if(c==="bad_email") return t("bkBadEmail"); if(c==="backup_not_found") return t("bkFail");
   /* anything else: the sheet refused for a reason the app has no words for; the shop owner of the original shop sees the code, so it can be looked up (it is also in the dashboard's error log) */
   return t("writeFail") + (c && c!=="http" && c!=="offline" && TECH() ? " ("+String(c).slice(0,80)+")" : ""); }
 let chain=Promise.resolve();
@@ -963,12 +962,12 @@ var WQ_KEY="rb_wq", WQ_FAIL="rb_wqfail", wqBusy=false, wqCur=null, wqV=0, wqT=0;
 function wqGet(){ const q=ls.get(WQ_KEY,[]); return Array.isArray(q)?q:[]; }
 const wqSet=q=>{ ls.set(WQ_KEY,q); wqV++; };
 function wqFails(){ const q=ls.get(WQ_FAIL,[]); return Array.isArray(q)?q:[]; }
-const wqOn=()=>+S.sv>=59 && !!(S.auth&&S.auth.tok);
+const wqOn=()=>!!(S.auth&&S.auth.tok);
 const wqId=()=>"w"+Date.now().toString(36)+Math.random().toString(36).slice(2,9);
 const wqMine=e=>!e.by || !S.auth || String(e.by).trim().toLowerCase()===String(S.auth.by||"").trim().toLowerCase();
 function wqPending(k,env){ env=env||S.cfg.mode; return wqGet().filter(e=>e.k===k && e.env===env); }
 /** The sheet said no for a reason sending again won't change; anything else (no signal, busy, Google hiccup) is tried again. */
-const WQ_REFUSE=new Set(["bad_total","total_mismatch","no_lines","bad_line","bill_no_jump","bill_changed","bill_cancelled","bill_not_found","nothing_due","not_allowed","needs_manager","credit_needs_mobile","cust_exists","cust_not_found","bad_name","bad_mobile","bad_gstin","bad_email","bad_amount","bad_action","no_test","bad_json"]);
+const WQ_REFUSE=new Set(["bad_total","total_mismatch","text_mismatch","bill_archived","no_lines","bad_line","bill_no_jump","bill_changed","bill_cancelled","bill_not_found","nothing_due","not_allowed","needs_manager","credit_needs_mobile","cust_exists","cust_not_found","bad_name","bad_mobile","bad_gstin","bad_email","bad_amount","bad_action","no_test","bad_json"]);
 function wqAdd(e){
   e.oid=wqId(); e.env=e.env||S.cfg.mode; e.at=Date.now(); e.by=(S.auth&&S.auth.by)||""; e.body={...e.body, env:e.env};
   if(e.body.bill) e.body.bill={...e.body.bill, oid:e.oid};
@@ -1243,7 +1242,7 @@ pollPlan();
    person switched off (prefs.noff) are left out of the bell and the list. Kept on the phone per mode, so the badge shows offline. */
 const NT={env:"",nrev:"",list:null,busy:false,again:false};
 const NKINDS=["vendor","bill","pay","paid","rm","check","move","below"];
-const nOn=()=>S.canWrite && can("manager") && !(S.sv>0 && S.sv<43);
+const nOn=()=>S.canWrite && can("manager");
 const nOff=()=>(S.auth&&S.auth.prefs&&S.auth.prefs.noff)||[];
 const nShown=n=>{ const off=nOff(); return off.indexOf(n.kind==="adj"?"pay":n.kind)<0; };
 function nLoad(){ if(NT.env===S.cfg.mode) return; const c=ls.get(envKey("rb_notes"),null); NT.env=S.cfg.mode; NT.nrev=c&&c.nrev||""; NT.list=c&&Array.isArray(c.list)?c.list:null; }

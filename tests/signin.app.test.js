@@ -15,14 +15,14 @@ let tokens = {}, sent = [], n = 0, pend = {}, roleNow = {}, gone = {};
     await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
       const cfg = { shopName: 'Gupta Plastics', mode: 'live', nextBill: 5, units: [{ code: 'kg', hi: 'किलो' }], defaultUnit: 'kg' };
-      if (req.method() === 'GET') return send({ rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: cfg, sv: 43 });
+      if (req.method() === 'GET') return send({ rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: cfg, sv: 60 });
       const bd = JSON.parse(req.postData()); sent.push(bd);
       const who = bd.tok ? tokens[bd.tok] : people[bd.pin];
       if (bd.tok && gone[bd.tok]) return send({ ok: false, error: 'bad_session' });
       if (!who) return send({ ok: false, error: bd.tok ? 'bad_session' : 'bad_pin' });
       if (bd.tok && pend[bd.tok]) return send({ ok: false, error: 'pending' });
       const me = { name: who.name, role: roleNow[who.name] || who.role, personal: who.personal, prefs: { mode: 'live' }, testOk: true };
-      if (bd.action === 'boot') return send({ rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: cfg, sv: 43, me, view: who.name === 'Dad' ? '4821' : '' });
+      if (bd.action === 'boot') return send({ rev: '1', items: [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 100, sell: 120 }], config: cfg, sv: 60, me, view: who.name === 'Dad' ? '4821' : '' });
       if (bd.action === 'verify') { const res = { me, view: who.name === 'Dad' ? '4821' : '' }; if (bd.wantTok && !bd.tok) { const t = 'tok' + (++n); tokens[t] = who; res.tok = t; if (who.name === 'Raju') { pend[t] = 1; res.pending = true; } } return send(res); }
       return send({});
     });

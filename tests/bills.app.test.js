@@ -25,7 +25,7 @@ const lines = { b12: [{ id: 'i1', name: 'PP Bag', unit: 'kg', rate: 120, qty: 2,
   await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } }, cfg = { shopName: 'Gupta Plastics', mode: 'live', nextBill: 13, nextGstBill: 6 };
     const items = [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 90, sell: 120 }, { id: 'i2', name: 'Paper Cup', unit: 'pc', buy: 1, sell: 2 }];
-    if (req.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 43 });
+    if (req.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 60 });
     const bd = JSON.parse(req.postData()); sent.push(bd);
     if (bd.action === 'listBills') { if (bd.brev && bd.brev === brev) return send({ full: true, same: true, brev });
       if (bd.brev && delta && bd.brev === delta.from) return send({ full: true, delta: true, brev, bills: delta.bills, years: ['2026', '2025'] });
@@ -33,7 +33,7 @@ const lines = { b12: [{ id: 'i1', name: 'PP Bag', unit: 'kg', rate: 120, qty: 2,
     if (bd.action === 'getBill') { const x = bills.find(y => y.id === bd.id) || {}; return send({ bill: { ...x, text: `*Gupta Plastics*\nBill No. ${x.n}\n${x.customer}\nTotal ₹${x.total}`, lines: lines[x.id] || [] } }); }
     if (bd.action === 'cancelBill' || bd.action === 'restoreBill') return send({});
     if (bd.action === 'takeBill') return takeOk ? send({}) : r.abort();
-    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 43, me });
+    if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 60, me });
     return send({ me }); });
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live' } })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);

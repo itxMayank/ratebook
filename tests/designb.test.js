@@ -9,7 +9,7 @@ const items = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, name: 'Item '
   async function phone(auth, w = 390) {
     const ctx = await b.newContext({ viewport: { width: w, height: 844 }, isMobile: w < 1024, hasTouch: w < 1024 }); const p = await ctx.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
-    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Shree Ganesh Packaging', mode: 'live', nextBill: 5 }, sv: 43, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
+    await ctx.route('https://script.google.com/**', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', rev: '1', items, config: { shopName: 'Shree Ganesh Packaging', mode: 'live', nextBill: 5 }, sv: 60, me: { name: 'Mayank', role: 'owner', personal: true, prefs: {} } }) }));
     if (auth) await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't1', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', pinLen: 4 })));
     await p.goto('https://rb.test/'); await p.waitForTimeout(1300); return p;
   }

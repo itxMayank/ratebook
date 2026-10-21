@@ -477,7 +477,7 @@ function setCash(v){ S.cash=v; renderCash(); }
 /** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
 function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 let flushing=false;
-const BILL_REFUSE=new Set(["bad_total","total_mismatch","no_lines","bad_line","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
+const BILL_REFUSE=new Set(["bad_total","total_mismatch","text_mismatch","no_lines","bad_line","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
 async function flushBills(){
   if(flushing || !S.billQ.length || !apiUrl()) return;
   renderQueue();

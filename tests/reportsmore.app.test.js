@@ -22,10 +22,10 @@ function report(from, to) {
   await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
     const me = { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live', showProfit: true } }, cfg = { shopName: 'Gupta Plastics', mode: 'live' };
-    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 43 });
+    if (req.method() === 'GET') return send({ rev: '1', items: [], config: cfg, sv: 60 });
     const bd = JSON.parse(req.postData());
     if (bd.action === 'report') { asked.push(bd.from + '_' + bd.to); return send({ report: report(bd.from, bd.to) }); }
-    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 43, me });
+    if (bd.action === 'boot') return send({ rev: '1', items: [], config: cfg, sv: 60, me });
     return send({ me }); });
   await p.addInitScript(() => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role: 'owner', personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode: 'live', showProfit: true } })));
   await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);

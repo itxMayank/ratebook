@@ -18,7 +18,7 @@ async function refreshMe(j){
   }catch(e){ if(e&&(e.code==="bad_pin"||e.code==="bad_session")) signedOut("siGone"); else if(e&&e.code==="shop_pin_off") signedOut("shopPinOff"); }
 }
 /** An owner or manager still on a PIN from before the 6–8 digit rule: say so once a day after unlocking. */
-function pinOldHint(){ const a=S.auth; if(!a || !a.personal || !(a.pinLen>0 && a.pinLen<6) || !["owner","manager"].includes(a.role) || !(S.sv>=57)) return;
+function pinOldHint(){ const a=S.auth; if(!a || !a.personal || !(a.pinLen>0 && a.pinLen<6) || !["owner","manager"].includes(a.role)) return;
   const d=new Date().toDateString(); if(ls.get("rb_pinhint","")===d) return; ls.set("rb_pinhint",d); setTimeout(()=>toast(t("myPinShortT")),1200); }
 /** After every unlock with the PIN saved on this device (or fingerprint), ask the sheet once more (online only; skipped only
     when it was just asked, e.g. at start), so a sign-in ended elsewhere is noticed within a second or two. */

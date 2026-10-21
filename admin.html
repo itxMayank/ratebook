@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-vK6+U2mfEbsC+NQdhPiTxk0ycu0WTzC+tNDyCOizrCE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-GaafjpZTnkoLkzSyfEd2fTzJiIjEoR7Jr3z80WHhVGw='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -556,6 +556,8 @@ input,select,textarea{border-radius:var(--r-sm)}
 <script>
 (() => {
 "use strict";
+/** (v67) The oldest shop script the app still works with (NEED_SV in app.js): a shop below it shows under "Needs you". */
+const MIN_SV = 60;
 const DIR_URL = "https://script.google.com/macros/s/AKfycbwFArKraCzF-asuI-8RI5NBGNUbmcmAp0lz1H1G98TqtZNWOlfp3L5hE-vY86vxC99K/exec";   // the Rate Book Directory web app link; if empty, paste it once on this page
 const $ = s => document.querySelector(s), esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = { get(k, d) { try { const v = localStorage.getItem("rbadm_" + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem("rbadm_" + k, JSON.stringify(v)); } catch {} } };
@@ -705,7 +707,7 @@ function render() {
     const bb = $("#b-bizoff"); if (bb) bb.onclick = async () => { if (!confirm("Stop seeing other shops' business pages? Their owners still see their own. You'll still see technical details (speed, errors). Turning it back on needs the Directory script's BIZ_VIEW property removed by hand.")) return;
       busy(bb, "Turning off…"); try { await call({ action: "bizViewOff" }); bizView = false; toast("Other shops' business pages are off"); render(); } catch (e) { idle(bb); toast(errText(e), true); } }; }
   /* filter chips: All · Needs you (one step left, not answering, errors, phones waiting) · Update ready */
-  const needsYou = x => { const h = health[x.code]; return x.status === "needs-auth" || (h && !h.ok) || +x.err24 > 0 || !!(h && h.ok && h.pending); };
+  const needsYou = x => { const h = health[x.code], v = Number(x.version || (h && h.sv) || 0); return x.status === "needs-auth" || (h && !h.ok) || +x.err24 > 0 || !!(h && h.ok && h.pending) || (v > 0 && v < MIN_SV); };   // MIN_SV: older scripts no longer work with the app
   const updReady = x => !!(latest && x.version && Number(x.version) < Number(latest.sv));
   const nN = shops.filter(needsYou).length, nU = shops.filter(updReady).length;
   if ((shopFlt === "need" && !nN) || (shopFlt === "upd" && !nU)) shopFlt = "all";

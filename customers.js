@@ -115,7 +115,6 @@ function cuEdit(c){
     const b=$("#ce-save"); btnBusy(b,true);
     const cust={name,gstin:g,address:$("#ce-addr").value.trim(),note:$("#ce-note").value.trim(),contact:$("#ce-contact").value.trim(),email:em};
     if(isNew) cust.mobile=nm; else { cust.key=c.key||c.mob; cust.mobile=c.mob||""; cust.newMobile=nm; }   // mobile too: an older script (v54 or less) edits by it
-    if(!nm && (isNew || !c.mob) && S.sv>0 && S.sv<55){ btnBusy(b,false); err.textContent=t("oldScript"); return; }   // a customer without a mobile needs script v55
     /* (v59) saved in the background, shown at once. A new or changed mobile number still waits for the sheet: a new number moves
        the customer's bills over to it, and the sheet has to check no one else already has that number. */
     const mobChange=!isNew && nm!==(c.mob||"");

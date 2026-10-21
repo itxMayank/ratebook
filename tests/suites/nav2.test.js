@@ -8,7 +8,7 @@ const custs = Array.from({ length: 40 }, (_, i) => ({ name: 'Cust ' + i, mobile:
   const p = await (await b.newContext({ viewport: { width: 390, height: 780 } })).newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
   await p.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
   await p.route('https://script.google.com/**', r => { const q = r.request(); const send = o => r.fulfill({ body: JSON.stringify({ ok: true, ...o }), contentType: 'application/json' });
-    const listR = { rev: '1', items: Array.from({ length: 5 }, (_, i) => ({ id: 'i' + i, name: 'Item ' + i, unit: 'kg', buy: 10, sell: 12 })), config: { shopName: 'G', mode: 'live' }, sv: 34 };
+    const listR = { rev: '1', items: Array.from({ length: 5 }, (_, i) => ({ id: 'i' + i, name: 'Item ' + i, unit: 'kg', buy: 10, sell: 12 })), config: { shopName: 'G', mode: 'live' }, sv: 60 };
     if (q.method() === 'GET') return send(listR);
     const bd = JSON.parse(q.postData());
     if (bd.action === 'list') return send(listR);   // signed-in phones ask for the price list by POST (script v44)

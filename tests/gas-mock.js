@@ -28,5 +28,11 @@ function gas(files, opts = {}) {
 function fitBill(b) { b = Object.assign({}, b); const t = Number(b.total) || 0;
   if (!Array.isArray(b.lines) || !b.lines.length) b.lines = [{ id: 'i1', name: 'Item', unit: 'pc', qty: 1, rate: t, gst: 0 }];
   if (b.gst && b.taxable === undefined && b.tax === undefined) { b.taxable = t; b.tax = 0; }
+  /* (v67) the sheet also checks the text shows every line's amount and the total: add them, as the app's text has them */
+  if (typeof b.text === 'string' && b.text && !b.keepText) b.text += '\n' + b.lines.map(l => '= ₹' + MONEY.inrN_((+l.qty || 0) * (+l.rate || 0))).join('\n') + '\nTotal: ₹' + MONEY.inrN_(b.total);
+  delete b.keepText;
   return b; }
-module.exports = { gas, fitBill };
+const MONEY = {}; vm.runInNewContext(fs.readFileSync(require('path').join(__dirname, '..', 'money.js'), 'utf8'), MONEY);
+/** (v67) A bill text the sheet accepts: its number, each line's amount and the total, as the app writes them. */
+function billTxt(b, n, head) { return (head || 'Bill No. ' + n) + '\n' + (Array.isArray(b.lines) ? b.lines : []).map(l => '= ₹' + MONEY.inrN_((+(l && l.qty) || 0) * (+(l && l.rate) || 0))).join('\n') + '\nTotal: ₹' + MONEY.inrN_(b.total); }
+module.exports = { gas, fitBill, billTxt, inrN: n => MONEY.inrN_(n) };

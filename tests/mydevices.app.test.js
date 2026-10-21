@@ -14,16 +14,16 @@ let ui = {}, pin = '749163', live = { tP: 1, tL: 1 }, sent = [], offPin = '90381
     await ctx.route('https://rb.test/', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) }), fail = e => send({ ok: false, error: e });
       const cfg = { shopName: 'Gupta Plastics', mode: 'live', nextBill: 5 }, items = [{ id: 'i1', name: 'PP Bag', unit: 'pc', buy: 10, sell: 12 }, { id: 'i2', name: 'Aluminium Foil', unit: 'pc', buy: 20, sell: 25 }];
-      if (req.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 57 });
+      if (req.method() === 'GET') return send({ rev: '1', items, config: cfg, sv: 60 });
       const bd = JSON.parse(req.postData()); sent.push({ tok: bd.tok, ...bd });
       const me = () => ({ name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live', ui: { ...ui } }, testOk: true });
       if (bd.tok && !live[bd.tok]) return fail('bad_session');
       if (!bd.tok && bd.action === 'verify') { if (bd.pin === offPin) return fail('shop_pin_off'); if (bd.pin !== pin) return fail('bad_pin'); const nt = bd.wantTok ? 'tN' + Object.keys(live).length : undefined; if (nt) live[nt] = 1; return send({ me: me(), tok: nt }); }
-      if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 57, me: me() });
+      if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 60, me: me() });
       if (bd.action === 'verify') return send({ me: me() });
       if (bd.action === 'setMyPrefs') { Object.assign(ui, (bd.prefs || {}).ui || {}); return send({ prefs: { mode: 'live', ui: { ...ui } }, testOk: true }); }
       if (bd.action === 'setMyPin') { if (bd.oldPin !== pin) return fail('bad_old_pin'); pin = bd.newPin; Object.keys(live).forEach(k => { if (k !== bd.tok) delete live[k]; }); return send({ pinLen: pin.length }); }
-      return send({ me: me(), items, config: cfg, rev: '1', sv: 57 });
+      return send({ me: me(), items, config: cfg, rev: '1', sv: 60 });
     });
     const a = { tok, by: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' }, pin: extra.pin || '749163', pinLen: (extra.pin || '749163').length };
     await p.addInitScript(([a, x]) => { if (sessionStorage.getItem('x')) return; sessionStorage.setItem('x', 1); localStorage.setItem('rb_auth', JSON.stringify(a)); for (const k in x) localStorage.setItem(k, JSON.stringify(x[k])); }, [a, extra.ls || {}]);

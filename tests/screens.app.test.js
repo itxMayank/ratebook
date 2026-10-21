@@ -33,9 +33,9 @@ const BAD = /undefined|NaN|\[object |\bnull\b/;
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
       const me = { name: set.role === 'staff' ? 'Raju' : 'Mayank', role: set.role, personal: true, prefs: { mode: 'live', showProfit: true } };
       const cfg = { shopName: 'Shree Ganesh Packaging & Disposables', mode: 'live', nextBill: 13, nextGstBill: 6, shopGstin: '09ABCDE1234F1Z5', units: [{ code: 'kg', hi: 'किलो' }, { code: 'pc', hi: 'नग' }, { code: 'packet', hi: 'पैकेट' }], defaultUnit: 'kg', roundTo: 1, defaultGst: 18, defaultHsn: '3923' };
-      if (req.method() === 'GET') { const u = new URL(req.url()); if (u.searchParams.get('action') === 'rev') return send({ rev: '1', bl: '1', bt: '0', vl: '1', vt: '0', nl: '5', nt: '0' }); return send({ rev: '1', items, config: cfg, sv: 43, pop: { i1: 9, i2: 4 } }); }
+      if (req.method() === 'GET') { const u = new URL(req.url()); if (u.searchParams.get('action') === 'rev') return send({ rev: '1', bl: '1', bt: '0', vl: '1', vt: '0', nl: '5', nt: '0' }); return send({ rev: '1', items, config: cfg, sv: 60, pop: { i1: 9, i2: 4 } }); }
       const bd = JSON.parse(req.postData()), a = bd.action;
-      if (a === 'boot') return send({ rev: '1', items, config: cfg, sv: 43, pop: { i1: 9, i2: 4 }, me });
+      if (a === 'boot') return send({ rev: '1', items, config: cfg, sv: 60, pop: { i1: 9, i2: 4 }, me });
       if (a === 'listBills') return send({ full: true, brev: '1', bills, years: ['2026'] });
       if (a === 'getBill') { const x = bills.find(y => y.id === bd.id) || bills[0]; return send({ bill: { ...x, text: `*Shree Ganesh Packaging*\nBill No. ${x.n}\nTotal ₹${x.total}`, lines: [{ id: 'i1', name: 'PP Bag 12x18', unit: 'kg', rate: 180, qty: 1, buy: 150 }] } }); }
       if (a === 'listDues') return send(dues);

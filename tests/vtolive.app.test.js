@@ -13,11 +13,11 @@ const entries = [{ id: 'e1', vendorId: 'vA', type: 'bill', date: '2026-10-02', a
     await ctx.route('https://rb.test/**', r => r.fulfill({ body: html, contentType: 'text/html' }));
     await ctx.route('https://script.google.com/**', r => { const req = r.request(), send = o => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, shop: 'main', ...o }) });
       const me = { name: 'Mayank', role, personal: true, prefs: { mode } };
-      if (req.method() === 'GET') return send({ rev: '1', items: [], config: { shopName: 'G', mode }, sv: 42 });
+      if (req.method() === 'GET') return send({ rev: '1', items: [], config: { shopName: 'G', mode }, sv: 60 });
       const bd = JSON.parse(req.postData()); sent.push(bd);
       if (bd.action === 'vSync') return send(moved ? { vrev: '2', vendors: vendors.filter(v => v.id === 'vB'), entries: [] } : { vrev: '1', vendors, entries });
       if (bd.action === 'vToLive') { moved = true; return send({ moved: 1, names: ['Mahaveer'], entries: 2, photos: 1, files: 1, fileFail: 0, purchases: 3, skipped: [] }); }
-      if (bd.action === 'boot') return send({ rev: '1', items: [], config: { shopName: 'G', mode }, sv: 42, me });
+      if (bd.action === 'boot') return send({ rev: '1', items: [], config: { shopName: 'G', mode }, sv: 60, me });
       return send({ me }); });
     await p.addInitScript(([role, mode]) => localStorage.setItem('rb_auth', JSON.stringify({ tok: 't', by: 'Mayank', role, personal: true, pinH: 'x', pinS: 'AAAA', prefs: { mode } })), [role, mode]);
     await p.goto('https://rb.test/'); await p.waitForTimeout(1200); await p.evaluate(() => T.appUnlock()); await p.waitForTimeout(300);

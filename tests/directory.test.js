@@ -24,6 +24,8 @@ const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 const projects = {}; let healthUrls = [], apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
+  if (url.startsWith('https://api.github.com/repos/itxMayank/ratebook/commits/') && GH.apiDown) return respond(403, { message: 'API rate limit exceeded' });
+  if (url.startsWith('https://github.com/itxMayank/ratebook/commits/') && url.endsWith('.atom')) { GH.feed = (GH.feed || 0) + 1; return respond(200, `<?xml version="1.0"?><feed><entry><id>tag:github.com,2008:Grit::Commit/${GH.sha}</id><title>\n        Fixes &amp; more\n    </title><updated>2026-10-21T15:11:57Z</updated><author>\n      <name>itxMayank</name></author></entry><entry><id>tag:github.com,2008:Grit::Commit/${'a'.repeat(40)}</id></entry></feed>`); }
   if (url.startsWith('https://api.github.com/repos/itxMayank/ratebook/commits/')) return respond(200, { sha: GH.sha, commit: { message: 'The sheet adds up every bill\nmore', author: { name: 'Mayank', date: '2026-10-21T10:00:00Z' } } });
   if (url.startsWith('https://raw.githubusercontent.com/')) { GH.raw.push(url); const k = url.split('/')[5]; return GH.code[k] !== undefined ? respond(200, GH.code[k]) : respond(404, 'Not Found'); }
   if (url.startsWith('https://script.googleapis.com/v1/projects')) { if (!apiOn) return respond(403, { error: { message: 'Apps Script API has not been used in project 123 before or it is disabled.' } });
@@ -147,6 +149,13 @@ ok(post({ tok, action: 'shopHealth', code: 'NOPE' }).health.error === 'no_shop',
   const u = post0({ tok, action: 'update', code: 'main', sha: L.sha, hash: L.hash });
   ok(u.ok && u.sha === L.sha && projects.mainscr.files.find(f => /const SCRIPT_VERSION/.test(f.source)).source === CODE && GH.raw.every(x => x.indexOf('/' + L.sha + '/') > 0), 'commit: a push made after the dashboard looked doesn\'t get in: the shown commit is fetched by its id and installed as shown');
   ok(R("P_().getProperty('COMMIT_main')") === L.sha, 'commit: the installed commit is kept per shop');
+  Object.keys(g.cache).filter(k => k.startsWith('GHC:')).forEach(k => delete g.cache[k]);   // a minute later (the commit is remembered for a minute)
   const L2 = post0({ tok, action: 'latest' }).latest; ok(L2.sha === GH.sha && L2.hash !== L.hash, 'commit: the dashboard sees the new commit (and its different digest) the next time it looks'); }
+/* (DIR v11) GitHub's API turns the Directory away (shared Google addresses): the commit comes from the public feed instead */
+{ GH.apiDown = true; Object.keys(g.cache).filter(k => k.startsWith('GHC:')).forEach(k => delete g.cache[k]);
+  const L3 = post0({ tok, action: 'latest' }).latest;
+  ok(L3 && L3.sha === GH.sha && L3.msg === 'Fixes & more' && L3.by === 'itxMayank' && /^[0-9a-f]{16}$/.test(L3.hash) && GH.feed === 1, 'feed: the API refuses (403), the same commit comes from the public commits feed: ' + JSON.stringify(L3 && { sha: L3.sha.slice(0, 7), msg: L3.msg, by: L3.by }));
+  post0({ tok, action: 'latest' }); ok(GH.feed === 1, 'feed: remembered for a minute (asked once)');
+  GH.apiDown = false; }
 ok(g.locks.n === 0, 'locks released');
 process.exit(fails ? 1 : 0);

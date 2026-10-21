@@ -26,4 +26,6 @@ ok(/url\.search\.startsWith\('\?v='\)/.test(sw) && /saveAssets/.test(sw), 'the o
   ok(need >= 60 && need === min, `the oldest supported script version is the same in the app and the dashboard (v${need})`); }
 { const st = require('../tools/stamp'), files = st.serverFiles();
   ok(files.length >= 10 && fs.readFileSync(path.join(ROOT, 'Code.gs'), 'utf8') === st.buildCode(), `Code.gs is exactly server/*.gs joined (${files.length} files); run node tools/stamp.js after editing them`); }
+{ const st = require('../tools/stamp');   // (21 Oct 2026) a page edited without running stamp: the browser refuses its own scripts and the page doesn't load
+  st.PAGES.forEach(f => { const h = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(st.withCsp(h) === h, f + ': its security rule names the digests of its current scripts (else the page doesn\'t load; run node tools/stamp.js)'); }); }
 done();

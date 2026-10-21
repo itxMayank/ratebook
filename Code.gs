@@ -244,7 +244,7 @@ function nbGet_() { try { const v = CacheService.getScriptCache().get('NB'); ret
 function bump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('rev', v); CacheService.getScriptCache().put('rev', v, 21600); }
 
 /** Someone edited the sheet by hand: tell the apps to refresh. */
-function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) {} }
+function onEdit(e) { try { bump_(); bumpB_(true); vbumpAll_(); } catch (err) { softErr_('onEdit', err); } }
 
 function hsn_(v) { const h = String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').slice(0, 10); return h; }
 function gstOut_(v) { return v === '' || v === null || v === undefined ? null : num_(v); }
@@ -313,7 +313,7 @@ function list_() {
     });
   });
   if (fixed) bump_();
-  let pop = {}; try { pop = pop_(); } catch (err) {}
+  let pop = {}; try { pop = pop_(); } catch (err) { softErr_('pop', err); }
   return { ok: true, rev: getRev_(), items, config: readConfig_(), pop };
 }
 
@@ -379,7 +379,7 @@ function stripFyPrefixOnce_() {
     });
     props.setProperty('FYPFX_OFF', '1');
     if (changed) bumpB_(true);
-  } catch (err) {} finally { ENV_ = keep; }
+  } catch (err) { softErr_('stripFyPrefix', err); } finally { ENV_ = keep; }
 }
 
 function popReset_() { try { const b = ss_().getSheetByName('Bills'); if (b) CacheService.getScriptCache().remove('pop:' + (b.getLastRow() - 1)); } catch (e) {} }
@@ -597,7 +597,7 @@ function doPost(e) {
     if (ENV_ === 'test' && a0.testOk === false) return out_({ ok: false, error: 'no_test' });
     body.by = a0.name;   // the name on the bill is the signed-in person's (from their sign-in), not what the phone sends
     body.role = a0.role; body.buyOk = buyOk_(a0);
-    const tb = takeBill_(body); try { if (tb && tb.ok !== false) { bumpB_(false, body.bill && body.bill.id); if (tb.moved) bumpB_(false, tb.moved.id || ('row:' + tb.moved.row)); } } catch (err) {}
+    const tb = takeBill_(body); try { if (tb && tb.ok !== false) { bumpB_(false, body.bill && body.bill.id); if (tb.moved) bumpB_(false, tb.moved.id || ('row:' + tb.moved.row)); } } catch (err) { softErr_('moveBump', err); }
     return out_(tb);
   }
   const who = auth_(body);
@@ -1029,12 +1029,12 @@ function onSheetEdit(e) {
     const n = String(e && e.range ? e.range.getSheet().getName() : '').replace(/^Test /, '');
     try { const g = e.range; if (n === ITEMS && g.getRow() > 1 && g.getNumRows() === 1 && g.getNumColumns() === 1 && e.oldValue !== undefined) {   // one price typed in the sheet
       const f = ['buy', 'sell', 'altSell'].filter(k => C[k] + 1 === g.getColumn())[0];
-      if (f) { const r = g.getSheet().getRange(g.getRow(), 1, 1, COLS.length).getValues()[0]; const L = []; phPush_(L, Date.now(), r, f, e.oldValue, e.value, 'sheet', 'sheet'); phWrite_(L); } } } catch (err) {}
+      if (f) { const r = g.getSheet().getRange(g.getRow(), 1, 1, COLS.length).getValues()[0]; const L = []; phPush_(L, Date.now(), r, f, e.oldValue, e.value, 'sheet', 'sheet'); phWrite_(L); } } } catch (err) { softErr_('onSheetEdit', err); }
     if (/^(Bills|BillHistory|Customers)$/.test(n)) bumpB_(true);
     else if (/^(Vendors|VendorLedger|VendorDocs|Purchases)$/.test(n)) vbumpAll_();
     else { bump_(); if (n !== ITEMS && n !== CONFIG && n !== IMAGES) { bumpB_(true); vbumpAll_(); } }
     popReset_();
-  } catch (err) {}
+  } catch (err) { softErr_('onSheetEdit', err); }
 }
 function watchSheet() {
   const changed = DriveApp.getFileById(ss_().getId()).getLastUpdated().getTime();
@@ -1276,14 +1276,14 @@ function takeBill_(body) {
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
-      try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
+      try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) { softErr_('takeBill:customers', err); }   // build the Customers tab before this bill lands, so it isn't counted twice
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), linesJson_(b.lines),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
-      try { belowNote_(b, used, body.by, null, sheet_(tab_('Bills'), BILL_COLS).getLastRow()); } catch (err) {}
-      try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
-      if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) {} }   // (v60) a paid bill adds nothing due: no need to read every bill
+      try { belowNote_(b, used, body.by, null, sheet_(tab_('Bills'), BILL_COLS).getLastRow()); } catch (err) { softErr_('takeBill:belowNote', err); }
+      try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) { softErr_('takeBill:customer', err); }
+      if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) { softErr_('takeBill:due', err); } }   // (v60) a paid bill adds nothing due: no need to read every bill
     }
     /* (v63) Transfer to another number: this new bill replaces an older one (e.g. its number was already used in the paper bill
        book). Only once the new bill is saved is the old one cancelled, "Moved to No. X", and kept as a copy (not counted anywhere).
@@ -1490,9 +1490,9 @@ function updateBill_(b, by, who) {
     const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
     if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
-  try { belowNote_(b, num_(r[B.billNo]), by, oldLines, i + 2); } catch (err) {}
-  try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) {}
-  try { refreshDue_(b.mobile); if (mob10_(oldMob) !== mob10_(b.mobile)) refreshDue_(oldMob); } catch (err) {}
+  try { belowNote_(b, num_(r[B.billNo]), by, oldLines, i + 2); } catch (err) { softErr_('updateBill:belowNote', err); }
+  try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) { softErr_('updateBill:customer', err); }
+  try { refreshDue_(b.mobile); if (mob10_(oldMob) !== mob10_(b.mobile)) refreshDue_(oldMob); } catch (err) { softErr_('updateBill:due', err); }
   return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
 }
 
@@ -1671,7 +1671,7 @@ function recordPayment_(body, by) {
     mob = r[B.mobile];
   });
   if (left === amount) throw new Error('nothing_due');
-  try { refreshDue_(mob); } catch (err) {}
+  try { refreshDue_(mob); } catch (err) { softErr_('recordPayment:due', err); }
   return { used: r2_(amount - left), left: left, cleared: cleared };
 }
 
@@ -1692,7 +1692,7 @@ function undoPayment_(body) {
   const paid = r2_(pays.reduce((x, p) => x + num_(p.a), 0)), due = r2_(Math.max(0, num_(r[B.total]) - paid));
   const st = due > 0 ? (paid > 0 ? 'Part paid' : 'Credit') : 'Cleared';
   s.getRange(i + 2, B.payment + 1, 1, 5).setValues([[st, paid, due, payJson_(pays), st === 'Cleared' ? r[B.clearedAt] : '']]);
-  try { refreshDue_(r[B.mobile]); } catch (err) {}
+  try { refreshDue_(r[B.mobile]); } catch (err) { softErr_('undoPayment:due', err); }
   return { removed: num_(gone.a), pay: st, paid: paid, due: due };
 }
 
@@ -1908,7 +1908,7 @@ function backupNow_(why) {
   const copy = src.makeCopy(name, backupFolder_());
   props.setProperty('BK_LAST', now.toISOString());
   props.setProperty('BK_SRC_TIME', String(src.getLastUpdated().getTime()));
-  try { pruneBackups_(); } catch (err) {}
+  try { pruneBackups_(); } catch (err) { softErr_('backup:prune', err); }
   return { id: copy.getId(), name: name, date: now.toISOString() };
 }
 
@@ -1923,7 +1923,7 @@ function pruneBackups_() {
     if (age <= 366 * day) { const m = d.slice(0, 7); if (!perMonth[m]) { perMonth[m] = 1; keep[f.id] = 1; } }
   });
   let trashed = 0;
-  files.forEach(f => { if (!keep[f.id]) { try { f.file.setTrashed(true); trashed++; } catch (err) {} } });
+  files.forEach(f => { if (!keep[f.id]) { try { f.file.setTrashed(true); trashed++; } catch (err) { softErr_('backup:trash', err); } } });
   return trashed;
 }
 
@@ -2024,7 +2024,7 @@ function cancelBill_(body, by, cancel) {
     s.getRange(i + 2, B.status + 1, 1, 4).setValues([['Cancelled', new Date(), by, reason]]);
   } else s.getRange(i + 2, B.status + 1, 1, 4).setValues([['', '', '', '']]);
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, (cancel ? 'CANCELLED: ' + str_(body.reason || '', 120) : 'RESTORED') ]);
-  try { recountCustomers_(); } catch (err) {}
+  try { recountCustomers_(); } catch (err) { softErr_('cancelBill:recount', err); }
   return { bill: { id: String(r[B.billId] || ''), cancelled: cancel } };
 }
 
@@ -2128,7 +2128,7 @@ function insights_(body) {
   const tz = isFinite(Number(body.tz)) ? Math.round(Number(body.tz)) : -330;
   const dayOf = d => isNaN(d) ? '' : new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
   const today = dayOf(new Date());
-  try { phEnsure_(); } catch (e) {}   // the price history's one-time start from past bills
+  try { phEnsure_(); } catch (e) { softErr_('insights:priceHistory', e); }   // the price history's one-time start from past bills
   return rcRead_('ins:' + ENV_ + ':' + tz, () => getRev_() + ':' + brevC_(ENV_) + ':' + vrevC_(ENV_) + ':' + today, () => insightsBuild_(dayOf, today)); }
 /** The admin dashboard asks for a shop's business page with the shop's own health key (the Directory holds it), real or test mode. */
 function insightsKey_(p) { const P = PropertiesService.getScriptProperties(), b = boot_(), want = P.getProperty('HEALTH_KEY') || (b && b.healthKey) || '';
@@ -2677,7 +2677,7 @@ function notice_(kind, o) {
     s.appendRow(NOTE_COLS.map(k => k === 'id' ? 'n' + Utilities.getUuid().replace(/-/g, '').slice(0, 12) : k === 'at' ? Date.now() : k === 'kind' ? kind
       : k === 'extra' ? JSON.stringify(o.extra || {}).slice(0, 2000) : k === 'read' ? JSON.stringify(o.by ? [mkey_(o.by)] : []) : k === 'vname' ? str_(o.vname, 80) : k === 'billNo' ? (o.billNo ? "'" + str_(o.billNo, 40) : '') : (o[k] == null ? '' : o[k])));
     const n = s.getLastRow() - 1; if (n > 600) s.deleteRows(2, n - 500);
-    nbump_(); } catch (e) {} }
+    nbump_(); } catch (e) { softErr_('notice', e); } }
 function vBillNo_(G, id) { const b = G.calc.bills.find(x => x.id === id); return b ? (b.opening ? 'Opening' : String(b.billNo || '')) || '—' : ''; }
 /** Bills that a payment / advance / edit just cleared. */
 function vClearedNotes_(G, G2, by) { const was = {}; G.calc.bills.forEach(b => was[b.id] = b.status);
@@ -2736,7 +2736,7 @@ const phDay_ = ms => Utilities.formatDate(new Date(ms), BK_TZ, 'yyyy-MM-dd');
 function phPush_(L, at, r, f, o, n, by, src) { const oo = o === '' || o === null || o === undefined ? '' : num_(o), nn = n === '' || n === null || n === undefined ? '' : num_(n);
   if (oo === nn || (oo !== '' && nn !== '' && Math.abs(oo - nn) < 0.0005) || (oo === '' && !(nn > 0))) return;
   L.push([at, "'" + phDay_(at), String(r[C.id]), str_(r[C.name], 200), str_(r[C.unit], 30), f, oo, nn, str_(by, 60), str_(src || 'app', 12)]); }
-function phWrite_(L) { if (!L || !L.length) return; try { const s = sheet_(PH_TAB, PH_COLS); s.getRange(s.getLastRow() + 1, 1, L.length, PH_COLS.length).setValues(L); } catch (e) {} }
+function phWrite_(L) { if (!L || !L.length) return; try { const s = sheet_(PH_TAB, PH_COLS); s.getRange(s.getLastRow() + 1, 1, L.length, PH_COLS.length).setValues(L); } catch (e) { softErr_('priceHistory:write', e); } }
 function phRows_() { const s = ss_().getSheetByName(PH_TAB); if (!s) return []; const n = s.getLastRow() - 1; if (n <= 0) return [];
   return s.getRange(2, 1, n, PH_COLS.length).getValues().map(r => ({ at: num_(r[0]), day: String(r[1]).replace(/^'/, ''), id: String(r[2]), name: String(r[3]), unit: String(r[4]),
     f: String(r[5]), o: r[6] === '' ? null : num_(r[6]), n: r[7] === '' ? null : num_(r[7]), by: String(r[8]), src: String(r[9]) })); }
@@ -2745,6 +2745,10 @@ function phRows_() { const s = ss_().getSheetByName(PH_TAB); if (!s) return []; 
     counts as a new price only when it holds (2+ bills that day, the next day with sales, or it's today's price), so a one-off
     discount isn't taken for a price change. Finally, a price that differs from the last one seen on bills changed when the item
     was last edited. Only bills from before the history began are read; rows are marked src 'bills'. */
+/** (v66) A failure that mustn't stop the save it happens in (a customer's totals, dues, a notice, price history…) is still written
+    to the script's error log (the dashboard's error list), so it can be found and fixed; before, these were swallowed silently. */
+function softErr_(where, e) { try { const c = CacheService.getScriptCache(); let a = []; try { a = JSON.parse(c.get('ERRS') || '[]'); } catch (x) { a = []; }
+  a.push(['soft:' + where, String(e && e.message || e).slice(0, 200), Date.now()]); c.put('ERRS', JSON.stringify(a.slice(-50)), 21600); } catch (x) { /* the log itself can't be written: nothing more to do */ } }
 function phEnsure_() { const P = PropertiesService.getScriptProperties(); if (P.getProperty('PH_BF')) return;
   /* v58: the start from past bills reads every bill; it no longer holds the script lock meanwhile (that made every other
      request wait and fail with "Lock timeout"); only writing its rows takes the lock, briefly. One run at a time (cache

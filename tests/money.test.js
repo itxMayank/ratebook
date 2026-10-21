@@ -87,3 +87,10 @@ ok(ed({ lines: [{ qty: -1, rate: 440 }], total: -440 }).ok === false, 'D2 an edi
 const L3 = L2(); L3[0].qty = 3;
 const e3 = ed({ lines: L3, total: 620, cost: 0, profit: 0 });
 ok(e3.ok && rowOf(a.id)[BI('total')] === 620 && rowOf(a.id)[BI('cost')] === 500 && rowOf(a.id)[BI('profit')] === 120, 'D3 an edit that adds up (3 kg now, ₹620) is saved, with cost and profit worked out on the sheet (₹500 / ₹120)');
+
+// ---------- E. (v66) a side step that fails doesn't stop the save, but is written to the error log ----------
+R("var touch0 = touchCustomer_; touchCustomer_ = () => { throw new Error('Customers tab is full'); }");
+const sf = take();
+const errs = JSON.parse(g.cache.ERRS || '[]');
+ok(sf.ok && rowOf(sf.id) && errs.some(e => e[0] === 'soft:takeBill:customer' && /Customers tab is full/.test(e[1])), 'E1 updating the customer\'s totals fails: the bill is still saved, and the failure is in the error log the dashboard shows (before, it vanished)');
+R("touchCustomer_ = touch0");

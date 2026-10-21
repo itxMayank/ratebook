@@ -77,7 +77,7 @@ async function cuBills(c){ const mob=c.mob||"", g=String(c.gstin||"").toUpperCas
     const L=C.bills.filter(mine).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     if(!L.length){ el.innerHTML=`<p class="note">${esc(t(mob?"cuNoBills":"cuNoBillsC"))}</p>`; return; }
     el.innerHTML=`<div class="bills-list" style="margin-top:0">${L.slice(0,200).map((b,i)=>{ const d=b.date?new Date(b.date):null; return `<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-ci="${i}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}</b><span class="amt num">${rs(b.total)}</span>
-      <span class="meta2">${d?esc(fmtShort(b.date)+" · "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}</span></button>`; }).join("")}</div>
+      <span class="meta2">${d?esc(fmtShort(b.date)+" · "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(billMovedTo(b)?t("movedPill",dispNo(billMovedTo(b),b.gst,b.fy)):t("cancelledPill"))}</span>`:payPill(b)}</span></button>`; }).join("")}</div>
       ${L.length>200?`<p class="note">${esc(t("cuOlder"))}</p>`:""}`;
     el.querySelectorAll("[data-ci]").forEach(x=>x.onclick=()=>{ billBackFn=()=>openCustomer(key); showBill(L[+x.dataset.ci]); }); };
   const C=await blcGet(); if(C) draw(C);

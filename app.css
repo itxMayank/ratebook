@@ -1983,3 +1983,7 @@ html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 1
 .qa-foot .btn:focus-visible,.qa-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #bill-done:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){ .qa-card,.qadd.on .qa-card{transform:none;transition:none} }
+
+/* Transfer to another number (21 Oct 2026): the bar on the bill page while a moved bill is being made */
+.editbar.movebar{background:var(--accent-soft);border-color:var(--accent)}
+.editbar.movebar #movebar-t{flex:1 1 200px;min-width:0}

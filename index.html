@@ -24,7 +24,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
 <script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
-<link rel="stylesheet" href="app.css?v=55e0da5292">
+<link rel="stylesheet" href="app.css?v=d8544c9656">
 </head>
 <body>
 <header class="top">
@@ -73,6 +73,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
   </section>
 
   <section id="view-bill" hidden>
+    <div class="editbar movebar" id="movebar" hidden><span id="movebar-t"></span><button type="button" class="btn ghost" id="move-stop" data-t="moveStop">Stop</button></div>
     <div class="editbar" id="editbar" hidden><span id="editbar-t"></span><button type="button" class="btn ghost" id="edit-cancel" data-t="cancelEdit">Cancel editing</button></div>
     <div id="bill-search-results" class="mini-results"></div>
     <div class="heldrow" id="heldrow" hidden role="tablist" aria-label="Open bills"></div>
@@ -218,18 +219,18 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="strings.js?v=9ff42a7c64"></script>
+<script src="strings.js?v=e951b5c298"></script>
 <script src="shops.js?v=f905f8fb9e"></script>
 <script src="search.js?v=41ecae5ebe"></script>
 <script src="print.js?v=dd5e02c6fc"></script>
 <script src="reports.js?v=f7e21e3996"></script>
 <script src="settings.js?v=35faab07e1"></script>
-<script src="bills.js?v=f902d83cff"></script>
-<script src="customers.js?v=fdb0a8fe20"></script>
+<script src="bills.js?v=9652ba24bf"></script>
+<script src="customers.js?v=ca5180ecbd"></script>
 <script src="lock.js?v=813b1b33fd"></script>
 <script src="vendors.js?v=e567694a1d"></script>
 <script src="prices.js?v=4c918f2edb"></script>
-<script src="billing.js?v=a6fad4e67a"></script>
-<script src="app.js?v=c303b91445"></script>
+<script src="billing.js?v=38e1ec9897"></script>
+<script src="app.js?v=ff6f294d44"></script>
 </body>
 </html>

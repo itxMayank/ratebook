@@ -14,7 +14,7 @@
  *   3. Run setupDirectory once (allow): it makes the Directory sheet and logs your admin PIN (View → Logs).
  *   4. Deploy → New deployment → Web app, Execute as: Me, Who has access: Anyone. Put the link in admin.html, app.js (DIR_URL), vendor.html.
  */
-const DIR_VERSION = 10;
+const DIR_VERSION = 11;
 const REPO_RAW = 'https://raw.githubusercontent.com/itxMayank/ratebook/';   // + <commit>/Code.gs
 const REPO_API = 'https://api.github.com/repos/itxMayank/ratebook/';     // + commits/<branch>
 const SHOP_COLS = ['code', 'name', 'owner', 'phone', 'apiUrl', 'scriptId', 'deploymentId', 'sheetId', 'folderId', 'healthKey', 'status', 'plan', 'paidUntil', 'createdAt', 'notes', 'bizType', 'state', 'gstin', 'version', 'lastUpdate'];
@@ -209,7 +209,24 @@ function refOk_(ref) { const r = String(ref == null || ref === '' ? 'main' : ref
 const SHA_RE_ = /^[0-9a-f]{40}$/;
 function ghGet_(url) { const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { Accept: 'application/vnd.github+json' } });
   if (r.getResponseCode() !== 200) throw new Error('github|' + r.getResponseCode()); return r.getContentText(); }
-function commitOf_(ref) { ref = refOk_(ref); let j = {}; try { j = JSON.parse(ghGet_(REPO_API + 'commits/' + encodeURIComponent(ref).replace(/%2F/g, '/'))); } catch (e) { if (/^github\|/.test(e.message)) throw e; throw new Error('github|bad reply'); }
+/* (DIR_VERSION 11) GitHub's API often turns away Apps Script (Google's servers share addresses, and the API allows 60 requests an
+   hour per address without a key), so "Latest script" showed "couldn't check" and no update could be started. The newest commit
+   now comes from the API if it answers, else from the branch's public commits feed (commits/<branch>.atom, the same commit id,
+   message and author), and is remembered for a minute (the dashboard asks every few minutes; a new push shows within a minute). The code itself is still fetched at that exact commit and checked by
+   its digest, so nothing about what gets installed changes. */
+function commitOf_(ref) { ref = refOk_(ref); const ck = 'GHC:' + ref, C = CacheService.getScriptCache();
+  try { const hit = C.get(ck); if (hit) { const o = JSON.parse(hit); if (SHA_RE_.test(o.sha)) return o; } } catch (e) {}
+  let o; try { o = commitApi_(ref); } catch (e) { if (!/^github\|/.test(e.message)) throw e; o = commitFeed_(ref, e); }
+  try { C.put(ck, JSON.stringify(o), 60); } catch (e) {}
+  return o; }
+function commitFeed_(ref, apiErr) { let x;
+  try { x = ghGet_('https://github.com/itxMayank/ratebook/commits/' + encodeURIComponent(ref).replace(/%2F/g, '/') + '.atom'); } catch (e) { throw apiErr; }
+  const ent = (x.split('<entry>')[1] || ''), m = ent.match(/Grit::Commit\/([0-9a-f]{40})/);
+  if (!m) throw new Error('github|no commit');
+  const un = v => String(v || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&').trim();
+  const tt = (ent.match(/<title>([\s\S]*?)<\/title>/) || [])[1], nm = (ent.match(/<author>\s*<name>([\s\S]*?)<\/name>/) || [])[1], at = (ent.match(/<updated>([^<]*)<\/updated>/) || [])[1];
+  return { sha: m[1], msg: un(tt).split('\n')[0].slice(0, 140), by: un(nm).slice(0, 60), at: String(at || '') }; }
+function commitApi_(ref) { let j = {}; try { j = JSON.parse(ghGet_(REPO_API + 'commits/' + encodeURIComponent(ref).replace(/%2F/g, '/'))); } catch (e) { if (/^github\|/.test(e.message)) throw e; throw new Error('github|bad reply'); }
   const sha = String(j.sha || ''); if (!SHA_RE_.test(sha)) throw new Error('github|no commit');
   const c = j.commit || {}, a = c.author || {};
   return { sha: sha, msg: String(c.message || '').split('\n')[0].slice(0, 140), by: String(a.name || (j.author && j.author.login) || '').slice(0, 60), at: String(a.date || '') }; }

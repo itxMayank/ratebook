@@ -677,7 +677,7 @@ async function load() {
   firstLoad = false;
   try { latest = (await call({ action: "latest" })).latest; $("#latest").textContent = "v" + latest.sv;
     /* (DIR v10) updates install exactly this commit; it's shown so you can check it on GitHub before tapping Update */
-    $("#checked").innerHTML = latest.sha ? `· commit <a href="https://github.com/itxMayank/ratebook/commit/${esc(latest.sha)}" target="_blank" rel="noopener"><code>${esc(latest.sha.slice(0, 7))}</code></a> ${esc(latest.msg ? "“" + latest.msg + "”" : "")}${latest.by ? " by " + esc(latest.by) : ""}` : "on GitHub"; render(); } catch (e) { $("#latest").textContent = "couldn't check"; }
+    $("#checked").innerHTML = latest.sha ? `· commit <a href="https://github.com/itxMayank/ratebook/commit/${esc(latest.sha)}" target="_blank" rel="noopener"><code>${esc(latest.sha.slice(0, 7))}</code></a> ${esc(latest.msg ? "“" + latest.msg + "”" : "")}${latest.by ? " by " + esc(latest.by) : ""}` : "on GitHub"; render(); } catch (e) { $("#latest").textContent = "couldn't check"; $("#checked").textContent = "· " + errText(e) + " Try Refresh in a minute."; }
 }
 async function loadHealth() { try { health = (await call({ action: "recheck" })).health || {}; const j = await call({ action: "list" }); shops = j.shops || shops; if (j.bizView !== undefined) bizView = j.bizView !== false; render(); } catch (e) { $("#app-err").textContent = errText(e); } }
 

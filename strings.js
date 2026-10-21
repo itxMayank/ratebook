@@ -402,5 +402,7 @@ Object.assign(STR.hi,{ moveBtn:"नए नंबर पर ले जाएँ",
   moveYes:"ले जाएँ", moveBar:(o,n)=>`बिल ${o} नंबर ${n} पर जा रहा है। ज़रूरत हो तो ⌄ में नंबर बदलें, फिर हो गया या शेयर। इसके सेव होते ही बिल ${o} रद्द हो जाएगा।`,
   moveStop:"रोकें", moveStopped:"ले जाना रोका। पुराना बिल वैसा ही है।", movedDone:(o,n)=>`बिल ${o} नंबर ${n} पर गया। पुराना रद्द कॉपी के रूप में रखा है।`,
   moveFail:n=>`नया बिल सेव हो गया, पर बिल ${n} रद्द नहीं हो सका। पुराने बिलों से रद्द करें।`, moveEditing:"पहले इस बिल का बदलाव पूरा करें या रद्द करें।", movedPill:n=>`${n} पर गया` });
+Object.assign(STR.en,{ lwShop:"Opening your shop", lwOpening:"Opening the shop…", lwD:"Getting the shop ready. This takes a few seconds the first time.", siLoading:"Loading your prices…", siFail:"Couldn't sign in. Try again." });
+Object.assign(STR.hi,{ lwShop:"आपकी दुकान खुल रही है", lwOpening:"दुकान खुल रही है…", lwD:"दुकान तैयार हो रही है। पहली बार कुछ सेकंड लगते हैं।", siLoading:"आपके रेट आ रहे हैं…", siFail:"साइन इन नहीं हुआ। फिर कोशिश करें।" });
 return STR;
 })();

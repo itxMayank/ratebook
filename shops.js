@@ -31,6 +31,9 @@ async function dirLookup(code){ if(!DIR_URL) throw {code:"no_dir"};
   const r=await fetch(DIR_URL+"?"+new URLSearchParams({action:"shop",code,dev:DEV,_:String(Date.now())}),{cache:"no-store",redirect:"follow"});
   const j=await r.json(); if(!j.ok) throw {code:j.error||"bad_code"}; return {code:j.code||code, api:j.api, name:j.name||"", status:j.status||"live"}; }
 /* The shop code in the link (?shop=CODE), read once at start; the address bar is cleaned so a reload doesn't repeat it. */
+/* (21 Oct 2026) The shop's name can come with the link (&n=…) so the "opening the shop" screen shows it at once; the name
+   only decorates that screen: the backend link always comes from the Directory. */
+const SHOP_ASK_NAME = (()=>{ try{ return String(new URLSearchParams(location.search).get("n")||"").replace(/[<>]/g,"").trim().slice(0,60); }catch{ return ""; } })();
 const SHOP_ASK = (()=>{ try{ const q=new URLSearchParams(location.search).get("shop"); if(!q) return ""; history.replaceState(null,"",location.pathname+location.hash); return q.trim().toLowerCase()==="main" ? "main" : q.trim().toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40); }catch{ return ""; } })();
 function apiUrl(){ return SHOP_MAIN ? (API_URL || ls.get("rb_api","")) : SHOP.api; }
 /** A reply from a different shop than this phone uses: never applied. The saved link is checked with the Directory again. */

@@ -47,7 +47,7 @@ const state = {}; const shops = [{ code: 'main', name: 'Gupta Plastics', status:
   ok(/needs authorising|One step left/.test(await p.textContent('#shops')), 'new shop card shows the remaining step');
   await p.click('#s-new [data-close]'); await p.waitForTimeout(100);
   await p.click('[data-act=share][data-code=SHARMATRAD-ABCDEFGHJK]'); await p.waitForTimeout(200);
-  ok(await p.evaluate(() => navigator.clipboard.readText()) === 'https://rb.test/?shop=SHARMATRAD-ABCDEFGHJK', 'Copy shop link copies only the link');
+  ok((await p.evaluate(() => navigator.clipboard.readText())).startsWith('https://rb.test/?shop=SHARMATRAD-ABCDEFGHJK&n=') && !/Shop code/.test(await p.evaluate(() => navigator.clipboard.readText())), 'Copy shop link copies only the link (with the shop name, so it shows while the phone opens the shop)');
   ok(!!(await p.$('[data-act=wa][data-code=SHARMATRAD-ABCDEFGHJK]')), 'the full message goes through Send on WhatsApp instead');
   ok(!(await p.$('[data-act=delete][data-code=main]')), 'no delete button on your own shop');
   p.on('dialog', d => d.accept());

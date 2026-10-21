@@ -1461,6 +1461,9 @@ function updateBill_(b, by, who) {
   b.fresh = freshOk;
   if (who && ROLE_RANK[who.role] < ROLE_RANK.manager && !freshOk) {
     const oldPays = payList_(r[B.payments]), oldMode = modeOf_(r[B.payment], oldPays), hasMoney = num_(r[B.due]) > 0 || oldPays.some(p => !p.at);
+    /* (v66) a paid bill's total too: before, staff could lower a paid bill's total later (marked Edited, but the money taken
+       no longer matched). The maker's own tweaks within 30 minutes ("fresh") are still fine. */
+    if (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004) throw new Error('needs_manager');
     if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || mob10_(b.mobile) !== mob10_(r[B.mobile]) || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
   }
   sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);

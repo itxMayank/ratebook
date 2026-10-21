@@ -92,7 +92,9 @@ ok(ub({ id: 'b7', n: 7, total: 100, pay: 'credit', mobile: '9876543210' }, 'Raju
 ok(ub({ id: 'b7', n: 7, total: 500, pay: 'credit', mobile: '9876543210', customer: 'Sunil T.' }, 'Raju', 'staff') !== 'needs_manager' && col(7, 'editedBy') === 'Raju', 'G3 staff fixing the name on it: allowed, and marked Edited by Raju');
 ok(ub({ id: 'b7', n: 7, total: 500, pay: 'paid', mobile: '9876543210' }, 'Sanjay', 'manager') !== 'needs_manager' && col(7, 'payment') === 'Paid' && col(7, 'editedBy') === 'Sanjay', 'G4 a manager can change it, and it shows as edited by them');
 ok(ub({ id: 'b8', n: 8, total: 320, pay: 'credit', mobile: '9876543210', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && !col(8, 'editedBy'), 'G5 the maker tweaking their own bill within 30 minutes: allowed, not marked Edited (as before)');
-ok(ub({ id: 'b9', n: 9, total: 150, pay: 'paid', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && col(9, 'editedBy') === 'Raju', 'G6 an old paid bill changed with "fresh": still marked Edited (fresh only counts within 30 minutes)');
+ok(ub({ id: 'b9', n: 9, total: 150, pay: 'paid', fresh: true }, 'Raju', 'staff') === 'needs_manager' && col(9, 'total') === 200, 'G6 staff lowering an old paid bill\'s total (even claiming "fresh"): refused, the total stays (v66; before, it was allowed and only marked Edited)');
+ok(ub({ id: 'b9', n: 9, total: 200, pay: 'paid', customer: 'Sunil T.', fresh: true }, 'Raju', 'staff') !== 'needs_manager' && col(9, 'editedBy') === 'Raju', 'G6b staff fixing the name on an old paid bill with "fresh": allowed, still marked Edited (fresh only counts within 30 minutes)');
+ok(ub({ id: 'b9', n: 9, total: 150, pay: 'paid' }, 'Sanjay', 'manager') !== 'needs_manager' && col(9, 'total') === 150, 'G6c a manager can change a paid bill\'s total');
 ok(R3('HIST.length') >= 4, 'G7 every change keeps the old text in BillHistory');
 
 // H. new-phone approval belongs to the person on that phone (v46): copying an approved phone's id doesn't skip it

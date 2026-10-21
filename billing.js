@@ -349,7 +349,7 @@ function startEdit(b){
   if(!draftEmpty()){ const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; }
     const snap=snapDraft(); h.push(snap); heldSet(h); from=snap.hid; }
   blankDraft();
-  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from };   // edits null = count not known: don't block the save
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from , total0:+b.total||0 };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, custAddr:b.custAddr||"", po:b.po, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));
@@ -375,6 +375,8 @@ async function saveEdit(opts){
       if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
   if(navigator.onLine===false && !wqOn()){ toast(t("editOffline")); return; }
+  /* (v66) staff can't change a saved bill's total (the sheet refuses it too); said here before anything is sent */
+  if(!ed.fresh && !can("manager") && ed.total0!=null && +S.sv>=66 && Math.abs(billTotal()-ed.total0)>0.004){ toast(t("staffTotal"),true); return; }
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),

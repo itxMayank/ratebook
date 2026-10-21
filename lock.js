@@ -195,6 +195,7 @@ function signInUI(msg){ if(linkWait()){ linkWaitUI(); return; } LOCK.re=()=>{ co
       /* (21 Oct 2026) load the prices before the app opens, with the button saying so, instead of an empty list for ~25 s */
       { const go=$("#al-go"); if(go){ go.dataset.label=esc(t("siLoading")); go.innerHTML=LD("sm")+esc(t("siLoading")); } }
       bootTried=false; await Promise.race([sync(), new Promise(r=>setTimeout(r,12000))]);
+      if(!(S.auth && S.auth.tok)) return;   // the sign-in was refused meanwhile: the sign-in screen is already back
       afterPinUnlock(); }
     catch(er){ btnBusy($("#al-go"),false); err.textContent=errMsg(er); $("#al-pin").value=""; $("#al-pin").focus(); } };
   setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }

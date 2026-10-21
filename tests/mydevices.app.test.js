@@ -18,7 +18,7 @@ let ui = {}, pin = '749163', live = { tP: 1, tL: 1 }, sent = [], offPin = '90381
       const bd = JSON.parse(req.postData()); sent.push({ tok: bd.tok, ...bd });
       const me = () => ({ name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live', ui: { ...ui } }, testOk: true });
       if (bd.tok && !live[bd.tok]) return fail('bad_session');
-      if (!bd.tok && bd.action === 'verify') { if (bd.pin === offPin) return fail('shop_pin_off'); if (bd.pin !== pin) return fail('bad_pin'); return send({ me: me(), tok: bd.wantTok ? 'tN' + Object.keys(live).length : undefined }); }
+      if (!bd.tok && bd.action === 'verify') { if (bd.pin === offPin) return fail('shop_pin_off'); if (bd.pin !== pin) return fail('bad_pin'); const nt = bd.wantTok ? 'tN' + Object.keys(live).length : undefined; if (nt) live[nt] = 1; return send({ me: me(), tok: nt }); }
       if (bd.action === 'boot') return send({ rev: '1', items, config: cfg, sv: 57, me: me() });
       if (bd.action === 'verify') return send({ me: me() });
       if (bd.action === 'setMyPrefs') { Object.assign(ui, (bd.prefs || {}).ui || {}); return send({ prefs: { mode: 'live', ui: { ...ui } }, testOk: true }); }

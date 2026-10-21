@@ -1195,6 +1195,7 @@ function sync(){
         try{ j=await netTrack(apiPost0({action:"boot"})); if(!j || !Array.isArray(j.items) || !j.config) j=null; }   /* only a real price list counts; anything else: the normal request */
         catch(e){ if(e && (e.code==="bad_session"||e.code==="pending"||e.code==="need_signin"||e.code==="wrong_shop")) throw e; j=null; } }
       if(!j) j=await netTrack(apiRead({action:"list"}));
+      if(!j || !Array.isArray(j.items) || !j.config) throw {code:"bad_list"};   // a reply without a price list never empties the one on the phone
       S.rev=j.rev; { const m0=S.cfg.mode; applyConfig(j.config); if(m0!==S.cfg.mode){ S.cfg.mode=m0; switchEnv(j.config); } } S.limited=!!j.limited; S.codeOn=!!j.codeOn; S.sv=+j.sv||0; if(j.pop && typeof j.pop==="object") S.pop=j.pop; applyItems(j.items); S.online=true; S.lastSync=Date.now(); saveCache(); renderAll(); fetchThumbs(); flushBills(); if(j.me){ meChecked=true; applyMe({me:j.me,view:j.view},j); } else refreshMe(j); }
     catch(e){ if(!(e && e.code==="need_signin")) S.online=false; renderNet(); }   // not signed in yet (script v44+ shares the list only after sign-in): not "offline"
     finally{ syncing=null; }

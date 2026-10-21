@@ -22,6 +22,7 @@ let sent = [], nid = 0, db = null;   // the mock sheet keeps what was saved and,
     const cfg = { shopName: 'Gupta Plastics', mode: 'live', roundTo: 1, defaultUnit: 'kg', defaultGst: 18, defaultHsn: '3923', bizType: 'plastics' };
     if (q.method() === 'GET') return send({ rev: '1', items: items(), config: cfg, sv: 60, pop: { i2: 9, i1: 5, i5: 2 }, bl: '0', bt: '0', vl: '0', vt: '0' });
     const bd = JSON.parse(q.postData()); sent.push(bd);
+    if (bd.action === 'list') return send({ rev: '1', items: items(), config: cfg, sv: 60, pop: { i2: 9, i1: 5, i5: 2 } });   // signed-in phones ask by POST
     if (bd.action === 'boot') return send({ rev: '1', items: items(), config: cfg, sv: 60, pop: { i2: 9, i1: 5, i5: 2 }, me: { name: 'Mayank', role: 'owner', personal: true, prefs: { mode: 'live' } } });
     if (bd.action === 'upsert') { items(); const out = bd.items.filter(x => db.some(y => y.id === x.id) || String(x.name || '').trim()).map(x => { const id = x.id || 'n' + (++nid), o = db.find(y => y.id === id), r = { ...(o || {}), ...x, id, updatedAt: Date.now() }; delete r.tmp; delete r.base; if (o) Object.assign(o, r); else db.push(r); return { ...r, tmp: x.tmp }; }); return send({ items: out }); }
     if (bd.action === 'priceHist') { if (bd.id !== 'i1') return send({ hist: [], count: 0 }); const d = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);

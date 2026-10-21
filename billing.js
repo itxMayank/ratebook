@@ -349,7 +349,7 @@ function startEdit(b){
   if(!draftEmpty()){ const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; }
     const snap=snapDraft(); h.push(snap); heldSet(h); from=snap.hid; }
   blankDraft();
-  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from , total0:+b.total||0 };   // edits null = count not known: don't block the save
+  S.editing={ id:b.id||"", row:b.row||0, n:b.n, date:b.date||"", edits:(b.edits===undefined||b.edits===null||b.edits==="")?null:+b.edits||0, fy:b.fy||"", from, total0:+b.total||0 };   // edits null = count not known: don't block the save
   ls.set("rb_editing",S.editing);
   applyDraft({ bill:b.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})), cust:b.customer, mob:b.mobile, gst:b.gst, igst:b.igst, custGstin:b.custGstin, custAddr:b.custAddr||"", po:b.po, ...billPayMode(b) });
   renderHeld(); closeSheet(); setTab("bill"); toast(from?t("editStarted",b.n):t("editStartedPlain",b.n));

@@ -1436,12 +1436,12 @@ function updateBill_(b, by, who) {
   if (!totalOk_(b.total)) throw new Error('bad_total');
   let oldLines = []; try { oldLines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
   if (who && !buyOk_(who)) fillBuy_(b, oldLines);   // (v65) their copy of the bill had no buy rates: keep the ones it had (before the resend check, so a resend matches)
-  { const bad = billSums_(b); if (bad) { const e = new Error(bad.error); e.extra = { line: bad.line, expect: bad.expect }; throw e; } }   // (v66)
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) {
     /* (v59) a resend of a change already saved (the phone lost the reply): the bill already holds exactly this text and these lines */
     if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === linesJson_(b.lines))
       return { dup: true, bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
     throw new Error('bill_changed'); }   // someone else saved it after this phone opened it   // someone else saved it after this phone opened it
+  { const bad = billSums_(b); if (bad) throw new Error(bad.error); }   // (v66) after the conflict check, so an edit on an old copy still says so
   /* (v46) "fresh" (tweaks right after sharing, not marked Edited) only for the person who made the bill, within 30 minutes of
      making it; anything later or by someone else is an edit and shows as one. Staff can't change the total or the payment of a
      bill that is on credit or has payments recorded (that would quietly wipe a customer's due): a manager or the owner can,

@@ -39,7 +39,7 @@ ok(pay({ mobile: '9876543210', amount: 50, pid: 'p-cccccc3' }).used === 50 && ro
 
 // B. bill edits
 const upd = b => T(`updateBill_(${JSON.stringify(b)}, 'Mayank', null)`);
-const e1 = { id: 'b2', n: 2, customer: 'Sunil', mobile: '9876543210', total: 200, items: 'x', text: 'Bill 2 edited', lines: [{ id: 'i1', qty: 2 }], baseEdits: 0, oid: 'w1', pay: 'paid' };
+const e1 = { id: 'b2', n: 2, customer: 'Sunil', mobile: '9876543210', total: 200, items: 'x', text: 'Bill 2 edited', lines: [{ id: 'i1', qty: 2, rate: 100 }], baseEdits: 0, oid: 'w1', pay: 'paid' };
 let u1 = upd(e1);
 ok(u1.bill && u1.bill.edits === 1 && row('b2')[BI('text')] === 'Bill 2 edited', 'B1 an edit is saved (edits 1)');
 const hist = () => (sheets.BillHistory ? sheets.BillHistory.rows.length : 0), h1 = hist();

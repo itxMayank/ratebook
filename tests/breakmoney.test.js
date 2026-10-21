@@ -1,7 +1,7 @@
 /* Break pass (21 Oct 2026): credit payments and bills, attacked the way a real shop (or someone with a staff phone) would.
    The real Code.gs over an in-memory sheet; every request goes through doPost with a real sign-in, as from a phone.
    Run: node tests/breakmoney.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, fitBill } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -27,7 +27,10 @@ const OWN = tokOf('739164', 'Mayank'), MAN = tokOf('582917', 'Sanjay'), STF = to
 ok(OWN && MAN && STF, 'S0 three people signed in (owner, manager, staff)');
 let seq = 0;
 const take = (tok, o = {}) => { const id = o.id || ('b' + (++seq)); const n = o.n === undefined ? CFG.nextBill : o.n;
-  const bill = { id, customer: 'Sunil', mobile: '9876543210', total: 500, items: 'PP Bag 1 kg x 500', text: `Bill No. ${n}\nTotal 500`, noLine: `Bill No. ${n}`, noToken: String(n), lines: [{ id: 'i1', name: 'PP Bag', qty: 1, rate: 500 }], pay: 'credit', ...o.bill };
+  const bill = { id, customer: 'Sunil', mobile: '9876543210', total: 500, items: 'PP Bag 1 kg x 500', text: `Bill No. ${n}\nTotal 500`, noLine: `Bill No. ${n}`, noToken: String(n), pay: 'credit', ...o.bill };
+  if (!o.bill || !o.bill.lines) bill.lines = [{ id: 'i1', name: 'PP Bag', qty: 1, rate: isFinite(Number(bill.total)) ? Number(bill.total) : 500, gst: 0 }];   // (v66) the sheet checks the total against the lines
+  if (bill.gst && bill.taxable === undefined && !(o.bill && o.bill.lines)) { bill.taxable = bill.total; bill.tax = 0; }
+  else if (o.bill && o.bill.lines && o.bill.total === undefined) bill.total = Math.round(bill.lines.reduce((a, l) => a + l.qty * l.rate, 0) * 100) / 100;
   const r = post({ action: 'takeBill', tok, env: 'live', n, bill }); r.id = id; return r; };
 const rowOf = id => sheets.Bills.rows.find(r => r[BI('billId')] === id);
 const rowNo = id => sheets.Bills.rows.findIndex(r => r[BI('billId')] === id) + 1;
@@ -110,12 +113,12 @@ ok(post({ action: 'restoreBill', tok: MAN, env: 'live', id: mv.id }).error === '
 ok(post({ action: 'cancelBill', tok: STF, env: 'live', id: nw.id, reason: 'x' }).error === 'not_allowed', 'B12 staff can\'t cancel bills');
 // staff moving a customer's dues to someone else
 const cr = take(STF, { bill: { mobile: '9800000001', customer: 'Ramesh', total: 900 } });
-const ed = b => post({ action: 'updateBill', tok: STF, env: 'live', bill: { id: cr.id, n: rowOf(cr.id)[BI('billNo')], customer: 'Ramesh', mobile: '9800000001', total: 900, items: 'x', text: 't', lines: [], pay: 'credit', baseEdits: rowOf(cr.id)[BI('edits')], ...b } });
+const ed = b => post({ action: 'updateBill', tok: STF, env: 'live', bill: fitBill({ id: cr.id, n: rowOf(cr.id)[BI('billNo')], customer: 'Ramesh', mobile: '9800000001', total: 900, items: 'x', text: 't', lines: [], pay: 'credit', baseEdits: rowOf(cr.id)[BI('edits')], ...b, ...(b && b.lines ? {} : { lines: [] }) }) });
 ok(ed({ mobile: '9800000002', customer: 'Someone else' }).error === 'needs_manager' && rowOf(cr.id)[BI('mobile')] === '9800000001', 'B13 staff editing a credit bill can\'t move its ₹900 due to another customer\'s number (manager or owner can)');
 ok(ed({ total: 100 }).error === 'needs_manager' && due(cr.id) === 900, 'B14 staff can\'t cut the total of a credit bill');
 ok(ed({ pay: 'paid' }).error === 'needs_manager' && due(cr.id) === 900, 'B15 staff can\'t mark a credit bill paid without a payment');
 ok(ed({ customer: 'Ramesh Kumar' }).ok && rowOf(cr.id)[BI('customer')] === 'Ramesh Kumar' && due(cr.id) === 900, 'B16 staff can still fix the name spelling (same mobile, same amount)');
-const mg = post({ action: 'updateBill', tok: MAN, env: 'live', bill: { id: cr.id, n: rowOf(cr.id)[BI('billNo')], customer: 'Ramesh', mobile: '9800000002', total: 900, items: 'x', text: 't', lines: [], pay: 'credit', baseEdits: rowOf(cr.id)[BI('edits')] } });
+const mg = post({ action: 'updateBill', tok: MAN, env: 'live', bill: fitBill({ id: cr.id, n: rowOf(cr.id)[BI('billNo')], customer: 'Ramesh', mobile: '9800000002', total: 900, items: 'x', text: 't', lines: [], pay: 'credit', baseEdits: rowOf(cr.id)[BI('edits')] }) });
 ok(mg.ok && rowOf(cr.id)[BI('mobile')] === '9800000002' && rowOf(cr.id)[BI('editedBy')] === 'Sanjay', 'B17 a manager can move it, and it shows as edited by them');
 ok(post({ action: 'updateBill', tok: MAN, env: 'live', bill: { id: cr.id, n: 1, total: 900, pay: 'credit', mobile: '9800000002', baseEdits: 0 } }).error === 'bill_changed', 'B18 an edit made on an old copy of the bill: refused ("someone else changed it")');
 ok(post({ action: 'updateBill', tok: MAN, env: 'live', bill: { id: c.id, total: 1, pay: 'paid', baseEdits: rowOf(c.id)[BI('edits')] } }).error === 'bill_cancelled', 'B19 editing a cancelled bill: refused');

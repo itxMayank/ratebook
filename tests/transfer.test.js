@@ -1,7 +1,7 @@
 /* Transfer a bill to another number, server side (Code.gs v63): takeBill with moveFrom saves the new bill, then cancels the old
    one as "Moved to No. X" (kept as a copy, not counted); manager or owner only; a moved bill cannot be restored.
    Run: node tests/transfer.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, fitBill } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -19,7 +19,7 @@ R(`ss_ = () => SS; ensureEnv_=()=>{}; dedupeOnce_=()=>{}; shopPaused_=()=>false;
   customersSheet_=()=>{}; touchCustomer_=()=>{}; refreshDue_=()=>{}; recountCustomers_=()=>{}; ENV_='live';`);
 ok(R('SCRIPT_VERSION') >= 63, 'A0 script v63');
 const B = R('BILL_COLS'), C = k => B.indexOf(k), rows = () => sheets.Bills.rows;
-const take = (n, extra, role) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', role: role || 'owner', bill: Object.assign({ id: 'b' + n + Math.random(), gst: true, total: 500, text: 'Invoice No: ' + n, lines: [], pay: 'paid' }, extra || {}) })})`);
+const take = (n, extra, role) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', role: role || 'owner', bill: fitBill(Object.assign({ id: 'b' + n + Math.random(), gst: true, total: 500, text: 'Invoice No: ' + n, lines: [], pay: 'paid' }, extra || {})) })})`);
 take(1773, { id: 'old' }); take(1774, { id: 'b1774' }); take(1775, { id: 'b1775' });
 const r1 = take(1776, { id: 'new', moveFrom: { id: 'old', row: 2, n: 1773 } });
 ok(r1.moved && r1.moved.from === 1773 && r1.moved.to === 1776, 'B1 new bill 1776 saved, old 1773 moved');

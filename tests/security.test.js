@@ -2,7 +2,7 @@
    anyone with the script's address could read the list and, with no shop code set, save bills); the name on a saved bill is the
    signed-in person's, not what the phone sends; and wrong PINs lock only PIN guessing, never phones that are already signed in
    (before: 60 wrong PINs an hour from anyone locked the whole shop). Run: node tests/security.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, fitBill } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const g = gas([path.join(__dirname, '..', 'Code.gs')]), R = g.R;
 g.props.PIN = '4821';
@@ -85,7 +85,7 @@ R3(`readConfig_=()=>({}); popReset_=()=>{}; touchCustomer_=()=>{}; refreshDue_=(
   ROWS.push(mk(8,{billId:'b8',date:new Date(Date.now()-5*60e3),by:'Raju',total:300,payment:'Credit',paid:0,due:300,payments:'[]',mobile:'9876543210',edits:0}));
   ROWS.push(mk(9,{billId:'b9',date:new Date(Date.now()-3*864e5),by:'Raju',total:200,payment:'Paid',edits:0}));
   sheet_=(name)=>name.indexOf('BillHistory')>=0 ? {appendRow:r=>HIST.push(r)} : { getLastRow:()=>ROWS.length+1, getRange:(r,c,n,m)=>({ getValues:()=>ROWS.slice(r-2,r-2+n).map(x=>x.slice()), setValues:v=>{ ROWS[r-2]=v[0]; } }) };`);
-const ub = (b, by, role) => { try { return R3(`updateBill_(${JSON.stringify(b)}, '${by}', {role:'${role}', name:'${by}'})`) || 'ok'; } catch (e) { return e.message; } };
+const ub = (b, by, role) => { try { return R3(`updateBill_(${JSON.stringify(fitBill(b))}, '${by}', {role:'${role}', name:'${by}'})`) || 'ok'; } catch (e) { return e.message; } };
 const col = (n, k) => R3(`ROWS.find(r=>r[BILL_COLS.indexOf('billNo')]===${n})[BILL_COLS.indexOf('${k}')]`);
 ok(ub({ id: 'b7', n: 7, total: 500, pay: 'paid', mobile: '9876543210', fresh: true }, 'Raju', 'staff') === 'needs_manager' && col(7, 'due') === 500, 'G1 staff marking an old credit bill as Paid (even claiming "fresh"): refused, the due stays');
 ok(ub({ id: 'b7', n: 7, total: 100, pay: 'credit', mobile: '9876543210' }, 'Raju', 'staff') === 'needs_manager', 'G2 staff lowering the total of a bill with money due: refused');

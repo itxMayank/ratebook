@@ -2,7 +2,7 @@
    ever made to check the number, read every bill again for the customer's dues even on a paid bill, and made every phone reload the
    whole price list just to learn the next bill number. Checks that numbers are still never used twice, dues stay right, and the
    next number reaches other phones through the 25-second check. Run: node tests/billfast.test.js */
-const path = require('path'), { gas } = require('./gas-mock');
+const path = require('path'), { gas, fitBill } = require('./gas-mock');
 const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
 const sheets = {};
 const cell = x => typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x;
@@ -22,7 +22,7 @@ const BC = R('BILL_COLS'), BI = k => BC.indexOf(k);
 sheets.Bills = mkSheet('Bills'); sheets.Bills.rows.push(BC.slice());
 for (let n = 1; n <= 2000; n++) { const r = BC.map(() => ''); r[BI('billNo')] = n; r[BI('billId')] = 'o' + n; r[BI('date')] = new Date(Date.now() - (2001 - n) * 36e5); r[BI('gstBill')] = 'No'; r[BI('total')] = 100; r[BI('mobile')] = n === 5 ? '9876543210' : ''; r[BI('payment')] = n === 5 ? 'Credit' : ''; r[BI('due')] = n === 5 ? 100 : ''; sheets.Bills.rows.push(r); }
 R("customersSheet_()");
-const take = (n, b) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', bill: { gst: false, total: 120, items: 'x', text: 'Bill No: ' + n, lines: [], noLine: 'Bill No: ' + n, noToken: String(n), ...b } })})`);
+const take = (n, b) => R(`takeBill_(${JSON.stringify({ n, by: 'Mayank', bill: fitBill({ gst: false, total: 120, items: 'x', text: 'Bill No: ' + n, lines: [], noLine: 'Bill No: ' + n, noToken: String(n), ...b }) })})`);
 const rev0 = R('getRev_()');
 reads = 0; const t1 = take(2001, { id: 'n1', mobile: '9811111111', customer: 'Ravi', pay: 'paid' });
 ok(t1.ok && !t1.renumbered && R('CFG.nextBill') === 2002, 'B1 the next number is saved as it is, next becomes 2002');

@@ -23,4 +23,10 @@ function gas(files, opts = {}) {
   ctx.R = c => vm.runInContext(c, ctx);
   return ctx;
 }
-module.exports = { gas };
+/* (v66) The sheet now adds up every bill it saves (money.js). Test bills made with a total and no real lines get one line worth
+   that total (GST 0%), so they add up; a bill that brings its own lines is left as it is. */
+function fitBill(b) { b = Object.assign({}, b); const t = Number(b.total) || 0;
+  if (!Array.isArray(b.lines) || !b.lines.length) b.lines = [{ id: 'i1', name: 'Item', unit: 'pc', qty: 1, rate: t, gst: 0 }];
+  if (b.gst && b.taxable === undefined && b.tax === undefined) { b.taxable = t; b.tax = 0; }
+  return b; }
+module.exports = { gas, fitBill };

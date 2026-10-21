@@ -55,6 +55,16 @@ ok(post({ action: 'list', tok: OWN, dev: 'thief' }).ok, 'C3 …and phones alread
 ok(post({ action: 'verify', pin: '739164', by: 'Raju', dev: 'x2' }).error === 'bad_pin', 'C4 the owner\'s PIN typed with someone else\'s name: wrong PIN (a PIN opens only its own person)');
 ok(post({ action: 'verify', pin: '739164', by: 'Mayank', dev: 'a"b<script>' }).ok && !JSON.stringify(R('Object.keys(cache)')).includes('<script>'), 'C5 a phone id full of odd characters is cleaned before it\'s used as a key');
 
+// (v66) guessing one person's PIN with a new phone id on every try
+R("Object.keys(cache).forEach(k => { if (/fails/.test(k)) delete cache[k]; })");
+R("saveUser_({name:'Kamal',pin:'6472',role:'staff'})");
+for (let i = 0; i < 10; i++) post({ action: 'verify', pin: String(1000 + i * 37), by: 'Kamal', dev: 'rot' + i });
+ok(post({ action: 'verify', pin: '6472', by: 'Kamal', dev: 'rot-new' }).error === 'locked', 'C6 10 wrong PINs for one name, each from a "new phone": that name waits an hour, even with the right PIN (a 4-digit PIN would take months)');
+ok(post({ action: 'verify', pin: '6472', by: '  KAMAL ', dev: 'rot-x' }).error === 'locked', 'C7 …typing the name in capitals or with spaces doesn\'t get round it');
+ok(post({ action: 'verify', pin: '739164', by: 'Mayank', dev: 'own-3' }).ok && post({ action: 'list', tok: OWN }).ok, 'C8 …other people sign in as usual, and phones already signed in keep working');
+for (let i = 0; i < 20; i++) post({ action: 'verify', pin: String(2000 + i * 41), dev: 'nn' + i });
+ok(post({ action: 'verify', pin: '739164', dev: 'nn-new' }).error === 'locked' && post({ action: 'verify', pin: '739164', by: 'Mayank', dev: 'nn-y' }).ok, 'C9 20 wrong PINs typed with no name (they could match anyone): PINs without a name wait an hour; with the name it still works');
+R("Object.keys(cache).forEach(k => { if (/fails/.test(k)) delete cache[k]; })");
 // ---------- D. new-phone approval ----------
 R("CFG.approveNew = true");
 R("saveUser_({name:'Mohan',pin:'7391',role:'staff'})");

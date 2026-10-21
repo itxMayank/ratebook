@@ -38,6 +38,11 @@ const C = COLS.reduce((m, k, i) => (m[k] = i, m), {});
 const MAX_FAILS = 8;           // wrong PIN tries allowed per phone …
 const GLOBAL_MAX_FAILS = 60;   // … and for the whole shop per hour (stops guessing by rotating phones)
 const FAIL_WINDOW_SEC = 900;   // … per 15 minutes
+/* (v66) The phone id is chosen by the phone, so a stranger can change it on every try. Two more limits that can't be dodged that
+   way: wrong PINs typed with one person's name (10 an hour, then that name waits an hour: a 4-digit PIN would take months to
+   guess, a 6-digit one years), and wrong PINs typed with no name at all, which could match anyone (20 an hour for the shop).
+   Phones already signed in are never held up by either. */
+const NAME_MAX_FAILS = 10, NONAME_MAX_FAILS = 20;
 
 /* ---------- setup & helpers ---------- */
 
@@ -724,6 +729,10 @@ function auth_(body) {
   if (tok) return sessWho_(tok);         // a signed-in phone: never held up by someone else's wrong PINs (before v44 the hourly lock blocked everyone); not counted as a wrong PIN, a 128-bit token can't be guessed
   const g = Number(cache.get('gfails') || 0), d = Number(cache.get('fails_' + dev) || 0);
   if (g >= GLOBAL_MAX_FAILS || d >= MAX_FAILS) return { error: 'locked' };
+  const nm0 = String(body.by || '').trim().replace(/\s+/g, ' ').toLowerCase().slice(0, 60);
+  const nk = nm0 ? 'pfails_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, nm0)).slice(0, 22) : 'nfails';
+  const nf = Number(cache.get(nk) || 0);
+  if (nf >= (nm0 ? NAME_MAX_FAILS : NONAME_MAX_FAILS)) return { error: 'locked' };
   const pin = String(body.pin || '');
   if (pin) {
     if (shopPinIs_(pin)) { if (shopPinOff_()) return { error: 'shop_pin_off' };   // the owner has their own PIN: the shop PIN no longer opens anything
@@ -737,6 +746,7 @@ function auth_(body) {
   }
   cache.put('fails_' + dev, String(d + 1), FAIL_WINDOW_SEC);
   cache.put('gfails', String(g + 1), 3600);
+  cache.put(nk, String(nf + 1), 3600);
   return { error: 'bad_pin' };
 }
 /** Kept for older callers: 'ok' or an error code. */

@@ -406,5 +406,19 @@ Object.assign(STR.en,{ lwShop:"Opening your shop", lwOpening:"Opening the shop�
 Object.assign(STR.hi,{ lwShop:"आपकी दुकान खुल रही है", lwOpening:"दुकान खुल रही है…", lwD:"दुकान तैयार हो रही है। पहली बार कुछ सेकंड लगते हैं।", siLoading:"आपके रेट आ रहे हैं…", siFail:"साइन इन नहीं हुआ। फिर कोशिश करें।" });
 Object.assign(STR.en,{ badTotal:"The bill total can't be below ₹0.", billJump:n=>`That bill number is too far ahead. The next number is ${n}.`, billJumpQ:(n,a)=>`Bill number ${n} is ${n-a} more than the next number (${a}). Numbers after it will carry on from ${n+1}. Use it?`, wqKNew:(n,c)=>`New bill ${n}${c?` (${c})`:""}` });
 Object.assign(STR.hi,{ badTotal:"बिल का कुल ₹0 से कम नहीं हो सकता।", billJump:n=>`यह बिल नंबर बहुत आगे है। अगला नंबर ${n} है।`, billJumpQ:(n,a)=>`बिल नंबर ${n} अगले नंबर (${a}) से ${n-a} ज़्यादा है। इसके बाद नंबर ${n+1} से चलेंगे। यही रखें?`, wqKNew:(n,c)=>`नया बिल ${n}${c?` (${c})`:""}` });
+Object.assign(STR.en,{ mgLow:"Low margin", mgBelow:"Below cost", nk_below:"Sold below cost", nBelow:(n,i,r)=>`Bill ${n}: ${i} sold at ${r}, below cost`, nBelowMore:n=>`+${n} more below cost`,
+  bvT:"Who can see buy rates and margins", bv_owner:"Owner only", bv_manager:"Owner and managers", bv_all:"Everyone",
+  bvD_owner:"Managers and staff don't get buy rates, margins, cost or profit on their phones at all. They still see a \"Low margin\" tag on the bill, without numbers.",
+  bvD_manager:"Staff don't get buy rates, margins, cost or profit on their phones at all. They still see a \"Low margin\" tag on the bill, without numbers.",
+  bvD_all:"Everyone who signs in can see buy rates and margins.", bvOld:"Needs the sheet script v65 to take effect.",
+  bvMine:"Buy rates and margins are hidden on your phone by the shop's owner.",
+  lowmL:"Show \"Low margin\" on a bill line when the margin is under", lowmD:"0 turns it off. Below the buy rate the line says \"Below cost\" (for those who may see buy rates), and you get a notification.", lowmBad:"Margin: 0–100%" });
+Object.assign(STR.hi,{ mgLow:"कम मार्जिन", mgBelow:"लागत से कम", nk_below:"लागत से कम बिका", nBelow:(n,i,r)=>`बिल ${n}: ${i} ${r} में बिका, लागत से कम`, nBelowMore:n=>`+${n} और लागत से कम`,
+  bvT:"खरीद रेट और मार्जिन कौन देख सकता है", bv_owner:"सिर्फ़ मालिक", bv_manager:"मालिक और मैनेजर", bv_all:"सभी",
+  bvD_owner:"मैनेजर और स्टाफ़ के फ़ोन पर खरीद रेट, मार्जिन, लागत या मुनाफ़ा बिल्कुल नहीं आता। बिल पर उन्हें बिना नंबर के \"कम मार्जिन\" दिखता है।",
+  bvD_manager:"स्टाफ़ के फ़ोन पर खरीद रेट, मार्जिन, लागत या मुनाफ़ा बिल्कुल नहीं आता। बिल पर उन्हें बिना नंबर के \"कम मार्जिन\" दिखता है।",
+  bvD_all:"साइन इन करने वाले सभी खरीद रेट और मार्जिन देख सकते हैं।", bvOld:"यह शीट स्क्रिप्ट v65 पर काम करेगा।",
+  bvMine:"दुकान के मालिक ने आपके फ़ोन पर खरीद रेट और मार्जिन छुपाए हैं।",
+  lowmL:"बिल की लाइन पर \"कम मार्जिन\" दिखाएँ जब मार्जिन इससे कम हो", lowmD:"0 = बंद। खरीद रेट से कम पर लाइन \"लागत से कम\" दिखाती है (जो खरीद रेट देख सकते हैं उन्हें), और आपको सूचना मिलती है।", lowmBad:"मार्जिन: 0–100%" });
 return STR;
 })();

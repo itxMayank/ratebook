@@ -206,7 +206,20 @@ function renderBill(){
   renderBillSearch();
   try{ dockPos(); }catch{}
 }
-function updateBillTotals(){ try{ custXSync(); }catch{}
+/* Low-margin tag on a bill line (21 Oct 2026, script v65): amber "Low margin" when the rate gives less than the shop's margin
+   (Settings → Items & units, 5% unless changed; 0 = off), red "Below cost" when it's under the buy rate. Someone who may not see buy
+   rates gets no buy rate from the sheet, only each item's `lo` (the rate below which the margin is too low), so they see the amber
+   tag only, without a number. */
+function lineMg(l){ const m=+S.cfg.lowMargin, r=+l.rate||0; if(!(m>0) || !(r>0)) return "";
+  const it=S.byId.get(l.id);
+  if(!noBuy() && !S.limited){ const b=+lineBuy(l); if(!(b>0)) return ""; if(r<b-0.004) return "below"; return (r-b)/b*100<m-1e-9 ? "low" : ""; }
+  let lo=it?+it.lo:0; if(!(lo>0)) return ""; if(l.alt && hasAlt(it)) lo=lo/(+it.altQty||1); return r<lo-0.004 ? "low" : ""; }
+function mgSync(){ document.querySelectorAll("#bill-lines .bill-line").forEach(el=>{ const l=S.bill[+el.dataset.i]; if(!l) return;
+  const mg=lineMg(l), nm=el.querySelector(".name"); let tg=el.querySelector(".mgtag");
+  if(!mg || !nm){ if(tg) tg.remove(); return; }
+  if(!tg){ tg=document.createElement("span"); nm.insertBefore(tg, nm.querySelector(".taxline")); }
+  tg.className="mgtag "+mg; tg.textContent=t(mg==="below"?"mgBelow":"mgLow"); }); }
+function updateBillTotals(){ try{ custXSync(); }catch{} try{ mgSync(); }catch{}
   const bp=$("#bill-profit"), pb=$("#bill-pbox");
   if(S.cfg.showProfit && S.bill.length){ const pf=profitOf(S.bill);
     bp.hidden=false;

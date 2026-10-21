@@ -333,7 +333,7 @@ function openEdit(id,prefill=""){
   const body=`<form class="form" id="ef" novalidate>
     <div class="field"><label for="ef-name">${esc(t("itemName"))}</label><input id="ef-name" value="${esc(it?.name||prefill)}" autocomplete="off" enterkeyhint="next"></div>
     <div class="two">
-      <div class="field"><label for="ef-buy">${esc(t("buyRate"))}</label><input id="ef-buy" class="num money" data-dp="3" inputmode="decimal" enterkeyhint="next" value="${it?esc(moneyVal(it.buy,3)):""}"></div>
+      <div class="field"${noBuy()?" hidden":""}><label for="ef-buy">${esc(t("buyRate"))}</label><input id="ef-buy" class="num money" data-dp="3" inputmode="decimal" enterkeyhint="next" value="${it?esc(moneyVal(it.buy,3)):""}"></div>
       <div class="field"><label for="ef-sell">${esc(t("sellRate"))}</label><input id="ef-sell" class="num money" data-dp="3" inputmode="decimal" enterkeyhint="done" value="${it?esc(moneyVal(it.sell,3)):""}"></div>
     </div>
     <div class="field"><label>${esc(t("unit"))}</label>${unitBtnHTML("ef-unit",it?.unit||S.cfg.defaultUnit)}</div>

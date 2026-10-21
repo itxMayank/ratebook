@@ -119,9 +119,9 @@ ${cg("me","user",t("meT"),cgSumMe(),`
     ${me?`<div class="cfg-sec" style="display:grid;gap:10px" id="cf-me"><div><h3 style="margin:0">${esc(t("meT"))}</h3><p class="note" style="margin:2px 0 0">${esc(t("meD",S.auth.by||""))}</p></div>
       <div class="env-sec${test?" test":""}"><label class="switch"><span><b>${esc(t("envT"))}</b><br><span class="note">${esc(myTestOk()?t("myEnvD"):t("noTestD"))}</span></span><input type="checkbox" id="cf-env" ${test?"checked":""} ${myTestOk()||test?"":"disabled"}></label>
         <div class="confirm" id="cf-envc" hidden><span id="cf-envq"></span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="cf-envy"></button><button type="button" class="btn ghost" id="cf-envn">${esc(t("cancel"))}</button></div></div></div>
-      ${can("manager")?`<label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-myprofit" ${S.cfg.showProfit?"checked":""}></label>`:""}
+      ${can("manager")&&!noBuy()?`<label class="switch"><span><b>${esc(t("profitSet"))}</b><br><span class="note">${esc(t("profitSetD"))}</span></span><input type="checkbox" id="cf-myprofit" ${S.cfg.showProfit?"checked":""}></label>`:""}
       ${nSetHTML()}
-      <label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>
+      ${noBuy()?`<p class="note" style="margin:0">${esc(t("bvMine"))}</p><input type="checkbox" id="cf-hide" hidden>`:`<label class="switch"><span><b>${esc(t("hideBuy"))}</b><br><span class="note">${esc(t("hideBuyD"))}</span></span><input type="checkbox" id="cf-hide" ${S.hideBuy?"checked":""}></label>`}
       <div id="cf-bio"></div>
       ${S.auth.personal && !(S.sv>0 && S.sv<57)?`<div class="mypin" id="cf-mypin"><div><button type="button" class="btn ghost" id="cf-mpopen" aria-expanded="false">${esc(t("myPinT"))}</button></div>
         ${pinShortMe()?`<p class="note mpwarn">${IC.warn} ${esc(t("myPinShort"))}</p>`:""}
@@ -174,11 +174,15 @@ ${can("manager")?cg("items","tag",t("cgItems"),cgSumItems(c),`
     <div class="cfg-sec"><h3>${esc(t("units"))}</h3><div class="unit-chips" id="cf-units"></div>
       ${w?`<div class="addunit"><input id="cf-ucode" placeholder="${esc(t("unitCode"))}" autocomplete="off"><input id="cf-uhi" placeholder="${esc(t("unitHi"))}" autocomplete="off" lang="hi"><button class="btn primary" id="cf-uadd" type="button">${esc(t("add"))}</button></div>`:""}</div>
     <div class="cfg-sec"><div class="field"><label>${esc(t("defUnit"))}</label>${unitBtnHTML("cf-def",c.defaultUnit,w?"":"disabled")}</div></div>
+    <div class="cfg-sec"><div class="field lowm"><label for="cf-lowm">${esc(t("lowmL"))}</label><div class="lowm-row"><input id="cf-lowm" class="num" inputmode="decimal" maxlength="5" value="${esc(String(S.cfg.lowMargin))}" ${w?"":"disabled"}><span>%</span></div></div><p class="note" style="margin:0">${esc(t("lowmD"))}</p></div>
     <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("grpSetT"))}</h3><p class="note" style="margin:0">${esc(bizType()?t("biz_"+bizType()):t("bizPick"))} · ${esc(t("grpCount",allGroups().length))}</p><button type="button" class="btn ghost" id="cf-groups" ${can("manager")?"":"disabled"}>${esc(t("grpManage"))}</button></div>`):""}
 ${can("manager")?cg("ai","scan",t("aiT"),cgSumAi(),`
     <div class="cfg-sec" style="display:grid;gap:8px" id="cf-ai"></div>`):""}
     ${w?`<div class="cg-lbl">${esc(t("cgOwnerL"))}</div>`:""}
 ${w?cg("ppl","users",t("cgPpl"),t("cgPplD"),`
+    <div class="cfg-sec" style="display:grid;gap:8px"><h3 style="margin:0">${esc(t("bvT"))}</h3>
+      <div class="appear" id="cf-bview" role="group" style="grid-template-columns:repeat(3,minmax(0,1fr))">${["owner","manager","all"].map(k=>`<button type="button" data-bv="${k}" aria-pressed="${(S.cfg.buyView||"all")===k}">${esc(t("bv_"+k))}</button>`).join("")}</div>
+      <p class="note" style="margin:0" id="cf-bvd">${esc(t("bvD_"+(S.cfg.buyView||"all")))}</p>${S.sv>0&&S.sv<65?`<p class="note" style="margin:0">${esc(t("bvOld"))}</p>`:""}</div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("pplT"))}</h3><p class="note" style="margin:0">${esc(t("pplD"))}</p><div id="ppl-body" class="ppl-list">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("sessT"))}</h3><p class="note" style="margin:0">${esc(t("sessD"))}</p><div id="sess-body">${ldBlock()}</div></div>
     <div class="cfg-sec bk-sec"><h3 style="margin:0">${esc(t("accT"))}</h3><p class="note" style="margin:0">${esc(t("accD"))}</p><div id="acc-body">${ldBlock()}</div></div>
@@ -242,6 +246,7 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     $("#cf-pin").disabled=true; try{ await write({action:"setPin",newPin:p1}); if(S.auth.tok){ if(!S.auth.personal) S.auth={...S.auth,...await pinCheckSet(p1),pinLen:p1.length}; } else S.auth={...S.auth,pin:p1}; ls.set("rb_auth",S.auth); $("#cf-p1").value=""; $("#cf-p2").value=""; er.textContent=""; toast(t("pinChanged")); }catch(e){ er.textContent=errMsg(e); } finally{ const b=$("#cf-pin"); if(b) b.disabled=false; } };
   if($("#cf-bk")) loadBackupCard();
   if($("#ppl-body")) loadOwnerCards();
+  if($("#cf-bview")){ c.buyView=S.cfg.buyView||"all"; $("#cf-bview").onclick=e=>{ const b=e.target.closest("[data-bv]"); if(!b) return; c.buyView=b.dataset.bv; $("#cf-bview").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); $("#cf-bvd").textContent=t("bvD_"+c.buyView); }; }
   $("#cf-save").onclick=async()=>{ const btn=$("#cf-save");
     /* a PIN typed but not saved with its own button: say so instead of closing Settings and losing it */
     const pend=[["#cf-mp0","#cf-mp1","#cf-mp2","#cf-mperr","#cf-mpsave"],["#cf-p1","#cf-p2","#cf-perr","#cf-pin"]].find(g=>g.slice(0,-2).some(q=>{ const x=$(q); return x&&x.value.trim(); }));
@@ -252,7 +257,9 @@ ${w?cg("bk","cloud",t("bkT"),t("cgBkD"),`
     const gstin=$("#cf-gstin").value.trim().toUpperCase(); if(!gstinOk(gstin)){ btn.disabled=false; $("#cf-err").textContent=t("gstinBad"); cgFocus("#cf-gstin"); return; }
     const dg=toNum($("#cf-dgst").value); if(isNaN(dg)||dg<0||dg>100){ btn.disabled=false; $("#cf-err").textContent=t("defGst")+": 0–100"; cgFocus("#cf-dgst"); return; }
     const dh=$("#cf-dhsn").value.replace(/\s/g,"")||"3923";
+    const lmEl=$("#cf-lowm"), lm=lmEl?toNum(lmEl.value):S.cfg.lowMargin; if(lmEl && (isNaN(lm)||lm<0||lm>100)){ btn.disabled=false; $("#cf-err").textContent=t("lowmBad"); cgFocus("#cf-lowm"); return; }
     const data={ shopName:$("#cf-shop").value.trim(), units:c.units, defaultUnit:c.defaultUnit, roundTo:c.roundTo, billFooter:$("#cf-foot").value.trim(), ...(S.cfg.mode==="test"?{testNextBill:nb,testNextGstBill:ngb}:{nextBill:nb,nextGstBill:ngb}), shopGstin:gstin, shopAddress:$("#cf-addr").value.trim(), shopState:$("#cf-state").value, fyReset:$("#cf-fy").checked, defaultGst:dg, defaultHsn:dh };
+    data.lowMargin=lm; if(c.buyView) data.buyView=c.buyView;   // (v65)
     if(wqOn()){   // (v59) shown at once, saved in the background
       const x={...S.cfg, ...S.cfg.raw, ...data}; delete x.raw; applyConfig(x); wqAdd({k:"cfg", key:"cfg", body:{action:"setConfig",config:data}});
       saveCache(); closeSheet(); renderAll(); toast(t("settingsSaved")); return; }

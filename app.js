@@ -28,7 +28,10 @@ const RANK={staff:1,manager:2,owner:3};
 const NEED_SV=34;   // Code.gs SCRIPT_VERSION this app needs
 function myRole(){ return S.canWrite ? ((S.auth&&S.auth.role)||"owner") : ""; }
 function can(r){ return S.canWrite && (RANK[myRole()]||0)>=RANK[r]; }
-const hideBuy=()=>S.hideBuy||S.limited;
+/* (v65) Who may see buy rates is the shop's choice (Config buyView: owner / manager = owner and managers / all); for anyone
+   else the sheet doesn't send them at all. An older script has no buyView: nothing changes. */
+const noBuy=()=>!!(S.canWrite && S.cfg && S.cfg.buyView && S.cfg.buyView!=="all" && !can(S.cfg.buyView==="owner"?"owner":"manager"));
+const hideBuy=()=>S.hideBuy||S.limited||noBuy();
 /** This person's own settings (from verify / setMyPrefs, kept in rb_auth so they work offline). Empty when locked. */
 const myPrefs=()=>(S.canWrite && S.auth && S.auth.prefs) || {};
 const myTestOk=()=>!(S.auth && S.auth.testOk===false);
@@ -1134,6 +1137,8 @@ function applyConfig(x){
   S.cfg.mode = (P.mode==="live"||P.mode==="test") && !(P.mode==="test" && !myTestOk()) ? P.mode : S.cfg.shopMode;
   S.cfg.shopProfit = x.shopProfit!==undefined ? !!x.shopProfit : !!S.cfg.showProfit;
   S.cfg.showProfit = typeof P.showProfit==="boolean" && can("manager") ? P.showProfit : S.cfg.shopProfit;
+  S.cfg.buyView = ["owner","manager","all"].indexOf(x.buyView)>=0 ? x.buyView : ""; S.cfg.lowMargin = x.lowMargin===undefined||x.lowMargin===""||isNaN(+x.lowMargin) ? 5 : +x.lowMargin;
+  if(noBuy()) S.cfg.showProfit=false;   // profit would show what things cost
   S.cfg.raw = { nextBill:S.cfg.nextBill, nextGstBill:S.cfg.nextGstBill, testNextBill:Math.max(1,Math.floor(+x.testNextBill)||1), testNextGstBill:Math.max(1,Math.floor(+x.testNextGstBill)||1) };
   if(S.cfg.mode==="test"){ S.cfg.nextBill=S.cfg.raw.testNextBill; S.cfg.nextGstBill=S.cfg.raw.testNextGstBill; }
   // bills taken on this phone but not yet recorded keep the number moving forward
@@ -1143,7 +1148,7 @@ function applyConfig(x){
 }
 function applyItems(list){
   const arr=[]; for(const x of list||[]){ if(!x||!x.name) continue; arr.push({ id:String(x.id), name:String(x.name), nameHi:x.nameHi||"", unit:x.unit||"", buy:+x.buy||0, sell:+x.sell||0, imgV:+x.imgV||0, imgs:+x.imgV?(+x.imgs||1):0, updatedAt:+x.updatedAt||0, updatedBy:x.updatedBy||"", hsn:String(x.hsn||""), gst:(x.gst===null||x.gst===undefined||x.gst==="")?null:+x.gst,
-    altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell, aliases:String(x.aliases||""), cat:String(x.cat||"").trim() }); }
+    altUnit:String(x.altUnit||""), altQty:+x.altQty||0, altSell:(x.altSell===null||x.altSell===undefined||x.altSell==="")?null:+x.altSell, aliases:String(x.aliases||""), cat:String(x.cat||"").trim(), lo:+x.lo||0 }); }
   sortItems(arr);
   const old=S.byId; S.items=arr; S.byId=new Map(arr.map(i=>[i.id,i])); buildIndex(); S.loaded=true; billFollow(old,true);
 }
@@ -1216,7 +1221,7 @@ setInterval(checkRev,25000);
    notices version (nl / nt); when it changes the phone fetches the list. Read state is per person on the sheet; kinds a
    person switched off (prefs.noff) are left out of the bell and the list. Kept on the phone per mode, so the badge shows offline. */
 const NT={env:"",nrev:"",list:null,busy:false,again:false};
-const NKINDS=["vendor","bill","pay","paid","rm","check","move"];
+const NKINDS=["vendor","bill","pay","paid","rm","check","move","below"];
 const nOn=()=>S.canWrite && can("manager") && !(S.sv>0 && S.sv<43);
 const nOff=()=>(S.auth&&S.auth.prefs&&S.auth.prefs.noff)||[];
 const nShown=n=>{ const off=nOff(); return off.indexOf(n.kind==="adj"?"pay":n.kind)<0; };
@@ -1233,7 +1238,7 @@ async function nSync(){ if(!nOn()) return; if(NT.busy){ NT.again=true; return; }
     if($("#n-list")) nRenderList(false); }
   catch{} finally{ NT.busy=false; if(NT.again){ NT.again=false; setTimeout(nSync,200); } } }
 function nCheck(j){ if(!nOn()) return; nLoad(); const v=S.cfg.mode==="live"?j.nl:j.nt; if(v!==undefined && String(v)!==String(NT.nrev)) nSync(); }
-const N_IC={vendor:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',bill:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',pay:'<path d="M7 17 17 7M8 7h9v9"/>',adj:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-2"/>',paid:'<path d="M20 6 9 17l-5-5"/>',rm:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',check:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',move:'<path d="M5 12h14M13 6l6 6-6 6"/>'};
+const N_IC={vendor:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',bill:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',pay:'<path d="M7 17 17 7M8 7h9v9"/>',adj:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-2"/>',paid:'<path d="M20 6 9 17l-5-5"/>',rm:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',check:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',move:'<path d="M5 12h14M13 6l6 6-6 6"/>',below:'<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>'};
 const nIcon=k=>`<span class="n-ic k-${k}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${N_IC[k]||N_IC.bill}</svg></span>`;
 function nText(n){ const x=n.extra||{}, v=n.vname||"", a=n.amount!=null?vMoney(n.amount):"", by=n.by?t("nBy",n.by):"", J=a=>a.filter(Boolean).join(" · ");
   const bno=n.billNo==="Opening"?t("nOpening"):n.billNo;
@@ -1246,6 +1251,7 @@ function nText(n){ const x=n.extra||{}, v=n.vname||"", a=n.amount!=null?vMoney(n
     case "rm": return {b:t(x.type==="bill"?"nRmBill":x.type==="adj"?"nRmAdj":"nRmPay",a,v), s:J([bno?t("nBillNo",bno):"", by])};
     case "check": return {b:t("nCheck",n.billNo,v), s:J([x.n?t("nIssues",x.n):"", a])};
     case "move": return {b:t("nMove",x.n||0), s:J([(x.names||[]).join(", "), by])};
+    case "below": { const L=Array.isArray(x.l)?x.l:[], f=L[0]||{}; return {b:t("nBelow",dispNo(+String(n.billNo).replace(/^'/,""),!!x.gst), f.n||"", rs(f.r||0)+(f.u?" /"+unitL(f.u):"")), s:J([x.more||L.length>1?t("nBelowMore",(L.length-1)+(+x.more||0)):"", v, a, by])}; }
   } return {b:v, s:by}; }
 const nTime=at=>{ const d=new Date(at); return Date.now()-at<86400000 && d.toDateString()===new Date().toDateString() && Date.now()-at<3600000 ? ago(at) : d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); };
 function nDay(at){ const d=new Date(at), now=new Date(), y=new Date(now); y.setDate(now.getDate()-1);
@@ -1261,6 +1267,8 @@ $("#nslide").onclick=e=>{ const el=$("#nslide"); el.classList.remove("on"); if(e
 async function nMark(ids){ (NT.list||[]).forEach(n=>{ if(!ids||ids.indexOf(n.id)>=0) n.read=true; }); nSave(); nBadge();
   try{ const j=await apiPost0(ids?{action:"noticeRead",ids}:{action:"noticeRead",all:true}); if(Array.isArray(j.list)){ const loc={}; (NT.list||[]).forEach(n=>{ if(n.read) loc[n.id]=1; }); NT.list=j.list.map(n=>loc[n.id]?{...n,read:true}:n); NT.nrev=String(j.nrev||NT.nrev); nSave(); nBadge(); } }catch{} }
 function nGo(n){
+  if(n.kind==="below"){ const x=n.extra||{}, no=+String(n.billNo).replace(/^'/,""), stub={id:n.entryId, row:+x.row||0, n:no, gst:!!x.gst};
+    blcGet().then(C=>{ const b=C && (C.bills||[]).find(y=>y.id===n.entryId); showBill(b||stub); }).catch(()=>showBill(stub)); return; }
   if(n.kind==="move" || !n.vendorId){ openVendors(); return; }
   vdbInit().then(()=>{ const D=VD.det[n.vendorId]; openVendor(n.vendorId);
     if(D && n.entryId && n.kind!=="rm" && D.entries.some(e=>e.id===n.entryId)) vEntry(n.vendorId,n.entryId); }); }

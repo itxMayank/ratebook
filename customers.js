@@ -119,7 +119,7 @@ function cuEdit(c){
        the customer's bills over to it, and the sheet has to check no one else already has that number. */
     const mobChange=!isNew && nm!==(c.mob||"");
     if(wqOn() && !mobChange){
-      if(isNew && nm){ const ex=custIndex().find(x=>x.mob===nm); if(ex){ btnBusy(b,false); err.innerHTML=`${esc(t("cuExists",ex.name||nm))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=()=>openCustomer(ex.key||nm); return; } }
+      if(isNew && (nm||g)){ const ex=custIndex().find(x=>nm ? x.mob===nm : (!x.mob && String(x.gstin||"").toUpperCase()===g)); if(ex){ /* the sheet's duplicate rule, checked here too: the save goes in the background */ btnBusy(b,false); err.innerHTML=`${esc(t("cuExists",ex.name||nm||g))} <button type="button" class="linkbtn" id="ce-open">${esc(t("cuOpenIt"))}</button>`; $("#ce-open").onclick=()=>openCustomer(ex.key||nm); return; } }
       if(isNew) cust.cid=custNewIdJS();
       const key=isNew?(nm||cust.cid):(c.key||c.mob);
       wqAdd({k:"cust", key:"cust:"+key, body:{action:"saveCustomer",customer:cust}});

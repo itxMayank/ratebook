@@ -63,11 +63,7 @@ let custs = [['9876543210', 'Sunil Traders', '', 4, 3250, '2026-10-02T10:00:00.0
   const s2 = saves()[0] || {};
   ok(s2.customer && s2.customer.key === 'c-abcdefghij' && s2.customer.contact === 'Mr. Shah' && s2.customer.newMobile === '', 'E2 saved by its id, the new contact sent');
 
-  // F. an older sheet script can't keep a customer without a mobile
-  await p.evaluate(() => { T.S.sv = 54; T.openCustomers(); }); await p.waitForTimeout(500); sent = [];
-  await p.click('#cu-add'); await p.waitForTimeout(300); await p.fill('#ce-name', 'Mahaveer Enterprises'); await p.click('#ce-save'); await p.waitForTimeout(300);
-  ok(/older than this app/.test(await txt('#ce-err')) && !saves().length, 'F1 on script v54: "The Google Sheet script is older…", nothing sent');
-  await p.evaluate(() => { T.S.sv = 55; });
+  // (F, "an older sheet script can't keep a customer without a mobile", was removed with scripts below v60, 21 Oct 2026)
 
   // G. found from the bill page by name, even without a mobile
   await p.evaluate(() => { document.querySelector('#sheet-close').click(); T.setTab('bill'); }); await p.waitForTimeout(300);

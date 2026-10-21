@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 64;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 65;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -501,6 +501,49 @@ function recountCustomers_() {
   cs.getRange(2, 1, m, CUST_COLS.length).setValues(rows);
 }
 
+/* ---------- who may see buy rates and margins (v65) ----------
+   Config buyView: 'owner' (owner only), 'manager' (owner and managers, the default) or 'all'. For anyone else the sheet never
+   sends a buy rate: the price list goes out with buy = null and, per item, only `lo` (the rate below which the bill page shows
+   "Low margin", buy × (1 + lowMargin %), rounded up), past bills without line buy rates, cost or profit, reports without profit,
+   no purchase history or buy price changes. Their bills get their buy rates on the sheet (fillBuy_), so profit stays right, and
+   their item saves never change a buy rate. Before, Hide buy rate was only a personal choice and every phone got the rates. */
+const BUYV_ = { owner: 3, manager: 2, all: 1 };
+function buyView_() { let v = null; try { v = CacheService.getScriptCache().get('BUYV'); } catch (e) {} if (v === null) { try { v = readConfig_().buyView; } catch (e) { v = ''; } } return BUYV_[v] ? v : 'manager'; }
+function buyOk_(who) { return !!who && (ROLE_RANK[who.role] || 0) >= BUYV_[buyView_()]; }
+function lowMargin_(cfg) { const v = cfg ? cfg.lowMargin : undefined, m = Number(v); return v === undefined || v === null || v === '' || !isFinite(m) ? 5 : Math.max(0, Math.min(100, m)); }
+/** The price list for someone who may not see buy rates. A rate under ₹10 is rounded up to 10 paise, else to the rupee, so the warning doesn't give the exact cost away. */
+function loOf_(buy, m) { const b = num_(buy); if (!(b > 0) || !(m > 0)) return null; const x = b * (1 + m / 100); return x < 10 ? Math.ceil(x * 10) / 10 : Math.ceil(x); }
+function itemsNoBuy_(L) { const m = lowMargin_(L.config || {});
+  return Object.assign({}, L, { noBuy: true, items: (L.items || []).map(it => Object.assign({}, it, { buy: null, lo: loOf_(it.buy, m) })) }); }
+/** Replies scrubbed of buy rates, cost and profit for someone who may not see them. */
+function noBuyRes_(action, res) {
+  const lines = L => Array.isArray(L) ? L.map(l => { if (!l || typeof l !== 'object') return l; const o = Object.assign({}, l); delete o.buy; return o; }) : L;
+  const bill = b => { if (!b || typeof b !== 'object') return b; const o = Object.assign({}, b); if (o.lines) o.lines = lines(o.lines); if ('cost' in o) o.cost = null; if ('profit' in o) o.profit = null; return o; };
+  if (action === 'getBill' && res.bill) res.bill = bill(res.bill);
+  if ((action === 'getBills' || action === 'listBills') && Array.isArray(res.bills)) res.bills = res.bills.map(bill);
+  if (action === 'report' && res.report) { const R0 = res.report, T = Object.assign({}, R0.totals || {});
+    ['profit', 'cost', 'profitBills', 'pSale', 'pCost', 'pBills', 'noBuyAmt', 'estAmt'].forEach(k => { delete T[k]; });
+    res.report = Object.assign({}, R0, { totals: T, noBuy: true, items: (R0.items || []).map(it => { const o = Object.assign({}, it); ['cost', 'costQty', 'costAmt', 'profit', 'estQty'].forEach(k => delete o[k]); return o; }) }); }
+  return res; }
+/** A bill from someone who may not see buy rates: each line gets the buy rate on the sheet (the one it had before, when edited,
+    else the item's), and the bill's cost and profit are worked out here, the same way the phone does (lines without one left out). */
+function fillBuy_(b, old) { const L = Array.isArray(b.lines) ? b.lines : []; if (!L.length) return;
+  const items = {}; try { (listCached_().items || []).forEach(it => { items[String(it.id)] = it; }); } catch (e) {}
+  const prev = Array.isArray(old) ? old : []; let sale = 0, cost = 0, any = false;
+  L.forEach(l => { if (!l || typeof l !== 'object') return;
+    const o = prev.filter(x => x && String(x.id) === String(l.id) && !!x.alt === !!l.alt && num_(x.buy) > 0)[0];
+    let bb = o ? num_(o.buy) : 0;
+    if (!(bb > 0)) { const it = items[String(l.id)]; if (it && num_(it.buy) > 0) bb = l.alt && num_(it.altQty) > 0 ? r2_(num_(it.buy) / num_(it.altQty)) : num_(it.buy); }
+    if (bb > 0) { l.buy = bb; const q = num_(l.qty), amt = r2_(q * num_(l.rate)); sale += amt; cost += r2_(q * bb); any = true; } else delete l.buy; });
+  b.cost = any ? r2_(cost) : ''; b.profit = any ? r2_(sale - cost) : ''; }
+/** (v65) The owner (and managers who may see buy rates) get a notice when a bill has a line sold below its buy rate. An edit
+    notifies only for a line that wasn't already below cost. */
+function belowLines_(lines) { return (Array.isArray(lines) ? lines : []).filter(l => l && typeof l === 'object' && num_(l.buy) > 0 && num_(l.rate) < num_(l.buy) - 0.004); }
+function belowNote_(b, no, by, oldLines, row) { const L = belowLines_(b.lines); if (!L.length) return;
+  const k = l => String(l.id) + (l.alt ? '#a' : '') + ':' + num_(l.rate);
+  if (oldLines) { const was = {}; belowLines_(oldLines).forEach(l => { was[k(l)] = 1; }); if (L.every(l => was[k(l)])) return; }
+  notice_('below', { entryId: str_(b.id || '', 40), vname: str_(b.customer || '', 80), amount: num_(b.total), billNo: String(no), by: by,
+    extra: { gst: !!b.gst, row: Number(row) || 0, l: L.slice(0, 3).map(l => ({ n: String(l.name || '').slice(0, 60), r: num_(l.rate), u: String(l.unit || '').slice(0, 20) })), more: Math.max(0, L.length - 3) } }); }
 function readConfig_() {
   const s = sheet_(CONFIG, ['key', 'value']);
   const n = s.getLastRow() - 1;
@@ -516,6 +559,8 @@ function readConfig_() {
   cfg.testNextBill = Math.max(1, Math.floor(num_(cfg.testNextBill)) || 1);
   cfg.testNextGstBill = Math.max(1, Math.floor(num_(cfg.testNextGstBill)) || 1);
   cfg.mode = cfg.mode === 'live' ? 'live' : 'test';
+  cfg.buyView = BUYV_[cfg.buyView] ? String(cfg.buyView) : 'manager'; cfg.lowMargin = lowMargin_(cfg);   // (v65) who sees buy rates; margin warning on the bill
+  try { CacheService.getScriptCache().put('BUYV', cfg.buyView, 21600); } catch (e) {}
   cfg.fyReset = !(cfg.fyReset === false || String(cfg.fyReset).toLowerCase() === 'false');
   cfg.gstFy = String(cfg.gstFy || ''); cfg.testGstFy = String(cfg.testGstFy || '');
   cfg.fyNow = fy_(new Date());
@@ -546,7 +591,7 @@ function doPost(e) {
     if (a0.viaPin && approveOn_()) return out_({ ok: false, error: 'need_signin' });
     if (ENV_ === 'test' && a0.testOk === false) return out_({ ok: false, error: 'no_test' });
     body.by = a0.name;   // the name on the bill is the signed-in person's (from their sign-in), not what the phone sends
-    body.role = a0.role;
+    body.role = a0.role; body.buyOk = buyOk_(a0);
     const tb = takeBill_(body); try { if (tb && tb.ok !== false) { bumpB_(false, body.bill && body.bill.id); if (tb.moved) bumpB_(false, tb.moved.id || ('row:' + tb.moved.row)); } } catch (err) {}
     return out_(tb);
   }
@@ -558,12 +603,12 @@ function doPost(e) {
   if (who.viaPin && approveOn_() && body.action !== 'verify') return out_({ ok: false, error: 'need_signin' });   // new-phone approval: only signed-in phones
   if (shopPaused_() && !PAUSE_OK_[body.action]) return out_({ ok: false, error: 'paused' });
   if (body.action === 'list' || body.action === 'thumbs' || body.action === 'image' || body.action === 'images') {   // reads (v44), no lock
-    try { if (body.action === 'list') { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); const L = listCached_(); L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
+    try { if (body.action === 'list') { ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_(); let L = listCached_(); if (!buyOk_(who)) L = itemsNoBuy_(L); L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); return out_(L); }
       if (body.action === 'thumbs') return out_(thumbs_((Array.isArray(body.ids) ? body.ids : String(body.ids || '').split(',')).map(String).filter(String).slice(0, 60)));
       return out_(body.action === 'image' ? image_(str_(body.id, 60)) : images_(str_(body.id, 60))); }
     catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'priceHist') {   // an item's price history: read-only (the one-time backfill takes the lock itself)
-    try { return out_(Object.assign({ ok: true }, priceHist_(str_(body.id, 40), who.role))); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
+    try { return out_(Object.assign({ ok: true }, priceHist_(str_(body.id, 40), buyOk_(who)))); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'insights') {  // the owner's business page: read-only, a few seconds on a big sheet, so no lock
     try { return out_(insights_(body)); } catch (err) { return out_({ ok: false, error: String(err && err.message || err) }); } }
   if (body.action === 'boot') {      // app start in one request; read-only, so no lock
@@ -586,7 +631,7 @@ function doPost(e) {
     const by = who.name || str_(body.by, 60);
     let res = {};
     switch (body.action) {
-      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false }, view: viewCode_(), shop: shopCode_() };
+      case 'verify': res = { me: { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false, buyOk: buyOk_(who) }, view: viewCode_(), shop: shopCode_() };
         if (body.wantTok && !who.sess) { const t = sessNew_(who, body); res.tok = t.tok; if (t.pending) res.pending = true; } break;
       case 'approveSession': { const id = String(body.id || ''); if (id.length < 8) throw new Error('bad_id'); sessEdit_(all => Object.keys(all).forEach(k => { if (k.indexOf(id) === 0) delete all[k].p; })); res = listSessions_(who); break; }
       case 'signOut': sessEnd_(k => k === who.sess); res = {}; break;
@@ -595,7 +640,8 @@ function doPost(e) {
       case 'setMyPrefs': res = setMyPrefs_(who, body.prefs || {}); break;
       case 'setMyPin': res = setMyPin_(who, body.oldPin, body.newPin); break;
       case 'perfIn': res = perfIn_(body); break;
-      case 'upsert': res = upsert_(body.items || [], by, str_(body.src || 'app', 12)); break;
+      case 'upsert': if (!buyOk_(who)) body.items = (body.items || []).map(it => { if (!it || typeof it !== 'object') return it; const o = Object.assign({}, it); delete o.buy; return o; });   // (v65) never changes a buy rate it can't see
+        res = upsert_(body.items || [], by, str_(body.src || 'app', 12)); break;
       case 'delete': res = delete_(body.ids || []); break;
       case 'setImage': res = setImage_(str_(body.id, 40), String(body.thumb || ''), String(body.full || ''), by); break;
       case 'setImages': res = setImages_(str_(body.id, 40), String(body.thumb || ''), body.photos, by); break;
@@ -641,10 +687,11 @@ function doPost(e) {
       case 'vAck': res = vAck_(str_(body.id, 40), body.on !== false, by); break;
       case 'vEx': res = vEx_(str_(body.id, 40)); break;
       case 'vApply': res = vApply_(body, by); break;
-      case 'itemBuys': res = itemBuys_(str_(body.id, 40)); break;
+      case 'itemBuys': if (!buyOk_(who)) throw new Error('not_allowed'); res = itemBuys_(str_(body.id, 40)); break;
       case 'aiSetKey': res = aiSetKey_(body.key); break;
       default: return out_({ ok: false, error: 'bad_action' });
     }
+    if (!buyOk_(who) && (body.action === 'getBill' || body.action === 'getBills' || body.action === 'listBills' || body.action === 'report')) res = noBuyRes_(body.action, res);
     if (['verify', 'listBills', 'findCustomer', 'listCustomers', 'getBill', 'getBills', 'listDues', 'backupInfo', 'backupNow', 'setBackupEmail', 'report', 'listUsers', 'saveUser', 'removeUser', 'getAccess', 'setAccess', 'vList', 'vSync', 'vGet', 'vSaveVendor', 'vLink', 'vSave', 'vRemove', 'vUseAdvance', 'vUpload', 'vPreviews', 'vFile', 'vAck', 'vEx', 'itemBuys', 'aiSetKey', 'saveCustomer', 'setMyPrefs', 'setMyPin', 'signOut', 'listSessions', 'endSession', 'approveSession', 'vRead', 'vCheck', 'recordPayment', 'undoPayment', 'vToLive', 'notices', 'noticeRead', 'perfIn'].indexOf(body.action) < 0) bump_();   // these change only bills/vendors, which have their own versions
     return out_(Object.assign({ ok: true, rev: getRev_() }, res));
   } catch (err) {
@@ -761,9 +808,9 @@ function approveOn_(cfg) { let v;
 /** App start in one request: price list (cached), who's signed in, and every version the phone compares. */
 function bootReply_(who, body) {
   ensureEnv_(); dedupeOnce_(); stripFyPrefixOnce_(); ensureTriggers_();
-  const L = listCached_();
+  let L = listCached_(); if (!buyOk_(who)) L = itemsNoBuy_(L);
   L.codeOn = !!viewCode_(); L.sv = SCRIPT_VERSION; L.shop = shopCode_(); L.view = viewCode_();
-  L.me = { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false };
+  L.me = { name: who.name, role: who.role, personal: !who.master, prefs: prefsOf_(who), testOk: who.testOk !== false, buyOk: buyOk_(who) };
   L.bl = brevC_('live'); L.bt = brevC_('test'); L.vl = vrevC_('live'); L.vt = vrevC_('test');
   return L; }
 /** For the admin dashboard: needs the shop's health key. Counts and timings only, no customer data. Kept 50 s. */
@@ -1126,7 +1173,7 @@ function setGroups_(list) {
 }
 function setConfig_(cfg) {
   const s = sheet_(CONFIG, ['key', 'value']);
-  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, bizType: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1, approveNew: 1 };
+  const allowed = { shopName: 1, units: 1, defaultUnit: 1, roundTo: 1, billFooter: 1, nextBill: 1, nextGstBill: 1, testNextBill: 1, testNextGstBill: 1, mode: 1, showProfit: 1, fyReset: 1, gstFy: 1, testGstFy: 1, shopState: 1, bizType: 1, shopGstin: 1, shopAddress: 1, defaultGst: 1, defaultHsn: 1, approveNew: 1 , buyView: 1, lowMargin: 1 };
   const n = s.getLastRow() - 1;
   const keys = n > 0 ? s.getRange(2, 1, n, 1).getValues().map(r => String(r[0])) : [];
   Object.keys(cfg).forEach(k => {
@@ -1137,6 +1184,8 @@ function setConfig_(cfg) {
     if (k === 'fyReset') val = cfg[k] === false || cfg[k] === 'false' ? 'false' : 'true';
     if (k === 'nextBill' || k === 'nextGstBill' || k === 'testNextBill' || k === 'testNextGstBill') val = Math.max(1, Math.floor(num_(cfg[k])) || 1);
     if (k === 'defaultGst') val = Math.max(0, Math.min(100, num_(cfg[k])));
+    if (k === 'buyView') val = BUYV_[cfg[k]] ? String(cfg[k]) : 'manager';
+    if (k === 'lowMargin') val = Math.max(0, Math.min(100, num_(cfg[k])));
     if (k === 'defaultHsn') { const h = hsn_(cfg[k]); val = h ? "'" + h : ''; }
     const i = keys.indexOf(k);
     if (i >= 0) s.getRange(i + 2, 2).setValue(val); else { s.appendRow([k, val]); keys.push(k); }
@@ -1215,11 +1264,13 @@ function takeBill_(body) {
     if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
+      if (body.buyOk === false) fillBuy_(b, null);   // (v65) made by someone who can't see buy rates: the sheet adds them
       try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) {}   // build the Customers tab before this bill lands, so it isn't counted twice
       sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), linesJson_(b.lines),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
+      try { belowNote_(b, used, body.by, null, sheet_(tab_('Bills'), BILL_COLS).getLastRow()); } catch (err) {}
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) {} }   // (v60) a paid bill adds nothing due: no need to read every bill
     }
@@ -1382,6 +1433,8 @@ function updateBill_(b, by, who) {
   const r = vals[i];
   if (r[B.status] === 'Cancelled') throw new Error('bill_cancelled');
   if (!totalOk_(b.total)) throw new Error('bad_total');
+  let oldLines = []; try { oldLines = JSON.parse(r[B.lines] || '[]'); } catch (err) {}
+  if (who && !buyOk_(who)) fillBuy_(b, oldLines);   // (v65) their copy of the bill had no buy rates: keep the ones it had (before the resend check, so a resend matches)
   if (b.baseEdits !== undefined && b.baseEdits !== null && num_(r[B.edits]) !== num_(b.baseEdits)) {
     /* (v59) a resend of a change already saved (the phone lost the reply): the bill already holds exactly this text and these lines */
     if (b.oid && String(r[B.text] || '').replace(/^'/, '') === String(b.text || '').slice(0, 45000) && String(r[B.lines] || '') === linesJson_(b.lines))
@@ -1422,6 +1475,7 @@ function updateBill_(b, by, who) {
     const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
     if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
+  try { belowNote_(b, num_(r[B.billNo]), by, oldLines, i + 2); } catch (err) {}
   try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) {}
   try { refreshDue_(b.mobile); if (mob10_(oldMob) !== mob10_(b.mobile)) refreshDue_(oldMob); } catch (err) {}
   return { bill: { id: String(r[B.billId]), n: num_(r[B.billNo]), editedAt: r[B.editedAt] instanceof Date ? r[B.editedAt].toISOString() : String(r[B.editedAt] || ''), edits: r[B.edits] } };
@@ -2553,7 +2607,7 @@ function vAck_(id, on, by) { const A = vAll_(); const r = A.L.rows.find(o => Str
  * version) and fetch them with `notices`; read state is per person (lower-case name in `read`). Text is built on the phone in
  * its own language from these fields. A notice never stops a save (errors are swallowed). */
 const NOTE_COLS = ['id', 'at', 'kind', 'vendorId', 'entryId', 'vname', 'amount', 'billNo', 'extra', 'by', 'read'];
-const NOTE_KINDS_ = { vendor: 1, bill: 1, pay: 1, adj: 1, paid: 1, rm: 1, check: 1, move: 1 };
+const NOTE_KINDS_ = { vendor: 1, bill: 1, pay: 1, adj: 1, paid: 1, rm: 1, check: 1, move: 1, below: 1 };
 function nrevC_(en) { const c = CacheService.getScriptCache(); let v = c.get('nrev_' + en); if (!v) { v = PropertiesService.getScriptProperties().getProperty('nrev_' + en) || '0'; c.put('nrev_' + en, v, 21600); } return v; }
 function nbump_() { const v = String(Date.now()); PropertiesService.getScriptProperties().setProperty('nrev_' + ENV_, v); try { CacheService.getScriptCache().put('nrev_' + ENV_, v, 21600); } catch (e) {} return v; }
 function notice_(kind, o) {
@@ -2574,7 +2628,7 @@ function notices_(who) { const me = mkey_(who.name), s = sheet_(tab_('Notices'),
   const rows = n > 0 ? s.getRange(Math.max(2, n - 99 + 1), 1, Math.min(n, 100), NOTE_COLS.length).getValues() : [];
   const list = rows.map(r => { const o = {}; NOTE_COLS.forEach((k, j) => o[k] = r[j]); const rd = vjson_(o.read, []);
     return { id: String(o.id), at: num_(o.at), kind: String(o.kind), vendorId: String(o.vendorId || ''), entryId: String(o.entryId || ''), vname: String(o.vname || ''), amount: o.amount === '' ? null : num_(o.amount),
-      billNo: String(o.billNo || ''), extra: vjson_(o.extra, {}), by: String(o.by || ''), read: rd.indexOf(me) >= 0 }; }).filter(o => o.id).reverse();
+      billNo: String(o.billNo || ''), extra: vjson_(o.extra, {}), by: String(o.by || ''), read: rd.indexOf(me) >= 0 }; }).filter(o => o.id && (o.kind !== 'below' || buyOk_(who))).reverse();
   return { nrev: nrevC_(ENV_), list: list }; }
 function noticeRead_(who, ids) { const me = mkey_(who.name), s = sheet_(tab_('Notices'), NOTE_COLS), n = s.getLastRow() - 1; if (n < 1) return notices_(who);
   const want = ids ? ids.reduce((m, id) => (m[id] = 1, m), {}) : null, c = NOTE_COLS.indexOf('read') + 1, idc = NOTE_COLS.indexOf('id') + 1;
@@ -2671,7 +2725,7 @@ function phBackfill_() {
   else { const l = LockService.getScriptLock(); if (!l.tryLock(20000)) throw new Error('busy'); try { if (!PropertiesService.getScriptProperties().getProperty('PH_BF')) phWrite_(out); } finally { l.releaseLock(); } }
   return out.length; }
 /** One item's price history, newest first. Staff see sell and pack prices only. */
-function priceHist_(id, role) { phEnsure_(); const buyOk = ROLE_RANK[role] >= ROLE_RANK.manager;
+function priceHist_(id, role) { phEnsure_(); const buyOk = typeof role === 'boolean' ? role : ROLE_RANK[role] >= ROLE_RANK.manager;
   const L = phRows_().filter(x => x.id === String(id) && (buyOk || x.f !== 'buy')).sort((a, b) => b.at - a.at);
   return { hist: L.slice(0, 60).map(x => ({ at: x.at, day: x.day, f: x.f, o: x.o, n: x.n, by: x.by, src: x.src })), count: L.length }; }
 /** Last purchases of one item (both from every vendor), newest first, for the item screen. */

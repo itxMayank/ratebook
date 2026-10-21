@@ -27,7 +27,7 @@ ok(get({ action: 'rev' }).ok === true, 'A5 the change counter (numbers only) sti
 g.R("saveUser_({name:'Raju',pin:'5273',role:'staff'})");
 const tok = R("sessNew_(auth_({pin:'5273',dev:'phoneR'}),{dev:'phoneR'})").tok;
 const l2 = post({ action: 'list', tok });
-ok(l2.ok && l2.items.length === 1 && l2.items[0].buy === 150 && l2.sv >= 44, 'B1 signed-in phone: full price list (POST)');
+ok(l2.ok && l2.items.length === 1 && l2.items[0].sell === 180 && l2.items[0].buy === null && l2.sv >= 44, 'B1 signed-in phone: the price list (POST); a staff phone gets no buy rates (v65, owner and managers by default)');
 ok(post({ action: 'thumbs', ids: ['i1'], tok }).thumbs[0].id === 'i1' && post({ action: 'image', id: 'i1', tok }).data === 'IMGi1' && post({ action: 'images', id: 'i1', tok }).photos[0] === 'Pi1', 'B2 signed-in phone: thumbnails and photos');
 
 // C. saving a bill

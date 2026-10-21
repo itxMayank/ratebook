@@ -2,7 +2,7 @@
 
 A shared shop price list and quick-bill app for the family business. Runs on the family's phones as an installed web app (Android and iPhone), with prices stored in Mayank's Google Sheet. No Claude at runtime.
 
-Last updated: 20 October 2026 (new shop's starting PIN kept on the dashboard; admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
+Last updated: 21 October 2026 (Transfer a bill to another number; new shop's starting PIN kept on the dashboard; admin dashboard redesign: rounded like the app, shop page in tabs; laptop: quantity & rate dialog, Alt T / Alt B, values selected on focus; search shows the most-sold matches first; past bills open at once; faster bill saving; saves don't wait for the sheet: payments, bill edits, customers, settings; laptop billing from the keyboard; one person, many devices: settings follow the person, Change my PIN, PIN re-checked after unlock; customer page lists the bills its count says; recent items as pills or a list; recent items look like the search cards; recent items in the search; add customer + company details, address on bills, GST invoice format; customer's purchase order on bills; Share waits for the confirmed bill number; earlier: vendor notifications in the app; more shops from one app + admin dashboard; speed; error log).
 
 ## Design rules (read first for any UI work)
 
@@ -1202,6 +1202,15 @@ Reported: the starting PIN is shown only once, in the Create shop panel, and was
 - **By hand (no dashboard):** the shop's script → `Shop.gs` → `initPin`.
 - Tests: `tests/startpin.test.js` (server), `tests/directory.test.js` (read from Shop.gs, not stored, admin only), `tests/adminshop.test.js` D3, E4–E7.
 - **Rollout:** merge; paste `admin/Directory.gs` into the Directory project (New version); update shops to v62 (your shop first).
+
+## Transfer a bill to another number (21 Oct 2026, `SCRIPT_VERSION` 63 / `NEED_SV` unchanged, `bills.js` / `billing.js` / `app.js` / `customers.js` / `index.html` / `app.css` / `strings.js`)
+
+Reported: GST bills are sometimes written by hand in the paper book, so a number the app gave (e.g. 1773, 5 days ago) may already be used on paper. Mayank chose one simple fix over checks while billing (a "used on paper" button and a question before GST bills were built, then dropped).
+- **Past bills → a bill → Transfer to new number** (`#bd-move`, manager and owner, script v63, not on cancelled bills) → a confirm box (`#bd-mq`) saying what happens → `moveBill(v)`: a bill on screen is held as an open bill; the bill page opens with the same lines, customer, GST / IGST, GSTIN, address and PO, **dated today**, and what was already paid (at billing + later, `v.paid`) as Part paid received (all of it = Paid; none = Credit). `S.move = {id, row, n, gst, fy}` (`rb_move`, kept in drafts / open bills). The ⌄ details open with the cursor in the Bill No. box (next number by default); a bar (`#movebar`) says "Moving Bill 1773 to No. 1776…" with **Stop** (clears that bill; the old one is untouched).
+- **Done / Share** sends `takeBill` with `bill.moveFrom {id, row, n}`. Script `takeBill_`: after saving the new bill (its number checked and renumbered as usual; the old number stays used, since cancelled bills still count as taken), it cancels the old one with `cancelBill_` (reason "Moved to No. X", by the signed-in person) and replies `moved {id, row, from, to}`; the old bill's id is bumped in the bills log too. Staff (`not_allowed`), already cancelled or not found → the new bill is still saved and `moveErr` says why; the phone says "couldn't be cancelled, cancel it from Past bills". A resend of the same bill (`dup`) moves nothing.
+- **The old bill:** a cancelled copy, counted nowhere (sales, credit, reports, customer totals), still listed in Past bills and on the customer's page with a "Moved to 1776" pill (`billMovedTo`, `movedPill`). It can't be restored (`bill_moved`; its sale is on the new bill) or transferred again.
+- Tests: `tests/transfer.test.js` (server, 11), `tests/transfer.app.test.js` (17).
+- **Rollout:** merge; update every shop's script to v63 (your shop first). The button shows only on v63.
 
 ## Tests that depended on the date (fixed 12 Oct 2026)
 

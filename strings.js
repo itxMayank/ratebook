@@ -392,5 +392,15 @@ Object.assign(STR.en,{ qaQty:"Quantity", qaRate:"Rate", qaAmt:"Amount", qaAdd:"A
   qaQtyBad:"Type a quantity more than 0.", qaRateBad:"Type a rate.", qaKeys:"<kbd>Enter</kbd> next · <kbd>Esc</kbd> cancel", kGst:"GST bill on / off", kDoneF:"Go to Done (then Enter)" });
 Object.assign(STR.hi,{ qaQty:"मात्रा", qaRate:"रेट", qaAmt:"रकम", qaAdd:"बिल में जोड़ें", qaAddMore:"और जोड़ें", qaQtyMore:"कितना और", qaInBill:q=>"बिल में पहले से: "+q,
   qaQtyBad:"0 से ज़्यादा मात्रा लिखें।", qaRateBad:"रेट लिखें।", qaKeys:"<kbd>Enter</kbd> आगे · <kbd>Esc</kbd> रद्द", kGst:"GST बिल चालू / बंद", kDoneF:"हो गया पर जाएँ (फिर Enter)" });
+Object.assign(STR.en,{ moveBtn:"Transfer to new number", moveQ:n=>`Move Bill ${n} to a new number?`,
+  moveQD:n=>`A new bill opens with the same items and customer, dated today. Set its number on the bill page. Once it's saved, Bill ${n} is cancelled and kept as a copy marked "Moved", not counted anywhere.`,
+  moveYes:"Transfer", moveBar:(o,n)=>`Moving Bill ${o} to No. ${n}. Change the number under ⌄ if needed, then Done or Share. Bill ${o} is cancelled once this one is saved.`,
+  moveStop:"Stop", moveStopped:"Transfer stopped. The old bill is unchanged.", movedDone:(o,n)=>`Bill ${o} moved to No. ${n}. The old one is kept as a cancelled copy.`,
+  moveFail:n=>`The new bill is saved, but Bill ${n} couldn't be cancelled. Cancel it from Past bills.`, moveEditing:"Finish or cancel editing this bill first.", movedPill:n=>`Moved to ${n}` });
+Object.assign(STR.hi,{ moveBtn:"नए नंबर पर ले जाएँ", moveQ:n=>`बिल ${n} नए नंबर पर ले जाएँ?`,
+  moveQD:n=>`वही सामान और ग्राहक के साथ आज की तारीख़ का नया बिल खुलेगा। उसका नंबर बिल पेज पर लगाएँ। उसके सेव होते ही बिल ${n} रद्द होकर "Moved" लिखी कॉपी के रूप में रहेगा, कहीं गिना नहीं जाएगा।`,
+  moveYes:"ले जाएँ", moveBar:(o,n)=>`बिल ${o} नंबर ${n} पर जा रहा है। ज़रूरत हो तो ⌄ में नंबर बदलें, फिर हो गया या शेयर। इसके सेव होते ही बिल ${o} रद्द हो जाएगा।`,
+  moveStop:"रोकें", moveStopped:"ले जाना रोका। पुराना बिल वैसा ही है।", movedDone:(o,n)=>`बिल ${o} नंबर ${n} पर गया। पुराना रद्द कॉपी के रूप में रखा है।`,
+  moveFail:n=>`नया बिल सेव हो गया, पर बिल ${n} रद्द नहीं हो सका। पुराने बिलों से रद्द करें।`, moveEditing:"पहले इस बिल का बदलाव पूरा करें या रद्द करें।", movedPill:n=>`${n} पर गया` });
 return STR;
 })();

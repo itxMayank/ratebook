@@ -228,6 +228,7 @@ function updateBillTotals(){ try{ custXSync(); }catch{}
   renderCash(); renderHeld();
   $("#bill-wa").href=waLink();
   const bn=$("#bill-no"); if(document.activeElement!==bn) bn.value=curBillNo(); bn.readOnly=!!S.editing;
+  { const mb=$("#movebar"); mb.hidden=!(S.move && !S.editing); if(!mb.hidden) $("#movebar-t").textContent=t("moveBar",dispNo(S.move.n,S.move.gst,S.move.fy),curBillDisp()); }
   const eb=$("#editbar"); eb.hidden=!S.editing; if(S.editing){ $("#editbar-t").textContent = S.editing.fresh ? t("savedBar",dispNo(S.editing.n,S.gst,S.editing.fy)) : t("editing",S.editing.n,S.editing.date?fmtDate(S.editing.date):""); $("#edit-cancel").textContent = S.editing.fresh ? t("newBill") : t("cancelEdit"); eb.classList.toggle("fresh",!!S.editing.fresh); }
   $("#bill-done").textContent = S.editing && !(S.editing.fresh && draftSig()===S.editing.sig) ? t("saveShort") : t("billDone");
   $("#wa-label").textContent = S.editing && !(S.editing.fresh && draftSig()===S.editing.sig) ? t("saveShareShort") : t("shareShort");
@@ -368,7 +369,7 @@ async function saveEdit(opts){
   if(!opts.keep && ed.fresh && draftSig()===ed.sig){ const n=dispNo(ed.n,S.gst,ed.fy); endEdit(); toast(t("billDoneN",n)); return; }   // nothing changed since Share
   if(ed.fresh){ const qi=S.billQ.findIndex(q=>q.id===ed.id);
     if(qi>=0){   // still waiting to be sent: just replace it in the queue
-      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
+      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env, ...(old.moveFrom?{moveFrom:old.moveFrom}:{}) }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
       if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
   if(navigator.onLine===false && !wqOn()){ toast(t("editOffline")); return; }
@@ -419,6 +420,8 @@ function finishBill(opts){
     text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
+  if(S.move) rec.moveFrom={ id:S.move.id||"", row:S.move.row||0, n:S.move.n };   // (v63) transfer: the old bill is cancelled once this one is saved
+  S.move=null; ls.set("rb_move",null);
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; rec.paidBy=p.pm; }
   S.lastBill={n:rec.n,customer:rec.customer,total:rec.total,link:rec.link}; ls.set("rb_lastbill",S.lastBill);
@@ -489,6 +492,8 @@ async function flushBills(){
         tookNo(j.renumbered.to, !!rec.gst);
         if(S.editing && S.editing.id===rec.id){ S.editing.n=j.renumbered.to; ls.set("rb_editing",S.editing); updateBillTotals(); }
         if(rec.shared) showRenumbered(j.renumbered); else toast(t("renumToast",j.renumbered.from,j.renumbered.to)); }
+      if(j.moved){ toast(t("movedDone",dispNo(j.moved.from,!!rec.gst),dispNo(j.moved.to,!!rec.gst))); duesDirty=true; blcDirty(); }
+      else if(rec.moveFrom && j.moveErr && !j.dup) toast(t("moveFail",dispNo(rec.moveFrom.n,!!rec.gst)));
       S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }

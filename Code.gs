@@ -14,7 +14,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 62;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 63;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -546,7 +546,8 @@ function doPost(e) {
     if (a0.viaPin && approveOn_()) return out_({ ok: false, error: 'need_signin' });
     if (ENV_ === 'test' && a0.testOk === false) return out_({ ok: false, error: 'no_test' });
     body.by = a0.name;   // the name on the bill is the signed-in person's (from their sign-in), not what the phone sends
-    const tb = takeBill_(body); try { if (tb && tb.ok !== false) bumpB_(false, body.bill && body.bill.id); } catch (err) {}
+    body.role = a0.role;
+    const tb = takeBill_(body); try { if (tb && tb.ok !== false) { bumpB_(false, body.bill && body.bill.id); if (tb.moved) bumpB_(false, tb.moved.id || ('row:' + tb.moved.row)); } } catch (err) {}
     return out_(tb);
   }
   const who = auth_(body);
@@ -1212,10 +1213,28 @@ function takeBill_(body) {
       try { touchCustomer_(b.mobile, b.customer, b.custGstin, b.total, used, true); } catch (err) {}
       if (b.pay === 'credit' || b.pay === 'part') { try { refreshDue_(b.mobile); } catch (err) {} }   // (v60) a paid bill adds nothing due: no need to read every bill
     }
+    /* (v63) Transfer to another number: this new bill replaces an older one (e.g. its number was already used in the paper bill
+       book). Only once the new bill is saved is the old one cancelled, "Moved to No. X", and kept as a copy (not counted anywhere).
+       Manager or owner. If the old bill can't be cancelled, the new one is still saved and the phone is told. */
+    let moved = null, moveErr = '';
+    const mf = b.moveFrom;
+    if (used > 0 && mf && (mf.id || mf.row)) {
+      if (ROLE_RANK[body.role] < ROLE_RANK.manager) moveErr = 'not_allowed';
+      else { try {
+        const ms = sheet_(tab_('Bills'), BILL_COLS), mn = ms.getLastRow() - 1, MB = BILL_COLS.reduce((m, k2, i2) => (m[k2] = i2, m), {});
+        const mv = mn > 0 ? ms.getRange(2, 1, mn, BILL_COLS.length).getValues() : [];
+        let k = mf.id ? mv.findIndex(r => String(r[MB.billId]) === String(mf.id)) : -1;
+        if (k < 0 && mf.row) { const j = Number(mf.row) - 2; if (j >= 0 && j < mn && num_(mv[j][MB.billNo]) === num_(mf.n)) k = j; }
+        if (k < 0) moveErr = 'bill_not_found';
+        else if (mv[k][MB.status] === 'Cancelled') moveErr = 'bill_cancelled';
+        else { cancelBill_({ id: mv[k][MB.billId] || '', row: k + 2, n: mv[k][MB.billNo], reason: 'Moved to No. ' + used }, body.by, true);
+          moved = { id: String(mv[k][MB.billId] || ''), row: k + 2, from: num_(mv[k][MB.billNo]), to: used }; }
+      } catch (err) { moveErr = String(err && err.message || err).slice(0, 60); } }
+    }
     /* (v60) no price-list bump: phones learned the next bill number by reloading the whole price list after every bill. They now
        get it from the 25-second check (nb), kept in the cache here. */
     const cfgOut = readConfig_(); nbPut_(cfgOut);
-    return { ok: true, rev: getRev_(), config: cfgOut, renumbered: renumbered };
+    return { ok: true, rev: getRev_(), config: cfgOut, renumbered: renumbered, moved: moved, moveErr: moveErr || undefined };
   } catch (err) {
     return { ok: false, error: String(err && err.message || err) };
   } finally {
@@ -1850,6 +1869,7 @@ function cancelBill_(body, by, cancel) {
   if (i < 0 && body.row) { const k = Number(body.row) - 2; if (k >= 0 && k < n && num_(vals[k][B.billNo]) === num_(body.n)) i = k; }
   if (i < 0) throw new Error('bill_not_found');
   const r = vals[i];
+  if (!cancel && /^Moved to No\. /.test(String(r[B.cancelReason] || ''))) throw new Error('bill_moved');   // (v63) its sale now lives on the new bill
   if (cancel) {
     const reason = str_(body.reason || '', 120).trim(); if (!reason) throw new Error('need_reason');
     s.getRange(i + 2, B.status + 1, 1, 4).setValues([['Cancelled', new Date(), by, reason]]);

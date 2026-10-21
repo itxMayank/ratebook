@@ -39,6 +39,24 @@ function billWa(text,mob){ const m=normMobile(mob); return (m?`https://wa.me/${m
 let billsServer=false, billsCache=[], billsReq=0, billsDays={}, billsMonths={}, billsMore=false, billsAll=null;
 const BL={q:"", year:"", date:"", f:"", col:{}};   // f: quick filter chip (gst | normal | due | cancelled | edited)
 const BL_F=["gst","normal","due","cancelled","edited"];
+/** (v63) Transfer a bill to another number: a new bill opens with the same items, customer, GST settings, address and PO, dated
+    today, and what was already paid on it (at billing and later) as the amount received. Its number is set on the bill page. The
+    old bill is cancelled ("Moved to No. X") only when the new one is saved; it stays as a copy, counted nowhere. Manager or owner. */
+function billMovedTo(b){ const m=/^Moved to No\. (\d+)/.exec(String(b&&b.cancelReason||"")); return m?+m[1]:0; }
+function moveBill(v){
+  if(S.editing && !S.editing.fresh && sameBill(S.editing,v)){ toast(t("moveEditing")); return; }
+  if(!draftEmpty() || S.editing){ const h=heldGet(); if(h.length+1>=HELD_MAX){ toast(t("heldMax",h.length+1)); return; } h.push(snapDraft()); heldSet(h); }
+  blankDraft();
+  const paid=Math.max(0,+v.paid||0), total=+v.total||0, st=String(v.pay||"Paid");
+  const pm=PM_KEYS[String(v.paidBy||"").toLowerCase()]?String(v.paidBy).toLowerCase():"";
+  const pay = (!st || st==="Paid") ? {pay:"paid",recv:"",pm} : paid>=total-0.004 ? {pay:"paid",recv:"",pm} : paid>0 ? {pay:"part",recv:String(paid),pm} : {pay:"credit",recv:"",pm:""};
+  applyDraft({ bill:v.lines.map(l=>({id:l.id,name:l.name,nameHi:l.nameHi,unit:l.unit,rate:+l.rate||0,qty:+l.qty||1,hsn:l.hsn,gst:l.gst,alt:!!l.alt,buy:l.buy,lp:l.lp})),
+    cust:v.customer, mob:v.mobile, gst:!!v.gst, igst:!!v.igst, custGstin:v.custGstin, custAddr:v.custAddr||"", po:v.po, ...pay,
+    move:{ id:v.id||"", row:v.row||0, n:v.n, gst:!!v.gst, fy:v.fy||"" } });
+  saveBill(); renderHeld(); closeSheet(); setTab("bill"); renderBill();
+  setOpen("#bh-more","#bh-extra","rb_bh_open",true);
+  setTimeout(()=>{ const i=$("#bill-no"); if(i){ i.scrollIntoView({block:"center"}); i.focus(); i.select(); } },120);
+}
 /** Quick filter chips on Past bills. */
 function blF(b){ switch(BL.f){ case "gst": return !!b.gst; case "normal": return !b.gst; case "due": return !b.cancelled && (+b.due||0)>0;
   case "cancelled": return !!b.cancelled; case "edited": return !!b.editedAt; default: return true; } }   // col: month/day groups you opened or closed            // past-bills filters, kept while you open a bill and come back
@@ -242,7 +260,7 @@ function renderBills(){
       html+=`<div class="bl-grp bl-dgrp${dShut?" shut":""}"><button type="button" class="bl-day" data-tg="${esc(k)}" aria-expanded="${!dShut}">${chev}<span class="bl-ml">${esc(dayLabel(k))}</span><span class="num">${esc(t("blSummary",dd.count,rs(dd.total)))}</span></button><div class="bl-gb">`;
       byM[m].byD[k].forEach(i=>{ const b=billsCache[i], d=b.date?new Date(b.date):null;
         html+=`<button type="button" class="billcard${b.cancelled?" cancelled":""}" data-bi="${i}" data-bid="${esc(b.id||"")}"><b>${b.gst?"GST ":""}${esc(t("billNoL"))} ${esc(dispNo(b.n,b.gst,b.fy))}${b.customer?` · ${esc(b.customer)}`:""}</b><span class="amt num">${rs(b.total)}</span>
-        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(t("cancelledPill"))}</span>`:payPill(b)}${b.paidBy&&pmLabel(String(b.paidBy).toLowerCase())?` <span class="pill pmp">${esc(pmLabel(String(b.paidBy).toLowerCase()))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
+        <span class="meta2">${d?esc(d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"})):""}${b.mobile?` · ${esc(b.mobile)}`:""}${b.gst?` <span class="pill gst">${esc(t("gstShort"))}</span>`:""}${b.editedAt?` <span class="pill edited">${esc(t("editedPill"))}</span>`:""}${b.cancelled?` <span class="pill cancel">${esc(billMovedTo(b)?t("movedPill",dispNo(billMovedTo(b),b.gst,b.fy)):t("cancelledPill"))}</span>`:payPill(b)}${b.paidBy&&pmLabel(String(b.paidBy).toLowerCase())?` <span class="pill pmp">${esc(pmLabel(String(b.paidBy).toLowerCase()))}</span>`:""}${b.by?` · ${esc(t("madeBy",b.by))}`:""}${showP&&billProfit(b)?` · ${profitChip(billProfit(b))}`:""}</span></button>`; });
       html+=`</div></div>`;
     });
     html+=`</div></section>`;
@@ -323,9 +341,10 @@ async function showBill(b,quiet){
     <div class="sendrow"><div class="field"><label for="bd-mob">${esc(t("sendTo"))}</label><input id="bd-mob" type="tel" inputmode="tel" value="${esc(v.mobile||"")}" maxlength="20"></div>
       <a class="btn wa" id="bd-wa" target="_blank" rel="noopener">WhatsApp</a></div>
     <span class="err" id="bd-err"></span>
-    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button><button type="button" class="btn ghost" id="bd-print">${esc(t("printBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>`:""}</div>
+    <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn ghost" id="bd-copy">${esc(t("copy"))}</button><button type="button" class="btn ghost" id="bd-pdf">${esc(t("pdfBtn"))}</button><button type="button" class="btn ghost" id="bd-print">${esc(t("printBtn"))}</button>${(b.lines&&b.lines.length)?`<button type="button" class="btn primary" id="bd-edit">${esc(t("editBill"))}</button><button type="button" class="btn ghost" id="bd-repeat">${esc(t("repeatBill"))}</button>${can("manager")&&!b.cancelled&&+S.sv>=63?`<button type="button" class="btn ghost" id="bd-move">${esc(t("moveBtn"))}</button>`:""}`:""}</div>
+    <div class="confirm" id="bd-mq" hidden><b>${esc(t("moveQ",dispNo(b.n,b.gst,b.fy)))}</b><span>${esc(t("moveQD",dispNo(b.n,b.gst,b.fy)))}</span><div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn primary" id="bd-my">${esc(t("moveYes"))}</button><button type="button" class="btn ghost" id="bd-mn">${esc(t("cancel"))}</button></div></div>
     ${(b.lines&&b.lines.length)?"":`<p class="note" style="margin:0">${esc(t("oldNoEdit"))}</p>`}
-    ${can("manager")?(b.cancelled?`<div><button type="button" class="btn ghost" id="bd-restore">${esc(t("restoreBill"))}</button></div>`:`<div><button type="button" class="btn danger" id="bd-cancel">${esc(t("cancelBill"))}</button></div>
+    ${can("manager")?(b.cancelled?(billMovedTo(b)?"":`<div><button type="button" class="btn ghost" id="bd-restore">${esc(t("restoreBill"))}</button></div>`):`<div><button type="button" class="btn danger" id="bd-cancel">${esc(t("cancelBill"))}</button></div>
       <div class="confirm" id="bd-cq" hidden><b>${esc(t("cancelQ"))}</b><div class="chips" id="bd-cr"><button type="button">${esc(t("cancelR1"))}</button><button type="button">${esc(t("cancelR2"))}</button><button type="button">${esc(t("cancelR3"))}</button></div>
         <input id="bd-reason" placeholder="${esc(t("cancelReasonPh"))}" maxlength="120" style="border:0;background:var(--surface);border-radius:var(--r-md);padding:10px 12px">
         <div class="row-btns" style="justify-content:flex-start"><button type="button" class="btn danger" id="bd-cy">${esc(t("cancelYes"))}</button><button type="button" class="btn ghost" id="bd-cn">${esc(t("cancel"))}</button></div></div>`):""}
@@ -359,6 +378,9 @@ async function showBill(b,quiet){
     $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
     saveBill(); closeSheet(); setTab("bill"); toast(t("repeated")); };
   if($("#bd-edit")) $("#bd-edit").onclick=()=>startEdit(v);
+  if($("#bd-move")){ $("#bd-move").onclick=()=>{ $("#bd-mq").hidden=false; $("#bd-move").hidden=true; setTimeout(()=>$("#bd-mq").scrollIntoView({block:"center",behavior:"smooth"}),30); };
+    $("#bd-mn").onclick=()=>{ $("#bd-mq").hidden=true; $("#bd-move").hidden=false; };
+    $("#bd-my").onclick=()=>moveBill(v); }
   if($("#bd-repeat")){ $("#bd-repeat").onclick=()=>{ if(S.bill.length) $("#bd-rq").hidden=false; else doRepeat(); }; $("#bd-ry").onclick=doRepeat; $("#bd-rn").onclick=()=>{ $("#bd-rq").hidden=true; }; }
   if(stale && !quiet) billFresh(b);   // shown from the phone: check the sheet's copy behind it
 }

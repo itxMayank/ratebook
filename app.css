@@ -1987,3 +1987,6 @@ html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 1
 /* Transfer to another number (21 Oct 2026): the bar on the bill page while a moved bill is being made */
 .editbar.movebar{background:var(--accent-soft);border-color:var(--accent)}
 .editbar.movebar #movebar-t{flex:1 1 200px;min-width:0}
+
+/* Opening a shop's link (21 Oct 2026): spinner + words while the Directory answers */
+#applock .al-wait{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:16px;color:var(--fg);min-height:52px}

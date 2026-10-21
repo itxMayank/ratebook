@@ -116,7 +116,7 @@ async function shopFromLink(){ if(!SHOP_ASK || SHOP_ASK===SHOP.code) return "";
   if(S.canWrite && !shopSignedIn(SHOP_ASK) && myRole()!=="owner") return t("shopBusy", S.cfg.shopName||SHOP.name||"another shop");   // staff phones stay in their shop
   if(SHOP_ASK==="main"){ shopGo({code:"main"}); return ""; }
   try{ const known=shopsKnown().find(x=>x.code===SHOP_ASK && x.api); shopGo(known && shopSignedIn(SHOP_ASK) ? known : await dirLookup(SHOP_ASK)); return ""; }
-  catch(e){ if(!S.canWrite){ SHOP_ASK_FAIL=SHOP_ASK; const h=$("#applock .al-shop"); if(h) h.textContent=t("shopCodeT",SHOP_ASK);
+  catch(e){ if(!S.canWrite){ SHOP_ASK_FAIL=SHOP_ASK; if(LOCK.on && !$("#al-f")) signInUI(); const h=$("#applock .al-shop"); if(h) h.textContent=t("shopCodeT",SHOP_ASK);
       if($("#al-sf")){ $("#al-sf").hidden=false; if($("#al-shopq")) $("#al-shopq").hidden=true; $("#al-scode").value=SHOP_ASK; } }
     return errMsg(e); } }
 /** Non-main shops: re-check the backend link with the Directory once a day (in case it moved); learn if the shop is paused. */
@@ -169,7 +169,13 @@ async function afterPinUnlock(){ const a=S.auth; if(a && a.pending){ pendingUI()
     <button type="button" class="al-bio" id="al-by">${esc(t("bioYes"))}</button><button type="button" class="al-link" id="al-bn">${esc(t("bioNo"))}</button><div class="al-err" id="al-err"></div></div>`;
   $("#al-by").onclick=async()=>{ try{ await bioRegister(); appUnlock(); }catch{ $("#al-err").textContent=t("bioFail"); setTimeout(appUnlock,1200); } };
   $("#al-bn").onclick=()=>{ ls.set("rb_bio_no_"+(a.by||""),true); appUnlock(); }; }
-function signInUI(msg){ LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=n&&n.value, pv=p&&p.value; signInUI(); if(n) $("#al-name").value=nv; if(p) $("#al-pin").value=pv; }; const el=lockEl();
+/** (21 Oct 2026) Opening a shop's link: until the Directory answers (a few seconds the first time), show that the shop is being
+    opened instead of a sign-in form, which would sign in to the wrong shop. */
+function linkWait(){ return !!SHOP_ASK && SHOP_ASK!=="main" && SHOP_ASK!==SHOP.code && !SHOP_ASK_FAIL && !S.canWrite; }
+function linkWaitUI(){ LOCK.re=()=>linkWaitUI(); const el=lockEl(), nm=SHOP_ASK_NAME;
+  el.innerHTML=`<div class="al-box">${lockHead().replace(/<div class="al-shop">[\s\S]*?<\/div>$/,`<div class="al-shop">${esc(nm||t("lwShop"))}</div>`)}
+    <div class="al-wait" role="status" aria-live="polite">${LD("")}<span>${esc(t("lwOpening"))}</span></div><p class="note" style="margin:0;text-align:center">${esc(t("lwD"))}</p></div>`; }
+function signInUI(msg){ if(linkWait()){ linkWaitUI(); return; } LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=n&&n.value, pv=p&&p.value; signInUI(); if(n) $("#al-name").value=nv; if(p) $("#al-pin").value=pv; }; const el=lockEl();
   el.innerHTML=`<div class="al-box">${lockHead()}<div class="al-hi" style="font-size:18px;color:var(--fg);font-weight:700">${esc(t("siT"))}</div><p class="note" style="margin:0">${esc(t("siD"))}</p>
     <form class="al-form" id="al-f" novalidate><input id="al-name" placeholder="${esc(t("siName"))}" autocomplete="name" value="${esc(ls.get("rb_name",""))}" enterkeyhint="next" aria-label="${esc(t("siName"))}">
     <input id="al-pin" type="password" inputmode="numeric" maxlength="8" placeholder="${esc(t("siPin"))}" autocomplete="current-password" enterkeyhint="go" aria-label="${esc(t("siPin"))}">
@@ -184,7 +190,13 @@ function signInUI(msg){ LOCK.re=()=>{ const n=$("#al-name"), p=$("#al-pin"), nv=
          v51; this covers older scripts). Before, the name was ignored and someone else's PIN signed you in as them. */
       if(me.personal && by && !samePerson(me.name,by)){ if(j.tok) apiPost0({action:"signOut",tok:j.tok}).catch(()=>{}); throw {code:"bad_pin"}; }
       if(!me.personal && !by){ btnBusy($("#al-go"),false); err.textContent=t("needYourName"); $("#al-name").focus(); return; }
-      await adoptSignIn(j,pin,by); afterPinUnlock(); }
+      if(!j.tok) throw {code:"signin_fail"};   // every shop script gives a sign-in token (v34+); never keep a bare PIN
+      await adoptSignIn(j,pin,by);
+      /* (21 Oct 2026) load the prices before the app opens, with the button saying so, instead of an empty list for ~25 s */
+      { const go=$("#al-go"); if(go){ go.dataset.label=esc(t("siLoading")); go.innerHTML=LD("sm")+esc(t("siLoading")); } }
+      bootTried=false; await Promise.race([sync(), new Promise(r=>setTimeout(r,12000))]);
+      if(!(S.auth && S.auth.tok)) return;   // the sign-in was refused meanwhile: the sign-in screen is already back
+      afterPinUnlock(); }
     catch(er){ btnBusy($("#al-go"),false); err.textContent=errMsg(er); $("#al-pin").value=""; $("#al-pin").focus(); } };
   setTimeout(()=>{ const f=$(ls.get("rb_name","")?"#al-pin":"#al-name"); if(f) f.focus(); },200); }
 /** A PIN sign-in worked (sign-in screen, or a different person's PIN typed on the lock screen): this phone is now theirs. */

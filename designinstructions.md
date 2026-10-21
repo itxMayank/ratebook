@@ -491,6 +491,7 @@ Lottie and Rive add hundreds of KB. In this no-build PWA use CSS, SVG and the We
 
 ## Overrides (user decisions that differ from the above)
 
+- **Show what's happening during real waits** (Mayank, 21 Oct 2026): opening a shop's link shows "Opening the shop…" with a spinner (not a sign-in form), and signing in says "Loading your prices…" until the prices are there. Never an empty or wrong screen while something loads.
 - **Bill numbers clashing with the paper bill book: fix with Transfer, no checks while billing** (Mayank, 21 Oct 2026). Past bills → a bill → **Transfer to new number** opens a new bill (same items and customer, dated today) where the number is set; the old bill becomes a cancelled copy marked "Moved to No. X", kept on the customer's page and counted nowhere. No questions before GST bills and no "used on paper" button.
 - **Brand accent is Iris, not maroon** (Mayank, 11 Oct 2026: "maroon does not look that good, there should be a fresh colour"). Maroon stays only as an optional theme in Settings.
 - **Grey text `--muted` is #5F636B** (was #6E727A, which measured 4.2:1 on grey backgrounds).

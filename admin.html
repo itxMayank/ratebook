@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-pQUWPpI9LwviDnuLcgmbrzx9+cOTdraAqZG6IbdyssE='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qC1rdFWgyxCMfcDaM7REKSdCi7tMgMNiZ/4V/h8FP00=' 'sha256-8vMHX04Oo3ZDEAP+tCYZOn7lk+lnnNXDxKnnjr053Kc=' 'sha256-tb4tqxBxYG1OTCDI67+kQWuXUJl0oBt34sqrUPPRScQ='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Rate Book Admin</title>
@@ -580,6 +580,7 @@ function idle(btn, flash) { if (!btn || btn._html === undefined) return; btn.dis
   else { btn.innerHTML = btn._html; delete btn._html; btn.style.minWidth = ""; } }
 let toastT = 0;
 function toast(msg, bad) { const t = $("#toast"); t.textContent = msg; t.classList.toggle("bad", !!bad); t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), bad ? 6000 : 3200); }
+const shopLink = x => appBase + "?shop=" + encodeURIComponent(x.code) + (x.name ? "&n=" + encodeURIComponent(x.name) : "");   // (21 Oct 2026) the name shows at once while the phone looks the shop up
 const errText = e => { const m = String(e && e.message || e);
   if (m.startsWith("script_api_off")) return "The Apps Script API isn't on yet. Turn it on at script.google.com/home/usersettings, and in the linked Google Cloud project (APIs & Services → Apps Script API → Enable). " + m.split("|").slice(1).join(" ");
   if (m === "confirm_code") return "The code typed doesn't match this shop's code."; if (m === "no_shop") return "That shop isn't in the Directory (or it's your own shop, which can't be deleted here).";
@@ -1309,7 +1310,7 @@ $("#to-own").onclick = e => { e.preventDefault(); store.set("ownMode", true); sh
 function ownTexts() { document.querySelectorAll("[data-bz]").forEach(el => { el.textContent = bt(el.dataset.bz); }); document.querySelectorAll("[data-bzph]").forEach(el => { el.placeholder = bt(el.dataset.bzph); });
   document.querySelectorAll("#ownsi-lang button").forEach(b => b.classList.toggle("on", b.dataset.l === bzLang)); $("#own-codewrap").hidden = !!ASK_SHOP; }
 async function openPin(x, btn) { busy(btn, "Reading…");
-  try { const j = await call({ action: "startPin", code: x.code }), h = health[x.code], link = appBase + "?shop=" + encodeURIComponent(x.code);
+  try { const j = await call({ action: "startPin", code: x.code }), h = health[x.code], link = shopLink(x);
     const msg = `${x.name} – Rate Book\nOpen this link on your phone, then "Add to Home screen":\n${link}\nSign in as Owner with your name and this starting PIN: ${j.pin}\nThen add yourself in Settings → People as Owner with your own 6–8 digit PIN (the starting PIN then stops working).`;
     const ph = String(x.phone || "").replace(/\D/g, "").slice(-10), st = h && h.ok ? h.startPin : null;
     $("#pn-name").textContent = x.name || x.code;
@@ -1336,9 +1337,9 @@ async function act(a, code, btn) {
     if (a === "delete") { openDelete(x); return; }
     if (a === "notes") { openNotes(x); return; }
     if (a === "pin") { openPin(x, btn); return; }
-    if (a === "share") { const link = appBase + "?shop=" + encodeURIComponent(code);   // just the link
+    if (a === "share") { const link = shopLink(x);   // just the link
       try { await navigator.clipboard.writeText(link); busy(btn); idle(btn, "Copied"); toast("Link copied: " + link); } catch { prompt("Copy this link:", link); } return; }
-    if (a === "wa") { const link = appBase + "?shop=" + encodeURIComponent(code), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
+    if (a === "wa") { const link = shopLink(x), msg = `${x.name} – Rate Book\nOpen this link on each phone, then "Add to Home screen":\n${link}\nShop code: ${code}`;
       const ph = String(x.phone || "").replace(/\D/g, "").slice(-10); window.open("https://wa.me/" + (ph.length === 10 ? "91" + ph : "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener"); return; }
     if (a === "pause" || a === "resume") { if (a === "pause" && !confirm(`Pause ${x.name}? Its phones can still view and collect payments, but can't make new bills (they stay queued on the phones).`)) return;
       const ub = document.querySelector(`[data-act=update][data-code="${CSS.escape(code)}"]`) || btn; busy(ub, a === "pause" ? "Pausing…" : "Resuming…");
@@ -1361,7 +1362,7 @@ $("#b-updall").onclick = async () => {
   idle(ub); load(); };
 $("#f-new").onsubmit = async e => { e.preventDefault(); const f = e.target, btn = $("#b-create"); $("#new-err").textContent = ""; busy(btn, "Creating… (20–40 s)");
   const shop = { name: f.name.value.trim(), owner: f.owner.value.trim(), phone: f.phone.value.trim(), bizType: f.bizType.value, state: f.state.value.trim(), gstin: f.gstin.value.trim().toUpperCase(), address: f.address.value.trim(), dirUrl: dirUrl() };
-  try { const j = await call({ action: "create", shop }); const link = appBase + "?shop=" + encodeURIComponent(j.shop.code);
+  try { const j = await call({ action: "create", shop }); const link = shopLink(j.shop);
     f.hidden = true; const d = $("#new-done"); d.hidden = false;
     d.innerHTML = `<div class="note" style="margin-bottom:14px"><b>${esc(j.shop.name)}</b> is made. Shop code <code>${esc(j.shop.code)}</code></div><div class="steps">
       <div><span><a href="${esc(j.shop.editUrl)}" target="_blank" rel="noopener"><b>Open the shop's script</b></a> → choose <b>setupShop</b> → <b>Run</b> → allow. (Google asks once for every new script.)</span></div>

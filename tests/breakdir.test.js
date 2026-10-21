@@ -3,6 +3,8 @@ const path = require('path'), fs = require('fs');
 const { gas } = require('./gas-mock');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const CODE = fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8');
+// (DIR v10) GitHub: the newest commit on the branch, and Code.gs at each commit (fixed once pushed)
+const GH = { sha: 'a'.repeat(40), code: { ['a'.repeat(40)]: CODE }, raw: [] };
 // --- tiny in-memory Sheets/Drive ---
 let nid = 0; const files = {}, sheetsById = {};
 function mkSheet(name) { const rows = []; return { name, rows, getName: () => name, setName(n) { this.name = n; name = n; },
@@ -22,7 +24,8 @@ const SpreadsheetApp = { create: t => mkSS(t), openById: id => sheetsById[id] };
 const projects = {}; let healthUrls = [], apiOn = true, shopAlive = true, authed = false, log = [], hx = {}, pings = 0, pingSvs = [];
 function respond(code, obj) { const txt = typeof obj === 'string' ? obj : JSON.stringify(obj); return { getResponseCode: () => code, getContentText: () => txt }; }
 function fetch(url, o = {}) { const m = (o.method || 'get').toLowerCase(), body = o.payload ? JSON.parse(o.payload) : null; log.push(m + ' ' + url.replace(/\?.*$/, ''));
-  if (url.startsWith('https://raw.githubusercontent.com/')) return respond(200, CODE);
+  if (url.startsWith('https://api.github.com/repos/itxMayank/ratebook/commits/')) return respond(200, { sha: GH.sha, commit: { message: 'The sheet adds up every bill\nmore', author: { name: 'Mayank', date: '2026-10-21T10:00:00Z' } } });
+  if (url.startsWith('https://raw.githubusercontent.com/')) { GH.raw.push(url); const k = url.split('/')[5]; return GH.code[k] !== undefined ? respond(200, GH.code[k]) : respond(404, 'Not Found'); }
   if (url.startsWith('https://script.googleapis.com/v1/projects')) { if (!apiOn) return respond(403, { error: { message: 'Apps Script API has not been used in project 123 before or it is disabled.' } });
     const p = url.replace('https://script.googleapis.com/v1/projects', '').split('/').filter(Boolean);
     if (!p.length && m === 'post') { const id = 'scr' + (++nid); projects[id] = { files: [], versions: 0, deps: {} }; files[id] = { id, name: body.title, parent: 'root' }; return respond(200, { scriptId: id }); }
@@ -47,7 +50,9 @@ const g = gas([path.join(__dirname, '..', 'admin', 'Directory.gs')], { DriveApp,
 g.Utilities.sleep = () => {}; const R = g.R; const shopGet = c => R('shopGet_(' + JSON.stringify(c) + ')');
 // setup + admin sign-in
 R('setupDirectory()'); const pinH = g.props.ADMIN_PIN_H; ok(!!pinH && !!g.props.DIR_SHEET_ID, 'setupDirectory: sheet made, admin PIN stored only as a hash');
-const post = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents: JSON.stringify(b) } }) + ').text'));
+const post0 = b => JSON.parse(R('doPost(' + JSON.stringify({ postData: { contents: JSON.stringify(b) } }) + ').text'));
+/* create / update name the commit the dashboard showed (DIR v10): tests that don't pass one take the latest, as the dashboard does */
+const post = b => { if ((b.action === 'create' || b.action === 'update') && !('sha' in b)) { const L = post0({ tok: b.tok, action: 'latest' }).latest; if (L) b = Object.assign({ sha: L.sha, hash: L.hash }, b); } return post0(b); };
 const get = q => JSON.parse(R('doGet(' + JSON.stringify({ parameter: q }) + ').text'));
 R("P_().setProperty('ADMIN_PIN_H', hash_('48261937'))");
 // ---------- A. admin sign-in ----------
@@ -66,8 +71,8 @@ ok(cr.ok && /^[A-Z0-9]{1,10}-[A-Z2-9]{10}$/.test(code), 'B1 a shop named with HT
 const row = g.SpreadsheetApp.openById(g.props.DIR_SHEET_ID).getSheetByName('Shops').rows.find(r => r[0] === code);
 ok(/^'/.test(row[2]) && /^'/.test(row[3]), 'B2 the owner and phone typed as formulas are stored as plain text in the Directory sheet');
 const bad = ['../../evil/repo/main', 'main/../../x', 'http://evil', 'main?x=1', 'a b', '%2e%2e/x'];
-const refs = bad.map(ref => [post({ action: 'latest', tok: T, ref }).error, post({ action: 'create', tok: T, ref, shop: { name: 'X' } }).error, post({ action: 'update', tok: T, code, ref }).error]);
-ok(refs.every(r => r.every(e => e === 'bad_ref')) && !log.some(u => /evil|\.\./.test(u)), 'B3 a script "branch" that points elsewhere (../../evil/repo, a URL, junk): refused before anything is fetched, so no shop can be given someone else\'s code');
+const refs = bad.map(ref => [post({ action: 'latest', tok: T, ref }).error === 'bad_ref', post({ action: 'create', tok: T, sha: ref, shop: { name: 'X' } }).error === 'need_commit', post({ action: 'update', tok: T, code, sha: ref }).error === 'need_commit']);
+ok(refs.every(r => r.every(e => e === true)) && !log.some(u => /evil|\.\./.test(u)), 'B3 a script "branch" (or, since DIR v10, a commit) that points elsewhere (../../evil/repo, a URL, junk): refused before anything is fetched, so no shop can be given someone else\'s code');
 ok(post({ action: 'latest', tok: T, ref: 'claude/friendly-ramanujan-vd1vb8' }).ok && post({ action: 'latest', tok: T }).ok, 'B4 a real branch name (or none = main) still works');
 ok(post({ action: 'create', tok: T, shop: { name: '   ' } }).error === 'need_name', 'B5 a shop with no name: refused');
 

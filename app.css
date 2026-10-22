@@ -2011,3 +2011,45 @@ input[data-pin]{-webkit-text-security:disc}
   body[data-tab="bill"] .brand #shopname{max-width:100%}
   html:not(.sbot) body:is(.qtyp,.bsopen)[data-tab="bill"] #view-bill #bill-search-results:not(:empty){position:fixed;top:calc((var(--toph,120px) + 8px) / var(--fz,1));left:16px;right:16px;max-height:calc((100dvh - var(--toph,120px) - var(--kb,0px) - 24px) / var(--fz,1));overflow:auto;overscroll-behavior:contain;z-index:31}
 }
+/* ===== New bill page (Settings → Display & search → Bill page: New; phones, per person; 22 Oct 2026) ===== */
+.bh-title{display:none}
+.hh{display:none}
+.heldwrap{position:relative}
+@media (max-width:1023px){
+  /* items first, then the customer & payment card; open bills, edit / move bars and notes stay on top */
+  html.bnew #view-bill:not([hidden]){display:flex;flex-direction:column}
+  html.bnew #view-bill>.bi-head{order:1}
+  html.bnew #view-bill>#bill-lines{order:2}
+  html.bnew #view-bill>#billhead{order:3;margin-top:12px}
+  html.bnew #view-bill>#bill-total{order:4}
+  html.bnew .bh-title{display:block;font:700 15px/1.3 var(--f-display);color:var(--fg);margin:0 0 -2px}
+  /* an empty bill: recent items as tap-to-add pills */
+  .bspills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:2px 0 18px}
+  .bspill{min-height:40px;max-width:100%;padding:6px 14px;border:1.5px solid color-mix(in srgb,var(--fg) 24%,transparent);border-radius:var(--r-full);background:var(--surface);color:var(--fg);font:600 15px/1.25 var(--f-body);overflow-wrap:anywhere;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s var(--ease-out)}
+  .bspill:active{transform:scale(.96)}
+  html.bnew.sbot:not(.billhas) body[data-tab="bill"] #view-bill{padding-bottom:28px}   /* the round search button never covers the end of the card */
+  html.bnew:not(.sbot):not(.billhas) body[data-tab="bill"] #view-bill{padding-bottom:calc((var(--bsb,96px) + 56px * var(--fz2,1)) / var(--fz,1))}
+  /* shorter rows: # · name + Hindi on one line (wraps) · amount; then − qty + · unit × ₹ rate · × (44 px tap areas kept) */
+  html.bnew #bill-lines{gap:6px}
+  html.bnew #view-bill .bill-line{padding:8px 10px 8px 12px;gap:4px 10px}
+  html.bnew .bill-line .name{display:block;position:relative;padding-left:32px;font-size:15px;line-height:1.35}
+  html.bnew .bill-line .name::before{position:absolute;left:0;top:0;width:24px;height:24px;font-size:12px;line-height:24px;margin:0}
+  html.bnew .bill-line .name .bl-sub{display:inline-flex!important;flex-wrap:wrap;margin-left:6px!important;font-size:12px!important;font-weight:600;vertical-align:baseline}
+  html.bnew .bill-line .name .taxline,html.bnew .bill-line .name .mgtag{display:flex}
+  html.bnew .bill-line .amt{font-size:16px;line-height:1.35}
+  html.bnew .bill-line .step button{height:34px;width:34px}
+  html.bnew .bill-line .step input{height:34px}
+  html.bnew .bill-line .rate input{padding-top:5px;padding-bottom:5px;height:34px}
+  html.bnew .bill-line .x{width:34px;height:34px}
+  html.bnew .bill-line .step button::after{inset:-5px 0}
+  html.bnew .bill-line .x::after{inset:-5px}
+  html.bnew .bill-line .bl-sub .unitchip{min-height:24px;padding:0 8px;margin:0}
+  /* open bills off the edge of the chips row: that edge fades and shows "+N" (tap = scroll there); the chips are unchanged */
+  html.bnew .heldrow.fr{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 64px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 64px),transparent)}
+  html.bnew .heldrow.fl{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 64px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 64px),transparent)}
+  html.bnew .heldrow.fl.fr{-webkit-mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent);mask-image:linear-gradient(to right,transparent,#000 64px,#000 calc(100% - 64px),transparent)}
+  html.bnew .hh:not([hidden]){display:grid;place-items:center;position:absolute;top:calc(50% - 5px);transform:translateY(-50%);z-index:2;height:28px;padding:0 10px;border:0;border-radius:var(--r-full);background:var(--ink);color:var(--ink-fg);font:700 12px/1 var(--f-body);box-shadow:var(--shadow-sm);cursor:pointer;white-space:nowrap}
+  html.bnew .hh::after{content:"";position:absolute;inset:-8px -6px}
+  html.bnew .hh-l{left:0}
+  html.bnew .hh-r{right:0}
+}

@@ -44,7 +44,7 @@ async function setMyPrefs(p){ const j=await apiPost({action:"setMyPrefs",prefs:p
    device (ls) as before; while someone is signed in, each change also goes to the sheet with that person (prefs.ui), so their
    other phones and laptop pick it up at sign-in and on every unlock. Text size and printer stay per device. A change made
    offline waits in rb_upq and goes later. Choices from the sheet are applied without being sent back (upApplying). */
-const UP_KEYS={rb_lang:"lang",rb_palette:"palette",rb_appear:"appear",rb_spos:"spos",rb_sres:"sres",rb_rcstyle:"rcstyle",rb_sort:"sort",rb_cashopen:"cashopen"};
+const UP_KEYS={rb_lang:"lang",rb_palette:"palette",rb_appear:"appear",rb_spos:"spos",rb_sres:"sres",rb_rcstyle:"rcstyle",rb_sort:"sort",rb_cashopen:"cashopen",rb_blay:"blay"};
 let upReady=false, upApplying=false, upT=0;
 const lsSet0=ls.set;
 ls.set=(k,v)=>{ lsSet0(k,v); const f=UP_KEYS[k];
@@ -64,7 +64,8 @@ function upApply(){ if(!(S.auth&&S.auth.tok)) return; const ui=(myPrefs().ui)||{
   upReady=true; if(Object.keys(ls.get("rb_upq",{})).length) upSoon();
   try{ if(ch.lang){ S.lang=ls.get("rb_lang","en"); applyLang(); }
     if(ch.palette||ch.appear) applyTheme();
-    if(ch.spos||ch.sres) placeSearch();
+    if(ch.spos||ch.sres||ch.blay) placeSearch();
+    if(ch.blay) renderBill();
     if(ch.cashopen) renderCash();
     if(ch.sort){ S.sortBy=ls.get("rb_sort","pop"); sortItems(S.items); buildIndex(); }
     if(ch.sort||ch.rcstyle) renderList(); }catch{} }
@@ -201,6 +202,9 @@ function applyDraft(d){ d=d||{}; S.bill=d.bill||[]; S.cust=d.cust||""; S.mob=d.m
 /* tap = switch, long-press = remove */
 (function(){
   const row=$("#heldrow"); let lpT=0, lpFired=false;
+  { let hT=0; const hq=()=>{ cancelAnimationFrame(hT); hT=requestAnimationFrame(heldHint); };
+    row.addEventListener("scroll",hq,{passive:true}); window.addEventListener("resize",hq);
+    $("#hh-l").onclick=()=>row.scrollBy({left:-row.clientWidth*.8,behavior:"smooth"}); $("#hh-r").onclick=()=>row.scrollBy({left:row.clientWidth*.8,behavior:"smooth"}); }
   row.addEventListener("pointerdown",e=>{ const c=e.target.closest("[data-held]"); if(!c) return; lpFired=false; clearTimeout(lpT); lpT=setTimeout(()=>{ lpFired=true; try{navigator.vibrate&&navigator.vibrate(20);}catch{} removeHeld(c.dataset.held); },600); });
   ["pointerup","pointercancel","pointerleave"].forEach(ev=>row.addEventListener(ev,()=>clearTimeout(lpT)));
   row.addEventListener("scroll",()=>clearTimeout(lpT),{passive:true});
@@ -429,10 +433,13 @@ window.addEventListener("popstate",()=>{
  * on the keyboard while typing; it also sets --docktop (dock's top edge from the bottom) and --toph (header height) for CSS. */
 const sposNow=()=>ls.get("rb_spos","bottom")==="top"?"top":"bottom";
 const SBOT=()=>!DESK() && sposNow()==="bottom";
+/* The new bill page (phones, per person, off by default; 22 Oct 2026): items first, then "Customer & payment"; recent items
+   as tap-to-add pills on an empty bill; shorter lines; a hint when open bills are off the edge of the chips row. */
+const BNEW=()=>!DESK() && ls.get("rb_blay","classic")==="new";
 function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fab=$("#fab"), rise=$("#rise"), bsr=$("#bill-search-results");
-  root.classList.toggle("sbot",on); root.classList.toggle("sres-top",ls.get("rb_sres","near")==="top");
+  root.classList.toggle("sbot",on); root.classList.toggle("bnew",BNEW()); root.classList.toggle("sres-top",ls.get("rb_sres","near")==="top");
   if(on){ if(sb.parentNode!==dock){ dock.appendChild(sb); dock.appendChild(fab); } if(bsr.parentNode!==rise) rise.appendChild(bsr); }
-  else { if(sb.parentNode===dock){ $("header.top").insertBefore(sb,$("#mictip")); document.body.insertBefore(fab,rise); } if(bsr.parentNode===rise) $("#view-bill").insertBefore(bsr,$("#heldrow")); }
+  else { if(sb.parentNode===dock){ $("header.top").insertBefore(sb,$("#mictip")); document.body.insertBefore(fab,rise); } if(bsr.parentNode===rise) $("#view-bill").insertBefore(bsr,$("#heldwrap")); }
   dock.hidden=!on; dockPos(); }
 /** The total is never cut: if the amount doesn't fit its space, its size steps down until it does. */
 /* The total must always be readable: shrink it a little, and if it still doesn't fit beside the buttons (narrow phone, big amount)

@@ -132,7 +132,7 @@ Done on 22 Oct 2026: Directory v11, both shops on v67, new-phone approval on in 
 - The bill page layout redesign (mock-up sent 22 Oct 2026): bill items first, customer & payment below them, compact lines (5 of 5 lines on a 390 px phone instead of 2), one-row lines on the laptop. Mock-up script: in that session's scratchpad only; the CSS it used is listed in the 22 Oct conversation.
 
 **Mayank's steps after the next merge**
-- Update both shops to script **v68** (dashboard → your shop first → Update script, then Update all shops). Until then bills sent late are still dated when they arrive; everything else works.
+- Update both shops to script **v69** (dashboard → your shop first → Update script, then Update all shops). Until then bills sent late are still dated when they arrive, and the Bill page Classic / New choice stays per device; everything else works.
 
 **Watch**
 - After 1 April 2027, the first yearly archive. Check the `Bills 2025-26` tab, the `BillYears` tab and the error log.

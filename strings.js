@@ -430,9 +430,9 @@ Object.assign(STR.hi,{ envHeld:"स्क्रीन वाला बिल द
   qtyZero:"एक लाइन की मात्रा 0 है। उसे बदलें या लाइन हटाएँ।",
   posNeed:"दूसरे राज्य का बिल (IGST): ग्राहक का राज्य चुनें, या उनका GSTIN डालें।" });
 /* the new bill page (22 Oct 2026) */
-Object.assign(STR.en,{ bhTitle:"Customer & payment", billStartT:"Start a bill", billStartD:"Tap a recent item, or find any item.", heldOff:n=>`${n} more open bill${n===1?"":"s"}`,
+Object.assign(STR.en,{ bhTitle:"Customer & payment", billStartT:"Start a bill", billStartD:"Tap a recent item, or find any item.", heldOff:n=>`${n} more open bill${n===1?"":"s"}`, toCust:"Go to customer & payment",
   blayT:"Bill page (phones only)", blayC:"Classic", blayN:"New", blayD:"New: bill items first, then customer & payment; recent items on an empty bill to add in one tap; shorter item rows." });
-Object.assign(STR.hi,{ bhTitle:"ग्राहक और भुगतान", billStartT:"बिल शुरू करें", billStartD:"हाल का कोई सामान दबाएँ, या कोई भी सामान ढूँढें।", heldOff:n=>`${n} और खुले बिल`,
+Object.assign(STR.hi,{ bhTitle:"ग्राहक और भुगतान", billStartT:"बिल शुरू करें", billStartD:"हाल का कोई सामान दबाएँ, या कोई भी सामान ढूँढें।", heldOff:n=>`${n} और खुले बिल`, toCust:"ग्राहक और भुगतान पर जाएँ",
   blayT:"बिल पेज (सिर्फ़ फ़ोन पर)", blayC:"पुराना", blayN:"नया", blayD:"नया: पहले बिल का सामान, फिर ग्राहक और भुगतान; खाली बिल पर हाल के सामान, एक बार दबाकर जोड़ें; छोटी लाइनें।" });
 return STR;
 })();

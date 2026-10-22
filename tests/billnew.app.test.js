@@ -101,6 +101,31 @@ const cfg = { shopName: 'Shree Pushpadant Plastics and Packaging', mode: 'live',
   ok(chipsOld === chipsNew, 'E6 the chips themselves look the same on both pages (' + chipsNew + ')');
   await ctx.close();
 
+  // G. the ↓ to the customer card (many items, page at the top); smaller pills
+  ({ p, ctx, errs } = await phone({ blay: 'new', w: 412, h: 893 }));
+  const ph = await p.$eval('.bspill', e => Math.round(e.getBoundingClientRect().height));
+  ok(ph <= 36, 'G1 the empty bill\'s pills are compact (' + ph + ' px)');
+  ok(!await p.evaluate(() => document.querySelector('#tocust').classList.contains('on')), 'G2 empty bill: no ↓');
+  for (const i of ['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7']) await p.evaluate(i => T.addToBill(i), i);
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(700);
+  const g = await p.evaluate(() => { const b = document.querySelector('#tocust').getBoundingClientRect(), r = s => document.querySelector(s).getBoundingClientRect();
+    const hit = s => { const x = r(s); return !(b.right <= x.left || b.left >= x.right || b.bottom <= x.top || b.top >= x.bottom); };
+    return { on: document.querySelector('#tocust').classList.contains('on'), wa: hit('#bill-wa'), done: hit('#bill-done'), find: hit('#tot-find') }; });
+  ok(g.on && !g.wa && !g.done && !g.find, 'G3 7 items, page at the top: the ↓ shows on the total card\'s edge, clear of Share, Done and search');
+  await p.click('#tocust'); await p.waitForTimeout(1000);
+  const g4 = await p.evaluate(() => ({ on: document.querySelector('#tocust').classList.contains('on'), ct: document.querySelector('#cust').getBoundingClientRect().bottom, tt: document.querySelector('#bill-total').getBoundingClientRect().top }));
+  ok(!g4.on && g4.ct <= g4.tt, `G4 tapping it brings the customer boxes into view above the total (${Math.round(g4.ct)} / ${Math.round(g4.tt)}) and it goes away`);
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(400);
+  await p.focus('#br-0'); await p.waitForTimeout(400);
+  ok(!await p.evaluate(() => document.querySelector('#tocust').classList.contains('on')), 'G5 hidden while typing in a bill box');
+  ok(!errs.length, 'G6 no page errors ' + errs.join('; '));
+  await ctx.close();
+  ({ p, ctx } = await phone({ blay: 'classic', w: 412, h: 893 }));
+  for (const i of ['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7']) await p.evaluate(i => T.addToBill(i), i);
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(500);
+  ok(!await p.evaluate(() => { const b = document.querySelector('#tocust'); return b.classList.contains('on') || getComputedStyle(b).display !== 'none'; }), 'G7 classic page: no ↓');
+  await ctx.close();
+
   // F. laptop unchanged; Hindi dark 320 largest
   ({ p, ctx } = await phone({ blay: 'new', desk: true }));
   ok(!await p.evaluate(() => document.documentElement.classList.contains('bnew')) && !(await p.$('.bspill')), 'F1 laptop: unchanged even with New chosen');

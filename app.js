@@ -444,7 +444,7 @@ function bsPos(){ const H=window.innerHeight, t=$("#bill-total"), tb=$("nav.tabs
   const tr=tb.getBoundingClientRect(); if(tr.width>0) r=Math.round(window.innerWidth-tr.right);
   if(tr.width>0){ root.style.setProperty("--tabl",Math.round(tr.left)+"px"); root.style.setProperty("--tabr",Math.round(window.innerWidth-tr.right)+"px"); }
   root.classList.toggle("billhas", !t.hidden);
-  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; root.style.setProperty("--billpad",Math.round(b+16)+"px"); } } else if(tr.height) b=H-tr.top+12;
+  if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; const nb=Math.round(b+16), ob=parseFloat(root.style.getPropertyValue("--billpad"))||0; if(!(document.body.classList.contains("typing") && nb<ob)) root.style.setProperty("--billpad",nb+"px"); }   /* while typing, the slim total card never shrinks the room under the bill, so the page doesn't jump as the search closes */ } else if(tr.height) b=H-tr.top+12;
   root.style.setProperty("--bsb",Math.max(12,Math.round(b))+"px"); root.style.setProperty("--bsr",Math.max(12,r)+"px"); }
 function dockPos(){ try{ bsPos(); sumFit(); }catch{} if(!root.classList.contains("sbot")) return;
   const dock=$("#dock"), H=window.innerHeight, a=document.activeElement, qf=!!a && a.id==="q";
@@ -471,6 +471,7 @@ if(window.ResizeObserver){ const ro=new ResizeObserver(()=>dockPos()); ["#bill-t
    Hysteresis (shrink past 72 px, grow back at the very top) and a long-enough page, so it can't flicker. */
 let hdrMin=false;
 function hdrSync(){ const r=document.documentElement, hd=$("header.top"); if(!hd) return;
+  if(document.body.classList.contains("qtyp") && !DESK()) return;   // searching: the header stays as it was, so the bill behind doesn't jump (22 Oct 2026)
   if(DESK() || document.body.classList.contains("typing")){ if(hdrMin){ hdrMin=false; r.classList.remove("hdr-min"); } return; }
   const y=window.scrollY, room=r.scrollHeight-window.innerHeight;
   const want = hdrMin ? y>4 : (y>72 && room>150);
@@ -642,9 +643,13 @@ $("#q").addEventListener("keydown",e=>{
 /* Bill tab on phones: tap the round search button = the bar opens with the keyboard; ✕ empties it but keeps it open;
    leaving it (keyboard closed, tapped elsewhere, an item added) = back to the button. */
 const bsOn=()=>!DESK() && S.tab==="bill";
-function bsOpen(){ document.body.classList.add("bsopen"); const q=$("#q"); q.focus(); if(!root.classList.contains("sbot")) window.scrollTo(0,0);   /* search at the Top: results show under the bar, so start from the top */ try{ syncQe(); dockPos(); }catch{} }
+/* Opening or closing the search leaves the bill where it was: the browser's scroll anchoring moved it up or down as the
+   total card and tab bar stepped aside (22 Oct 2026). After an item is added, the bill scrolls to that line instead. */
+let bsY=null, bsGen=0;
+function bsHold(){ if(bsY==null) return; const y=bsY, g=++bsGen; [0,120,400].forEach(d=>setTimeout(()=>{ if(bsGen===g && Math.abs(window.scrollY-y)>1) window.scrollTo(0,y); },d)); }
+function bsOpen(){ bsY=window.scrollY; document.body.classList.add("bsopen"); const q=$("#q"); q.focus(); try{ syncQe(); dockPos(); }catch{} bsHold(); }
 function bsClose(){ if(!document.body.classList.contains("bsopen")) return; document.body.classList.remove("bsopen");
-  const q=$("#q"); if(q.value){ q.value=""; onQuery(""); } try{ syncQe(); dockPos(); }catch{} }
+  const q=$("#q"); if(q.value){ q.value=""; onQuery(""); } try{ syncQe(); dockPos(); }catch{} if(bsY==null) bsGen++; else bsHold(); bsY=null; }
 let bsKeep=0;
 $("#bsfab").addEventListener("click",bsOpen); $("#tot-find").addEventListener("click",bsOpen); $("#tot-find").setAttribute("aria-label",t("totFind"));
 $("#mic").addEventListener("pointerdown",()=>{ bsKeep=Date.now(); },true);

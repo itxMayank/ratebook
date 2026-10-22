@@ -30,6 +30,7 @@ function renderPay(){
 }
 /** Credit and part-paid bills need a name and a mobile, and part paid needs a sensible amount. */
 function payCheck(){
+  { const i=S.bill.findIndex(l=>!(+l.qty>0)); if(i>=0){ const q=$("#bq-"+i); if(q){ q.classList.add("need"); q.scrollIntoView({block:"center"}); } toast(t("qtyZero"),true); return false; } }   // the sheet refuses a line of 0 (22 Oct 2026)
   if(S.pay==="paid") return true;
   const nameOk=!!S.cust.trim(), mob=normMobile(S.mob), mobOk=!!mob;
   $("#cust").classList.toggle("need",!nameOk); $("#cust-mob").classList.toggle("need",!mobOk);
@@ -160,7 +161,9 @@ function billFollowLines(lines, old){ let n=0;
     const set=(k,v,quiet)=>{ if(v!==undefined && l[k]!==v){ l[k]=v; if(!quiet) vis=true; } };
     set("name",it.name); if(it.nameHi) set("nameHi",it.nameHi); set("unit",it.unit);
     const wasP = l.alt&&hasAlt(o) ? altPrice(o) : +o.sell||0;
-    if(l.alt && !hasAlt(it)){ l.alt=false; l.rate=+it.sell||0; vis=true; }   // the pack size was removed from the item
+    if(l.alt && !hasAlt(it)){   // the pack size was removed from the item: packs become main units, same amount (10 packets of 5 = 2 kg)
+      const per=+o.altQty||1, typed=Math.abs((+l.rate||0)-wasP)>=0.005;
+      l.alt=false; l.qty=Math.round((+l.qty||0)/per*1000)/1000; l.rate=typed ? r2((+l.rate||0)*per) : +it.sell||0; l.buy=itemBuyFor(it,false); vis=true; }
     else { const nowP = l.alt ? altPrice(it) : +it.sell||0; if(Math.abs((+l.rate||0)-wasP)<0.005) set("rate",nowP); }
     if(String(l.hsn==null?"":l.hsn)===itemHsn(o)) set("hsn",itemHsn(it));
     if(l.gst!=null && +l.gst===itemGst(o)) set("gst",itemGst(it));
@@ -266,12 +269,12 @@ function snapDraft(){ return { hid:"h"+Date.now().toString(36)+Math.random().toS
 function blankDraft(){
   S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); S.pendShare=false; ls.set("rb_pshare",0);
   applyDraft({}); S.cash=""; $("#cash-in").value=""; S.posSel=""; ls.set("rb_pos",""); $("#pos-sel").value="";
-  S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),Date.now());
+  S.profitShown=false; S.custAuto=""; S.custGstinAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),Date.now());
 }
 function loadDraft(e){
   applyDraft(e.d||{}); S.cash=(e.d&&e.d.cash)||""; $("#cash-in").value=S.cash; S.posSel=(e.d&&e.d.posSel)||""; ls.set("rb_pos",S.posSel); $("#pos-sel").value=S.posSel;
   S.editing=e.editing||null; ls.set("rb_editing",S.editing); ls.set("rb_stash",e.stash||null);
-  S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),e.at||Date.now());
+  S.profitShown=false; S.custAuto=""; S.custGstinAuto=""; S.custQ=""; showCustHint(null); ls.set(envKey("rb_draftat"),e.at||Date.now());
 }
 function heldLabel(d,editing){
   if(d.cust && d.cust.trim()) return d.cust.trim();
@@ -450,7 +453,7 @@ function finishBill(opts){
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
   if(rec.due>0){ const ds=ls.get(envKey("rb_dues_sum"),{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set(envKey("rb_dues_sum"),ds); duesSub(); }
   S.pay="paid"; S.recv=""; S.pm=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); ls.set("rb_pm",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
-  S.profitShown=false; S.custAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
+  S.profitShown=false; S.custAuto=""; S.custGstinAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
   if(prGet().auto) billConfirmed(rec.id, NO_WAIT_MS).then(()=>{ const li=ls.get("rb_lastinv",null); printInv(li && li.date===lastInv.date ? li : lastInv); });   // "Print automatically after Done": with the number the sheet confirmed
 }
@@ -477,6 +480,7 @@ function setCash(v){ S.cash=v; renderCash(); }
 /** Total card's second line (Due · Profit · Cash given?) shows only when one of them does. */
 function tsSync(){ const w=document.querySelector(".total .ts2"); if(w) w.classList.toggle("empty",![...w.children].some(c=>!c.hidden)); }
 let flushing=false;
+const billRefused={};   // bill id → why the sheet refused it (Share, waiting for the number, must not say "saved")
 const BILL_REFUSE=new Set(["bad_total","total_mismatch","text_mismatch","no_lines","bad_line","bill_no_jump","credit_needs_mobile","no_test","not_allowed","bad_json"]);
 async function flushBills(){
   if(flushing || !S.billQ.length || !apiUrl()) return;
@@ -493,7 +497,7 @@ async function flushBills(){
         /* (21 Oct 2026, break pass) a refusal that sending again won't change used to stay first in the queue for ever, so every
            bill made after it waited too ("1 bill waiting" that never went). It moves to the "couldn't be saved" list, kept with
            its text (Copy / Try again / Let it go), and the next bills go on. */
-        if(BILL_REFUSE.has(j.error)){ S.billQ.shift(); ls.set("rb_billq",S.billQ); const f=wqFails(); f.push({k:"newb", oid:"n"+rec.id, env:rec.env||S.cfg.mode, at:Date.now(), by:byName(), body:{bill:rec}, err:j.error, next:j.next, failedAt:Date.now()}); ls.set(WQ_FAIL,f.slice(-30));
+        if(BILL_REFUSE.has(j.error)){ S.billQ.shift(); ls.set("rb_billq",S.billQ); billRefused[rec.id]=j.error; const f=wqFails(); f.push({k:"newb", oid:"n"+rec.id, env:rec.env||S.cfg.mode, at:Date.now(), by:byName(), body:{bill:rec}, err:j.error, next:j.next, failedAt:Date.now()}); ls.set(WQ_FAIL,f.slice(-30));
           toast(t("wqFailOne",t("wqKNew",rec.n,rec.customer||""))); wqUi(); continue; }
         throw 0; }
       S.needCode=false;
@@ -506,12 +510,25 @@ async function flushBills(){
         if(rec.shared) showRenumbered(j.renumbered); else toast(t("renumToast",j.renumbered.from,j.renumbered.to)); }
       if(j.moved){ toast(t("movedDone",dispNo(j.moved.from,!!rec.gst),dispNo(j.moved.to,!!rec.gst))); duesDirty=true; blcDirty(); }
       else if(rec.moveFrom && j.moveErr && !j.dup) toast(t("moveFail",dispNo(rec.moveFrom.n,!!rec.gst)));
-      S.billQ.shift(); ls.set("rb_billq",S.billQ);
+      const cur=S.billQ[0]; S.billQ.shift(); ls.set("rb_billq",S.billQ);
+      if(cur && cur!==rec && cur.id===rec.id) billChangedWhileSending(cur, j);
       if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
     }
     saveCache(); updateBillTotals(); blcBump(); blcSoon();
   }catch{ /* try again on next sync */ }
   finally{ flushing=false; renderQueue(); }
+}
+/** (22 Oct 2026) A shared bill was changed (saveEdit replaced it in the queue) while the sheet was still saving the first
+    copy. The sheet has the first copy, so the change goes as an update of the same bill through the outbox. If the sheet
+    renumbered the bill, the change carries the new number in its text too (the sheet checks the text shows the number). */
+function billChangedWhileSending(cur, j){
+  const b={...cur}; delete b.link; delete b.shared;
+  const rn=j.renumbered || (j.n!=null && +j.n!==+cur.n ? {from:+cur.n, to:+j.n} : null);
+  if(rn && +rn.to!==+b.n){ const tk=String(b.noToken||rn.from), nt=tk.replace(new RegExp(rn.from+"$"), String(rn.to)), nl=String(b.noLine||"").replace(tk, nt);
+    if(b.noLine) b.text=String(b.text||"").replace(b.noLine, nl); b.noLine=nl; b.noToken=nt; b.n=+rn.to; }
+  b.fresh=true; delete b.baseEdits;
+  wqAdd({k:"bill", key:"bill:"+b.id, body:{action:"updateBill", bill:b}});
+  const ed=S.editing; if(ed && ed.id===b.id && ed.edits!=null){ ed.edits=(+ed.edits||0)+1; ls.set("rb_editing",ed); }   // the sheet's edit count after this update
 }
 /* Two phones can show the same next number (both read it before either bill reached the sheet). The sheet never saves a
    number twice (takeBill gives the second one the next free number), so what matters is what the customer sees: Share of a
@@ -519,12 +536,12 @@ async function flushBills(){
    spins meanwhile). Offline, or no answer within NO_WAIT_MS: WhatsApp opens with this phone's number as before, and if the
    sheet renumbers it later the "Bill number changed" note says to send it again. */
 const NO_WAIT_MS=4000;
-/** Resolves true once bill `id` has left the send queue (the sheet has it, renumbered if needed), false if sending
-    stopped (offline, refused) or took longer than ms. */
+/** Resolves true once bill `id` has left the send queue (the sheet has it, renumbered if needed), "refused" if the sheet said
+    no, false if sending stopped (offline) or took longer than ms. */
 function billConfirmed(id, ms){
   const t0=Date.now();
   return new Promise(res=>{ const tick=()=>{
-    if(!S.billQ.some(x=>x.id===id)) return res(true);
+    if(!S.billQ.some(x=>x.id===id)) return res(billRefused[id] ? "refused" : true);
     if(!flushing || Date.now()-t0>ms) return res(false);
     setTimeout(tick,80); }; tick(); });
 }
@@ -537,6 +554,7 @@ async function shareConfirmed(){
   const okNo=await billConfirmed(ed.id, NO_WAIT_MS);
   btn.classList.remove("busy"); btn.removeAttribute("aria-busy"); if(al) btn.setAttribute("aria-label",al); else btn.removeAttribute("aria-label"); const ww=btn.querySelector(".wa-wait"); if(ww) ww.remove();
   if(S.editing!==ed) return;   // the bill was closed meanwhile
+  if(okNo==="refused"){ shareRefused(ed); return; }
   if(!okNo){ const q=S.billQ.find(x=>x.id===ed.id); if(q){ q.shared=true; ls.set("rb_billq",S.billQ); } }   // still waiting: a later renumber must say "send it again"
   const url=waLink(), no=dispNo(ed.n,S.gst,ed.fy); btn.href=url;
   S.pendShare=true; ls.set("rb_pshare",1);
@@ -546,6 +564,15 @@ async function shareConfirmed(){
   S.pendShare=false; ls.set("rb_pshare",0);
   openSheet(t("billSavedKeep",no), `<p class="note" style="margin:0">${esc(t("shareTapD"))}</p>`, `<a class="btn wa" id="sc-wa" target="_blank" rel="noopener" href="${esc(url)}">${esc(t("shareWa"))}</a>`);
   $("#sc-wa").onclick=()=>{ S.pendShare=true; ls.set("rb_pshare",1); setTimeout(closeSheet,300); };
+}
+/** (22 Oct 2026) The sheet refused the bill Share was waiting for: no WhatsApp, no "saved". The bill stays on screen as it was
+    (not saved, to fix and send again), so it's taken off the "couldn't be saved" list, and its number is offered again. */
+function shareRefused(ed){
+  const why=billRefused[ed.id]; delete billRefused[ed.id];
+  ls.set(WQ_FAIL, wqFails().filter(f=>f.oid!=="n"+ed.id)); wqUi();
+  const k=S.gst?"nextGstBill":"nextBill"; if(+S.cfg[k]===+ed.n+1){ S.cfg[k]=+ed.n; const tk=envKey("rb_took"), o=ls.get(tk,{}); delete o[S.gst?"g":"n"]; ls.set(tk,o); syncRaw(); saveCache(); }
+  S.editing=null; ls.set("rb_editing",null); S.pendShare=false; ls.set("rb_pshare",0);
+  renderBill(); renderList(); toast(errMsg({code:why}),true);
 }
 /* After Share opens WhatsApp, ask on return whether it really went, instead of saving the bill blindly. */
 let askingSent=false;
@@ -640,11 +667,20 @@ let custLV=0;
 function showCustHint(info){ const h=$("#cust-hint"); h.classList.remove("looking"); if(!info||!info.count){ h.hidden=true; h.innerHTML=""; return; }
   const d=info.last?new Date(info.last).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"";
   h.hidden=false; h.innerHTML=`<span><b>${esc(info.name||"")}</b>${info.name?" · ":""}${esc(t("custBack","",info.count,d))}${info.total?` · ${esc(t("custTotal",rs(info.total)))}`:""}${info.due>0?` · <b class="due">${esc(t("pendingHint",rs(info.due)))}</b>`:""}</span>`; }
+/** An out-of-state customer GSTIN means IGST (also when the GSTIN came from a saved customer, not only when typed). */
+function igstFromGstin(){ const g=String(S.custGstin||"").trim().toUpperCase(), sh=shopStateCode();
+  if(gstinOk(g) && g.length===15 && sh){ const other=g.slice(0,2)!==sh; if(other!==S.igst){ S.igst=other; ls.set("rb_igst",S.igst); } } }
+/** The mobile changed to another number: name, GSTIN and address the app filled for the old one go (anything typed stays). */
+function custAutoDrop(){
+  if(S.custAuto && S.cust===S.custAuto){ S.cust=""; $("#cust").value=""; ls.set("rb_cust",""); } S.custAuto="";
+  if(S.custGstinAuto && S.custGstin===S.custGstinAuto){ S.custGstin=""; $("#cust-gstin").value=""; ls.set("rb_cgstin",""); } S.custGstinAuto="";
+  if(S.custAddrAuto && S.custAddr===S.custAddrAuto) caddrSet(""); S.custAddrAuto="";
+}
 function applyCustomer(info){
   if(!info) return;
   const nameEl=$("#cust"), gEl=$("#cust-gstin");
   if(info.name && (!S.cust.trim() || S.cust===S.custAuto)){ S.cust=info.name; S.custAuto=info.name; nameEl.value=info.name; ls.set("rb_cust",S.cust); }
-  if(info.gstin && !S.custGstin.trim()){ S.custGstin=info.gstin; gEl.value=info.gstin; ls.set("rb_cgstin",S.custGstin); }
+  if(info.gstin && (!S.custGstin.trim() || S.custGstin===S.custGstinAuto)){ S.custGstin=info.gstin; S.custGstinAuto=info.gstin; gEl.value=info.gstin; ls.set("rb_cgstin",S.custGstin); igstFromGstin(); }
   const ad=info.addr||info.address||""; if(ad && (!String(S.custAddr||"").trim() || S.custAddr===S.custAddrAuto)){ caddrSet(ad); S.custAddrAuto=ad; }
   showCustHint(info); updateBillTotals();
 }
@@ -652,8 +688,8 @@ let custT=null;
 function custLookup(){
   clearTimeout(custT);
   const k=custKey(S.mob);
-  if(!k){ S.custQ=""; showCustHint(null); if(S.custAuto && S.cust===S.custAuto){ S.cust=""; S.custAuto=""; $("#cust").value=""; ls.set("rb_cust",""); } return; }
-  if(k===S.custQ) return; S.custQ=k;
+  if(!k){ const had=!!S.custQ; S.custQ=""; showCustHint(null); if(had){ custAutoDrop(); updateBillTotals(); } return; }   // (a company picked without a mobile keeps its details)
+  if(k===S.custQ) return; if(S.custQ) custAutoDrop(); S.custQ=k;
   const local=custCache()[k]; if(local) applyCustomer(local);
   if(!S.canWrite || !apiUrl() || navigator.onLine===false) return;
   const h=$("#cust-hint");
@@ -661,7 +697,7 @@ function custLookup(){
   custT=setTimeout(async()=>{ try{ const j=await apiPost({action:"findCustomer",mobile:k}); if(S.custQ!==k) return;
       h.classList.remove("looking");
       if(j.customer){ const c=custCache(); c[k]={...(c[k]||{}),name:j.customer.name||(c[k]||{}).name||"",gstin:j.customer.gstin||(c[k]||{}).gstin||"",addr:j.customer.address||(c[k]||{}).addr||"",count:j.customer.count,total:j.customer.total,last:j.customer.last,due:+j.customer.due||0}; ls.set(envKey("rb_customers"),c); applyCustomer(c[k]); }
-      else if(!local){ h.hidden=false; h.innerHTML=`<span>${esc(t("custNew"))}</span>`; }
+      else if(!local){ h.hidden=false; h.innerHTML=`<span>${esc(t("custNew"))}</span>`; updateBillTotals(); }
     }catch{ if(S.custQ===k && !local){ h.classList.remove("looking"); showCustHint(null); } } },350);
 }
 /* ---------------- Customer suggestions while typing (name, mobile, GSTIN) ----------------
@@ -731,9 +767,9 @@ function sugShow(field){
 }
 function sugPick(i){
   const c=SUG.list[i]; if(!c) return; const field=SUG.field; sugClose();
-  S.cust=c.name||S.cust; S.custAuto=""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);
+  S.cust=c.name||S.cust; S.custAuto=c.name||""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);   // a picked customer belongs to their mobile: another mobile drops them again
   if(c.mob){ S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); } $("#mob-err").textContent="";   // a company saved without a mobile keeps what was typed $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
-  if(c.gstin){ S.custGstin=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; }
+  if(c.gstin){ S.custGstin=c.gstin; S.custGstinAuto=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; igstFromGstin(); }
   if(c.addr){ caddrSet(c.addr); S.custAddrAuto=c.addr; }   // a saved customer's address goes on the bill
   if(c.mob){ const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once
   S.custQ=""; custLookup(); updateBillTotals();
@@ -743,7 +779,7 @@ function sugPick(i){
 function setOpen(btnSel,panelSel,key,open){ $(panelSel).hidden=!open; $(btnSel).setAttribute("aria-expanded",open); ls.set(key,open); }
 /* ---------------- Bill page: one ✕ clears customer name, mobile and GSTIN ---------------- */
 function custXSync(){ const b=$("#cust-x"); if(!b) return; const on=!!(S.cust.trim()||S.mob.trim()||String(S.custGstin||"").trim()||String(S.custAddr||"").trim()); b.hidden=!on; $(".bh-cust").classList.toggle("has-x",on); }
-function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); S.custAuto=""; S.custQ="";
+function custClear(){ S.cust=""; S.mob=""; S.custGstin=""; caddrSet(""); S.custAuto=""; S.custGstinAuto=""; S.custQ="";
   ["#cust","#cust-mob","#cust-gstin"].forEach(k=>{ const el=$(k); if(el){ el.value=""; el.classList.remove("need"); } }); ["rb_cust","rb_mob","rb_cgstin"].forEach(k=>ls.set(k,""));
   const me=$("#mob-err"); if(me) me.textContent=""; const ge=$("#gstin-err"); if(ge) ge.textContent=""; sugClose(); showCustHint(null); updateBillTotals(); custXSync(); }
 /* Sign-in and app lock: lock.js. LOCK stays here because it reads phone storage while loading. */

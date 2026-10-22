@@ -1,6 +1,6 @@
 # Rate Book: handover for a new session
 
-Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITECTURE.md) (the map) and [`CLAUDE.md`](CLAUDE.md) (the full history of every feature and decision). For anything people see, also read [`designinstructions.md`](designinstructions.md) and run its §12 checklist.
+Last updated: 22 October 2026 (bill page fixes; Google-side rollout done). Read this first, then [`ARCHITECTURE.md`](ARCHITECTURE.md) (the map) and [`CLAUDE.md`](CLAUDE.md) (the full history of every feature and decision). For anything people see, also read [`designinstructions.md`](designinstructions.md) and run its §12 checklist.
 
 ## 1. What Rate Book is
 
@@ -50,21 +50,17 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 | Thing | Value | Where |
 |---|---|---|
-| `main` | `8456fe2` "Fix dashboard not loading (stale Content-Security-Policy digest)" | PRs #96, #97 and #98 merged 21 Oct |
+| `main` | `82f5cb3` "architect-review: study comparable apps first…" | PRs #99–#101 merged 22 Oct |
 | Sheet script | `SCRIPT_VERSION` **67** | `server/01-core.gs` |
 | Oldest script the app supports | `NEED_SV` **60** in `app.js`, the same as `MIN_SV` in `admin.html` | `tests/assets.test.js` checks that they match |
 | Directory | `DIR_VERSION` **11** | `admin/Directory.gs` |
 | Offline cache | `rb-shell-9` | `sw.js` |
-| Tests | 98 files, all passing on the last full run | `node tests/run-all.js` |
+| Tests | 99 files (`tests/billfix.app.test.js` added 22 Oct) | `node tests/run-all.js` |
 
-**Shops**
-- **The main shop** (code `main`, "Shree Pushpadant Plastics and Packaging") is on script **v65** and in test mode.
-- **Mahavir Provision** (`MAHAVIRPRO-GW2QT3LNAP`) is on script **v65**.
-- Both still need updating to v67. See the rollout below.
-
-**Not done on Google's side yet (Mayank has to do these):**
-- paste the Directory v11;
-- update both shops to v67.
+**Shops** (Mayank, 22 Oct 2026)
+- **The main shop** (code `main`, "Shree Pushpadant Plastics and Packaging") is on script **v67**, in test mode, with "New phones need my approval" on.
+- **Mahavir Provision** (`MAHAVIRPRO-GW2QT3LNAP`) is on script **v67**.
+- The Directory is on **v11**.
 
 ## 4. How the app works (short; details in ARCHITECTURE.md)
 
@@ -121,25 +117,23 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 ## 5. Rollout of what's merged (Mayank's steps, in order)
 
-1. **Directory v11:**
-   1. Open script.google.com → the "Rate Book Directory" project.
-   2. Replace its code with `admin/Directory.gs` from `main`.
-   3. **Deploy → Manage deployments → Edit → Version: New version → Deploy.**
-   4. Reload the dashboard: it should say "Latest script v67 · commit …".
-2. **Update scripts to v67:**
-   1. On the dashboard, open **your shop first → Update script**, then check it.
-   2. Then **Update all shops**, which includes Mahavir Provision.
-   3. Never use "New deployment": it changes the link.
-3. In your shop: **Settings → People & security → Signed-in phones → turn on "New phones need my approval"**.
+Done on 22 Oct 2026: Directory v11, both shops on v67, new-phone approval on in the main shop. The usual steps for a later change:
+1. **Directory** (only when `admin/Directory.gs` changed): script.google.com → "Rate Book Directory" → replace the code → **Deploy → Manage deployments → Edit → Version: New version → Deploy**.
+2. **Scripts** (only when `server/` changed): dashboard → **your shop first → Update script**, check it, then **Update all shops**. Never use "New deployment": it changes the link.
+3. **App-only changes** (like the 22 Oct bill page fixes) need nothing: phones get them on their next open.
 
 ## 6. Pending list
 
 **Mayank's steps**
-1. Paste the Directory v11 and deploy a New version (above).
-2. Update both shops to v67: your shop first, then Update all.
-3. Turn on "New phones need my approval" in your shop.
-4. Before adding many customer shops, plan a separate Google (Workspace) account for them. Turn on 2-step verification (security keys if possible) on Google and GitHub.
-5. Delete the saved shop PIN from the phone's password manager (Google Password Manager / Samsung Pass → the app's site → Delete).
+1. Before adding many customer shops, plan a separate Google (Workspace) account for them. Turn on 2-step verification (security keys if possible) on Google and GitHub.
+2. Delete the saved shop PIN from the phone's password manager (Google Password Manager / Samsung Pass → the app's site → Delete).
+
+**Decide**
+- The bill page layout redesign (mock-up sent 22 Oct 2026): bill items first, customer & payment below them, compact lines (5 of 5 lines on a 390 px phone instead of 2), one-row lines on the laptop. Mock-up script: in that session's scratchpad only; the CSS it used is listed in the 22 Oct conversation.
+
+**Build next (bill page review, not fixed yet; CLAUDE.md "Bill page fixes")**
+- Medium: offline bills dated when they reach the sheet (and across 31 March); first GST bill on 1 April shows No. 1; IGST with no customer state; staff changes to a shared bill after 30 minutes; bill-text check matching "₹5" inside "₹50"; adding to a long bill slow on cheap phones (~0.5 s at 30 lines).
+- Low: Hindi name field on edited lines; history row on a refused edit; red outline after picking a customer; Cash given with commas / Hindi digits; place of supply kept after Done.
 
 **Watch**
 - After 1 April 2027, the first yearly archive. Check the `Bills 2025-26` tab, the `BillYears` tab and the error log.

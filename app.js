@@ -18,7 +18,7 @@ const UNIT_ALIASES={kg:["kg","kgs","kilo","kilos","kilogram","किलो","क
 /* Test / real mode strings */
 /* Credit (udhaar) strings */
 const S = { lang: ls.get("rb_lang","en"), hideBuy: ls.get("rb_hidebuy",false), items:[], byId:new Map(), index:[], loaded:false, canWrite:false,
-  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), custAddr: ls.get("rb_caddr",""), po: poNorm(ls.get("rb_po",null)), billNoOvr: ls.get("rb_billno",null), move: ls.get("rb_move",null), posSel: ls.get("rb_pos",""), pendShare: !!ls.get("rb_pshare",0), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), pm: ls.get("rb_pm",""), profitShown:false, custAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
+  auth: ls.get("rb_auth",null), rev:null, online:null, lastSync:0, thumbs:{}, q:"", limit:40, tab:"items", bill: ls.get("rb_bill",[]), cust: ls.get("rb_cust",""), mob: ls.get("rb_mob",""), gst: ls.get("rb_gst",false), igst: ls.get("rb_igst",false), custGstin: ls.get("rb_cgstin",""), custAddr: ls.get("rb_caddr",""), po: poNorm(ls.get("rb_po",null)), billNoOvr: ls.get("rb_billno",null), move: ls.get("rb_move",null), posSel: ls.get("rb_pos",""), pendShare: !!ls.get("rb_pshare",0), filter:"all", pay: ls.get("rb_pay","paid"), recv: ls.get("rb_recv",""), pm: ls.get("rb_pm",""), profitShown:false, custAuto:"", custGstinAuto:"", custQ:"", editing: ls.get("rb_editing",null), qTabs:{items:"",bill:""}, lastBill: ls.get("rb_lastbill",null), billQ: ls.get("rb_billq",[]),
   cfg:{ shopName:"", units:DEFAULT_UNITS, defaultUnit:"kg", roundTo:1, billFooter:"", nextBill:1, nextGstBill:1, showProfit:false, shopGstin:"", shopAddress:"", defaultGst:18, defaultHsn:"3923", mode:"test" } };
 S.canWrite = !!(S.auth && (S.auth.tok || S.auth.pin));
 if(S.canWrite && S.auth.prefs && typeof S.auth.prefs.hideBuy==="boolean") S.hideBuy=S.auth.prefs.hideBuy;   // this person's choice beats the phone's
@@ -175,9 +175,12 @@ function syncRaw(){ const r=S.cfg.raw||(S.cfg.raw={}); if(S.cfg.mode==="test"){ 
 const envKey=k=> S.cfg.mode==="test" ? k+"_test" : k;
 /** Called when the mode changes (here or on another phone): start a clean bill so nothing crosses over. */
 function switchEnv(cfg){
-  const before=S.cfg.mode; applyConfig(cfg); saveCache();
+  const before=S.cfg.mode, held=draftEmpty()?null:snapDraft(); applyConfig(cfg); saveCache();
   if(before!==S.cfg.mode){
-    if(S.editing){ S.editing=null; ls.set("rb_editing",null); ls.set("rb_stash",null); }
+    /* (22 Oct 2026) the bill on screen belongs to the mode it was made in: it goes aside as an open bill of that mode (back when
+       that mode is used again), so a practice bill is never saved as real and a shared real bill isn't saved again in test */
+    if(held){ const k=before==="test"?"rb_held_test":"rb_held", h=ls.get(k,[]); ls.set(k,(Array.isArray(h)?h:[]).concat([held])); toast(t("envHeld")); }
+    blankDraft(); renderHeld();
     S.billNoOvr=null; ls.set("rb_billno",null); S.lastBill=null; ls.set("rb_lastbill",null);
     duesCache=null; S.custQ=""; showCustHint(null); for(const k in RPC) delete RPC[k];
   }
@@ -731,7 +734,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("input",e=>{
   const q=e.target.dataset?.qty, r=e.target.dataset?.rate;
-  if(q!=null){ const l=S.bill[+q], v=parseQty(e.target.value,l&&l.unit); if(l && isFinite(v)&&v>=0&&v<1e7){ l.qty=v; saveBill(); updateBillTotals(); qpHint(e.target,+q); } else if(l) qpHint(e.target,+q); }
+  if(q!=null){ e.target.classList.remove("need"); const l=S.bill[+q], v=parseQty(e.target.value,l&&l.unit); if(l && isFinite(v)&&v>=0&&v<1e7){ l.qty=v; saveBill(); updateBillTotals(); qpHint(e.target,+q); } else if(l) qpHint(e.target,+q); }
   if(r!=null){ const v=toNum(e.target.value); if(isFinite(v)&&v>=0&&v<1e9){ S.bill[+r].rate=v; saveBill(); updateBillTotals(); } }
   const h=e.target.dataset?.hsn;
   if(h!=null){ const v=e.target.value.replace(/\D/g,"").slice(0,8); if(v!==e.target.value) e.target.value=v; const l=S.bill[+h]; if(!l) return; if(v) l.hsn=v; else delete l.hsn; saveBill(); updateBillTotals(); }
@@ -789,8 +792,8 @@ $("#bh-more").onclick=()=>setOpen("#bh-more","#bh-extra","rb_bh_open",$("#bh-ext
 $("#tot-more").onclick=()=>setOpen("#tot-more","#tot-extra","rb_tot_open",$("#tot-extra").hidden);
 $("#bh-no-btn").onclick=()=>{ setOpen("#bh-more","#bh-extra","rb_bh_open",true); if(!S.editing){ const i=$("#bill-no"); i.focus(); i.select(); } };
 $("#ro-x").onclick=()=>{ ls.set("rb_ro_x",true); $("#ro-note").hidden=true; };
-$("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=>{ S.custGstin=e.target.value.toUpperCase(); ls.set("rb_cgstin",S.custGstin);
-  const g=S.custGstin.trim(), sh=shopStateCode(); if(gstinOk(g) && g.length===15 && sh){ const other=g.slice(0,2)!==sh; if(other!==S.igst){ S.igst=other; ls.set("rb_igst",S.igst); } }   // out-of-state GSTIN → IGST
+$("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=>{ S.custGstin=e.target.value.toUpperCase(); S.custGstinAuto=""; ls.set("rb_cgstin",S.custGstin);
+  igstFromGstin();   // out-of-state GSTIN → IGST
   updateBillTotals(); });
 $("#pos-sel").innerHTML=`<option value="">—</option>`+STATES.map(([c,n])=>`<option value="${c}">${n} (${c})</option>`).join(""); $("#pos-sel").value=S.posSel;
 $("#pos-sel").onchange=e=>{ S.posSel=e.target.value; ls.set("rb_pos",S.posSel); updateBillTotals(); };
@@ -804,7 +807,7 @@ $("#bill-done").onclick=()=>{ if(!payCheck()) return; if(S.gst && !gstinOk(S.cus
 $("#bill-copy").onclick=async()=>{ const txt=billText(); try{ await navigator.clipboard.writeText(txt); toast(t("copied")); }catch{ openSheet(t("billTitle"),`<textarea id="bill-txt" readonly>${esc(txt)}</textarea>`); const ta=$("#bill-txt"); ta.select(); toast(t("copyFail")); } };
 $("#bill-clear").onclick=()=>{ $("#bill-clear-confirm").hidden=false; };
 $("#bill-clear-no").onclick=()=>{ $("#bill-clear-confirm").hidden=true; };
-$("#bill-clear-yes").onclick=()=>{ poSet(null); caddrSet(""); S.cash=""; S.pm=""; ls.set("rb_pm",""); renderPay(); S.custAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
+$("#bill-clear-yes").onclick=()=>{ poSet(null); caddrSet(""); S.cash=""; S.pm=""; ls.set("rb_pm",""); renderPay(); S.custAuto=""; S.custGstinAuto=""; S.custQ=""; showCustHint(null); S.profitShown=false; S.bill=[]; S.cust=""; S.mob=""; $("#cust").value=""; $("#cust-mob").value=""; ls.set("rb_cust",""); ls.set("rb_mob",""); saveBill(); $("#bill-clear-confirm").hidden=true; renderBill(); };
 
 /* ---------------- Sheet ---------------- */
 let sheetOnClose=null;

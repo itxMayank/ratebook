@@ -22,7 +22,7 @@ async function loadDues(){
 function custFill(c){ if(S.editing && !S.editing.fresh){ toast(t("cuFinishEdit")); return false; }
   if(S.bill.length && (S.cust.trim()||S.mob.trim()) && (c.mob ? custKey(S.mob)!==c.mob : S.cust.trim().toLowerCase()!==String(c.name||"").trim().toLowerCase())) newHeldBill();
   S.cust=c.name||""; S.custAuto=""; S.mob=c.mob||""; S.custGstin=c.gstin||""; caddrSet(c.addr||""); $("#cust").value=S.cust; $("#cust-mob").value=S.mob; $("#cust-gstin").value=S.custGstin;
-  ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_cgstin",S.custGstin); S.custQ=""; custLookup(); updateBillTotals(); custXSync(); return true; }
+  ls.set("rb_cust",S.cust); ls.set("rb_mob",S.mob); ls.set("rb_cgstin",S.custGstin); igstFromGstin(); S.custQ=""; custLookup(); updateBillTotals(); custXSync(); return true; }
 /* ---------------- Customers page: list → customer → their bills (same bill view as Past bills) ---------------- */
 const CU={q:"",sort:"recent",lim:150};
 async function openCustomers(){

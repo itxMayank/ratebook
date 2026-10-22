@@ -1317,6 +1317,7 @@ Items 12–16 of the architecture review. **Start with [`ARCHITECTURE.md`](ARCHI
 A Claude Code skill Mayank runs by hand (`disable-model-invocation`).
 - **`/architect-review design: <feature>`**: before building, works out the real need, 2–3 ways to build it with a recommendation, the design (sheet, script, app, older scripts), what must also be included, threats and failures, and a test-first build plan.
 - **`/architect-review`** (current branch vs `main`), `staged`, a PR number or a branch: a blunt review with a verdict (BLOCK / FIX BEFORE MERGE / SHIP), what the change adds and removes, findings with `file:line` and a failure scenario, attempts to break it (run with the existing test harnesses), missing tests and rollout risks.
+- Both modes first look at how comparable billing / POS / khata apps (Vyapar, myBillBook, Khatabook, Square POS, Loyverse…) and current mobile design handle the same thing (fetched when web search is available), and judge ease of use and speed of work first: taps and waits to a bill, search and its results, thumb reach, what's needed next, look and feel.
 - Security is judged from the attacker's side (stranger with the public code, dishonest staff, stolen phone, link holders, other shops, quota abuse, supply chain), not only PINs. Keep the function names it cites in step with the code when they're renamed.
 
 ## How many shops one Google account can run (21 Oct 2026)

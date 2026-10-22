@@ -436,6 +436,14 @@ const SBOT=()=>!DESK() && sposNow()==="bottom";
 /* The new bill page (phones, per person, off by default; 22 Oct 2026): items first, then "Customer & payment"; recent items
    as tap-to-add pills on an empty bill; shorter lines; a hint when open bills are off the edge of the chips row. */
 const BNEW=()=>!DESK() && ls.get("rb_blay","classic")==="new";
+/* New bill page: a small round ↓ on the top edge of the total card while the customer card is still below the screen;
+   tapping it scrolls down to "Customer & payment". It floats (takes no room) and hides while typing or searching. */
+function tcSync(){ const b=$("#tocust"); if(!b) return; const bc=document.body.classList, h=$("#billhead"), t=$("#bill-total");
+  let on=BNEW() && S.tab==="bill" && S.bill.length>0 && !bc.contains("typing") && !bc.contains("qtyp") && !!h && !!t && !t.hidden;
+  if(on){ const tt=t.getBoundingClientRect().top; on=tt>0 && h.getBoundingClientRect().top>tt-110; }   // less than about the card's title row showing
+  if(b.classList.contains("on")!==on){ b.classList.toggle("on",on); b.tabIndex=on?0:-1; } }
+function tcGo(){ const h=$("#billhead"), hd=$("header.top"); if(!h) return; const top=(hd?hd.getBoundingClientRect().bottom:0)+8;
+  window.scrollBy({top:h.getBoundingClientRect().top-top, behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }
 function placeSearch(){ const on=SBOT(), dock=$("#dock"), sb=$("#searchbox"), fab=$("#fab"), rise=$("#rise"), bsr=$("#bill-search-results");
   root.classList.toggle("sbot",on); root.classList.toggle("bnew",BNEW()); root.classList.toggle("sres-top",ls.get("rb_sres","near")==="top");
   if(on){ if(sb.parentNode!==dock){ dock.appendChild(sb); dock.appendChild(fab); } if(bsr.parentNode!==rise) rise.appendChild(bsr); }
@@ -453,7 +461,7 @@ function bsPos(){ const H=window.innerHeight, t=$("#bill-total"), tb=$("nav.tabs
   root.classList.toggle("billhas", !t.hidden);
   if(S.tab==="bill" && !t.hidden){ const x=t.getBoundingClientRect(); if(x.height){ b=H-x.top+12; const nb=Math.round(b+16), ob=parseFloat(root.style.getPropertyValue("--billpad"))||0; if(!(document.body.classList.contains("typing") && nb<ob)) root.style.setProperty("--billpad",nb+"px"); }   /* while typing, the slim total card never shrinks the room under the bill, so the page doesn't jump as the search closes */ } else if(tr.height) b=H-tr.top+12;
   root.style.setProperty("--bsb",Math.max(12,Math.round(b))+"px"); root.style.setProperty("--bsr",Math.max(12,r)+"px"); }
-function dockPos(){ try{ bsPos(); sumFit(); }catch{} if(!root.classList.contains("sbot")) return;
+function dockPos(){ try{ bsPos(); sumFit(); tcSync(); }catch{} if(!root.classList.contains("sbot")) return;
   const dock=$("#dock"), H=window.innerHeight, a=document.activeElement, qf=!!a && a.id==="q";
   const kb=parseFloat(root.style.getPropertyValue("--kb"))||0; let b;
   if(qf) b=kb+8;
@@ -658,6 +666,8 @@ function bsOpen(){ bsY=window.scrollY; document.body.classList.add("bsopen"); co
 function bsClose(){ if(!document.body.classList.contains("bsopen")) return; document.body.classList.remove("bsopen");
   const q=$("#q"); if(q.value){ q.value=""; onQuery(""); } try{ syncQe(); dockPos(); }catch{} if(bsY==null) bsGen++; else bsHold(); bsY=null; }
 let bsKeep=0;
+$("#tocust").addEventListener("click",tcGo); $("#tocust").setAttribute("aria-label",t("toCust"));
+{ let tcR=0; window.addEventListener("scroll",()=>{ cancelAnimationFrame(tcR); tcR=requestAnimationFrame(tcSync); },{passive:true}); }
 $("#bsfab").addEventListener("click",bsOpen); $("#tot-find").addEventListener("click",bsOpen); $("#tot-find").setAttribute("aria-label",t("totFind"));
 $("#mic").addEventListener("pointerdown",()=>{ bsKeep=Date.now(); },true);
 $("#q").addEventListener("blur",()=>{ if(!bsOn()) return; setTimeout(()=>{ const a=document.activeElement; if(a && a.id==="q") return; if(Date.now()-bsKeep<1500) return; bsClose(); },60); });

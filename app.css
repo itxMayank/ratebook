@@ -2024,8 +2024,12 @@ input[data-pin]{-webkit-text-security:disc}
   html.bnew #view-bill>#bill-total{order:4}
   html.bnew .bh-title{display:block;font:700 15px/1.3 var(--f-display);color:var(--fg);margin:0 0 -2px}
   /* an empty bill: recent items as tap-to-add pills */
-  .bspills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:2px 0 18px}
-  .bspill{min-height:40px;max-width:100%;padding:6px 14px;border:1.5px solid color-mix(in srgb,var(--fg) 24%,transparent);border-radius:var(--r-full);background:var(--surface);color:var(--fg);font:600 15px/1.25 var(--f-body);overflow-wrap:anywhere;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s var(--ease-out)}
+  .bspills{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:0}
+  .bspill{min-height:34px;max-width:100%;padding:4px 12px;border:1.5px solid color-mix(in srgb,var(--fg) 24%,transparent);border-radius:var(--r-full);background:var(--surface);color:var(--fg);font:600 14px/1.25 var(--f-body);overflow-wrap:anywhere;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s var(--ease-out);position:relative}
+  .bspill::after{content:"";position:absolute;inset:-4px -2px}   /* 42 px tap area */
+  html.bnew #view-bill .empty.bstart{padding:8px 4px 0;gap:8px}
+  html.bnew .empty.bstart h2{font-size:20px}
+  html.bnew .empty.bstart .empty-find{margin-top:4px}
   .bspill:active{transform:scale(.96)}
   html.bnew.sbot:not(.billhas) body[data-tab="bill"] #view-bill{padding-bottom:28px}   /* the round search button never covers the end of the card */
   html.bnew:not(.sbot):not(.billhas) body[data-tab="bill"] #view-bill{padding-bottom:calc((var(--bsb,96px) + 56px * var(--fz2,1)) / var(--fz,1))}
@@ -2053,3 +2057,16 @@ input[data-pin]{-webkit-text-security:disc}
   html.bnew .hh-l{left:0}
   html.bnew .hh-r{right:0}
 }
+/* new bill page: the ↓ to the customer card, on the total card's top edge */
+.tocust{display:none}
+@media (max-width:1023px){
+  html.bnew .tocust{display:grid;place-items:center;position:fixed;left:50%;bottom:calc(var(--bsb,96px) - 20px);z-index:32;width:34px;height:34px;padding:0;border:1px solid var(--line);border-radius:50%;
+    background:color-mix(in srgb,var(--surface) 82%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--accent);box-shadow:var(--shadow-lg);cursor:pointer;
+    opacity:0;pointer-events:none;transform:translate(-50%,10px) scale(.8);transition:opacity .22s var(--ease-out),transform .32s var(--ease-spring);-webkit-tap-highlight-color:transparent;zoom:var(--fz2,1)}
+  html.bnew .tocust::after{content:"";position:absolute;inset:-5px -5px 0}
+  html.bnew .tocust.on{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1)}
+  html.bnew .tocust.on svg{animation:tcBob 1.8s var(--ease-std) infinite}
+  html.bnew .tocust:active{transform:translate(-50%,0) scale(.92)}
+}
+@keyframes tcBob{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){html.bnew .tocust{transition:opacity .2s}html.bnew .tocust.on svg{animation:none}}

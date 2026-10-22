@@ -1,6 +1,6 @@
 # Rate Book: handover for a new session
 
-Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITECTURE.md) (the map) and [`CLAUDE.md`](CLAUDE.md) (the full history of every feature and decision). For anything people see, also read [`designinstructions.md`](designinstructions.md) and run its §12 checklist.
+Last updated: 22 October 2026 (bill page fixes; Google-side rollout done). Read this first, then [`ARCHITECTURE.md`](ARCHITECTURE.md) (the map) and [`CLAUDE.md`](CLAUDE.md) (the full history of every feature and decision). For anything people see, also read [`designinstructions.md`](designinstructions.md) and run its §12 checklist.
 
 ## 1. What Rate Book is
 
@@ -38,7 +38,7 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 **Replies**
 - Keep them short, in plain language, and say what changed for the shop.
-- **End every reply with the pending list** (section 6).
+- **Show the pending list (section 6) only when Mayank asks for it** (his rule, 22 Oct 2026; before, it ended every reply).
 
 **In the app**
 - Technical messages (script versions, Apps Script steps, error codes) show only to the original shop's owner (`TECH()` in `app.js`). Other shops see plain text through `key_s` strings.
@@ -50,21 +50,17 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 | Thing | Value | Where |
 |---|---|---|
-| `main` | `8456fe2` "Fix dashboard not loading (stale Content-Security-Policy digest)" | PRs #96, #97 and #98 merged 21 Oct |
-| Sheet script | `SCRIPT_VERSION` **67** | `server/01-core.gs` |
+| `main` | `82f5cb3` "architect-review: study comparable apps first…" | PRs #99–#101 merged 22 Oct |
+| Sheet script | `SCRIPT_VERSION` **68** (not yet on the shops) | `server/01-core.gs` |
 | Oldest script the app supports | `NEED_SV` **60** in `app.js`, the same as `MIN_SV` in `admin.html` | `tests/assets.test.js` checks that they match |
 | Directory | `DIR_VERSION` **11** | `admin/Directory.gs` |
 | Offline cache | `rb-shell-9` | `sw.js` |
-| Tests | 98 files, all passing on the last full run | `node tests/run-all.js` |
+| Tests | 100 files (`tests/billfix.app.test.js`, `tests/billfix.test.js` added 22 Oct) | `node tests/run-all.js` |
 
-**Shops**
-- **The main shop** (code `main`, "Shree Pushpadant Plastics and Packaging") is on script **v65** and in test mode.
-- **Mahavir Provision** (`MAHAVIRPRO-GW2QT3LNAP`) is on script **v65**.
-- Both still need updating to v67. See the rollout below.
-
-**Not done on Google's side yet (Mayank has to do these):**
-- paste the Directory v11;
-- update both shops to v67.
+**Shops** (Mayank, 22 Oct 2026)
+- **The main shop** (code `main`, "Shree Pushpadant Plastics and Packaging") is on script **v67**, in test mode, with "New phones need my approval" on.
+- **Mahavir Provision** (`MAHAVIRPRO-GW2QT3LNAP`) is on script **v67**.
+- The Directory is on **v11**.
 
 ## 4. How the app works (short; details in ARCHITECTURE.md)
 
@@ -121,25 +117,22 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 ## 5. Rollout of what's merged (Mayank's steps, in order)
 
-1. **Directory v11:**
-   1. Open script.google.com → the "Rate Book Directory" project.
-   2. Replace its code with `admin/Directory.gs` from `main`.
-   3. **Deploy → Manage deployments → Edit → Version: New version → Deploy.**
-   4. Reload the dashboard: it should say "Latest script v67 · commit …".
-2. **Update scripts to v67:**
-   1. On the dashboard, open **your shop first → Update script**, then check it.
-   2. Then **Update all shops**, which includes Mahavir Provision.
-   3. Never use "New deployment": it changes the link.
-3. In your shop: **Settings → People & security → Signed-in phones → turn on "New phones need my approval"**.
+Done on 22 Oct 2026: Directory v11, both shops on v67, new-phone approval on in the main shop. The usual steps for a later change:
+1. **Directory** (only when `admin/Directory.gs` changed): script.google.com → "Rate Book Directory" → replace the code → **Deploy → Manage deployments → Edit → Version: New version → Deploy**.
+2. **Scripts** (only when `server/` changed): dashboard → **your shop first → Update script**, check it, then **Update all shops**. Never use "New deployment": it changes the link.
+3. **App-only changes** (like the 22 Oct bill page fixes) need nothing: phones get them on their next open.
 
 ## 6. Pending list
 
 **Mayank's steps**
-1. Paste the Directory v11 and deploy a New version (above).
-2. Update both shops to v67: your shop first, then Update all.
-3. Turn on "New phones need my approval" in your shop.
-4. Before adding many customer shops, plan a separate Google (Workspace) account for them. Turn on 2-step verification (security keys if possible) on Google and GitHub.
-5. Delete the saved shop PIN from the phone's password manager (Google Password Manager / Samsung Pass → the app's site → Delete).
+1. Before adding many customer shops, plan a separate Google (Workspace) account for them. Turn on 2-step verification (security keys if possible) on Google and GitHub.
+2. Delete the saved shop PIN from the phone's password manager (Google Password Manager / Samsung Pass → the app's site → Delete).
+
+**Decide**
+- The bill page layout redesign (mock-up sent 22 Oct 2026): bill items first, customer & payment below them, compact lines (5 of 5 lines on a 390 px phone instead of 2), one-row lines on the laptop. Mock-up script: in that session's scratchpad only; the CSS it used is listed in the 22 Oct conversation.
+
+**Mayank's steps after the next merge**
+- Update both shops to script **v68** (dashboard → your shop first → Update script, then Update all shops). Until then bills sent late are still dated when they arrive; everything else works.
 
 **Watch**
 - After 1 April 2027, the first yearly archive. Check the `Bills 2025-26` tab, the `BillYears` tab and the error log.
@@ -199,4 +192,4 @@ Last updated: 22 October 2026. Read this first, then [`ARCHITECTURE.md`](ARCHITE
 
 ## 9. Prompt to paste into a new session
 
-> I'm Mayank. We're continuing work on Rate Book (repo itxMayank/ratebook, branch claude/friendly-ramanujan-vd1vb8). First read HANDOVER.md, then ARCHITECTURE.md, and use CLAUDE.md as the reference. Follow the working rules in HANDOVER.md §2 exactly: merge only when I say "merge", run `node tools/stamp.js` after edits, edit `server/` not `Code.gs`, update CLAUDE.md with each change, run the full test suite before merging, keep replies short and plain, and end every reply with the pending list. Then tell me in a few lines where things stand and wait for my next request.
+> I'm Mayank. We're continuing work on Rate Book (repo itxMayank/ratebook, branch claude/friendly-ramanujan-vd1vb8). First read HANDOVER.md, then ARCHITECTURE.md, and use CLAUDE.md as the reference. Follow the working rules in HANDOVER.md §2 exactly: merge only when I say "merge", run `node tools/stamp.js` after edits, edit `server/` not `Code.gs`, update CLAUDE.md with each change, run the full test suite before merging, keep replies short and plain, and show the pending list only when I ask for it. Then tell me in a few lines where things stand and wait for my next request.

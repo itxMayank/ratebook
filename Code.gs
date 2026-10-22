@@ -17,7 +17,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 67;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 68;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';
@@ -1248,6 +1248,12 @@ function setPin_(p) {
 }
 
 /** A bill was shared or marked done: record it and move the bill number on. */
+/** (v68) When a bill was made, from the phone's madeAt (ms): taken if within the last 7 days, never later than now; else now. */
+function madeAt_(v) {
+  const now = Date.now(), t = Number(v);
+  if (!(t > 0) || t < now - 7 * 864e5) return new Date();
+  return new Date(Math.min(t, now));
+}
 function takeBill_(body) {
   const lock = LockService.getScriptLock();
   try {
@@ -1270,11 +1276,17 @@ function takeBill_(body) {
       const badT = billTextCheck_(bb, used > 0 ? used : 0); if (badT) return { ok: false, error: badT.error, what: badT.what, line: badT.line }; }   // (v67) the text shows this bill's number, items and total
     let key = isGst ? 'nextGstBill' : 'nextBill';   // GST and normal bills have separate numbers
     if (ENV_ === 'test') key = key === 'nextBill' ? 'testNextBill' : 'testNextGstBill';      // and test mode has its own
-    const cfg0 = readConfig_(), fyNow = fy_(new Date());
+    /* (v68) The bill's own date: a bill made offline is sent later (next morning, or after 31 March). The phone sends when it was
+       made (madeAt); up to 7 days back is taken (never later than now), so day totals and the financial year are the bill's own. */
+    const billDate = madeAt_(body.bill && body.bill.madeAt);
+    const cfg0 = readConfig_(), fyToday = fy_(new Date()), fyNow = fy_(billDate);
     let cur = cfg0[key];
     const fyKey = ENV_ === 'test' ? 'testGstFy' : 'gstFy';
     let fyNew = false;
-    if (isGst && cfg0.fyReset && cfg0[fyKey] !== fyNow) {
+    /* (v68) a GST bill from last financial year arriving after the new year's series started: its number belongs to last year's
+       series, so the counter (now the new year's) is neither reset nor moved by it */
+    const lateFy = isGst && cfg0.fyReset && fyNow !== fyToday && cfg0[fyKey] && cfg0[fyKey] !== fyNow;
+    if (isGst && cfg0.fyReset && cfg0[fyKey] !== fyNow && fyNow === fyToday) {
       if (!cfg0[fyKey]) { const o = {}; o[fyKey] = fyNow; setConfig_(o); }                  // first run: just note the current year
       else { cur = 1; fyNew = true; const o = {}; o[key] = 1; o[fyKey] = fyNow; setConfig_(o); }          // new financial year: GST invoices start again from 1
     }
@@ -1285,12 +1297,12 @@ function takeBill_(body) {
     if (!(used > 0)) { renumbered = { from: used || 0, to: cur }; used = cur; }
     /* (v64) a typo with extra digits (17760 for 1776) would move the series on for good (GST invoice numbers must run on). A jump of
        up to 1,000 (a new bill book) is fine; the phone asks first from 50 up. */
-    else if (used > cur + 1000 && !fyNew) return { ok: false, error: 'bill_no_jump', next: cur };
+    else if (used > cur + 1000 && !fyNew && !lateFy) return { ok: false, error: 'bill_no_jump', next: cur };
     if (used > 0) {
       const bs = sheet_(tab_('Bills'), BILL_COLS), bn0 = bs.getLastRow() - 1;
       /* (v60) the usual case, the next number or above: only bills made lately can hold it, so read the last 600 rows instead of
          the whole tab (3 columns of every bill ever made, on every bill). A number typed below the next one still checks them all. */
-      const from = used >= cur ? Math.max(0, bn0 - 600) : 0, bn = bn0 - from;
+      const from = used >= cur && !lateFy ? Math.max(0, bn0 - 600) : 0, bn = bn0 - from;
       if (bn > 0) {
         const BI = BILL_COLS.reduce((m, k2, i2) => (m[k2] = i2, m), {});
         const nos = bs.getRange(2 + from, 1, bn, 2).getValues(), gcol = bs.getRange(2 + from, BI.gstBill + 1, bn, 1).getValues(), fcol = bs.getRange(2 + from, BI.fy + 1, bn, 1).getValues();
@@ -1304,7 +1316,7 @@ function takeBill_(body) {
         if (!from && !(isGst && cfg0.fyReset)) arcSheets_('', '').forEach(x => { const an = x.s.getLastRow() - 1, ar = x.s.getRange(2, 1, an, 1).getValues(), ag = x.s.getRange(2, BI.gstBill + 1, an, 1).getValues();
           for (let i = 0; i < an; i++) if ((ag[i][0] === 'Yes') === isGst) taken[num_(ar[i][0])] = 1; });
         if (taken[used]) {
-          let nn = Math.max(cur, used + 1); while (taken[nn]) nn++;
+          let nn = lateFy ? used + 1 : Math.max(cur, used + 1); while (taken[nn]) nn++;
           renumbered = { from: used, to: nn };
           const b1 = body.bill;
           if (b1.text && b1.noLine) b1.text = String(b1.text).replace(String(b1.noLine), String(b1.noLine).replace(String(b1.noToken || used), String(b1.noToken || used).replace(new RegExp(used + '$'), String(nn))));
@@ -1313,11 +1325,11 @@ function takeBill_(body) {
       }
     }
     const next = used >= cur ? used + 1 : cur;
-    if (next !== cur) { const o = {}; o[key] = next; setConfig_(o); }
+    if (next !== cur && !lateFy) { const o = {}; o[key] = next; setConfig_(o); }
     const b = body.bill || {};
     if (used > 0) {
       try { if (mob10_(b.mobile)) customersSheet_(); } catch (err) { softErr_('takeBill:customers', err); }   // build the Customers tab before this bill lands, so it isn't counted twice
-      sheet_(tab_('Bills'), BILL_COLS).appendRow([used, new Date(), str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
+      sheet_(tab_('Bills'), BILL_COLS).appendRow([used, billDate, str_(b.customer, 80), str_(b.mobile, 20), num_(b.total), str_(b.items, 3000), str_(body.by, 60),
         b.gst ? 'Yes' : 'No', b.gst ? num_(b.taxable) : '', b.gst ? num_(b.tax) : '', str_(b.custGstin, 20), b.gst ? (b.igst ? 'IGST' : 'CGST+SGST') : '',
         (function (t) { return /^[=+@-]/.test(t) ? "'" + t : t; })(String(b.text || '').slice(0, 45000)), linesJson_(b.lines),
         str_(b.id, 40), '', '', 0, costOut_(b.cost), costOut_(b.profit)].concat(payRow_(payCalc_(b.total, b.pay, b.received, [], str_(body.by, 60), b.pay === 'credit' ? '' : paidBy_(b.paidBy))), [fyNow, '', '', '', '', str_(b.pos || '', 40), b.pay === 'credit' ? '' : paidBy_(b.paidBy), poCell_(b.po), str_(String(b.custAddr || '').trim(), 300)]));
@@ -1637,7 +1649,7 @@ function updateBill_(b, by, who) {
     if (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004) throw new Error('needs_manager');
     if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || mob10_(b.mobile) !== mob10_(r[B.mobile]) || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
   }
-  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
+  const hist = [String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)];   // (v68) written only once the edit is sure to be saved
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
   r[B.items] = str_(b.items, 3000); r[B.gstBill] = b.gst ? 'Yes' : 'No';
@@ -1660,6 +1672,7 @@ function updateBill_(b, by, who) {
     if (pc.status !== 'Paid' && !mob10_(r[B.mobile])) throw new Error('credit_needs_mobile');
     const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
     if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
+  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow(hist);
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
   try { belowNote_(b, num_(r[B.billNo]), by, oldLines, i + 2); } catch (err) { softErr_('updateBill:belowNote', err); }
   try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) { softErr_('updateBill:customer', err); }
@@ -1756,8 +1769,10 @@ function billTextCheck_(b, no) {
   const tx = String(b && b.text || ''); if (!tx.trim()) return null;
   if (no > 0 && !new RegExp('(^|[^0-9])' + Math.floor(no) + '([^0-9]|$)').test(tx)) return { error: 'text_mismatch', what: 'no' };
   const L = b && Array.isArray(b.lines) ? b.lines : [];
-  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (tx.indexOf('= ₹' + inrN_((+l.qty || 0) * (+l.rate || 0))) < 0) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
-  if (tx.indexOf('₹' + inrN_(b.total)) < 0) return { error: 'text_mismatch', what: 'total' };
+  /* (v68) an amount counts only as a whole figure: "₹5" isn't found inside "₹50", "₹5,000" or "₹5.50" */
+  const has = (pre, amt) => new RegExp(pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + String(amt).replace(/[.,]/g, '\\$&') + '(?![0-9,]|\\.[0-9])').test(tx);
+  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (!has('= ₹', inrN_((+l.qty || 0) * (+l.rate || 0)))) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
+  if (!has('₹', inrN_(b.total))) return { error: 'text_mismatch', what: 'total' };
   return null;
 }
 /* ==== end of money.js ==== */

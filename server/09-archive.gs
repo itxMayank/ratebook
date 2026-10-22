@@ -155,7 +155,7 @@ function updateBill_(b, by, who) {
     if (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004) throw new Error('needs_manager');
     if (hasMoney && (Math.abs(num_(b.total) - num_(r[B.total])) > 0.004 || mob10_(b.mobile) !== mob10_(r[B.mobile]) || (b.pay && b.pay !== oldMode) || (b.received !== undefined && b.pay === oldMode && oldMode === 'part' && Math.abs(num_(b.received) - oldPays.filter(p => p.at).reduce((x, p) => x + num_(p.a), 0)) > 0.004))) throw new Error('needs_manager');
   }
-  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow([String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)]);
+  const hist = [String(r[B.billId] || ''), r[B.billNo], new Date(), by, String(r[B.text] || r[B.items] || '').slice(0, 45000)];   // (v68) written only once the edit is sure to be saved
   const safe = t => /^[=+@-]/.test(t) ? "'" + t : t;
   r[B.customer] = str_(b.customer, 80); r[B.mobile] = str_(b.mobile, 20); r[B.total] = num_(b.total);
   r[B.items] = str_(b.items, 3000); r[B.gstBill] = b.gst ? 'Yes' : 'No';
@@ -178,6 +178,7 @@ function updateBill_(b, by, who) {
     if (pc.status !== 'Paid' && !mob10_(r[B.mobile])) throw new Error('credit_needs_mobile');
     const pr = payRow_(pc); for (let j = 0; j < pr.length; j++) r[B.payment + j] = pr[j];
     if (pc.status === 'Cleared' && vals[i][B.clearedAt]) r[B.clearedAt] = vals[i][B.clearedAt]; }
+  sheet_(tab_('BillHistory'), HISTORY_COLS).appendRow(hist);
   s.getRange(i + 2, 1, 1, BILL_COLS.length).setValues([r]);
   try { belowNote_(b, num_(r[B.billNo]), by, oldLines, i + 2); } catch (err) { softErr_('updateBill:belowNote', err); }
   try { touchCustomer_(b.mobile, b.customer, b.custGstin, num_(b.total), num_(r[B.billNo]), false); } catch (err) { softErr_('updateBill:customer', err); }

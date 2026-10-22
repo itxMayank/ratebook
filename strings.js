@@ -424,8 +424,10 @@ Object.assign(STR.hi,{ mgLow:"कम मार्जिन", mgBelow:"लाग�
   lowmL:"बिल की लाइन पर \"कम मार्जिन\" दिखाएँ जब मार्जिन इससे कम हो", lowmD:"0 = बंद। खरीद रेट से कम पर लाइन \"लागत से कम\" दिखाती है (जो खरीद रेट देख सकते हैं उन्हें), और आपको सूचना मिलती है।", lowmBad:"मार्जिन: 0–100%" });
 /* 22 Oct 2026: bill page fixes */
 Object.assign(STR.en,{ envHeld:"The bill on screen was kept as an open bill in the other mode. It comes back when you switch back.",
-  qtyZero:"A line has quantity 0. Change it or remove the line." });
+  qtyZero:"A line has quantity 0. Change it or remove the line.",
+  posNeed:"Out of state (IGST): pick the customer's state, or add their GSTIN." });
 Object.assign(STR.hi,{ envHeld:"स्क्रीन वाला बिल दूसरे मोड में खुले बिल के रूप में रखा गया। वापस बदलने पर वह फिर आ जाएगा।",
-  qtyZero:"एक लाइन की मात्रा 0 है। उसे बदलें या लाइन हटाएँ।" });
+  qtyZero:"एक लाइन की मात्रा 0 है। उसे बदलें या लाइन हटाएँ।",
+  posNeed:"दूसरे राज्य का बिल (IGST): ग्राहक का राज्य चुनें, या उनका GSTIN डालें।" });
 return STR;
 })();

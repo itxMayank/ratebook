@@ -8,7 +8,7 @@
    G. a quantity of 0 stops Done and Share before anything is sent.
    Run: node tests/billfix.app.test.js */
 const { appHtml, launch, ok, done } = require('./browser');
-const html = appHtml('S,addToBill,billTotal,billText,heldGet,setTab,appUnlock,flushBills,finishBill,saveEdit,switchEnv,applyItems,updateBillTotals,renderBill,custFill,wqGet,wqFails,custIndex,custdGet,sugShow,SUG,sugPick,curBillNo,closeSheet');
+const html = appHtml('S,addToBill,billTotal,billText,heldGet,setTab,appUnlock,flushBills,finishBill,saveEdit,switchEnv,applyItems,updateBillTotals,renderBill,custFill,wqGet,wqFails,custIndex,custdGet,sugShow,SUG,sugPick,curBillNo,closeSheet,cashDue');
 const ITEMS = () => [{ id: 'i1', name: 'PP Bag', unit: 'kg', buy: 150, sell: 180, hsn: '3923', gst: 18 },
   { id: 'i2', name: 'Max', unit: 'kg', buy: 200, sell: 250, altUnit: 'packet', altQty: 5, altSell: 50, gst: 18 }];
 const cfg = { shopName: 'Gupta', mode: 'live', roundTo: 1, defaultUnit: 'kg', nextBill: 21, nextGstBill: 7, defaultGst: 18, defaultHsn: '3923', shopGstin: '27ABCDE1234F1Z5', shopState: '27' };
@@ -140,6 +140,61 @@ const CUST = { '9876543210': { name: 'Sunil Traders', gstin: '09AAAAA1111A1Z5', 
   ok(!takes().length && await p.evaluate(() => T.S.bill.length === 1 && document.querySelector('#bq-0').classList.contains('need')), 'G1 Done with a quantity of 0: nothing sent, the box is marked');
   await p.evaluate(() => { window.__opened = []; document.querySelector('#bill-wa').click(); }); await p.waitForTimeout(800);
   ok(!takes().length && await p.evaluate(() => window.__opened.length === 0), 'G2 Share with a quantity of 0: nothing sent, WhatsApp doesn\'t open');
+
+
+  await clean();
+  // H. the rest of the review (medium and low)
+  // H1 a bill carries when it was made (the sheet dates a bill sent late by it)
+  sent = [];
+  await p.evaluate(() => { T.S.byId.get('i1').unit = 'kg'; T.addToBill('i1'); T.renderBill(); }); await p.click('#bill-done'); await p.waitForTimeout(800);
+  { const b = takes()[0] || {}; ok(Math.abs((b.madeAt || 0) - Date.now()) < 10000, 'H1 Done sends when the bill was made (madeAt)'); }
+  // H5 the Hindi name goes in nameHi (it carried the English name)
+  { const b = takes()[0] || { lines: [{}] }; ok(b.lines[0].nameHi && b.lines[0].nameHi !== 'PP Bag', 'H5 the line\'s Hindi name is saved as nameHi (' + b.lines[0].nameHi + ')'); }
+  // H2 the first GST bill of a new financial year: the next one isn't No. 1 again
+  await p.evaluate(() => { T.S.cfg.gstFy = '2020-21'; T.S.cfg.nextGstBill = 1777; T.addToBill('i1'); T.S.gst = true; T.renderBill(); });
+  ok(await p.evaluate(() => T.curBillNo()) === 1, 'H2a new financial year: the first GST bill is No. 1');
+  await p.click('#bill-done'); await p.waitForTimeout(500);
+  await p.evaluate(() => { T.addToBill('i1'); T.S.gst = true; T.renderBill(); });
+  ok(await p.evaluate(() => T.curBillNo()) === 2, 'H2b the next GST bill is No. 2, not No. 1 again');
+  await clean();
+  // H3 IGST without the customer's state: Done asks for it
+  sent = [];
+  await p.evaluate(() => { T.addToBill('i1'); T.S.gst = true; T.S.igst = true; T.S.custGstin = ''; T.S.posSel = ''; T.renderBill(); });
+  await p.click('#bill-done'); await p.waitForTimeout(500);
+  ok(!takes().length && await p.evaluate(() => document.querySelector('#pos-sel').classList.contains('need') && !document.querySelector('#pos-wrap').hidden), 'H3a IGST with no state: not saved, the state box is shown and marked');
+  await p.selectOption('#pos-sel', '29'); await p.click('#bill-done'); await p.waitForTimeout(800);
+  { const b = takes()[0] || {}; ok(/Karnataka \(29\)/.test(b.pos || '') && b.igst, 'H3b with Karnataka picked: saved, place of supply Karnataka'); }
+  // H8 the next bill starts without a picked state
+  ok(await p.evaluate(() => T.S.posSel === '' && document.querySelector('#pos-sel').value === ''), 'H8 after Done the picked state is cleared');
+  await clean();
+  // H4 staff changing a shared bill's total after 30 minutes is stopped on the phone
+  await p.evaluate(() => { T.S.auth.role = 'staff'; });
+  sent = [];
+  await p.evaluate(() => { T.addToBill('i1'); T.finishBill({ keep: true }); }); await p.waitForTimeout(1200);
+  await p.evaluate(() => { T.S.editing.date = new Date(Date.now() - 31 * 60000).toISOString(); T.S.bill[0].qty = 5; T.saveEdit({ keep: true }); }); await p.waitForTimeout(1500);
+  ok(!ups().length && /can't change|total/i.test(await p.textContent('#toast')), 'H4a staff, shared 31 minutes ago, total changed: not sent, says why');
+  await p.evaluate(() => { T.S.editing.date = new Date().toISOString(); T.saveEdit({ keep: true }); }); await p.waitForTimeout(3000);
+  ok(ups().some(x => x.lines[0].qty === 5), 'H4b within 30 minutes the same change goes');
+  await p.evaluate(() => { T.S.auth.role = 'owner'; }); await clean();
+  // H6 picking a suggested customer takes the red outline away
+  await p.evaluate(() => { T.addToBill('i1'); T.renderBill(); document.querySelector('#cust').classList.add('need'); document.querySelector('#cust-mob').classList.add('need');
+    T.SUG.field = 'name'; T.SUG.list = [{ name: 'Ramesh Stores', mob: '9812345678', gstin: '', count: 2, total: 900, last: '', due: 0 }]; T.sugPick(0); });
+  ok(await p.evaluate(() => !document.querySelector('#cust').classList.contains('need') && !document.querySelector('#cust-mob').classList.contains('need')), 'H6 the red outline goes once a customer is picked');
+  await clean();
+  // H7 Cash given: commas in Received and Hindi digits
+  await p.evaluate(() => { T.addToBill('i1'); T.S.bill[0].qty = 10; T.S.pay = 'part'; T.S.recv = '1,250'; T.renderBill(); });
+  ok(await p.evaluate(() => T.cashDue()) === 1250, 'H7a part paid with "1,250" received: cash compared with ₹1,250');
+  await p.evaluate(() => { const c = document.querySelector('#cash-in'); c.value = '५००'; c.dispatchEvent(new Event('input', { bubbles: true })); });
+  ok(await p.evaluate(() => T.S.cash) === '500', 'H7b Cash given typed in Hindi digits is read');
+  await p.evaluate(() => { T.S.pay = 'paid'; T.S.recv = ''; }); await clean();
+  // H9 adding redraws one line, and the lines on screen stay right
+  await p.evaluate(() => { T.addToBill('i1'); T.addToBill('i2'); });
+  await p.evaluate(() => { window.__first = document.querySelector('#bill-lines .bill-line'); T.addToBill('i2'); });
+  ok(await p.evaluate(() => document.querySelector('#bill-lines .bill-line') === window.__first && document.querySelectorAll('#bill-lines .bill-line').length === 2 && document.querySelector('#bq-1').value === '2'), 'H9a adding again to line 2 redraws only that line (line 1 is the same element), qty 2');
+  await p.evaluate(() => document.querySelector('[data-inc="0"]').click());
+  ok(await p.evaluate(() => document.querySelector('#bq-0').value === '2' && document.querySelector('[data-amt="0"]').textContent === '₹360' && /₹860/.test(document.querySelector('#bill-sum').textContent)), 'H9b + on line 1: qty 2, ₹360, total ₹860');
+  await p.evaluate(() => document.querySelector('[data-rm="0"]').click());
+  ok(await p.evaluate(() => document.querySelectorAll('#bill-lines .bill-line').length === 1 && document.querySelector('.bill-line').dataset.i === '0' && T.S.bill[0].id === 'i2'), 'H9c removing line 1: one line left, numbered 0');
 
   ok(!errs.length, 'no page errors ' + errs.join(' | '));
   await b.close(); done();

@@ -87,8 +87,10 @@ function billTextCheck_(b, no) {
   const tx = String(b && b.text || ''); if (!tx.trim()) return null;
   if (no > 0 && !new RegExp('(^|[^0-9])' + Math.floor(no) + '([^0-9]|$)').test(tx)) return { error: 'text_mismatch', what: 'no' };
   const L = b && Array.isArray(b.lines) ? b.lines : [];
-  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (tx.indexOf('= ₹' + inrN_((+l.qty || 0) * (+l.rate || 0))) < 0) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
-  if (tx.indexOf('₹' + inrN_(b.total)) < 0) return { error: 'text_mismatch', what: 'total' };
+  /* (v68) an amount counts only as a whole figure: "₹5" isn't found inside "₹50", "₹5,000" or "₹5.50" */
+  const has = (pre, amt) => new RegExp(pre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + String(amt).replace(/[.,]/g, '\\$&') + '(?![0-9,]|\\.[0-9])').test(tx);
+  for (let i = 0; i < L.length; i++) { const l = L[i] || {}; if (!has('= ₹', inrN_((+l.qty || 0) * (+l.rate || 0)))) return { error: 'text_mismatch', what: 'line', line: i + 1 }; }
+  if (!has('₹', inrN_(b.total))) return { error: 'text_mismatch', what: 'total' };
   return null;
 }
 /* ==== end of money.js ==== */

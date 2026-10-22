@@ -17,7 +17,7 @@
  */
 
 const DEFAULT_PIN = '1234';
-const SCRIPT_VERSION = 67;   // the app compares this and asks the owner to deploy a New version when it's older
+const SCRIPT_VERSION = 68;   // the app compares this and asks the owner to deploy a New version when it's older
 
 const ITEMS = 'Items';
 const CONFIG = 'Config';

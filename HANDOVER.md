@@ -38,7 +38,7 @@ Last updated: 22 October 2026 (bill page fixes; Google-side rollout done). Read 
 
 **Replies**
 - Keep them short, in plain language, and say what changed for the shop.
-- **End every reply with the pending list** (section 6).
+- **Show the pending list (section 6) only when Mayank asks for it** (his rule, 22 Oct 2026; before, it ended every reply).
 
 **In the app**
 - Technical messages (script versions, Apps Script steps, error codes) show only to the original shop's owner (`TECH()` in `app.js`). Other shops see plain text through `key_s` strings.
@@ -51,11 +51,11 @@ Last updated: 22 October 2026 (bill page fixes; Google-side rollout done). Read 
 | Thing | Value | Where |
 |---|---|---|
 | `main` | `82f5cb3` "architect-review: study comparable apps first…" | PRs #99–#101 merged 22 Oct |
-| Sheet script | `SCRIPT_VERSION` **67** | `server/01-core.gs` |
+| Sheet script | `SCRIPT_VERSION` **68** (not yet on the shops) | `server/01-core.gs` |
 | Oldest script the app supports | `NEED_SV` **60** in `app.js`, the same as `MIN_SV` in `admin.html` | `tests/assets.test.js` checks that they match |
 | Directory | `DIR_VERSION` **11** | `admin/Directory.gs` |
 | Offline cache | `rb-shell-9` | `sw.js` |
-| Tests | 99 files (`tests/billfix.app.test.js` added 22 Oct) | `node tests/run-all.js` |
+| Tests | 100 files (`tests/billfix.app.test.js`, `tests/billfix.test.js` added 22 Oct) | `node tests/run-all.js` |
 
 **Shops** (Mayank, 22 Oct 2026)
 - **The main shop** (code `main`, "Shree Pushpadant Plastics and Packaging") is on script **v67**, in test mode, with "New phones need my approval" on.
@@ -131,9 +131,8 @@ Done on 22 Oct 2026: Directory v11, both shops on v67, new-phone approval on in 
 **Decide**
 - The bill page layout redesign (mock-up sent 22 Oct 2026): bill items first, customer & payment below them, compact lines (5 of 5 lines on a 390 px phone instead of 2), one-row lines on the laptop. Mock-up script: in that session's scratchpad only; the CSS it used is listed in the 22 Oct conversation.
 
-**Build next (bill page review, not fixed yet; CLAUDE.md "Bill page fixes")**
-- Medium: offline bills dated when they reach the sheet (and across 31 March); first GST bill on 1 April shows No. 1; IGST with no customer state; staff changes to a shared bill after 30 minutes; bill-text check matching "₹5" inside "₹50"; adding to a long bill slow on cheap phones (~0.5 s at 30 lines).
-- Low: Hindi name field on edited lines; history row on a refused edit; red outline after picking a customer; Cash given with commas / Hindi digits; place of supply kept after Done.
+**Mayank's steps after the next merge**
+- Update both shops to script **v68** (dashboard → your shop first → Update script, then Update all shops). Until then bills sent late are still dated when they arrive; everything else works.
 
 **Watch**
 - After 1 April 2027, the first yearly archive. Check the `Bills 2025-26` tab, the `BillYears` tab and the error log.
@@ -193,4 +192,4 @@ Done on 22 Oct 2026: Directory v11, both shops on v67, new-phone approval on in 
 
 ## 9. Prompt to paste into a new session
 
-> I'm Mayank. We're continuing work on Rate Book (repo itxMayank/ratebook, branch claude/friendly-ramanujan-vd1vb8). First read HANDOVER.md, then ARCHITECTURE.md, and use CLAUDE.md as the reference. Follow the working rules in HANDOVER.md §2 exactly: merge only when I say "merge", run `node tools/stamp.js` after edits, edit `server/` not `Code.gs`, update CLAUDE.md with each change, run the full test suite before merging, keep replies short and plain, and end every reply with the pending list. Then tell me in a few lines where things stand and wait for my next request.
+> I'm Mayank. We're continuing work on Rate Book (repo itxMayank/ratebook, branch claude/friendly-ramanujan-vd1vb8). First read HANDOVER.md, then ARCHITECTURE.md, and use CLAUDE.md as the reference. Follow the working rules in HANDOVER.md §2 exactly: merge only when I say "merge", run `node tools/stamp.js` after edits, edit `server/` not `Code.gs`, update CLAUDE.md with each change, run the full test suite before merging, keep replies short and plain, and show the pending list only when I ask for it. Then tell me in a few lines where things stand and wait for my next request.

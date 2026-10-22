@@ -215,7 +215,7 @@ document.addEventListener("keydown",e=>{ if(!DESK() || !e.altKey) return; const 
 $("#cash-open").onclick=()=>{ const open=$("#cash-open").getAttribute("aria-expanded")==="true";
   if(open){ ls.set("rb_cashopen",false); S.cash=""; $("#cash-in").value=""; renderCash(); }
   else { ls.set("rb_cashopen",true); renderCash(); } };
-$("#cash-in").addEventListener("input",e=>{ S.cash=e.target.value.replace(/[^0-9.]/g,""); renderCash(); });
+$("#cash-in").addEventListener("input",e=>{ S.cash=devDigits(e.target.value).replace(/[^0-9.]/g,""); renderCash(); });   // Hindi digits too; commas dropped
 $("#cash-in").addEventListener("keydown",e=>{ if(e.key==="Enter") e.target.blur(); });
 $("#cashrow").addEventListener("click",e=>{ const c=e.target.closest("[data-cash]"); if(c){ setCash(c.dataset.cash); try{navigator.vibrate&&navigator.vibrate(8);}catch{} return; }
   if(e.target.closest("#cash-x")){ setCash(""); $("#cash-in").value=""; } });
@@ -725,7 +725,7 @@ document.addEventListener("click",e=>{
     if(k==="more"){ S.limit+=40; renderList(); } else if(k==="add") openEdit(null); else if(k==="addq") openEdit(null,S.q.trim());
     else if(k==="bulkadd") openBulkAdd(); else if(k==="bills") openBills(); else if(k==="printlast") printInv(ls.get("rb_lastinv",null)); else if(k==="cmd") openCmd(""); else if(k==="cmdq") openCmd(S.q.trim(),true); return; }
   const inc=e.target.closest("[data-inc]"), dec=e.target.closest("[data-dec]"), rm=e.target.closest("[data-rm]");
-  if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,!!inc); if(l.qty===0) S.bill.splice(i,1); qpClose(); saveBill(); renderBill(); return; }
+  if(inc||dec){ const i=+(inc||dec).dataset[inc?"inc":"dec"]; const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,!!inc); qpClose(); if(l.qty===0){ S.bill.splice(i,1); saveBill(); renderBill(); } else { saveBill(); billLinePatch(i); } return; }
   if(rm){ S.bill.splice(+rm.dataset.rm,1); saveBill(); renderBill(); return; }
   const sw=e.target.closest("[data-unitsw]"); if(sw){ const l=S.bill[+sw.dataset.unitsw]; const it=S.byId.get(l.id); if(!it||!hasAlt(it)) return;
     if(l.alt){ l.alt=false; l.unit=it.unit; l.rate=+it.sell||0; } else { l.alt=true; l.unit=it.altUnit; l.rate=altPrice(it); }
@@ -796,7 +796,7 @@ $("#cust-gstin").value=S.custGstin; $("#cust-gstin").addEventListener("input",e=
   igstFromGstin();   // out-of-state GSTIN → IGST
   updateBillTotals(); });
 $("#pos-sel").innerHTML=`<option value="">—</option>`+STATES.map(([c,n])=>`<option value="${c}">${n} (${c})</option>`).join(""); $("#pos-sel").value=S.posSel;
-$("#pos-sel").onchange=e=>{ S.posSel=e.target.value; ls.set("rb_pos",S.posSel); updateBillTotals(); };
+$("#pos-sel").onchange=e=>{ S.posSel=e.target.value; ls.set("rb_pos",S.posSel); e.target.classList.remove("need"); updateBillTotals(); };
 /* The customer's address isn't shown on the bill page: it comes from the saved customer (S.custAddr) and goes on the bill text, PDF and printouts. */
 $("#po-dc").onclick=e=>{ const inp=$("#po-date"); if(e.target!==inp && inp.showPicker){ try{ inp.showPicker(); }catch{} } };
 $("#po-x").onclick=()=>{ poSet(null); updateBillTotals(); };

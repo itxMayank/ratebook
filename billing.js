@@ -30,6 +30,8 @@ function renderPay(){
 }
 /** Credit and part-paid bills need a name and a mobile, and part paid needs a sensible amount. */
 function payCheck(){
+  if(S.gst && S.igst && !(/^\d\d/.test(S.custGstin||"") && gstinOk(S.custGstin)) && !S.posSel){   // (22 Oct 2026) IGST needs the customer's state: the shop's own would be wrong
+    setOpen("#bh-more","#bh-extra","rb_bh_open",true); updateBillTotals(); const ps=$("#pos-sel"); if(ps){ ps.classList.add("need"); ps.focus(); } toast(t("posNeed"),true); return false; }
   { const i=S.bill.findIndex(l=>!(+l.qty>0)); if(i>=0){ const q=$("#bq-"+i); if(q){ q.classList.add("need"); q.scrollIntoView({block:"center"}); } toast(t("qtyZero"),true); return false; } }   // the sheet refuses a line of 0 (22 Oct 2026)
   if(S.pay==="paid") return true;
   const nameOk=!!S.cust.trim(), mob=normMobile(S.mob), mobOk=!!mob;
@@ -176,6 +178,27 @@ function billFollow(old, tell){ if(!old || !old.size || !S.byId) return;
   const h=heldGet(); let hc=0; h.forEach(x=>{ if(!x.editing && x.d) hc+=billFollowLines(x.d.bill, old); }); if(hc){ heldSet(h); try{ renderHeld(); }catch{} }
   if(n && tell && !LOCK.on) toast(t("billFollowed")); }
 function saveBill(){ ls.set("rb_bill",S.bill); renderBadge(); }
+/** One bill line's markup (renderBill draws them all; billLinePatch only one). */
+function billLineHTML(l,i){ return `<div class="bill-line" data-i="${i}">
+      <div class="name">${esc(lineName(l))}${(()=>{ const hi=lineHi(l)&&lineHi(l)!==l.name?`<span lang="hi">${esc(lineHi(l))}</span>`:"", chip=hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:""; return hi||chip?`<div class="sub bl-sub" style="font-size:13px;margin-top:0">${hi}${chip}</div>`:""; })()}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
+      <div class="ctrl">
+        <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
+        <div class="uwrap">${hasAlt(S.byId.get(l.id))||isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`}
+        <label class="rate">× ₹<input id="br-${i}" class="num money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
+        <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div></div>`; }
+/** (22 Oct 2026) Redraw only line i (added at the end, or its quantity changed), instead of every line: a full redraw cost about
+    15 ms a line on a slow phone (0.5 s per add on a 30-line bill). Falls back to the full redraw when the lines on screen don't match. */
+function billLinePatch(i){
+  const wrap=$("#bill-lines"), l=S.bill[i]; if(!wrap || !l || wrap.querySelector(".empty")) return renderBill();
+  const els=wrap.querySelectorAll(":scope > .bill-line");
+  if(els.length===S.bill.length && els[i]) els[i].outerHTML=billLineHTML(l,i);
+  else if(els.length===S.bill.length-1 && i===S.bill.length-1) wrap.insertAdjacentHTML("beforeend",billLineHTML(l,i));
+  else return renderBill();
+  { const n=$("#bill-n"); if(n){ n.hidden=false; n.textContent=t("billN",S.bill.length); } }
+  $("#bill-total").hidden=false;
+  updateBillTotals(); renderBillSearch(); try{ dockPos(); }catch{}
+}
 function renderBill(){
   const wrap=$("#bill-lines");
   { const n=$("#bill-n"); if(n){ n.hidden=!S.bill.length; n.textContent=S.bill.length?t("billN",S.bill.length):""; } }   // items on the bill (lines, not quantities)
@@ -184,14 +207,7 @@ function renderBill(){
     { const f=$("#empty-find"); if(f) f.onclick=()=>bsOpen(); }
     $("#bill-total").hidden=true;
   } else {
-    wrap.innerHTML=S.bill.map((l,i)=>`<div class="bill-line" data-i="${i}">
-      <div class="name">${esc(lineName(l))}${(()=>{ const hi=lineHi(l)&&lineHi(l)!==l.name?`<span lang="hi">${esc(lineHi(l))}</span>`:"", chip=hasAlt(S.byId.get(l.id))?`<button type="button" class="unitchip" data-unitsw="${i}" aria-label="${esc(t("switchUnit"))}">${esc(unitL(l.unit))} ⇄</button>`:""; return hi||chip?`<div class="sub bl-sub" style="font-size:13px;margin-top:0">${hi}${chip}</div>`:""; })()}${S.gst?`<div class="taxline num"><label class="hsned">${esc(t("hsnShort"))}<input id="bh-${i}" data-hsn="${i}" inputmode="numeric" maxlength="8" value="${esc(lineInfo(l).hsn)}" aria-label="${esc(t("hsnL"))}"></label> · GST ${fmtN(lineInfo(l).gst)}%</div>`:""}</div><div class="amt num" data-amt="${i}">${rs(l.qty*l.rate)}</div>
-      <div class="ctrl">
-        <div class="step"><button data-dec="${i}" aria-label="-">−</button><input id="bq-${i}" class="num${fracSub(l.unit)?" fq":""}" inputmode="decimal" value="${fracSub(l.unit)?qtyShort(l.qty,l.unit):String(l.qty)}" data-qty="${i}"${fracSub(l.unit)?` data-fq="${i}"${DESK()?"":" readonly"}`:""} aria-label="${esc(t("qty"))}"><button data-inc="${i}" aria-label="+">+</button></div>
-        <div class="uwrap">${hasAlt(S.byId.get(l.id))||isPart(l.qty,l.unit)?"":`<span class="note">${esc(unitL(l.unit))}</span>`}
-        <label class="rate">× ₹<input id="br-${i}" class="num money" data-dp="3" inputmode="decimal" value="${esc(moneyVal(l.rate,3))}" data-rate="${i}" style="${rateW(moneyVal(l.rate,3))}">${isPart(l.qty,l.unit)?`<span class="per">/${esc(unitL(l.unit))}</span>`:""}</label></div>
-        <button class="x" data-rm="${i}" aria-label="Remove"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-      </div></div>`).join("");
+    wrap.innerHTML=S.bill.map(billLineHTML).join("");
     $("#bill-total").hidden=false;
   }
   updateBillTotals();
@@ -374,24 +390,25 @@ async function saveEdit(opts){
   if(!opts.keep && ed.fresh && draftSig()===ed.sig){ const n=dispNo(ed.n,S.gst,ed.fy); endEdit(); toast(t("billDoneN",n)); return; }   // nothing changed since Share
   if(ed.fresh){ const qi=S.billQ.findIndex(q=>q.id===ed.id);
     if(qi>=0){   // still waiting to be sent: just replace it in the queue
-      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env, ...(old.moveFrom?{moveFrom:old.moveFrom}:{}) }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
-      if(opts.keep){ ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
+      const old=S.billQ[qi]; S.billQ[qi]=draftRec({ id:old.id, n:old.n, env:old.env, madeAt:old.madeAt, ...(old.moveFrom?{moveFrom:old.moveFrom}:{}) }); ls.set("rb_billq",S.billQ); blcAdd(S.billQ[qi]); flushBills();
+      if(opts.keep){ ed.sig=draftSig(); ed.total0=S.billQ[qi].total; ls.set("rb_editing",ed); updateBillTotals(); } else { toast(t("billDoneN",dispNo(ed.n,S.gst,ed.fy))); endEdit(); }
       return; } }
   if(navigator.onLine===false && !wqOn()){ toast(t("editOffline")); return; }
   /* (v66) staff can't change a saved bill's total (the sheet refuses it too); said here before anything is sent */
-  if(!ed.fresh && !can("manager") && ed.total0!=null && +S.sv>=66 && Math.abs(billTotal()-ed.total0)>0.004){ toast(t("staffTotal"),true); return; }
+  const freshOld = ed.fresh && ed.date && Date.now()-Date.parse(ed.date) > 30*60000;   // (22 Oct 2026) the sheet treats a shared bill as an edit after 30 minutes
+  if((!ed.fresh || freshOld) && !can("manager") && ed.total0!=null && +S.sv>=66 && Math.abs(billTotal()-ed.total0)>0.004){ toast(t("staffTotal"),true); return; }
   const g=S.gst?gstCalc():null;
   const rec={ id:ed.id, row:ed.row, n:ed.n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineHi(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})) };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.paidBy=p.pm; }
   if(ed.edits!==null && ed.edits!==undefined) rec.baseEdits=+ed.edits||0; rec.pos=S.gst?posLabel():""; if(ed.fresh) rec.fresh=true;
   if(wqOn()){   // (v59) shown at once, saved in the background; the outbox keeps it until the sheet has it
     wqAdd({k:"bill", key:"bill:"+(rec.id||(rec.row+"/"+rec.n)), body:{action:"updateBill",bill:rec}});
     S.lastBill={n:ed.n,customer:rec.customer,total:rec.total,link:billWa(rec.text,rec.mobile)}; ls.set("rb_lastbill",S.lastBill);
-    if(opts.keep){ ed.edits=ed.edits==null?null:(+ed.edits||0)+1; ed.sig=draftSig(); ls.set("rb_editing",ed); updateBillTotals(); }
+    if(opts.keep){ ed.edits=ed.edits==null?null:(+ed.edits||0)+1; ed.sig=draftSig(); if(ed.fresh) ed.total0=rec.total; ls.set("rb_editing",ed); updateBillTotals(); }
     else { toast(ed.fresh?t("billDoneN",dispNo(ed.n,S.gst,ed.fy)):t("billUpdated",ed.n)); endEdit(); }
     return; }
   const btn=$("#bill-done"); btn.disabled=true;
@@ -408,7 +425,7 @@ function draftRec(extra){
   const rec={ customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineHi(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"", ...extra };
   { const pf=profitOf(S.bill); rec.cost=pf.cost; rec.profit=pf.profit; }
   { const p=payInfo(rec.total); rec.pay=p.mode; rec.received=p.mode==="part"?p.recv:0; rec.due=p.due; rec.paidBy=p.pm; }
@@ -425,8 +442,8 @@ function finishBill(opts){
   const rec={ n, customer:S.cust.trim(), mobile:mob10(S.mob)||S.mob.trim(), total:billTotal(), link:waLink(),
     items:S.bill.map(l=>`${l.name} ${fmtN(l.qty)} ${l.unit} x ${l.rate}`+(S.gst?hsnTag(l):"")).join("; "),
     gst:!!S.gst, taxable:g?g.taxable:"", tax:g?g.tax:"", custGstin:S.gst?S.custGstin.trim().toUpperCase():"", igst:!!(S.gst&&S.igst), po:poOut(S.po), custAddr:String(S.custAddr||"").trim(),
-    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineName(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
-    id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode,
+    text:billText(), lines:S.bill.map(l=>({id:l.id,name:l.name,nameHi:lineHi(l),unit:l.unit,rate:l.rate,qty:l.qty,hsn:lineInfo(l).hsn,gst:lineInfo(l).gst,alt:!!l.alt,buy:lineBuy(l),lp:lineLp(l)})),
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), env:S.cfg.mode, madeAt:Date.now(),   // (v68) the sheet dates a bill sent later (offline) by when it was made
     noToken:curBillDisp(), noLine:(S.gst?t("invNoLine",curBillDisp()):t("billNoLine",curBillDisp())), pos:S.gst?posLabel():"" };
   if(S.move) rec.moveFrom={ id:S.move.id||"", row:S.move.row||0, n:S.move.n };   // (v63) transfer: the old bill is cancelled once this one is saved
   S.move=null; ls.set("rb_move",null);
@@ -436,11 +453,12 @@ function finishBill(opts){
   const lastInv=invFromCurrent(); ls.set("rb_lastinv",lastInv);
   blcAdd(rec);
   rec.shared=!!opts.keep && !opts.wait; tookNo(rec.n, !!S.gst);   // wait: Share waits for the sheet before WhatsApp opens (shareConfirmed)
-  const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1); S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
+  const wasGst=!!S.gst; if(wasGst) S.cfg.nextGstBill=Math.max(auto, n+1); else S.cfg.nextBill=Math.max(auto, n+1);
+  if(wasGst && fyOn()) S.cfg[S.cfg.mode==="test"?"testGstFy":"gstFy"]=curFY();   // (22 Oct 2026) the first GST bill of a new year starts its series: the next one isn't No. 1 again S.billNoOvr=null; ls.set("rb_billno",null); syncRaw(); saveCache();
   if(opts.keep){
     rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
     if(rec.due>0){ const ds=ls.get(envKey("rb_dues_sum"),{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set(envKey("rb_dues_sum"),ds); duesSub(); }
-    S.editing={ id:rec.id, row:0, n:rec.n, date:new Date().toISOString(), edits:0, fy:curFY(), fresh:true }; S.editing.sig=draftSig();
+    S.editing={ id:rec.id, row:0, n:rec.n, date:new Date().toISOString(), edits:0, fy:curFY(), fresh:true, total0:rec.total }; S.editing.sig=draftSig();
     ls.set("rb_editing",S.editing); ls.set("rb_stash",null);
     S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
     renderBill(); renderList(); if(!opts.wait) toast(t("billSavedKeep",dispNo(n,wasGst,curFY())));
@@ -453,13 +471,13 @@ function finishBill(opts){
   rememberCustomer(rec.mobile,rec.customer,rec.custGstin,rec.total,rec.due);
   if(rec.due>0){ const ds=ls.get(envKey("rb_dues_sum"),{total:0,n:0}); ds.total=r2((+ds.total||0)+rec.due); ls.set(envKey("rb_dues_sum"),ds); duesSub(); }
   S.pay="paid"; S.recv=""; S.pm=""; ls.set("rb_pay","paid"); ls.set("rb_recv",""); ls.set("rb_pm",""); $("#pay-recv").value=""; renderPay(); S.cash=""; $("#cash-in").value="";
-  S.profitShown=false; S.custAuto=""; S.custGstinAuto=""; S.custQ=""; showCustHint(null); updateBillTotals();
+  S.profitShown=false; S.custAuto=""; S.custGstinAuto=""; S.custQ=""; S.posSel=""; ls.set("rb_pos",""); $("#pos-sel").value=""; showCustHint(null); updateBillTotals();
   S.billQ.push(rec); ls.set("rb_billq",S.billQ); flushBills();
   if(prGet().auto) billConfirmed(rec.id, NO_WAIT_MS).then(()=>{ const li=ls.get("rb_lastinv",null); printInv(li && li.date===lastInv.date ? li : lastInv); });   // "Print automatically after Done": with the number the sheet confirmed
 }
 /* Cash given -> how much to give back. Only on this phone; never saved with the bill. */
 function cashDue(){ if(S.pm && S.pm!=="cash") return 0;   // UPI / cheque: no change to give
-  const tot=billTotal(); if(S.pay==="paid") return tot; if(S.pay==="part"){ const r=parseFloat(S.recv); return r>0?r:0; } return 0; }
+  const tot=billTotal(); if(S.pay==="paid") return tot; if(S.pay==="part"){ const r=toNum(S.recv); return r>0?r:0; } return 0; }
 function cashNotes(T){ const out=[]; [50,100,500,2000].forEach(m=>{ const v=Math.ceil(T/m)*m; if(v>T && !out.includes(v)) out.push(v); }); return out.slice(0,3); }
 function renderCash(){
   const row=$("#cashrow"); if(!row) return;
@@ -512,7 +530,8 @@ async function flushBills(){
       else if(rec.moveFrom && j.moveErr && !j.dup) toast(t("moveFail",dispNo(rec.moveFrom.n,!!rec.gst)));
       const cur=S.billQ[0]; S.billQ.shift(); ls.set("rb_billq",S.billQ);
       if(cur && cur!==rec && cur.id===rec.id) billChangedWhileSending(cur, j);
-      if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng; syncRaw(); }
+      if(j.config){ const tm=(j.config.mode||"test")==="test"; const nb=+(tm?j.config.testNextBill:j.config.nextBill)||1, ng=+(tm?j.config.testNextGstBill:j.config.nextGstBill)||1; if(nb>S.cfg.nextBill) S.cfg.nextBill=nb; if(ng>S.cfg.nextGstBill) S.cfg.nextGstBill=ng;
+        ["gstFy","testGstFy"].forEach(k=>{ if(j.config[k]) S.cfg[k]=String(j.config[k]); }); syncRaw(); }
     }
     saveCache(); updateBillTotals(); blcBump(); blcSoon();
   }catch{ /* try again on next sync */ }
@@ -598,8 +617,9 @@ function addToBill(id,qty=1){
   saveBill(); recentAdd(id);
   const fromSearch = (DESK() || S.tab==="bill") && (S.q || renderBillSearch.rec);   // (a recent item tapped in the Bill search counts too)
   if(fromSearch){ const qi=$("#q"); qi.value=""; S.q=""; S.qTabs={}; S.limit=40; $("#q-clear").hidden=true; if(!DESK()) qi.blur(); renderBillSearch(); }
-  if(DESK()){ renderBill(); renderList(); const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
-  if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); renderBill(); if(fromSearch){ const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),120); } } }
+  const li=S.bill.findIndex(x=>x.id===id);
+  if(DESK()){ billLinePatch(li); renderList(); const i=li, el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
+  if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); billLinePatch(li); if(fromSearch){ const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),120); } } }
   else { const src=window.__addSrc; window.__addSrc=null;
     let r0=src && src.isConnected ? src.getBoundingClientRect() : null;      // measure before the card re-draws
     renderList();
@@ -768,7 +788,7 @@ function sugShow(field){
 function sugPick(i){
   const c=SUG.list[i]; if(!c) return; const field=SUG.field; sugClose();
   S.cust=c.name||S.cust; S.custAuto=c.name||""; $("#cust").value=S.cust; ls.set("rb_cust",S.cust);   // a picked customer belongs to their mobile: another mobile drops them again
-  if(c.mob){ S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); } $("#mob-err").textContent="";   // a company saved without a mobile keeps what was typed $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");
+  if(c.mob){ S.mob=c.mob; $("#cust-mob").value=S.mob; ls.set("rb_mob",S.mob); } $("#mob-err").textContent=""; $("#cust-mob").classList.remove("need"); $("#cust").classList.remove("need");   // a company saved without a mobile keeps what was typed
   if(c.gstin){ S.custGstin=c.gstin; S.custGstinAuto=c.gstin; $("#cust-gstin").value=c.gstin; ls.set("rb_cgstin",S.custGstin); const ge=$("#gstin-err"); if(ge) ge.textContent=""; igstFromGstin(); }
   if(c.addr){ caddrSet(c.addr); S.custAddrAuto=c.addr; }   // a saved customer's address goes on the bill
   if(c.mob){ const cc=custCache(); cc[c.mob]={...(cc[c.mob]||{}), name:c.name||(cc[c.mob]||{}).name||"", gstin:c.gstin||(cc[c.mob]||{}).gstin||"", count:c.count||0, total:c.total||0, last:c.last||"", due:+c.due||0}; ls.set(envKey("rb_customers"),cc); }   // hint shows at once

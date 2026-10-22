@@ -2003,3 +2003,11 @@ html.sbot:not(.sres-top) body.qtyp .rcpills{flex-wrap:wrap-reverse;padding:4px 1
 
 /* PIN boxes shown as dots without being password fields (21 Oct 2026, see noAutofill in app.js) */
 input[data-pin]{-webkit-text-security:disc}
+/* Bill tab on phones (22 Oct 2026): no wand or EN | हि (they stay on the other tabs), so the shop name gets the room;
+   with the search at the Top its results float under the bar, so opening the search never scrolls the bill */
+@media (max-width:1023px){
+  body[data-tab="bill"] header.top :is(#cmd-open,.lang){display:none}
+  body[data-tab="bill"]{overflow-anchor:none}   /* the bill never moves by itself when the total card or tab bar step aside */
+  body[data-tab="bill"] .brand #shopname{max-width:100%}
+  html:not(.sbot) body:is(.qtyp,.bsopen)[data-tab="bill"] #view-bill #bill-search-results:not(:empty){position:fixed;top:calc((var(--toph,120px) + 8px) / var(--fz,1));left:16px;right:16px;max-height:calc((100dvh - var(--toph,120px) - var(--kb,0px) - 24px) / var(--fz,1));overflow:auto;overscroll-behavior:contain;z-index:31}
+}

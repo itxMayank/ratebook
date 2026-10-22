@@ -610,6 +610,14 @@ function decFromBill(id){
   const l=S.bill[i]; l.qty=stepQty(l.qty,l.unit,false); if(l.qty<=0) S.bill.splice(i,1);
   saveBill(); if(S.tab==="bill") renderBill(); else renderList();
 }
+/* After adding from the Bill search: once the search has closed and the page has settled, one smooth move that brings the
+   line just into view above the total card (or below the header), and no move if it's already in view (22 Oct 2026). */
+function lineShow(el, n=0){
+  const bc=document.body.classList; if((bc.contains("qtyp") || bc.contains("typing")) && n<15) return setTimeout(()=>lineShow(el,n+1),60);
+  requestAnimationFrame(()=>{ if(!el.isConnected) return; const r=el.getBoundingClientRect(), tc=$("#bill-total"), hd=$("header.top");
+    const tb=tc && tc.getBoundingClientRect().height ? tc.getBoundingClientRect().top-12 : window.innerHeight-12, top=(hd?hd.getBoundingClientRect().bottom:0)+8;
+    let d=0; if(r.bottom>tb) d=r.bottom-tb; else if(r.top<top) d=r.top-top;
+    if(Math.abs(d)>1) window.scrollBy({top:d, behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); }); }
 function addToBill(id,qty=1){
   const it=S.byId.get(id); if(!it) return;
   const l=S.bill.find(x=>x.id===id);
@@ -619,7 +627,7 @@ function addToBill(id,qty=1){
   if(fromSearch){ const qi=$("#q"); qi.value=""; S.q=""; S.qTabs={}; S.limit=40; $("#q-clear").hidden=true; if(!DESK()) qi.blur(); renderBillSearch(); }
   const li=S.bill.findIndex(x=>x.id===id);
   if(DESK()){ billLinePatch(li); renderList(); const i=li, el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); el.scrollIntoView({block:"nearest",behavior:"smooth"}); } return; }
-  if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); billLinePatch(li); if(fromSearch){ const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.scrollIntoView({block:"center",behavior:"smooth"}),120); } } }
+  if(S.tab==="bill"){ if(!l) toast(`${it.name} ${t("added")}`); billLinePatch(li); if(fromSearch){ bsY=null; bsGen++; const i=S.bill.findIndex(x=>x.id===id), el=document.querySelector(`.bill-line[data-i="${i}"]`); if(el){ el.classList.add("flash"); lineShow(el); } } }
   else { const src=window.__addSrc; window.__addSrc=null;
     let r0=src && src.isConnected ? src.getBoundingClientRect() : null;      // measure before the card re-draws
     renderList();

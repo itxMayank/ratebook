@@ -11,7 +11,7 @@ function prefsClean_(p) { const o = {}; p = p || {};
 /* v57: display choices that follow the person to every phone and laptop (language, theme, appearance, search bar, best match,
    recent items style, sort, cash row). Text size and printer stay per device. Only known values are kept. */
 const UI_OK_ = { lang: ['en', 'hi'], palette: ['ink', 'maroon', 'forest', 'indigo', 'saffron'], appear: ['auto', 'light', 'dark'], spos: ['bottom', 'top'],
-  sres: ['near', 'top'], rcstyle: ['list', 'pills'], sort: ['pop', 'az'] };
+  sres: ['near', 'top'], rcstyle: ['list', 'pills'], sort: ['pop', 'az'], blay: ['classic', 'new'] };
 function uiClean_(u) { const o = {}; u = u || {};
   Object.keys(UI_OK_).forEach(k => { if (UI_OK_[k].indexOf(u[k]) >= 0) o[k] = u[k]; });
   if (typeof u.cashopen === 'boolean') o.cashopen = u.cashopen;

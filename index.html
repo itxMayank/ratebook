@@ -24,7 +24,7 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" media="print" id="fontcss">
 <script>{const l=document.getElementById("fontcss"); if(l){ if(l.sheet) l.media="all"; else l.addEventListener("load",()=>{ l.media="all"; }); }}</script>
-<link rel="stylesheet" href="app.css?v=ce5f17db20">
+<link rel="stylesheet" href="app.css?v=6d87cf8306">
 </head>
 <body>
 <header class="top">
@@ -76,8 +76,9 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
     <div class="editbar movebar" id="movebar" hidden><span id="movebar-t"></span><button type="button" class="btn ghost" id="move-stop" data-t="moveStop">Stop</button></div>
     <div class="editbar" id="editbar" hidden><span id="editbar-t"></span><button type="button" class="btn ghost" id="edit-cancel" data-t="cancelEdit">Cancel editing</button></div>
     <div id="bill-search-results" class="mini-results"></div>
-    <div class="heldrow" id="heldrow" hidden role="tablist" aria-label="Open bills"></div>
+    <div class="heldwrap" id="heldwrap"><button type="button" class="hh hh-l" id="hh-l" hidden></button><div class="heldrow" id="heldrow" hidden role="tablist" aria-label="Open bills"></div><button type="button" class="hh hh-r" id="hh-r" hidden></button></div>
     <div class="billhead" id="billhead">
+      <h2 class="bh-title" data-t="bhTitle">Customer &amp; payment</h2>
       <div class="bh-row">
         <button type="button" class="bh-no" id="bh-no-btn"><span data-t="billNoL">Bill No.</span><b class="num" id="bh-no">1</b><i id="bh-manual" hidden></i></button>
         <div class="bh-chips">
@@ -219,19 +220,19 @@ if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&
 <div class="topbar" id="topbar" aria-hidden="true"></div>
 <input type="file" id="file" accept="image/*" hidden>
 
-<script src="strings.js?v=6f8a1708a0"></script>
+<script src="strings.js?v=d6b48313b7"></script>
 <script src="shops.js?v=bd632092af"></script>
 <script src="money.js?v=299635b62f"></script>
 <script src="search.js?v=82651aadcd"></script>
 <script src="print.js?v=dd5e02c6fc"></script>
 <script src="reports.js?v=f7e21e3996"></script>
-<script src="settings.js?v=98f2901b36"></script>
+<script src="settings.js?v=94194b5181"></script>
 <script src="bills.js?v=34cd7ed50d"></script>
 <script src="customers.js?v=40c3e0cb29"></script>
 <script src="lock.js?v=d93cb75f5a"></script>
 <script src="vendors.js?v=c55789c0ec"></script>
 <script src="prices.js?v=2e924e168f"></script>
-<script src="billing.js?v=547a591a95"></script>
-<script src="app.js?v=bc26bc6778"></script>
+<script src="billing.js?v=a94413b247"></script>
+<script src="app.js?v=d631fee9f2"></script>
 </body>
 </html>

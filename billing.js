@@ -203,7 +203,8 @@ function renderBill(){
   const wrap=$("#bill-lines");
   { const n=$("#bill-n"); if(n){ n.hidden=!S.bill.length; n.textContent=S.bill.length?t("billN",S.bill.length):""; } }   // items on the bill (lines, not quantities)
   if(!S.bill.length){
-    wrap.innerHTML=`<div class="empty"><h2>${esc(t("billEmptyT"))}</h2><p>${esc(t(DESK()?"billEmptyDesk":"billEmptyD"))}</p>${DESK()?"":`<button type="button" class="btn primary empty-find" id="empty-find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${esc(t("billEmptyBtn"))}</button>`}</div>`;
+    const rec=BNEW() ? recentAll().filter(id=>S.byId.has(id)).slice(0,8) : [];   // new bill page: the first item is one tap
+    wrap.innerHTML=`<div class="empty${rec.length?" bstart":""}"><h2>${esc(t(rec.length?"billStartT":"billEmptyT"))}</h2><p>${esc(t(rec.length?"billStartD":DESK()?"billEmptyDesk":"billEmptyD"))}</p>${rec.length?`<div class="bspills">${rec.map(id=>{ const it=S.byId.get(id); return `<button type="button" class="bspill" data-add="${esc(id)}" aria-label="${esc(t("rcAddP",it.name))}">${esc(it.name)}</button>`; }).join("")}</div>`:""}${DESK()?"":`<button type="button" class="btn primary empty-find" id="empty-find"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${esc(t("billEmptyBtn"))}</button>`}</div>`;
     { const f=$("#empty-find"); if(f) f.onclick=()=>bsOpen(); }
     $("#bill-total").hidden=true;
   } else {
@@ -332,12 +333,20 @@ function removeHeld(hid){
   $("#hd-no").onclick=closeSheet;
   $("#hd-yes").onclick=()=>{ heldSet(heldGet().filter(x=>x.hid!==hid)); closeSheet(); renderHeld(); toast(t("heldDeleted")); };
 }
+/* New bill page: when open bills are off the left or right edge of the chips row, that edge fades and shows "+N";
+   tapping it scrolls the row to them. The chips themselves are unchanged. */
+function heldHint(){ const row=$("#heldrow"), L=$("#hh-l"), R=$("#hh-r"); if(!row||!L||!R) return;
+  if(!BNEW() || row.hidden){ L.hidden=R.hidden=true; row.classList.remove("fl","fr"); return; }
+  const rr=row.getBoundingClientRect(); let l=0, r=0;
+  row.querySelectorAll(".hchip:not(.add)").forEach(c=>{ const b=c.getBoundingClientRect(); if(b.left<rr.left-4) l++; else if(b.right>rr.right+4) r++; });
+  L.hidden=!l; R.hidden=!r; row.classList.toggle("fl",!!l); row.classList.toggle("fr",!!r);
+  L.textContent="‹ +"+l; R.textContent="+"+r+" ›"; L.setAttribute("aria-label",t("heldOff",l)); R.setAttribute("aria-label",t("heldOff",r)); }
 function renderHeld(){
   const row=$("#heldrow"); if(!row) return;
   const h=heldGet();
   const nb=$("#bill-new"); if(nb) nb.hidden = !!h.length || draftEmpty();
   const at=$("#addto");
-  if(!h.length){ row.hidden=true; row.innerHTML=""; if(at) at.hidden=true; return; }
+  if(!h.length){ row.hidden=true; row.innerHTML=""; if(at) at.hidden=true; heldHint(); return; }
   const today=new Date().toDateString();
   const cur={hid:"", at:draftAt(), d:draftState(), editing:S.editing, cur:true};
   const all=[...h,cur].sort((a,b)=>(a.at||0)-(b.at||0));
@@ -347,6 +356,7 @@ function renderHeld(){
     + (draftEmpty()?"":`<button type="button" class="hchip add" id="held-add" aria-label="${esc(t("newBillChip"))}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${esc(t("heldNew"))}</button>`);
   const on=row.querySelector(".hchip.on"); if(on && row.scrollWidth>row.clientWidth){ const r=on.offsetLeft-row.clientWidth/2+on.offsetWidth/2; row.scrollLeft=Math.max(0,r); }
   if(at){ at.hidden=DESK(); at.innerHTML=`<span class="at-l">${esc(t("addingTo"))}</span><span class="at-n">${esc(heldLabel(cur.d,cur.editing))}</span><span class="at-m">${esc(t("heldMore",h.length))} ›</span>`; }
+  heldHint();
 }
 /* Editing a past bill is just another open bill: the bill on screen (if any) goes into the open-bills row as a chip (no hidden
    copy), and a bill already open for editing (on screen or as a chip) is brought back instead of opened twice, so two copies can
